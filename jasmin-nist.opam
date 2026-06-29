@@ -1,0 +1,30 @@
+opam-version: "2.0"
+name: "jasmin-nist"
+version: "dev"
+synopsis: "Jasmin implementations and EasyCrypt proofs of ML-KEM and ML-DSA"
+maintainer: "Pierre-Yves Strub <pierre-yves@strub.nu>"
+authors: "Formosa-Crypto"
+homepage: "https://github.com/formosa-crypto"
+license: "Apache-2.0"
+dev-repo: "git+https://github.com/formosa-crypto/jasmin-nist.git"
+bug-reports: "https://github.com/formosa-crypto/jasmin-nist/issues"
+
+# This package only pins the toolchain needed to compile the Jasmin
+# sources and to check the EasyCrypt proofs; there is nothing for opam
+# itself to build. Install the dependencies with:
+#
+#     opam install . --deps-only
+#
+build: []
+
+depends: [
+  "jasmin" {= "2026.03.1"}
+
+  # EasyCrypt is not published on the default opam repository; its tip
+  # is the current "release" and is pinned via pin-depends below.
+  "easycrypt"
+]
+
+pin-depends: [
+  [ "easycrypt.dev" "git+https://github.com/EasyCrypt/easycrypt.git#main" ]
+]
