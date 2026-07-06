@@ -58,7 +58,11 @@ make -C proofs/mlkem/extraction                  # -> {768,1024}/Jkem_avx2.ec (n
 
 # Multi-backend harness (run targets need an x86-64 + AVX2 host)
 cd bench
-git -C .. submodule update --init                # mlkem-native, mldsa-native, formosa-keccak
+git -C .. submodule update --init bench/third_party/mlkem-native \
+    bench/third_party/mldsa-native bench/third_party/kyber \
+    bench/third_party/dilithium submodules/formosa-keccak
+    # NB: plain `submodule update --init` aborts on a stale dilithium mapping
+    # left in .gitmodules by the old mldsa subtree; name the paths explicitly.
 make libs                                        # <backend>_<scheme>.so via common derand ABI
 make test                                        # KAT vectors/ for each backend
 make compare SCHEME=ML-KEM-768 BACKENDS='jasmin mlkem-native'
@@ -68,12 +72,31 @@ make bench   SCHEME=ML-DSA-65                    # rdtsc median cycles
 KAT vectors in `bench/vectors/` are committed (ML-DSA = pqc hash-based KAT,
 ML-KEM = NIST ACVP v1.1.0.41). Regenerate with `bench/tools/import_kat.py`.
 
+## Done (this session, on an x86-64 + AVX2 host)
+
+1. **Ran on AVX2** ✓ — `make libs/test/compare/bench` all pass for jasmin,
+   mlkem-native, mldsa-native, and pqcrystals. All KATs pass; all differential
+   comparisons AGREE. Two `bench/kat.py` bugs fixed:
+   (a) a backend missing a parameter set aborted the whole run -> now skips
+   with a notice (jasmin only has mldsa65/mlkem768/1024); (b) output comparison
+   was case-sensitive while ML-KEM ACVP vectors are upper-hex and `.hex()` is
+   lower -> now case-insensitive (was reporting ~50 false ML-KEM failures).
+2. **Third reference backend = pq-crystals reference** ✓ (chose this over
+   liboqs). Reason: current liboqs (0.16.0-rc1) wraps mlkem-native/mldsa-native
+   for ML-KEM/ML-DSA, so it would not be algorithmically independent of the
+   existing native backends. The pq-crystals reference C is the genuinely
+   distinct implementation. Added as submodules `bench/third_party/{kyber,
+   dilithium}` with adapters in `bench/adapters/pqcrystals/`. Kyber ref already
+   has the derand supercop API; Dilithium has no derand keypair, so
+   `sig_shim.c` supplies its own `randombytes` (the tree's is excluded from the
+   build) to feed keygen the KAT seed, and signs via the `*_internal` entry
+   points. The shims include `kem.h`/`sign.h`, so the same source builds two
+   backends: `pqcrystals` from the avx2 tree and `pqcrystals-ref` from the
+   portable-C tree (no asm). All 6 parameter sets of both build and pass KAT;
+   both agree with Jasmin and the native libs.
+
 ## Open items / next steps
 
-1. **Run on AVX2**: actually execute `make test/compare/bench` on an x86-64 +
-   AVX2 machine; debug any KAT/bench failures.
-2. **liboqs** (phase 2): add as a third reference backend. Its public API has
-   no derand, so the adapter must reach the bundled upstream derand functions.
 3. **More Jasmin parameter sets**: `src/` only has mlkem768/1024 and mldsa65.
    The harness/headers already anticipate mlkem512 and mldsa44/87 — drop their
    sources into `src/mlkem/avx2/512` and `src/mldsa/avx2/{44,87}` and they

@@ -13,14 +13,19 @@ extern int JS(_sign)(uint8_t *, const uint8_t *, const uint64_t[2], uint64_t,
 extern int JS(_verify)(const uint8_t *, const uint64_t[2], uint64_t, uint64_t,
                        const uint8_t *);
 
+/* The Jasmin entry points take the context and message as reg-u64 addresses;
+ * convert the common ABI's plain pointer + length here. */
 void sig_keygen(uint8_t *vk, uint8_t *sk, const uint8_t *rnd) {
   JS(_keygen)(vk, sk, rnd);
 }
-int sig_sign(uint8_t *sig, const uint8_t *sk, const uint64_t ctx[2],
-             uint64_t msg_ptr, uint64_t msg_len, const uint8_t *rnd) {
-  return JS(_sign)(sig, sk, ctx, msg_ptr, msg_len, rnd);
+int sig_sign(uint8_t *sig, const uint8_t *sk, const uint8_t *ctx, size_t ctx_len,
+             const uint8_t *msg, size_t msg_len, const uint8_t *rnd) {
+  const uint64_t ctx2[2] = {(uint64_t)(uintptr_t)ctx, (uint64_t)ctx_len};
+  return JS(_sign)(sig, sk, ctx2, (uint64_t)(uintptr_t)msg, (uint64_t)msg_len,
+                   rnd);
 }
-int sig_verify(const uint8_t *vk, const uint64_t ctx[2], uint64_t msg_ptr,
-               uint64_t msg_len, const uint8_t *sig) {
-  return JS(_verify)(vk, ctx, msg_ptr, msg_len, sig);
+int sig_verify(const uint8_t *vk, const uint8_t *ctx, size_t ctx_len,
+               const uint8_t *msg, size_t msg_len, const uint8_t *sig) {
+  const uint64_t ctx2[2] = {(uint64_t)(uintptr_t)ctx, (uint64_t)ctx_len};
+  return JS(_verify)(vk, ctx2, (uint64_t)(uintptr_t)msg, (uint64_t)msg_len, sig);
 }

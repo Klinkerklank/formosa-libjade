@@ -1,10 +1,17 @@
-/* Cycle-count benchmark across backends.
+/* Cycle-count benchmark for one backend.
  *
- *   ./bench <scheme> <backend1.so> [backend2.so ...]
+ *   ./bench <scheme> <backend.so>
  *
- * dlopen's each backend's common-ABI .so, runs each derand operation
+ * dlopen's a single backend's common-ABI .so, runs each derand operation
  * BENCH_ITERS times (env, default 10000) and reports median CPU cycles via
- * rdtsc. x86-64 + AVX2 only. */
+ * rdtsc. One backend per process: different .so files can define the same
+ * global symbols (e.g. randombytes), so co-loading them risks cross-lib
+ * interposition. The bench / bench-all make targets loop, invoking this once
+ * per (scheme, backend) in a fresh process. x86-64 + AVX2 only.
+ *
+ * Output is human-readable by default; set BENCH_FORMAT=csv for one row per
+ * measurement -- "scheme,backend,operation,median_cycles" with no header (so
+ * invocations concatenate; the bench-all target prints the header). */
 
 #include <dlfcn.h>
 #include <stdint.h>
@@ -37,10 +44,10 @@ typedef int (*kem_keypair_t)(uint8_t *, uint8_t *, const uint8_t *);
 typedef int (*kem_enc_t)(uint8_t *, uint8_t *, const uint8_t *, const uint8_t *);
 typedef int (*kem_dec_t)(uint8_t *, const uint8_t *, const uint8_t *);
 typedef void (*sig_keygen_t)(uint8_t *, uint8_t *, const uint8_t *);
-typedef int (*sig_sign_t)(uint8_t *, const uint8_t *, const uint64_t *, uint64_t,
-                          uint64_t, const uint8_t *);
-typedef int (*sig_verify_t)(const uint8_t *, const uint64_t *, uint64_t,
-                            uint64_t, const uint8_t *);
+typedef int (*sig_sign_t)(uint8_t *, const uint8_t *, const uint8_t *, size_t,
+                          const uint8_t *, size_t, const uint8_t *);
+typedef int (*sig_verify_t)(const uint8_t *, const uint8_t *, size_t,
+                            const uint8_t *, size_t, const uint8_t *);
 
 static uint64_t prng_state = 0x1234567;
 static void fill(uint8_t *p, size_t n) {
@@ -55,7 +62,48 @@ static int cmp_u64(const void *x, const void *y) {
   return (a > b) - (a < b);
 }
 
+static int g_csv;
+
+/* "_build/pqcrystals-ref_mlkem768.so" -> "pqcrystals-ref" (strip dir, the
+ * trailing _<parambase>, and .so). Backend names use '-' but no '_'. */
+static void lib_backend(const char *path, char *out, size_t n) {
+  const char *base = strrchr(path, '/');
+  base = base ? base + 1 : path;
+  const char *us = strrchr(base, '_');
+  size_t len = us ? (size_t)(us - base) : strlen(base);
+  if (len >= n) len = n - 1;
+  memcpy(out, base, len);
+  out[len] = '\0';
+}
+
+static void report(const char *path, const scheme_t *s, uint64_t m0,
+                   uint64_t m1, uint64_t m2) {
+  const char *o0 = s->kind == KEM ? "keypair" : "keygen";
+  const char *o1 = s->kind == KEM ? "encaps" : "sign";
+  const char *o2 = s->kind == KEM ? "decaps" : "verify";
+  if (g_csv) {
+    char bk[64];
+    lib_backend(path, bk, sizeof bk);
+    printf("%s,%s,%s,%llu\n", s->name, bk, o0, (unsigned long long)m0);
+    printf("%s,%s,%s,%llu\n", s->name, bk, o1, (unsigned long long)m1);
+    printf("%s,%s,%s,%llu\n", s->name, bk, o2, (unsigned long long)m2);
+  } else {
+    printf("  %-22s %s=%-10llu %s=%-10llu %s=%-10llu\n", path, o0,
+           (unsigned long long)m0, o1, (unsigned long long)m1, o2,
+           (unsigned long long)m2);
+  }
+}
+
 #define ITERS_DEFAULT 10000
+
+/* rdtsc counts TSC ticks at a fixed rate, not core cycles: work measured while
+ * the frequency governor is still at idle reads artificially high, so the first
+ * backend in a process would be penalized vs later ones. Spin briefly first to
+ * ramp the core to steady-state turbo so every backend is measured alike. */
+static void warmup(void) {
+  volatile uint64_t x = 0;
+  for (uint64_t i = 0; i < 300000000ULL; i++) x += i * i + (x >> 1);
+}
 
 /* time `expr` ITERS times, store median cycles in *out */
 #define BENCH(iters, samples, out, expr)                                       \
@@ -71,6 +119,17 @@ static int cmp_u64(const void *x, const void *y) {
     *(out) = (samples)[(iters) / 2];                                           \
   } while (0)
 
+/* The AVX2 backends want 32-byte-aligned buffers; aligned_alloc needs the size
+   rounded up to the alignment. */
+static void *xalloc32(size_t n) {
+  void *p = aligned_alloc(32, (n + 31) & ~(size_t)31);
+  if (!p) {
+    perror("aligned_alloc");
+    exit(2);
+  }
+  return p;
+}
+
 static void bench_backend(const char *path, const scheme_t *s, size_t iters,
                           uint64_t *samples) {
   void *h = dlopen(path, RTLD_NOW | RTLD_LOCAL);
@@ -78,9 +137,9 @@ static void bench_backend(const char *path, const scheme_t *s, size_t iters,
     fprintf(stderr, "  cannot load %s: %s\n", path, dlerror());
     return;
   }
-  uint8_t *A = malloc((size_t)s->a), *B = malloc((size_t)s->b);
-  uint8_t *C = malloc((size_t)s->c), ss[32], coins[64], seed[32], rnd[32];
-  uint8_t msg[64];
+  uint8_t *A = xalloc32((size_t)s->a), *B = xalloc32((size_t)s->b);
+  uint8_t *C = xalloc32((size_t)s->c);
+  _Alignas(32) uint8_t ss[32], coins[64], seed[32], rnd[32], msg[64];
   uint64_t m0 = 0, m1 = 0, m2 = 0;
   fill(coins, 64); fill(seed, 32); fill(rnd, 32); fill(msg, 64);
 
@@ -93,32 +152,25 @@ static void bench_backend(const char *path, const scheme_t *s, size_t iters,
     BENCH(iters, samples, &m0, kp(A, B, coins));
     BENCH(iters, samples, &m1, enc(C, ss, A, coins));
     BENCH(iters, samples, &m2, dec(ss, C, B));
-    printf("  %-22s keypair=%-10llu enc=%-10llu dec=%-10llu\n",
-           path, (unsigned long long)m0, (unsigned long long)m1,
-           (unsigned long long)m2);
+    report(path, s, m0, m1, m2);
   } else {
     sig_keygen_t kg = dlsym(h, "sig_keygen");
     sig_sign_t sign = dlsym(h, "sig_sign");
     sig_verify_t ver = dlsym(h, "sig_verify");
-    uint64_t ctx[2] = {0, 0};
     kg(A, B, seed);                                   /* A=vk B=sk */
-    sign(C, B, ctx, (uint64_t)(uintptr_t)msg, sizeof msg, rnd);  /* C=sig */
+    sign(C, B, NULL, 0, msg, sizeof msg, rnd);        /* C=sig, empty context */
     BENCH(iters, samples, &m0, kg(A, B, seed));
-    BENCH(iters, samples, &m1,
-          sign(C, B, ctx, (uint64_t)(uintptr_t)msg, sizeof msg, rnd));
-    BENCH(iters, samples, &m2,
-          ver(A, ctx, (uint64_t)(uintptr_t)msg, sizeof msg, C));
-    printf("  %-22s keygen=%-10llu sign=%-10llu verify=%-10llu\n",
-           path, (unsigned long long)m0, (unsigned long long)m1,
-           (unsigned long long)m2);
+    BENCH(iters, samples, &m1, sign(C, B, NULL, 0, msg, sizeof msg, rnd));
+    BENCH(iters, samples, &m2, ver(A, NULL, 0, msg, sizeof msg, C));
+    report(path, s, m0, m1, m2);
   }
   free(A); free(B); free(C);
   dlclose(h);
 }
 
 int main(int argc, char **argv) {
-  if (argc < 3) {
-    fprintf(stderr, "usage: %s <scheme> <backend.so> [backend.so ...]\n", argv[0]);
+  if (argc != 3) {
+    fprintf(stderr, "usage: %s <scheme> <backend.so>\n", argv[0]);
     return 2;
   }
   const scheme_t *s = NULL;
@@ -129,10 +181,12 @@ int main(int argc, char **argv) {
   size_t iters = ITERS_DEFAULT;
   const char *e = getenv("BENCH_ITERS");
   if (e) iters = strtoul(e, NULL, 10);
+  const char *fmt = getenv("BENCH_FORMAT");
+  g_csv = fmt && !strcmp(fmt, "csv");
   uint64_t *samples = malloc(iters * sizeof(uint64_t));
 
-  printf("%s (median cycles over %zu iters):\n", s->name, iters);
-  for (int i = 2; i < argc; i++) bench_backend(argv[i], s, iters, samples);
+  warmup();
+  bench_backend(argv[2], s, iters, samples);
   free(samples);
   return 0;
 }

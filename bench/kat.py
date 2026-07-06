@@ -15,7 +15,7 @@ import ctypes
 import hashlib
 import json
 import sys
-from ctypes import c_int, c_uint64, c_void_p
+from ctypes import c_int, c_size_t, c_void_p
 from pathlib import Path
 
 
@@ -40,16 +40,28 @@ SCHEMES = {
 }
 
 
+# The AVX2 backends want 32-byte-aligned buffers. create_string_buffer is only
+# malloc-aligned, so over-allocate and expose a 32-aligned from_buffer view: a
+# real ctypes object, so it keeps the backing alive and is passed by object
+# (ctypes takes its address for the c_void_p params and keeps it alive per call).
+_ALIGN = 32
+
+
+def _aligned(size, data=None):
+    store = ctypes.create_string_buffer(size + _ALIGN)
+    off = (-ctypes.addressof(store)) % _ALIGN
+    view = (ctypes.c_char * size).from_buffer(store, off)
+    if data:
+        ctypes.memmove(view, bytes(data), len(data))
+    return view
+
+
 def in_buf(data):
-    return ctypes.create_string_buffer(bytes(data), len(data))
+    return _aligned(len(data), data)
 
 
 def out_buf(size):
-    return ctypes.create_string_buffer(size)
-
-
-def addr(buf):
-    return ctypes.cast(buf, c_void_p).value or 0
+    return _aligned(size)
 
 
 def h(block, field):
@@ -58,7 +70,7 @@ def h(block, field):
 
 class Report:
     def __init__(self):
-        self.passed = self.failed = 0
+        self.passed = self.failed = self.skipped = 0
         self.failures = []
 
     def check(self, label, ok, detail=""):
@@ -69,13 +81,15 @@ class Report:
             self.failures.append(f"{label}: {detail}")
 
     def check_output(self, label, block, field, actual):
+        # KAT sources differ in hex case (ML-KEM ACVP is upper, ML-DSA pqc is
+        # lower); .hex()/.hexdigest() are lower. Compare case-insensitively.
         if field in block:
-            want, got = block[field], actual.hex()
+            want, got = block[field].lower(), actual.hex()
             self.check(f"{label}.{field}", got == want,
                        f"expected {want[:24]}..., got {got[:24]}...")
         key = field + "_sha3_256"
         if key in block:
-            want, got = block[key], hashlib.sha3_256(actual).hexdigest()
+            want, got = block[key].lower(), hashlib.sha3_256(actual).hexdigest()
             self.check(f"{label}.{key}", got == want, f"expected {want}, got {got}")
 
 
@@ -127,14 +141,16 @@ class MLDSA(Scheme):
         self.keygen_fn.restype, self.keygen_fn.argtypes = None, [c_void_p] * 3
         self.sign_fn = lib.sig_sign
         self.sign_fn.restype = c_int
-        self.sign_fn.argtypes = [c_void_p, c_void_p, c_void_p, c_uint64, c_uint64, c_void_p]
+        self.sign_fn.argtypes = [c_void_p, c_void_p, c_void_p, c_size_t,
+                                 c_void_p, c_size_t, c_void_p]
         self.verify_fn = lib.sig_verify
         self.verify_fn.restype = c_int
-        self.verify_fn.argtypes = [c_void_p, c_void_p, c_uint64, c_uint64, c_void_p]
+        self.verify_fn.argtypes = [c_void_p, c_void_p, c_size_t, c_void_p,
+                                   c_size_t, c_void_p]
 
     def keygen(self, b, rep):
         vkb, skb = out_buf(self.spec["verification_key"]), out_buf(self.spec["signing_key"])
-        self.keygen_fn(addr(vkb), addr(skb), addr(in_buf(h(b, "seed"))))
+        self.keygen_fn(vkb, skb, in_buf(h(b, "seed")))
         self.vk, self.sk = vkb.raw, skb.raw
         rep.check_output(self.label("keygen"), b, "verification_key", self.vk)
         rep.check_output(self.label("keygen"), b, "signing_key", self.sk)
@@ -142,11 +158,11 @@ class MLDSA(Scheme):
     def sign(self, b, rep):
         sk = h(b, "signing_key") if "signing_key" in b else self.sk
         self.ctx, self.msg = h(b, "context"), h(b, "message")
-        ctxb, msgb = in_buf(self.ctx), in_buf(self.msg)
-        ctx_arr = (c_uint64 * 2)(addr(ctxb), len(self.ctx))
         sigb = out_buf(self.spec["signature"])
-        r = self.sign_fn(addr(sigb), addr(in_buf(sk)), ctypes.cast(ctx_arr, c_void_p),
-                         addr(msgb), len(self.msg), addr(in_buf(h(b, "randomness"))))
+        r = self.sign_fn(sigb, in_buf(sk),
+                         in_buf(self.ctx), len(self.ctx),
+                         in_buf(self.msg), len(self.msg),
+                         in_buf(h(b, "randomness")))
         rep.check(self.label("sign") + ".result", r == b.get("result", 0), f"got {r}")
         self.sig = sigb.raw
         rep.check_output(self.label("sign"), b, "signature", self.sig)
@@ -156,10 +172,10 @@ class MLDSA(Scheme):
         ctx = h(b, "context") if "context" in b else self.ctx
         msg = h(b, "message") if "message" in b else self.msg
         sig = h(b, "signature") if "signature" in b else self.sig
-        ctxb, msgb = in_buf(ctx), in_buf(msg)
-        ctx_arr = (c_uint64 * 2)(addr(ctxb), len(ctx))
-        r = self.verify_fn(addr(in_buf(vk)), ctypes.cast(ctx_arr, c_void_p),
-                           addr(msgb), len(msg), addr(in_buf(sig)))
+        r = self.verify_fn(in_buf(vk),
+                           in_buf(ctx), len(ctx),
+                           in_buf(msg), len(msg),
+                           in_buf(sig))
         rep.check(self.label("verify") + ".result", r == b.get("result", 0), f"got {r}")
 
 
@@ -178,7 +194,8 @@ class MLKEM(Scheme):
 
     def keygen(self, b, rep):
         pkb, skb = out_buf(self.spec["public_key"]), out_buf(self.spec["secret_key"])
-        self.keypair_fn(addr(pkb), addr(skb), addr(in_buf(h(b, "coins"))))
+        r = self.keypair_fn(pkb, skb, in_buf(h(b, "coins")))
+        rep.check(self.label("keygen") + ".result", r == b.get("result", 0), f"got {r}")
         self.pk, self.sk = pkb.raw, skb.raw
         rep.check_output(self.label("keygen"), b, "public_key", self.pk)
         rep.check_output(self.label("keygen"), b, "secret_key", self.sk)
@@ -186,7 +203,8 @@ class MLKEM(Scheme):
     def encaps(self, b, rep):
         pk = h(b, "public_key") if "public_key" in b else self.pk
         ctb, ssb = out_buf(self.spec["ciphertext"]), out_buf(self.spec["shared_secret"])
-        self.enc_fn(addr(ctb), addr(ssb), addr(in_buf(pk)), addr(in_buf(h(b, "coins"))))
+        r = self.enc_fn(ctb, ssb, in_buf(pk), in_buf(h(b, "coins")))
+        rep.check(self.label("encaps") + ".result", r == b.get("result", 0), f"got {r}")
         self.ct, self.ss = ctb.raw, ssb.raw
         rep.check_output(self.label("encaps"), b, "ciphertext", self.ct)
         rep.check_output(self.label("encaps"), b, "shared_secret", self.ss)
@@ -195,14 +213,18 @@ class MLKEM(Scheme):
         ct = h(b, "ciphertext") if "ciphertext" in b else self.ct
         sk = h(b, "secret_key") if "secret_key" in b else self.sk
         ssb = out_buf(self.spec["shared_secret"])
-        self.dec_fn(addr(ssb), addr(in_buf(ct)), addr(in_buf(sk)))
+        r = self.dec_fn(ssb, in_buf(ct), in_buf(sk))
+        rep.check(self.label("decaps") + ".result", r == b.get("result", 0), f"got {r}")
         rep.check_output(self.label("decaps"), b, "shared_secret", ssb.raw)
 
 
 def load_backend(backend, scheme_base, lib_dir):
     lib_path = lib_dir / f"{backend}_{scheme_base}.so"
     if not lib_path.exists():
-        raise SystemExit(f"library not found: {lib_path} (run `make libs`)")
+        # A backend need not provide every parameter set (e.g. jasmin has only
+        # mldsa65 / mlkem768 / mlkem1024). Signal "unsupported" so the caller
+        # can skip rather than abort the whole run.
+        return None
     try:
         return ctypes.CDLL(str(lib_path))
     except OSError as e:
@@ -217,6 +239,10 @@ def run_file(path, backend, lib_dir, rep):
         raise SystemExit(f"{path}: unknown algorithm {algo!r}")
     spec = SCHEMES[algo]
     lib = load_backend(backend, spec["base"], lib_dir)
+    if lib is None:
+        print(f"{path.name}: {backend} / {algo}, skipped (no {backend}_{spec['base']}.so)")
+        rep.skipped += 1
+        return
     tests = data.get("tests", [])
     print(f"{path.name}: {backend} / {algo}, {len(tests)} test(s)")
     RUNNERS[spec["kind"]](lib, spec).run(tests, rep)
@@ -235,7 +261,7 @@ def main(argv=None):
     for path in args.vectors:
         run_file(path, args.backend, args.lib_dir, rep)
 
-    print(f"\n{rep.passed} passed, {rep.failed} failed")
+    print(f"\n{rep.passed} passed, {rep.failed} failed, {rep.skipped} file(s) skipped")
     for f in rep.failures:
         print(f"  FAIL {f}")
     return 1 if rep.failed else 0

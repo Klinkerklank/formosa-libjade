@@ -8,6 +8,7 @@
 #ifndef BENCH_COMMON_ABI_H
 #define BENCH_COMMON_ABI_H
 
+#include <stddef.h>
 #include <stdint.h>
 
 /* ---- KEM (ML-KEM) -- deterministic API ---- */
@@ -19,15 +20,18 @@ int kem_dec(uint8_t *shared_secret, const uint8_t *ciphertext,
             const uint8_t *secret_key);
 
 /* ---- SIG (ML-DSA) -- deterministic API ----
- * context is [pointer, size]; message is a raw pointer + length, matching the
- * Jasmin reg ui64 ABI. */
+ * context and message are plain pointer + length. (The jasmin backend's entry
+ * points want the message/context as reg-u64 addresses; that conversion lives
+ * in the jasmin adapter, not in this shared ABI.) */
 void sig_keygen(uint8_t *verification_key, uint8_t *signing_key,
                 const uint8_t *randomness);
 int sig_sign(uint8_t *signature, const uint8_t *signing_key,
-             const uint64_t context[2], uint64_t message_pointer,
-             uint64_t message_size, const uint8_t *randomness);
-int sig_verify(const uint8_t *verification_key, const uint64_t context[2],
-               uint64_t message_pointer, uint64_t message_size,
+             const uint8_t *context, size_t context_len,
+             const uint8_t *message, size_t message_len,
+             const uint8_t *randomness);
+int sig_verify(const uint8_t *verification_key,
+               const uint8_t *context, size_t context_len,
+               const uint8_t *message, size_t message_len,
                const uint8_t *signature);
 
 #endif /* BENCH_COMMON_ABI_H */
