@@ -218,7 +218,7 @@ report: libs $(BUILD)/bench
 	        --require '$(REQUIRE)' \
 	        --version "CPU=$$(grep -m1 'model name' /proc/cpuinfo | cut -d: -f2- | sed 's/^ *//')" \
 	        --version "pinned core=$(if $(PIN),$(CPU),none)" \
-	        --version "freq governor=$$(cat /sys/devices/system/cpu/cpu0/cpufreq/scaling_governor 2>/dev/null || echo unknown)" \
+	        --version "freq governor=$$(cat /sys/devices/system/cpu/cpu$(if $(PIN),$(CPU),0)/cpufreq/scaling_governor 2>/dev/null || echo unknown)" \
 	        --version "jasminc=$$(jasminc -version 2>/dev/null | head -1)" \
 	        --version "mlkem-native=$(call gitver,$(MLKN)/..)" \
 	        --version "mldsa-native=$(call gitver,$(MLDN)/..)" \
