@@ -21,7 +21,7 @@ proof. smt(iteriS). qed.
 lemma mkseqSr_rw ['a] (f : int -> 'a) (n : int) :
   0 < n => mkseq f n = f 0 :: mkseq (fun i => f (i+1)) (n-1).
 proof. move => *. have H : exists i, n = i+1 by smt().
-elim H => i H0 /=; rewrite H0 /(\o) /=.
+elim H => i H0 /=; rewrite H0 /=.
 have := mkseqSr f i _; 1: by smt().
 rewrite /(\o) => /= => - /#.
 qed.

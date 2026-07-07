@@ -107,7 +107,6 @@ qed.
 lemma frac_inv_gt1 x: 1%r < x => frac (inv x) = inv x.
 proof. by move=> H; rewrite /frac; smt(floor_bound). qed.
 
-
 from Spec require import GFq.
 
 lemma round_mono (x y: real):
@@ -238,7 +237,6 @@ proof.
 rewrite dmap1E /(\o) /=.
 rewrite (mu_eq_support _ _ (pred1 (w2bits w))).
  move=> l; rewrite supp_dlist //=; move=> [E _].
- rewrite /pred1.
  apply eqboolP; split => H.
   by rewrite -H W8.bits2wK.
  by rewrite H W8.w2bitsK.
@@ -265,7 +263,6 @@ apply eq_distr => w.
 rewrite dword1E dmap1E /(\o) /=.
 rewrite (mu_eq_support _ _ (pred1 (to_uint w))).
  move=> x; rewrite supp_dinter //= => E.
- rewrite /pred1.
  apply eqboolP; split => H.
   by rewrite -H W8.of_uintK modz_small /#.
  by rewrite H W8.to_uintK.

@@ -977,7 +977,7 @@ seq 0 : ((forall i, 0 <= i < 2 =>
    - by rewrite size_map size_iota lez_maxr 1:// size_w2bits.
    move=> j; rewrite size_map size_iota lez_maxr 1://.
    move=> rgj; rewrite (nth_map witness) /= 1:size_iota 1:/#.
-   rewrite nth_iota 1:// /= rgj /= (fun_if (predC1 None)) /predC1 /=.
+   rewrite nth_iota 1:// /= rgj /= (fun_if (fun x => x <> None)) /=.
    by rewrite (nth_change_dfl false) 1:size_w2bits 1:// /= rgj /=.
 
 seq 1 : (#pre
@@ -1296,7 +1296,7 @@ seq 0 : ((forall i, 0 <= i < 4 =>
    - by rewrite size_map size_iota lez_maxr 1:// size_w2bits.
    move=> j; rewrite size_map size_iota lez_maxr 1://.
    move=> rgj; rewrite (nth_map witness) /= 1:size_iota 1:/#.
-   rewrite nth_iota 1:// /= rgj /= (fun_if (predC1 None)) /predC1 /=.
+   rewrite nth_iota 1:// /= rgj /= (fun_if (fun x => x <> None)) /predC1 /=.
    by rewrite (nth_change_dfl false) 1:size_w2bits 1:// /= rgj /=.
 
 seq 1 : (#pre

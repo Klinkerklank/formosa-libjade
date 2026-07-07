@@ -646,8 +646,16 @@ end Montgomery16.
 
 (* Barret reduction *)
 
-require import Fq.
 import SignedReductions_W16.
+
+lemma smod_W16 a:
+  smod a W16.modulus = W16.smod (a %% W16.modulus)
+  by rewrite smodE /W16.smod /=.
+
+lemma smod_W32 a:
+  smod a W32.modulus = W32.smod (a %% W32.modulus)
+  by rewrite smodE /W32.smod /=.
+
 
 op sbred16 (x: W16.t): W16.t =
   x - (wmulhs x (W16.of_int 20159) `|>>` (W8.of_int 10)) * (W16.of_int 3329).
@@ -686,8 +694,8 @@ rewrite /= (_:67108864=2^10*65536) 1:// divzMl //.
 rewrite (_:4294967296=65536*65536) 1://.
 have E20159: 20159 = to_sint (W16.of_int 20159)
  by rewrite of_sintK /smod /=.
-rewrite {1}E20159 smod_R2_R //.
-rewrite !Fq.smod_W16 {1}to_sintD; congr.
+rewrite {1}E20159 smod_R2_R //.  search W16.smod.
+rewrite !smod_W16 {1}to_sintD; congr.
 rewrite -modzDm eq_sym -modzDm eq_sym; congr; congr => //; congr.
  by rewrite !to_sint_mod; move: (W16.to_uint_cmp x); smt().
 rewrite -to_sintH.

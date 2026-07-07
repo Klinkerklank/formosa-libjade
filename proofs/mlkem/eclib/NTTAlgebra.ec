@@ -1680,7 +1680,7 @@ theory NTTequiv.
         (ks + 1) s /\
       (ks * 2 ^ (8 - kl) + 2 ^ (8 - kl) < 256 <=> ks + 1 < 2 ^ kl).
     apply/(RHL_FOR_INT_ADD_LT2.inv_out _ _ _ _ _ _ _ _ _ R) => //=.
-    + rewrite /R ger_addl lerNgt expr_gt0 //= addrAC /= => _ {R inv_start}.
+    + rewrite ger_addl lerNgt expr_gt0 //= addrAC /= => _ {R inv_start}.
       rewrite (exprSr_range _ _ _ mem_kl_range) //= expr_gt0 //=.
       by rewrite (NdivzN_pow_add_range _ _ _ mem_kl_range).
     rewrite /R ger_addl lerNgt expr_gt0 //= addrAC /= => {R inv_start}.
@@ -2493,7 +2493,7 @@ theory NTTequiv.
         (ks + 1) s /\
       (ks * 2 ^ (kl + 2) + 2 ^ (kl + 2) < 256 <=> ks + 1 < 2 ^ (6 - kl)).
     apply/(RHL_FOR_INT_ADD_LT2.inv_out _ _ _ _ _ _ _ _ _ R) => //=.
-    + rewrite /R ger_addl lerNgt expr_gt0 //= addrAC /= => _ {R inv_start}.
+    + rewrite ger_addl lerNgt expr_gt0 //= addrAC /= => _ {R inv_start}.
       rewrite (exprSr_sub_range _ _ _ mem_kl_range) //= expr_gt0 //=.
       by rewrite (NdivzN_pow_sub_range _ _ _ mem_kl_range).
     rewrite /R ger_addl lerNgt expr_gt0 //= addrAC /= => {R inv_start}.
@@ -3410,7 +3410,7 @@ theory NTTequiv.
     + rewrite /f /g => {f g} i /mem_range mem_i_range /=.
       rewrite (IntID.mulrC _ 2) ZqRing.mulrA -ZqRing.exprD.
       - by rewrite unit_zroot_ring.
-      rewrite -mulrDr /(\o) /= addrA; congr; last first.
+      rewrite -mulrDr /= addrA; congr; last first.
       - by rewrite mulrDl -mulrA /= (exprS_range _ _ _ mem_kl_range).
       congr; congr; rewrite modz_small //; [by rewrite normrX -mem_range|].
       rewrite modz_small.
@@ -3484,7 +3484,7 @@ theory NTTequiv.
     + rewrite /f /g => {f g} i /mem_range mem_i_range /=.
       rewrite (IntID.mulrC _ 2) ZqRing.mulrA -ZqRing.exprD.
       - by rewrite unit_zroot_ring.
-      rewrite -mulrDr /(\o) /= addrA -ZqRing.mulN1r -incoeffN -exp_zroot_128_ring.
+      rewrite -mulrDr /= addrA -ZqRing.mulN1r -incoeffN -exp_zroot_128_ring.
       rewrite ZqRing.mulrA -ZqRing.exprD; [by rewrite unit_zroot_ring|].
       congr; last first.
       - by rewrite mulrDl -mulrA /= (exprS_range _ _ _ mem_kl_range).
@@ -3624,7 +3624,7 @@ theory NTTequiv.
       by rewrite partial_ntt_spec_post_neq //; left; rewrite eq_sym.
     skip => &m; rewrite /inv_naive_ntt_outer /inv_naive_ntt_inner => inv_; split.
     + apply/HL_FOR_INT_ADD_LT.inv_0 => //; [split|].
-      - by move: inv_; rewrite /P_naive_ntt_inner; apply/HL_FOR_INT_ADD_LT.inv_context.
+      - by move: inv_; apply/HL_FOR_INT_ADD_LT.inv_context.
       - case/HL_FOR_INT_ADD_LT.invP: inv_ => -[->] /= [kl].
         move => [/mem_range mem_kl_range ->] [ks]; rewrite (lerNgt (2 ^ _)) expr_gt0 //=.
         move => [/mem_range mem_ks_range [-> _]].
@@ -4099,11 +4099,11 @@ theory NTTequiv.
   proof.
     move => le_ le_size eq_ eq_1 eq_2.
     pose g1:= (+)%Int (a - a1); rewrite (BAdd.eq_big_int _ _ f1 (f \o g1)) /g1 /= => {g1}.
-    + move => y /mem_range mem_y_range; rewrite /(\o) /=.
+    + move => y /mem_range mem_y_range /=.
       move: (eq_1 (y - a1) _); [by rewrite mem_range_subr /= -addrA|].
       by rewrite !addrA addrAC /= addrAC.
     pose g2:= (+)%Int (a + b1 - a1 - a2); rewrite (BAdd.eq_big_int _ _ f2 (f \o g2)) /g2 /= => {g2}.
-    + move => y /mem_range mem_y_range; rewrite /(\o) /=.
+    + move => y /mem_range mem_y_range /=.
       move: (eq_2 (y - a2) _); [by rewrite mem_range_subr /= -addrA|].
       by rewrite !addrA addrAC /= addrAC => ->; congr; congr; ring.
     rewrite -!BAdd.big_mapT -!range_add !addrA addrAC /=.
@@ -4126,11 +4126,11 @@ theory NTTequiv.
   proof.
     move => le_ eq_size eq_ eq_1 eq_2.
     pose g1 x:= a + (x - a1) * 2; rewrite (BAdd.eq_big_int _ _ f1 (f \o g1)) /g1 /= => {g1}.
-    + move => y /mem_range mem_y_range; rewrite /(\o) /=.
+    + move => y /mem_range mem_y_range /=.
       move: (eq_1 (y - a1) _); [by rewrite mem_range_subr /= -addrA|].
       by rewrite !addrA addrAC.
     pose g2 x:= a + (x - a2) * 2 + 1; rewrite (BAdd.eq_big_int _ _ f2 (f \o g2)) /g2 /= => {g2}.
-    + move => y /mem_range mem_y_range; rewrite /(\o) /=.
+    + move => y /mem_range mem_y_range /=.
       move: (eq_2 (y - a2) _); [by rewrite mem_range_subr /= -addrA|].
       by rewrite !addrA addrAC.
     rewrite -!BAdd.big_mapT -BAdd.big_cat; apply/BAdd.eq_big_perm/uniq_perm_eq.
@@ -4361,7 +4361,7 @@ theory NTTequiv.
       by rewrite partial_invntt_spec_post_neq2 //; left; rewrite eq_sym.
     skip => &m; rewrite /inv_naive_invntt_outer /inv_naive_invntt_inner => inv_; split.
     + apply/HL_FOR_INT_ADD_LT.inv_0 => //; [split|].
-      - by move: inv_; rewrite /P_naive_invntt_inner; apply/HL_FOR_INT_ADD_LT.inv_context.
+      - by move: inv_; apply/HL_FOR_INT_ADD_LT.inv_context.
       - case/HL_FOR_INT_ADD_LT.invP: inv_ => -[->] /= [kl].
         move => [/mem_range mem_kl_range ->] [ks]; rewrite (divz_pow_range _ _ _ mem_kl_range) //=.
         rewrite (lerNgt (2 ^ _)) expr_gt0 //= => -[/mem_range mem_ks_range [-> _]].
@@ -4429,7 +4429,7 @@ theory NTTequiv.
     exists (ks + 1); rewrite le2_mem_range /= lerNgt expr_gt0 //=; split.
     + by apply/mem_range_addr; move: mem_ks_range; apply mem_range_incl.
     move => hbsj start lbsj mem_hbsj_range mem_start_range; rewrite !(divz_pow_sub_range _ _ _ mem_kl_range) //=.
-    move: (Q_ hbsj start) => //; rewrite /Q_naive_invntt_inner; rewrite (exprSr_sub_range _ _ _ mem_kl_range) //=.
+    move: (Q_ hbsj start) => //; rewrite (exprSr_sub_range _ _ _ mem_kl_range) //=.
     rewrite !(divz_pow_sub_range _ _ _ mem_kl_range) //= mem_start_range /= => {Q_}.
     rewrite ltzS ler_eqVlt; case: (start < ks) => //= _; [by move => /(_ lbsj _)|].
     case: (start = ks) => //= [->> /(_ (lbsj %/ 2)) Q_ mem_lbsj_range|_ /(_ lbsj _) //].
@@ -4628,7 +4628,7 @@ theory NTTequiv.
   lemma imp_invntt_spec p r :
     invntt_spec r p => r = invntt p.
   proof.
-    rewrite /invntt_spec /partial_invntt_spec /partial_invntt /invntt => /= spec.
+    rewrite /invntt_spec /partial_invntt /invntt => /= spec.
     apply Array256.tP => i /mem_range mem_i_range /=.
     rewrite Array256.initiE /=; [by apply mem_range|].
     rewrite {1 4}(divz_eq i 2).

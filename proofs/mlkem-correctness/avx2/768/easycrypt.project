@@ -1,0 +1,27 @@
+[general]
+timeout = 30
+
+provers = CVC5@1.3
+provers = Z3@4.13
+
+pragmas = -Warn:uninit
+pragmas = -Warn:unused_unfold
+
+rdirs = .
+
+idirs = JazzEC:../../../arrays
+rdirs = JazzEC:../../../core
+rdirs = ../../../core
+
+rdirs = Spec:../../../mlkem/spec
+rdirs = ../../../mlkem/eclib
+
+rdirs = JazzEC:../../extraction/avx2/768
+
+rdirs = CryptoSpecs:../../../../submodules/formosa-keccak/submodules/crypto-specs/common
+rdirs = CryptoSpecs:../../../../submodules/formosa-keccak/submodules/crypto-specs/fips202
+
+rdirs = ../../../../submodules/formosa-keccak/proof/amd64/common
+rdirs = Keccak:../../../../submodules/formosa-keccak/proof/amd64/ref
+rdirs = Keccak:../../../../submodules/formosa-keccak/proof/amd64/avx2
+rdirs = JazzEC:../../../../submodules/formosa-keccak/proof/amd64/extracted
