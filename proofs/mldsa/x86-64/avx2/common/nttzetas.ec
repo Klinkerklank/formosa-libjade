@@ -20,10 +20,10 @@ require import StdRing StdOrder QFABV.
 from Jasmin require import JWord JModel_x86.
 from JazzEC require import Ml_dsa_65_avx2.
 
-require import Nttlogspec.
+require import Nttlogspec Nttspec Listred.
 
 (* -------------------------------------------------------------------- *)
-require import Array4 Array8 Array16.
+require import Array2 Array4 Array8 Array16.
 
 (* -------------------------------------------------------------------- *)
 op topair ['a] (s : 'a list) =
@@ -244,3 +244,136 @@ hint simplify size_zeta_L2.
 hint simplify size_zeta_L3.
 hint simplify size_zeta_L4.
 hint simplify size_zeta_L5.
+
+(* ==================================================================== *)
+(* ==================================================================== *)
+(* Per-layer twiddle lists, in butterfly order, taken directly from the *)
+(* implementation tables zETAS_TO_INVERT_LAYER_k.                       *)
+(*                                                                      *)
+(* Layers 0/1/2 are within-vector: the W256 table entries store the     *)
+(* twiddles in the lane order produced by the shuffle networks           *)
+(* (VPSHUFD/VPUNPCK for 0/1, VPERM2I128 for 2); the extraction below    *)
+(* de-permutes them to butterfly order (perm0L/perm1L as in the forward *)
+(* NTT). Layers 3-6 are scalar tables in natural order; layer 7 uses    *)
+(* the single constant 25847.                                           *)
+(* ==================================================================== *)
+op [opaque] izetasL (k : int) : W32.t list =
+  if k = 0 then
+    flatten (map
+      (fun (z : W256.t) => map ((\bits32) z) perm0L)
+      (Array16.to_list zETAS_TO_INVERT_LAYER_0))
+  else if k = 1 then
+    flatten (map
+      (fun (z : W256.t) => map (fun m => z \bits32 (2 * m)) perm1L)
+      (Array16.to_list zETAS_TO_INVERT_LAYER_1))
+  else if k = 2 then
+    flatten (map
+      (fun (z : W256.t) => [z \bits32 0; z \bits32 4])
+      (Array16.to_list zETAS_TO_INVERT_LAYER_2))
+  else if k = 3 then Array16.to_list zETAS_TO_INVERT_LAYER_3
+  else if k = 4 then Array8.to_list zETAS_TO_INVERT_LAYER_4
+  else if k = 5 then Array4.to_list zETAS_TO_INVERT_LAYER_5
+  else if k = 6 then Array2.to_list zETAS_TO_INVERT_LAYER_6
+  else if k = 7 then [W32.of_int 25847]
+  else [].
+
+(* -------------------------------------------------------------------- *)
+lemma size_izetasL3 : size (izetasL 3) = 16.
+proof. hint +listred. by rewrite /izetasL /= Array16.size_to_list. qed.
+
+lemma size_izetasL4 : size (izetasL 4) = 8.
+proof. hint +listred. by rewrite /izetasL /= Array8.size_to_list. qed.
+
+lemma size_izetasL5 : size (izetasL 5) = 4.
+proof. hint +listred. by rewrite /izetasL /= Array4.size_to_list. qed.
+
+lemma size_izetasL6 : size (izetasL 6) = 2.
+proof. hint +listred. by rewrite /izetasL /= Array2.size_to_list. qed.
+
+lemma size_izetasL7 : size (izetasL 7) = 1.
+proof. hint +listred. by rewrite /izetasL. qed.
+
+(* -------------------------------------------------------------------- *)
+op ireduce_level (p : wpoly) (k : int) =
+  ireduce_n p 0 (2^k) (izetasL k).
+
+(* Levels applied in program order: layer 0 first, then 1, ..., up to   *)
+(* (excluding) i. The full inverse butterfly network is [invtree p 8].  *)
+op invtree (p : wpoly) (i : int) =
+  foldl (fun p k => ireduce_level p k) p (range 0 i).
+
+(* -------------------------------------------------------------------- *)
+lemma invtree0 (p : wpoly) : invtree p 0 = p.
+proof. hint +listred. by rewrite /invtree range_geq. qed.
+
+(* -------------------------------------------------------------------- *)
+lemma invtree_step (p : wpoly) (n : int) : 0 <= n =>
+  invtree p (n + 1) = ireduce_level (invtree p n) n.
+proof. hint +listred. by move=> ?; rewrite /invtree rangeSr // -cats1 foldl_cat. qed.
+
+(* 64-bit lane pair; the layer-2 table duplicated over a 128-bit half.  *)
+lemma T1_shape (i : int) : 0 <= i < 16 =>
+  zETAS_TO_INVERT_LAYER_1.[i] =
+  pack8 [zETAS_TO_INVERT_LAYER_1.[i] \bits32 0;
+         zETAS_TO_INVERT_LAYER_1.[i] \bits32 0;
+         zETAS_TO_INVERT_LAYER_1.[i] \bits32 2;
+         zETAS_TO_INVERT_LAYER_1.[i] \bits32 2;
+         zETAS_TO_INVERT_LAYER_1.[i] \bits32 4;
+         zETAS_TO_INVERT_LAYER_1.[i] \bits32 4;
+         zETAS_TO_INVERT_LAYER_1.[i] \bits32 6;
+         zETAS_TO_INVERT_LAYER_1.[i] \bits32 6].
+proof.
+hint +listred.
+move=> rgi; have: i \in range 0 16 by apply/mem_range.
+move=> @/range; rewrite -iotaredE /= => [#|] -> /=;
+  apply: W8u32.wordP => k /(mem_range 0 8) @/range;
+  rewrite -iotaredE /= => [#|] -> /=;
+  by rewrite ?of_int_bits32_div /=.
+qed.
+
+(* -------------------------------------------------------------------- *)
+lemma T2_shape (i : int) : 0 <= i < 16 =>
+  zETAS_TO_INVERT_LAYER_2.[i] =
+  pack8 [zETAS_TO_INVERT_LAYER_2.[i] \bits32 0;
+         zETAS_TO_INVERT_LAYER_2.[i] \bits32 0;
+         zETAS_TO_INVERT_LAYER_2.[i] \bits32 0;
+         zETAS_TO_INVERT_LAYER_2.[i] \bits32 0;
+         zETAS_TO_INVERT_LAYER_2.[i] \bits32 4;
+         zETAS_TO_INVERT_LAYER_2.[i] \bits32 4;
+         zETAS_TO_INVERT_LAYER_2.[i] \bits32 4;
+         zETAS_TO_INVERT_LAYER_2.[i] \bits32 4].
+proof.
+hint +listred.
+move=> rgi; have: i \in range 0 16 by apply/mem_range.
+move=> @/range; rewrite -iotaredE /= => [#|] -> /=;
+  apply: W8u32.wordP => k /(mem_range 0 8) @/range;
+  rewrite -iotaredE /= => [#|] -> /=;
+  by rewrite ?of_int_bits32_div /=.
+qed.
+
+(* -------------------------------------------------------------------- *)
+lemma size_flatten_bl0 (s : W256.t list) :
+  size (flatten (map (fun (w : W256.t) => map ((\bits32) w) perm0L) s))
+  = 8 * size s.
+proof. hint +listred. by elim: s => [|x s ih] //=; rewrite size_cat ih /perm0L /= /#. qed.
+
+(* -------------------------------------------------------------------- *)
+
+(* -------------------------------------------------------------------- *)
+lemma size_flatten_bl1 (s : W256.t list) :
+  size (flatten (map
+    (fun (w : W256.t) => map (fun m => w \bits32 (2 * m)) perm1L) s))
+  = 4 * size s.
+proof. hint +listred. by elim: s => [|x s ih] //=; rewrite size_cat ih /perm1L /= /#. qed.
+
+(* -------------------------------------------------------------------- *)
+
+
+(* -------------------------------------------------------------------- *)
+lemma size_flatten_bl2 (s : W256.t list) :
+  size (flatten (map
+    (fun (w : W256.t) => [w \bits32 0; w \bits32 4]) s))
+  = 2 * size s.
+proof. hint +listred. by elim: s => [|x s ih] //=; rewrite ih /#. qed.
+
+(* -------------------------------------------------------------------- *)

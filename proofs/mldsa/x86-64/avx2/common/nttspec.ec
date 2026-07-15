@@ -31,6 +31,9 @@ from Jasmin require import JUtils JWord.
 require import Array256 XArray256.
 
 (* -------------------------------------------------------------------- *)
+require import Listred.
+
+(* -------------------------------------------------------------------- *)
 type wpoly = W32.t Array256.t.
 
 (* -------------------------------------------------------------------- *)
@@ -462,4 +465,288 @@ elim: n => [|n ge0_n ih] ? /=; first by rewrite reduce_partial0 mkseq0.
 rewrite mulrDr /= reduce_partialD ~-1:/#.
 rewrite mkseqS ~-1:// /= /reduce_players foldl_rcons.
 by rewrite -/(reduce_players _ _) -ih /#.
+qed.
+
+(* ==================================================================== *)
+(* ==================================================================== *)
+(* Inverse (Gentleman-Sande) butterfly, mirror of Nttspec.reduce.       *)
+(* Code (invert_ntt_round): with a = coeffs_i, b = coeffs_{i+len},      *)
+(*   coeffs_i        <- a + b                                            *)
+(*   coeffs_{i+len}  <- mmr (b - a) z                                    *)
+(* ==================================================================== *)
+op ireduce_coeff (p : wpoly) (base len plen : int) (z_ : W32.t) =
+  let p1 = mkseq (fun i => p.[base       + i]) plen in
+  let p2 = mkseq (fun i => p.[base + len + i]) plen in
+  let r1 = map (fun (w : W32.t * W32.t) => w.`1 + w.`2)       (zip p1 p2) in
+  let r2 = map (fun (w : W32.t * W32.t) => mmr (w.`2 - w.`1) z_) (zip p1 p2) in
+  (r1, r2).
+
+(* -------------------------------------------------------------------- *)
+op ireduce_coeff_flatten (p : wpoly) (base len : int) (z_ : W32.t) =
+  let r = ireduce_coeff p base len len z_ in
+  r.`1 ++ r.`2.
+
+(* -------------------------------------------------------------------- *)
+op ireduce_partial (p : wpoly) (base len plen : int) (z_ : W32.t) : wpoly =
+  let r = ireduce_coeff p base len plen z_ in
+  let p = replace_ p base r.`1 in
+  let p = replace_ p (base + len) r.`2 in
+  p.
+
+(* ==================================================================== *)
+lemma ireduce_coeffLE (p : wpoly) (base len plen : int) (z_ : W32.t) :
+  (ireduce_coeff p base len plen z_).`1 =
+    mkseq (fun i => p.[base + i] + p.[base + len + i]) plen.
+proof.
+hint +listred.
+rewrite /ireduce_coeff /= zip_map /= -map_comp /(\o) /=.
+by rewrite zipss -map_comp /(\o) /= -/(range 0 plen).
+qed.
+
+(* -------------------------------------------------------------------- *)
+lemma ireduce_coeffRE (p : wpoly) (base len plen : int) (z_ : W32.t) :
+  (ireduce_coeff p base len plen z_).`2 =
+    mkseq (fun i => mmr (p.[base + len + i] - p.[base + i]) z_) plen.
+proof.
+hint +listred.
+rewrite /ireduce_coeff /= zip_map /= -map_comp /(\o) /=.
+by rewrite zipss -map_comp /(\o) /= -/(range 0 plen).
+qed.
+
+(* -------------------------------------------------------------------- *)
+lemma ireduce_coeff_sizeL (p : wpoly) (base len plen : int) (z_ : W32.t) :
+  0 <= plen => size (ireduce_coeff p base len plen z_).`1 = plen.
+proof.
+hint +listred.
+by move=> ? @/ireduce_coeff /=; rewrite size_zip !size_mkseq /#.
+qed.
+
+(* -------------------------------------------------------------------- *)
+lemma ireduce_coeff_sizeR (p : wpoly) (base len plen : int) (z_ : W32.t) :
+  0 <= plen => size (ireduce_coeff p base len plen z_).`2 = plen.
+proof.
+hint +listred.
+by move=> ? @/ireduce_coeff /=; rewrite size_zip !size_mkseq /#.
+qed.
+
+(* -------------------------------------------------------------------- *)
+lemma ireduce_coeff_flatten_size (p : wpoly) (base len : int) (z_ : W32.t) :
+  0 <= len => size (ireduce_coeff_flatten p base len z_) = 2 * len.
+proof.
+hint +listred.
+move=> ?; rewrite /ireduce_coeff_flatten /= size_cat.
+by rewrite !(ireduce_coeff_sizeL, ireduce_coeff_sizeR) //#.
+qed.
+
+(* -------------------------------------------------------------------- *)
+lemma ireduce_coeff_size (p : wpoly) (base len plen : int) (z_ : W32.t) (r s : _) :
+     0 <= plen
+  => ireduce_coeff p base len plen z_ = (r, s)
+  => size r = plen /\ size s = plen.
+proof.
+hint +listred.
+move=> ? ^ /(congr1 fst) /= <- /(congr1 snd) /= <-.
+by rewrite !(ireduce_coeff_sizeL, ireduce_coeff_sizeR).
+qed.
+
+(* -------------------------------------------------------------------- *)
+lemma ireduce_coeff_eqon (p q : wpoly) (base len plen : int) (z_ : W32.t) :
+     eqon p q (base      ) plen
+  => eqon p q (base + len) plen
+  => ireduce_coeff p base len plen z_ = ireduce_coeff q base len plen z_.
+proof.
+hint +listred.
+move=> eq1 eq2 @/ireduce_coeff /=.
+pose s1 := mkseq _ _; pose s2 := mkseq _ _.
+pose r1 := mkseq _ _; pose r2 := mkseq _ _.
+have [#] 2-> //: s1 = r1 /\ s2 = r2; split; apply: eq_in_mkseq => /=.
+- by move=> i *; apply/eq1 => /#.
+- by move=> i *; apply/eq2 => /#.
+qed.
+
+(* -------------------------------------------------------------------- *)
+lemma ireduce_coeff0 (p : wpoly) (base len : int) (z : W32.t) :
+  ireduce_coeff p base len 0 z = ([], []).
+proof. hint +listred. by rewrite /ireduce_coeff /=. qed.
+
+hint simplify ireduce_coeff0.
+
+(* -------------------------------------------------------------------- *)
+lemma ireduce_coeffD (p : wpoly) (base len plen1 plen2 : int) (z : W32.t) :
+     0 <= plen1
+  => 0 <= plen2
+  =>   ireduce_coeff p base len (plen1 + plen2) z
+     = pairxmap (++)
+         (ireduce_coeff p (base        ) len plen1 z)
+         (ireduce_coeff p (base + plen1) len plen2 z).
+proof.
+hint +listred.
+move=> *; rewrite /ireduce_coeff /= !mkseq_add ~-1:// /=.
+by rewrite !zip_cat ?size_mkseq ~-1:// !map_cat /=; smt().
+qed.
+
+(* -------------------------------------------------------------------- *)
+lemma ireduce_partial0 (p : wpoly) (base len : int) (z_ : W32.t) :
+  ireduce_partial p base len 0 z_ = p.
+proof. hint +listred. done. qed.
+
+(* -------------------------------------------------------------------- *)
+lemma eqexcept_ireduce_partial (p : wpoly) (base len plen : int) (z_ : W32.t) :
+  0 <= plen =>
+
+  forall i,
+       !(base       <= i < base       + plen)
+    => !(base + len <= i < base + len + plen)
+    => (ireduce_partial p base len plen z_).[i] = p.[i].
+proof.
+hint +listred.
+move=> ? i * @/ireduce_partial /=.
+case _: (ireduce_coeff p base len plen z_) => r s E /=.
+have [??] := ireduce_coeff_size _ _ _ _ _ _ _ // E.
+by rewrite !replace_eqexcept //#.
+qed.
+
+(* -------------------------------------------------------------------- *)
+lemma ireduce_partialD (p : wpoly) (base len plen1 plen2) (z_ : W32.t) :
+     0 <= plen1
+  => 0 <= plen2
+  => plen1 + plen2 <= len
+  =>   ireduce_partial p base len (plen1 + plen2) z_
+     = ireduce_partial (ireduce_partial p base len plen1 z_) (base + plen1) len plen2 z_.
+proof.
+hint +listred.
+move=> *; rewrite {1}/ireduce_partial /= ireduce_coeffD ~-1://.
+case _: (ireduce_coeff p _ _ plen1 _) => x1 y1 E1 /=.
+case _: (ireduce_coeff p _ _ plen2 _) => x2 y2 E2 /=.
+have [??] := ireduce_coeff_size _ _ _ _ _ _ _ // E1.
+have [??] := ireduce_coeff_size _ _ _ _ _ _ _ // E2.
+rewrite !replace_cat -[replace_ _ (base + len) y1]replace_swap 1:/#.
+(pose rp := ireduce_partial p _ _ _ _) => @/ireduce_partial.
+rewrite (_ : ireduce_coeff rp _ _ _ _ = (x2, y2)).
+- rewrite -E2 &(ireduce_coeff_eqon) /rp.
+  - by move=> i ?; rewrite eqexcept_ireduce_partial //#.
+  - by move=> i ?; rewrite eqexcept_ireduce_partial //#.
+by rewrite /= /rp /ireduce_partial E1 /#.
+qed.
+
+(* -------------------------------------------------------------------- *)
+op [opaque] ireduce (p : wpoly) (base len : int) (z_ : W32.t) : wpoly =
+  replace_ p base (ireduce_coeff_flatten p base len z_).
+
+(* -------------------------------------------------------------------- *)
+lemma ireduce_as_partial (p : wpoly) (base len : int) (z_ : W32.t) :
+  0 <= len => ireduce p base len z_ = ireduce_partial p base len len z_.
+proof.
+hint +listred.
+move=> *; rewrite /ireduce /ireduce_coeff_flatten /ireduce_partial /=.
+pose r := ireduce_coeff _ _ _ _ _; rewrite replace_cat.
+by rewrite ireduce_coeff_sizeL //#.
+qed.
+
+(* -------------------------------------------------------------------- *)
+op ireduce_n (p : wpoly) (base len : int) (zs : W32.t list) =
+  foldl
+    (fun p i => ireduce p (base + i * 2 * len) len (nth witness zs i))
+    p (range 0 (size zs)).
+
+(* -------------------------------------------------------------------- *)
+lemma ireduce_n0 (p : wpoly) (base len : int) :
+  ireduce_n p base len [] = p.
+proof. hint +listred. by rewrite /ireduce_n /= range_geq. qed.
+
+(* -------------------------------------------------------------------- *)
+lemma ireduce_seq1 (p : wpoly) (base len : int) (z : W32.t) :
+  ireduce_n p base len [z] = ireduce p base len z.
+proof. hint +listred. by rewrite /ireduce_n /= (rangeS 0). qed.
+
+(* -------------------------------------------------------------------- *)
+lemma ireduce_n_cat (p : wpoly) (base len : int) (zs1 zs2 : W32.t list) :
+    ireduce_n p base len (zs1 ++ zs2)
+  = ireduce_n (ireduce_n p base len zs1) (base + 2 * len * size zs1) len zs2.
+proof.
+hint +listred.
+rewrite {1}/ireduce_n size_cat (range_cat (size zs1)) ~-1:#smt:(size_ge0).
+rewrite (range_addl 0 _ (size zs1)) addrAC /= foldl_cat.
+rewrite foldl_map &(eq_in_foldl) //=; last first.
+- by apply/eq_in_foldl=> //= w i /mem_range rgi; smt(nth_cat).
+- by move=> w i /mem_range rgi; smt(nth_cat).
+qed.
+
+(* -------------------------------------------------------------------- *)
+lemma ireduce_rcons (p : wpoly) (base len : int) (zs : W32.t list) (z : W32.t) :
+    ireduce_n p base len (rcons zs z)
+  = ireduce (ireduce_n p base len zs) (base + 2 * len * size zs) len z.
+proof. hint +listred. by rewrite -cats1 ireduce_n_cat ireduce_seq1. qed.
+
+(* ==================================================================== *)
+(* ==================================================================== *)
+lemma ireduce_nE (p : wpoly) (base len : int) (zs : W32.t list) : 0 <= len =>
+    ireduce_n p base len zs
+  = replace_ p base (flatten (
+      mkseq
+      (fun i => ireduce_coeff_flatten p (base + 2 * i * len) len (nth witness zs i))
+      (size zs))).
+proof.
+hint +listred.
+move=> ?; elim: zs p base => /= [|z zs ih] p base.
+- by rewrite ireduce_n0.
+rewrite -cat1s ireduce_n_cat ireduce_seq1.
+rewrite [1+_]addzC mkseqSr 1:size_ge0 /(\o) /=.
+rewrite replace_cat -/(ireduce _ _ _ _).
+rewrite ireduce_coeff_flatten_size // ih; do 2! congr.
+apply: eq_in_mkseq=> i rgi /=; rewrite ifF 1:/#.
+rewrite mulrDr /= mulrDl addrA /ireduce_coeff_flatten.
+pose r1 := ireduce_coeff _ _ _ _ _.
+pose r2 := ireduce_coeff _ _ _ _ _.
+suff ->: r1 = r2 by done.
+rewrite &(ireduce_coeff_eqon) ireduce_as_partial //.
+- smt(eqexcept_ireduce_partial).
+- smt(eqexcept_ireduce_partial).
+qed.
+
+(* ==================================================================== *)
+(* Final scaling: every coefficient is montgomery-multiplied by 41978   *)
+(* (MONT^2/256 mod q), cf. the tail loop of invert_ntt_montgomery.      *)
+(* ==================================================================== *)
+op iscale (p : wpoly) : wpoly =
+  Array256.map (fun (c : W32.t) => mmr c (W32.of_int 41978)) p.
+
+(* Prefix-scaled polynomial: coefficients [0, n) already scaled.        *)
+op iscale_partial (p : wpoly) (n : int) : wpoly =
+  Array256.init
+    (fun j => if j < n then mmr p.[j] (W32.of_int 41978) else p.[j]).
+
+(* -------------------------------------------------------------------- *)
+lemma iscale_partial0 (p : wpoly) : iscale_partial p 0 = p.
+proof. hint +listred. by apply/Array256.ext_eq => x rgx; rewrite initiE //#. qed.
+
+(* -------------------------------------------------------------------- *)
+lemma iscale_partial_full (p : wpoly) : iscale_partial p 256 = iscale p.
+proof.
+hint +listred.
+by apply/Array256.ext_eq => x rgx; rewrite initiE //= mapiE //= ifT //#.
+qed.
+
+(* -------------------------------------------------------------------- *)
+lemma eqexcept_iscale_partial (p : wpoly) (n j : int) :
+  n <= j => (iscale_partial p n).[j] = p.[j].
+proof.
+hint +listred.
+move=> ?; case: (0 <= j < 256) => [rgj|?]; last by rewrite !get_out //#.
+by rewrite initiE //= ifF //#.
+qed.
+
+(* -------------------------------------------------------------------- *)
+lemma iscale_partialS (p : wpoly) (n : int) :
+     0 <= n
+  => n + 8 <= 256
+  =>   iscale_partial p (n + 8)
+     = replace_ (iscale_partial p n) n
+         (mkseq (fun k => mmr p.[n + k] (W32.of_int 41978)) 8).
+proof.
+hint +listred.
+move=> ge0n hle; apply/Array256.ext_eq => x rgx.
+rewrite initiE //= /replace_ filliE //=.
+case: (n <= x < n + 8) => hx; first by smt().
+by rewrite initiE //= /#.
 qed.
