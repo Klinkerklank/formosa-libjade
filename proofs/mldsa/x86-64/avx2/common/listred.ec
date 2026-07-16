@@ -12,6 +12,8 @@
 (* -------------------------------------------------------------------- *)
 require import AllCore List.
 
+from Jasmin require import JUtils.
+
 (* -------------------------------------------------------------------- *)
 hint simplify in listred : size_map, size_nseq.
 hint simplify in listred : size_mkseq.
@@ -19,3 +21,4 @@ hint simplify in listred : nth_mkseq, nth_nseq.
 hint simplify in listred : flatten_cons, flatten_nil.
 hint simplify in listred : cat0s, cats0.
 hint simplify in listred : mkseqSr_minus, mkseq0.
+hint simplify in listred : nseq0, nseqS_minus.

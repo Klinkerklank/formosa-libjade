@@ -58,32 +58,26 @@ proof. by rewrite /LAYER_5_ZETAS. qed.
 (* -------------------------------------------------------------------- *)
 section.
 hint simplify bs2int_nil, bs2int_cons.
-hint simplify rev_nil, rev_cons.
-hint simplify int2bs0, int2bs_cons.
-hint simplify nseq0, nseqS_minus.
-hint simplify b2i1, b2i0.
-hint simplify dvdzE.
-hint simplify mkseqSr_minus, mkseq0.
 
 op zeta7 : int = 25847.
 
 lemma zeta_L7E : zetaL 7 = [zeta7].
-proof. by rewrite /zetaL; cbv delta. qed.
+proof. by with hint +listred (rewrite /zetaL; cbv delta). qed.
 
 op zeta6L : int = -2608894.
 op zeta6R : int = - 518909.
 
 lemma zeta_L6E : zetaL 6 = [zeta6L; zeta6R].
-proof. by rewrite /zetaL; cbv delta. qed.
+proof. by with hint +listred (rewrite /zetaL; cbv delta). qed.
 
 lemma zeta_L5E : zetaL 5 = [237124; -777960; -876248; 466468].
-proof. by rewrite /zetaL; cbv delta. qed.
+proof. by with  hint +listred (rewrite /zetaL; cbv delta). qed.
 
 lemma zeta_L4E : zetaL 4 = [
   1826347;  2353451; -359251; -2091905;
   3119733; -2884855;  3111497; 2680103
 ].
-proof. by rewrite /zetaL; cbv delta. qed.
+proof. by with hint +listred (rewrite /zetaL; cbv delta). qed.
 
 lemma zeta_L3E : zetaL 3 = [
    2725464;  1024112; -1079900;  3585928;
@@ -91,7 +85,7 @@ lemma zeta_L3E : zetaL 3 = [
   -2118186; -3859737; -1399561; -3277672;
    1757237; -  19422;  4010497;   280005
 ].
-proof. by rewrite /zetaL; cbv delta. qed.
+proof. by with hint +listred (rewrite /zetaL; cbv delta). qed.
 
 lemma zeta_L2E : zetaL 2 = [
    2706023;    95776; 3077325;  3530437; -1661693; -3592148; -2537516;  3915439;
@@ -99,7 +93,7 @@ lemma zeta_L2E : zetaL 2 = [
   -1699267; -1643818; 3505694; -3821735;  3507263; -2140649; -1600420;  3699596;
     811944;   531354;  954230;  3881043;  3900724; -2556880;  2071892; -2797779
 ].
-proof. by rewrite /zetaL; cbv delta. qed.
+proof. by with hint +listred (rewrite /zetaL; cbv delta). qed.
 
 lemma zeta_L1E : zetaL 1 = [
   -3930395; -1528703; -3677745; -3041255; -1452451;  3475950;  2176455; -1585221;
@@ -111,7 +105,7 @@ lemma zeta_L1E : zetaL 1 = [
     189548; -3553272;  3159746; -1851402; -2409325; - 177440;  1315589;  1341330;
    1285669; -1584928; - 812732; -1439742; -3019102; -3881060; -3628969;  3839961
 ].
-proof. by rewrite /zetaL; cbv delta. qed.
+proof. by with hint +listred (rewrite /zetaL; cbv delta). qed.
 
 lemma zeta_L0E : zetaL 0 = [
    2091667;  3407706;  2316500;  3817976; -3342478;  2244091; -2446433; -3562462;
@@ -131,17 +125,17 @@ lemma zeta_L0E : zetaL 0 = [
   -2939036; -2235985; - 420899; -2286327;   183443; - 976891;  1612842; -3545687;
   - 554416;  3919660; -  48306; -1362209;  3937738;  1400424; - 846154;  1976782
 ].
-proof. by rewrite /zetaL; cbv delta. qed.
+proof. by with hint +listred (rewrite /zetaL; cbv delta). qed.
 
 lemma zeta_L5_AVX2 : lAYER_5_ZETAS =
   Array4.of_list
     witness
     (List.map (fun wi => (W8u32.pack8 (nseq 8 (W32.of_int wi)))) (zetaL 5)).
 proof.                 (* FIXME: should be done by pure computation *)
-rewrite zeta_L5E /=; do! congr;
+with hint +listred (rewrite zeta_L5E /=; congr*;
   apply: W8u32.wordP => i /(mem_range 0 8) @/range;
   rewrite -iotaredE /= => [#|] -> /=;
-  by rewrite of_int_bits32_div.
+  by rewrite of_int_bits32_div).
 qed.
 
 lemma zeta_L4_AVX2 : lAYER_4_ZETAS =
@@ -149,10 +143,10 @@ lemma zeta_L4_AVX2 : lAYER_4_ZETAS =
     witness
     (List.map (fun wi => (W8u32.pack8 (nseq 8 (W32.of_int wi)))) (zetaL 4)).
 proof.                 (* FIXME: should be done by pure computation *)
-rewrite zeta_L4E /=; do! congr;
+with hint +listred (rewrite zeta_L4E /=; congr*;
   apply: W8u32.wordP => i /(mem_range 0 8) @/range;
   rewrite -iotaredE /= => [#|] -> /=;
-  by rewrite of_int_bits32_div.
+  by rewrite of_int_bits32_div).
 qed.
 
 lemma zeta_L3_AVX2 : lAYER_3_ZETAS =
@@ -160,10 +154,10 @@ lemma zeta_L3_AVX2 : lAYER_3_ZETAS =
     witness
     (List.map (fun wi => (W8u32.pack8 (nseq 8 (W32.of_int wi)))) (zetaL 3)).
 proof.                 (* FIXME: should be done by pure computation *)
-rewrite zeta_L3E /=; do! congr;
+with hint +listred (rewrite zeta_L3E /=; congr*;
   apply: W8u32.wordP => i /(mem_range 0 8) @/range;
   rewrite -iotaredE /= => [#|] -> /=;
-  by rewrite of_int_bits32_div.
+  by rewrite of_int_bits32_div).
 qed.
 
 lemma zeta_L2_AVX2 : lAYER_2_ZETAS =
@@ -176,10 +170,10 @@ lemma zeta_L2_AVX2 : lAYER_2_ZETAS =
        ])
        (map topair (chunk 2 (zetaL 2)))).
 proof.
-rewrite zeta_L2E /=; cbv delta; do! congr;
+with hint +listred (rewrite zeta_L2E /=; cbv delta; congr*;
   apply: W8u32.wordP => i /(mem_range 0 8) @/range;
   rewrite -iotaredE /= => [#|] -> /=;
-  by rewrite of_int_bits32_div.
+  by rewrite of_int_bits32_div).
 qed.
 
 op perm1L = [0; 2; 1; 3].
@@ -195,10 +189,10 @@ lemma zeta_L1_AVX2 : lAYER_1_ZETAS =
          (fun ws => map (fun i => nth witness ws i) perm1L)
          (chunk 4 (zetaL 1)))).
 proof.
-rewrite zeta_L1E /=; cbv delta; do !congr;
+with hint +listred (rewrite zeta_L1E /=; cbv delta; congr*;
   apply: W8u32.wordP => i /(mem_range 0 8) @/range;
   rewrite -iotaredE /= => [#|] -> /=;
-  by rewrite of_int_bits32_div /=.
+  by rewrite of_int_bits32_div).
 qed.
 
 op perm0L = [0; 1; 4; 5; 2; 3; 6; 7].
@@ -212,10 +206,10 @@ lemma zeta_L0_AVX2 : lAYER_0_ZETAS =
         (fun ws => map (fun i => nth witness ws i) perm0L)
         (chunk 8 (zetaL 0)))).
 proof.
-rewrite zeta_L0E /=; cbv delta; do !congr;
+with hint +listred (rewrite zeta_L0E /=; cbv delta; congr*;
   apply: W8u32.wordP => i /(mem_range 0 8) @/range;
   rewrite -iotaredE /= => [#|] -> /=;
-  by rewrite of_int_bits32_div.
+  by rewrite of_int_bits32_div).
 qed.
 
 end section.
@@ -245,7 +239,6 @@ hint simplify size_zeta_L3.
 hint simplify size_zeta_L4.
 hint simplify size_zeta_L5.
 
-(* ==================================================================== *)
 (* ==================================================================== *)
 (* Per-layer twiddle lists, in butterfly order, taken directly from the *)
 (* implementation tables zETAS_TO_INVERT_LAYER_k.                       *)
@@ -358,8 +351,6 @@ lemma size_flatten_bl0 (s : W256.t list) :
 proof. hint +listred. by elim: s => [|x s ih] //=; rewrite size_cat ih /perm0L /= /#. qed.
 
 (* -------------------------------------------------------------------- *)
-
-(* -------------------------------------------------------------------- *)
 lemma size_flatten_bl1 (s : W256.t list) :
   size (flatten (map
     (fun (w : W256.t) => map (fun m => w \bits32 (2 * m)) perm1L) s))
@@ -367,13 +358,8 @@ lemma size_flatten_bl1 (s : W256.t list) :
 proof. hint +listred. by elim: s => [|x s ih] //=; rewrite size_cat ih /perm1L /= /#. qed.
 
 (* -------------------------------------------------------------------- *)
-
-
-(* -------------------------------------------------------------------- *)
 lemma size_flatten_bl2 (s : W256.t list) :
   size (flatten (map
     (fun (w : W256.t) => [w \bits32 0; w \bits32 4]) s))
   = 2 * size s.
 proof. hint +listred. by elim: s => [|x s ih] //=; rewrite ih /#. qed.
-
-(* -------------------------------------------------------------------- *)

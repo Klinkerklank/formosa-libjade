@@ -683,3 +683,4 @@ rewrite wpoly_set256_aligned 1:/# /=.
 rewrite (_ : 4 * n_ %/ 4 = n_) 1:/# /replace_.
 apply fill_congr => //= i0 rgi.
 by rewrite pack8_bits32E 1:/#; smt().
+qed.
