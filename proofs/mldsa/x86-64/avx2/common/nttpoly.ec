@@ -23,7 +23,7 @@
 *)
 
 (* ==================================================================== *)
-require import AllCore List Ring IntDiv StdOrder StdBigop.
+require import AllCore List Ring IntDiv BitEncoding StdOrder StdBigop.
 (*---*) import Bigint BIA IntOrder.
 
 (* -------------------------------------------------------------------- *)
@@ -326,4 +326,318 @@ have -> : mkseq
   have -> : i = 0 by smt().
   by rewrite ifT // /#.
 by rewrite polyL1 pevalC.
+qed.
+
+(* ==================================================================== *)
+(* The ML-DSA CRS instance (M3): the basis elements are products of     *)
+(* monomials with globally distinct roots, and their product is         *)
+(* X^256 + 1                                                            *)
+(* ==================================================================== *)
+(* the leaf roots under block (k, j) *)
+op leafroots (k j : int) : Zq.zmod list =
+  mkseq (fun t => Zq.ZModpRing.exp zZ (E 0 (j * 2^k + t))) (2^k).
+
+(* zZ facts, bridged from the int level *)
+lemma zZ_exp_cgr (e1 e2 : int) :
+  0 <= e1 => 0 <= e2 => e1 %% 512 = e2 %% 512 =>
+  Zq.ZModpRing.exp zZ e1 = Zq.ZModpRing.exp zZ e2.
+proof.
+move=> ge1 ge2 hcgr.
+rewrite -(inzmod_zpw e1) // -(inzmod_zpw e2) //.
+by rewrite (zpw_cgr_exp e1 e2).
+qed.
+
+lemma inzmod1 : Zq.inzmod 1 = Zq.one.
+proof.
+apply Zq.asint_inj.
+rewrite Zq.inzmodK Zq.oneE.
+by rewrite pmod_small //; smt(gt0_q lt_q_2p23).
+qed.
+
+lemma zZ_256 : Zq.ZModpRing.exp zZ 256 = - Zq.one.
+proof.
+rewrite -(inzmod_zpw 256) //.
+have -> : Zq.inzmod (zpw 256) = Zq.inzmod (-1).
+- by rewrite -Zq.eq_inzmod zpw_256.
+by rewrite Zq.inzmodN inzmod1.
+qed.
+
+lemma zZ_512 : Zq.ZModpRing.exp zZ 512 = Zq.one.
+proof.
+by rewrite -(inzmod_zpw 512) //.
+qed.
+
+lemma zZ_oppE (e : int) : 0 <= e =>
+  Zq.ZModpRing.exp zZ (e + 256) = - Zq.ZModpRing.exp zZ e.
+proof.
+move=> ge0e.
+rewrite Zq.ZModpRing.exprD_nneg 1:// 1://.
+by rewrite zZ_256 Zq.ZModpRing.mulrN1.
+qed.
+
+(* one split of the CRT tree, as a polynomial identity *)
+lemma basis_split (k j : int) : 0 <= k < 8 => 0 <= j < 2^(7-k) =>
+  basis (k+1) j = basis k (2*j) * basis k (2*j+1).
+proof.
+move=> rgk rgj.
+have e8k : 2^(8-k) = 2 * 2^(7-k).
+- by rewrite (: 8 - k = (7-k)+1) 1:/# exprS 1:/#.
+have rg2j : 0 <= 2*j < 2^(8-k) by smt().
+have ge0E : 0 <= E k (2*j) by smt(E_range).
+rewrite /basis (E_odd k j) //.
+rewrite (zZ_oppE (E k (2*j))) //.
+have -> : Zq.ZModpRing.exp zZ (E (k+1) j)
+        = Zq.ZModpRing.exp zZ (E k (2*j)) * Zq.ZModpRing.exp zZ (E k (2*j)).
+- rewrite -Zq.ZModpRing.exprD_nneg 1,2://.
+  apply zZ_exp_cgr; 1,2: smt(E_range).
+  by rewrite (: E k (2*j) + E k (2*j) = 2 * E k (2*j)) 1:/# E_double.
+rewrite /xnp.
+have eSk : 2^(k+1) = 2^k + 2^k by rewrite exprS 1:/# /#.
+rewrite eSk PolyComRing.exprD_nneg 1,2:#smt:(expr_ge0).
+pose A := PolyComRing.exp X (2^k).
+pose w := Zq.ZModpRing.exp zZ (E k (2*j)).
+rewrite polyCN PolyComRing.opprK.
+rewrite PolyComRing.mulrDr !PolyComRing.mulrBl.
+rewrite polyCM.
+rewrite (PolyComRing.mulrC (polyC w) A).
+by rewrite PolyComRing.addrA PolyComRing.subrK.
+qed.
+
+(* the basis elements are products of monomials over the leaf roots *)
+lemma basis_leaves (k j : int) : 0 <= k <= 8 => 0 <= j < 2^(8-k) =>
+  basis k j = mprod (leafroots k j).
+proof.
+have main : forall kk, 0 <= kk <= 8 => forall jj, 0 <= jj < 2^(8-kk) =>
+  basis kk jj = mprod (leafroots kk jj).
+- elim/natind => [{k j} k le0k | {k j} k ge0k ih] rgk j rgj.
+  + have ->> : k = 0 by smt().
+    rewrite /leafroots.
+    have -> : mkseq (fun t => Zq.ZModpRing.exp zZ (E 0 (j * 2^0 + t))) (2^0)
+            = [Zq.ZModpRing.exp zZ (E 0 j)].
+    * apply (eq_from_nth witness).
+      - by rewrite size_mkseq /=.
+      move=> i; rewrite size_mkseq /= => rgi.
+      rewrite nth_mkseq 1:/# /=.
+      have -> : i = 0 by smt().
+      by rewrite ifT // /#.
+    rewrite mprod_cons mprod_nil PolyComRing.mulr1.
+    by rewrite /basis /xnp /= PolyComRing.expr1.
+  have rgk8 : 0 <= k < 8 by smt().
+  have e8k : 2^(8-k) = 2 * 2^(7-k).
+  + by rewrite (: 8 - k = (7-k)+1) 1:/# exprS 1:/#.
+  have rgj7 : 0 <= j < 2^(7-k) by move: rgj; rewrite (: 8 - (k+1) = 7 - k) 1:/#.
+  rewrite basis_split //.
+  rewrite (ih _ (2*j)) 1:/# 1:/#.
+  rewrite (ih _ (2*j+1)) 1:/# 1:/#.
+  rewrite -mprod_cat.
+  congr.
+  rewrite /leafroots.
+  have eSk : 2^(k+1) = 2^k + 2^k by rewrite exprS 1:/# /#.
+  rewrite eSk mkseq_add 1,2:#smt:(expr_ge0).
+  congr.
+  + apply eq_in_mkseq => t rgt /=.
+    by rewrite (: j * (2^k + 2^k) + t = 2*j * 2^k + t) 1:/#.
+  apply eq_in_mkseq => t rgt /=.
+  by rewrite (: j * (2^k + 2^k) + (2^k + t) = (2*j+1) * 2^k + t) 1:/#.
+move=> rgk rgj.
+by apply (main k rgk j rgj).
+qed.
+
+(* the root of the tree is X^256 + 1 *)
+lemma basisX256 : basis 8 0 = PolyComRing.exp X 256 + poly1.
+proof.
+rewrite /basis /xnp /=.
+have -> : E 8 0 = 256 by rewrite /E.
+by rewrite zZ_256 polyCN PolyComRing.opprK.
+qed.
+
+(* ==================================================================== *)
+(* Distinctness of the leaf roots                                       *)
+(* ==================================================================== *)
+lemma bitrev8_invol (x : int) : 0 <= x < 256 => bitrev8 (bitrev8 x) = x.
+proof.
+move=> rgx.
+rewrite /bitrev8.
+have -> : BS2Int.int2bs 8 (BS2Int.bs2int (rev (BS2Int.int2bs 8 x)))
+        = rev (BS2Int.int2bs 8 x).
+- have := BS2Int.bs2intK (rev (BS2Int.int2bs 8 x)).
+  by rewrite size_rev BS2Int.size_int2bs /=.
+rewrite revK.
+by rewrite BS2Int.int2bsK // /=.
+qed.
+
+lemma E0_inj (j1 j2 : int) :
+  0 <= j1 < 256 => 0 <= j2 < 256 => E 0 j1 = E 0 j2 => j1 = j2.
+proof.
+move=> rg1 rg2.
+rewrite /E !ifF 1,2:// => heq.
+have hpar : j1 %% 2 = j2 %% 2 by smt(bitrev8_rg).
+move: heq; rewrite /= => heq.
+have hbr : bitrev8 (j1 %/ 2 + 128) = bitrev8 (j2 %/ 2 + 128) by smt(bitrev8_rg).
+have h2 : bitrev8 (bitrev8 (j1 %/ 2 + 128)) = bitrev8 (bitrev8 (j2 %/ 2 + 128)).
+- by rewrite hbr.
+have e1 : bitrev8 (bitrev8 (j1 %/ 2 + 128)) = j1 %/ 2 + 128.
+- by apply bitrev8_invol; smt().
+have e2 : bitrev8 (bitrev8 (j2 %/ 2 + 128)) = j2 %/ 2 + 128.
+- by apply bitrev8_invol; smt().
+by smt().
+qed.
+
+(* odd-part decomposition *)
+lemma odd_part (d : int) : 0 < d =>
+  exists s u, 0 <= s /\ 0 < u /\ u %% 2 = 1 /\ d = 2^s * u.
+proof.
+have h2d : forall n, 0 <= n => n < 2^n.
+- elim/natind => [n le0n ge0n | n ge0n ihn]; 1: smt(expr_gt0).
+  have e : 2^(n+1) = 2 * 2^n by rewrite exprS 1:/#.
+  by smt(expr_gt0).
+have main : forall K, 0 <= K => forall dd, 0 < dd < 2^K =>
+  exists s u, 0 <= s /\ 0 < u /\ u %% 2 = 1 /\ dd = 2^s * u.
+- elim/natind => [{d} K le0K | {d} K ge0K ih] rgK d rgd.
+  + have ->> : K = 0 by smt().
+    by move: rgd => /= /#.
+  case (d %% 2 = 1) => hpar.
+  + exists 0 d.
+    by move: rgd => /=; smt().
+  have eS : 2^(K+1) = 2 * 2^K by rewrite exprS 1:/#.
+  have hrec : 0 < d %/ 2 < 2^K by smt().
+  have hih := ih ge0K (d %/ 2) hrec.
+  case: hih => s u [ge0s [gt0u [hu hdu]]].
+  exists (s+1) u.
+  have eS2 : 2^(s+1) = 2 * 2^s by rewrite exprS 1:/#.
+  by smt().
+move=> gt0d.
+apply (main d _ d _); 1: smt().
+split; 1: smt().
+move=> _.
+by apply h2d; smt().
+qed.
+
+(* zeta has no nontrivial 512-th "sub-root" of unity: for 0 < d < 512,
+   zZ^d <> 1 -- by the odd-part trick, (zZ^(2^8))^odd = -1 <> 1 *)
+lemma zZ_pow_neq1 (d : int) : 0 < d < 512 =>
+  Zq.ZModpRing.exp zZ d <> Zq.one.
+proof.
+move=> rgd.
+have hop := odd_part d _; 1: smt().
+case: hop => s u [ge0s [gt0u [hodd hd]]].
+have hs : s <= 8.
+- case (9 <= s) => hge; last by smt().
+  have h9 : 2^9 <= 2^s by apply IntOrder.ler_weexpn2l => /#.
+  have e9 : 2^9 = 512 by rewrite /=.
+  have hle : 2^s <= d.
+  + rewrite hd.
+    have := IntOrder.ler_pmul2l (2^s) _ 1 u; 1: smt(expr_gt0).
+    by smt().
+  by smt().
+apply /negP => heq1.
+have e1 : Zq.ZModpRing.exp zZ (d * 2^(8-s)) = Zq.one.
+- rewrite Zq.ZModpRing.exprM heq1.
+  by rewrite Zq.ZModpRing.expr1z.
+have e2 : Zq.ZModpRing.exp zZ (d * 2^(8-s)) = - Zq.one.
+- have -> : d * 2^(8-s) = 256 * u.
+  + rewrite hd (: 2^s * u * 2^(8-s) = 2^s * 2^(8-s) * u) 1:/#.
+    rewrite -exprD_nneg 1:// 1:/#.
+    by rewrite (: s + (8 - s) = 8) 1:/# /=.
+  rewrite Zq.ZModpRing.exprM zZ_256.
+  (* (- one)^u = - one for odd u *)
+  have -> : u = 2 * (u %/ 2) + 1 by smt().
+  rewrite Zq.ZModpRing.exprD_nneg 1:/# 1://.
+  rewrite Zq.ZModpRing.expr1 (mulzC 2) Zq.ZModpRing.exprM.
+  rewrite -Zq.ZModpRing.exprM (mulzC (u %/ 2) 2) Zq.ZModpRing.exprM.
+  have -> : Zq.ZModpRing.exp (- Zq.one) 2 = Zq.one.
+  + by rewrite Zq.ZModpRing.expr2 Zq.ZModpRing.mulrNN Zq.ZModpRing.mul1r.
+  by rewrite Zq.ZModpRing.expr1z Zq.ZModpRing.mul1r.
+(* impossible: 1 = q - 1 would give q = 2 *)
+move: e1; rewrite e2 => heq.
+have : Zq.asint (- Zq.one) = Zq.asint Zq.one by rewrite heq.
+rewrite Zq.oneE Zq.oppE Zq.oneE.
+by rewrite /q /=.
+qed.
+
+lemma zZ_exp_inj (e1 e2 : int) :
+  0 <= e1 < 512 => 0 <= e2 < 512 =>
+  Zq.ZModpRing.exp zZ e1 = Zq.ZModpRing.exp zZ e2 => e1 = e2.
+proof.
+have main : forall e1 e2, 0 <= e1 < 512 => 0 <= e2 < 512 => e1 <= e2 =>
+  Zq.ZModpRing.exp zZ e1 = Zq.ZModpRing.exp zZ e2 => e1 = e2.
+- move=> f1 f2 rg1 rg2 hle heq.
+  case (f1 = f2) => // hne.
+  have hnz : Zq.ZModpRing.exp zZ f1 <> Zq.zero.
+  + apply /negP => h0.
+    have h512 : Zq.ZModpRing.exp zZ 512 = Zq.zero.
+    * have -> : 512 = f1 + (512 - f1) by smt().
+      rewrite Zq.ZModpRing.exprD_nneg 1:/# 1:/#.
+      by rewrite h0 Zq.ZModpRing.mul0r.
+    have := zZ_512.
+    rewrite h512 => h01.
+    have := Zq.ZModpRing.oner_neq0.
+    by rewrite -h01.
+  have hsplit : Zq.ZModpRing.exp zZ f2
+              = Zq.ZModpRing.exp zZ f1 * Zq.ZModpRing.exp zZ (f2 - f1).
+  + have {1}-> : f2 = f1 + (f2 - f1) by ring.
+    by rewrite Zq.ZModpRing.exprD_nneg 1:/# 1:/#.
+  have hzero : Zq.ZModpRing.exp zZ f1
+               * (Zq.one - Zq.ZModpRing.exp zZ (f2 - f1)) = Zq.zero.
+  + rewrite Zq.ZModpRing.mulrBr Zq.ZModpRing.mulr1.
+    by rewrite -hsplit heq Zq.ZModpRing.subrr.
+  move: hzero.
+  rewrite Zq.ZModpField.mulf_eq0.
+  case=> [h0|hz]; 1: by smt().
+  have h1 : Zq.ZModpRing.exp zZ (f2 - f1) = Zq.one.
+  + by smt(@Zq.ZModpRing).
+  have := zZ_pow_neq1 (f2 - f1) _; 1: smt().
+  by rewrite h1.
+move=> rg1 rg2 heq.
+case (e1 <= e2) => hle.
+- by apply main.
+have := main e2 e1 rg2 rg1 _ _; 1,2: smt().
+by smt().
+qed.
+
+lemma uniq_leafroots : uniq (leafroots 8 0).
+proof.
+rewrite /leafroots /mkseq.
+rewrite map_inj_in_uniq ?iota_uniq //.
+move=> x y /mem_iota hx /mem_iota hy /= heq.
+have hE : E 0 x = E 0 y.
+- apply zZ_exp_inj => //; 1,2: smt(E_range).
+apply E0_inj.
+- by move: hx => /#.
+- by move: hy => /#.
+by apply hE.
+qed.
+
+(* ==================================================================== *)
+(* The gluing corollary: congruent on all 256 leaves =>                 *)
+(* congruent modulo X^256 + 1                                           *)
+(* ==================================================================== *)
+lemma peqm_1 (u v : poly) : peqm poly1 u v.
+proof.
+by exists (u - v); rewrite PolyComRing.mulr1.
+qed.
+
+lemma leaf_glue (u v : poly) :
+  (forall j, 0 <= j < 256 => peqm (basis 0 j) u v) =>
+  peqm (PolyComRing.exp X 256 + poly1) u v.
+proof.
+move=> hleaf.
+have h : peqm (mprod (leafroots 8 0) * poly1) u v.
+- apply peqm_glue.
+  + by apply uniq_leafroots.
+  + move=> r hr.
+    rewrite pevalC.
+    by apply Zq.ZModpRing.oner_neq0.
+  + move=> r /mkseqP [jj [rgj ->]] /=.
+    have rgj' : 0 <= jj < 256 by move: rgj => /#.
+    have hj := hleaf jj rgj'.
+    apply (peqm_root (basis 0 jj)) => //.
+    rewrite /basis /xnp /= PolyComRing.expr1.
+    rewrite pevalB pevalX pevalC.
+    by rewrite Zq.ZModpRing.subrr.
+  by apply peqm_1.
+move: h.
+rewrite PolyComRing.mulr1.
+rewrite -(basis_leaves 8 0) 1:// 1:/#.
+by rewrite basisX256.
 qed.
