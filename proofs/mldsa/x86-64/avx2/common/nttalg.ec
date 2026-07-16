@@ -233,6 +233,61 @@ apply (IntOrder.ler_lt_trans 6285313).
 by rewrite /q.
 qed.
 
+(* bound with parametric input bounds: enough room in the 64-bit       *)
+(* product keeps the reduced output within [-q, q]                     *)
+lemma mmr_bnd2 (u z : W32.t) (B1 B2 : int) :
+  `|sval u| <= B1 => `|sval z| <= B2 => B1 * B2 <= 2^31 * q =>
+  `|sval (mmr u z)| <= q.
+proof.
+move=> hu hz hB.
+rewrite mmr_svalE.
+have habs : `|sval u * sval z| <= 2^31 * q.
+- rewrite normrM.
+  apply (IntOrder.ler_trans (B1 * B2)); 2: by apply hB.
+  apply IntOrder.ler_pmul.
+  - by apply IntOrder.normr_ge0.
+  - by apply IntOrder.normr_ge0.
+  - by apply hu.
+  by apply hz.
+have c3 : `|sval (W2u32.truncateu32 ((u \sx z) * W64.of_int 58728449))| <= 2147483648.
+- by have := W32.to_sint_cmp (W2u32.truncateu32 ((u \sx z) * W64.of_int 58728449)) => /= /#.
+have hq : `|q| = q.
+- by rewrite /q.
+have habsT : `|sval (W2u32.truncateu32 ((u \sx z) * W64.of_int 58728449)) * q|
+    <= 2147483648 * q.
+- rewrite normrM hq.
+  apply IntOrder.ler_pmul.
+  - by apply IntOrder.normr_ge0.
+  - by rewrite /q.
+  - by apply c3.
+  by done.
+have hDu : sval u * sval z
+    - sval (W2u32.truncateu32 ((u \sx z) * W64.of_int 58728449)) * q
+    <= 2^32 * q.
+- by move: habs habsT; rewrite /q /#.
+have hDl : -(2^32 * q)
+    <= sval u * sval z
+       - sval (W2u32.truncateu32 ((u \sx z) * W64.of_int 58728449)) * q.
+- by move: habs habsT; rewrite /q /#.
+have hup := leq_div2r (2^32)
+  (sval u * sval z - sval (W2u32.truncateu32 ((u \sx z) * W64.of_int 58728449)) * q)
+  (2^32 * q) hDu _.
+- by apply expr_ge0.
+have hdn := leq_div2r (2^32) (-(2^32 * q))
+  (sval u * sval z - sval (W2u32.truncateu32 ((u \sx z) * W64.of_int 58728449)) * q)
+  hDl _.
+- by apply expr_ge0.
+move: hup hdn.
+rewrite (: 2^32 * q %/ 2^32 = q) 1:/q 1://.
+rewrite (: (-(2^32 * q)) %/ 2^32 = -q) 1:/q 1://.
+move=> hup hdn.
+rewrite IntOrder.ler_norml.
+split.
+- by apply hdn.
+move=> _.
+by apply hup.
+qed.
+
 (* 2^32 is invertible mod q (q odd): cancellation *)
 lemma cgr_pow2_cancel (a b : int) :
   (2^32 * a) %% q = (2^32 * b) %% q => a %% q = b %% q.

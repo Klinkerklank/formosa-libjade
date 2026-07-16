@@ -868,3 +868,76 @@ apply peval_mul_glue => j rgj.
 rewrite leafinterp_evalP 1://.
 by apply (pwmul_evalP p1 p2 v1 v2).
 qed.
+
+(* ==================================================================== *)
+(* End-to-end: feeding the pointwise product through the code's         *)
+(* inverse NTT yields a representative of the product polynomial --     *)
+(* the Montgomery factors of pwmul (2^-32) and of the inverse NTT       *)
+(* (2^32) cancel exactly                                                *)
+(* ==================================================================== *)
+op wofp (u : poly) : wpoly =
+  Array256.init (fun i => W32.of_int (Zq.asint u.[i])).
+
+lemma pofw_wofp (u : poly) : deg u <= 256 => pofw (wofp u) = u.
+proof.
+move=> hdeg.
+rewrite /pofw /wofp.
+apply poly_eqP => i ge0i.
+rewrite polyLE.
+case (i < 256) => hcase.
+- rewrite nth_mkseq 1:/# /= initiE 1:/# /=.
+  rewrite W32.to_sintK_small.
+  - by smt(Zq.rg_asint).
+  by rewrite Zq.asintK.
+rewrite nth_default ?size_mkseq 1:/#.
+by rewrite gedeg_coeff 1:/#.
+qed.
+
+lemma cbnd_pwmul (v1 v2 : wpoly) (B1 B2 : int) :
+  cbnd v1 B1 => cbnd v2 B2 => B1 * B2 <= 2^31 * q =>
+  cbnd (pwmul v1 v2) q.
+proof.
+move=> h1 h2 hB i rgi.
+rewrite /pwmul initiE //=.
+apply (mmr_bnd2 _ _ B1 B2) => //.
+- by apply h1.
+by apply h2.
+qed.
+
+lemma intt_pwmul_polyP (p1 p2 v1 v2 : wpoly) (B1 B2 : int) :
+  cbnd v1 B1 => cbnd v2 B2 => B1 * B2 <= 2^31 * q =>
+  (forall j, 0 <= j < 256 =>
+     Zq.inzmod (sval v1.[j]) = peval (pofw p1) (Zq.ZModpRing.exp zZ (E 0 j))) =>
+  (forall j, 0 <= j < 256 =>
+     Zq.inzmod (sval v2.[j]) = peval (pofw p2) (Zq.ZModpRing.exp zZ (E 0 j))) =>
+  peqm (PolyComRing.exp X 256 + poly1)
+       (pofw (iscale (invtree (pwmul v1 v2) 8)))
+       (pofw p1 * pofw p2).
+proof.
+move=> hb1 hb2 hBB h1 h2.
+pose w := pwmul v1 v2.
+pose u' := leafinterp (fun j => Zq.inzmod (sval w.[j])).
+have hdeg : deg u' <= 256.
+- have := deg_interp (leafroots 8 0)
+    (fun r => (fun j => Zq.inzmod (sval w.[j])) (index r (leafroots 8 0)))
+    uniq_leafroots.
+  by rewrite size_leafroots /u' /leafinterp.
+have hev : forall j, 0 <= j < 256 =>
+  peval u' (Zq.ZModpRing.exp zZ (E 0 j)) = Zq.inzmod (sval w.[j]).
+- move=> j rgj.
+  by rewrite /u' leafinterp_evalP.
+have hbw : cbnd w q.
+- by apply (cbnd_pwmul v1 v2 B1 B2).
+have hevw : forall j, 0 <= j < 256 =>
+  Zq.inzmod (sval w.[j]) = peval (pofw (wofp u')) (Zq.ZModpRing.exp zZ (E 0 j)).
+- move=> j rgj.
+  by rewrite pofw_wofp 1:hdeg hev 1://.
+have heq := intt_poly_algP (wofp u') w q _ _ hbw hevw.
+- by done.
+- by rewrite /q.
+rewrite heq.
+apply peval_mul_glue => j rgj.
+rewrite pevalM pevalC pofw_wofp 1:hdeg hev 1://.
+rewrite -Zq.inzmodM.
+by apply (pwmul_evalP p1 p2 v1 v2).
+qed.
