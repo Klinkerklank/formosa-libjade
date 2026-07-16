@@ -714,3 +714,64 @@ move=> i rgi.
 rewrite Zq.eq_inzmod.
 by rewrite halg 1:// pofw_eval0.
 qed.
+
+(* ==================================================================== *)
+(* Ring-morphism properties: evaluation at the leaf roots is injective  *)
+(* on degree < 257, and pointwise products glue to the product modulo   *)
+(* X^256 + 1                                                            *)
+(* ==================================================================== *)
+lemma basis0E (j : int) :
+  basis 0 j = X - polyC (Zq.ZModpRing.exp zZ (E 0 j)).
+proof.
+by rewrite /basis /xnp /= PolyComRing.expr1.
+qed.
+
+lemma degX256 : deg (PolyComRing.exp X 256 + poly1) = 257.
+proof.
+have hX : deg (PolyComRing.exp X 256) = 257.
+- rewrite degXn_proper.
+  + by rewrite lcX; apply /Zq.ZModpField.lregP; apply Zq.ZModpRing.oner_neq0.
+  + by done.
+  by rewrite degX.
+by rewrite degDl hX // deg1.
+qed.
+
+lemma deg_pofw (a : wpoly) : deg (pofw a) <= 256.
+proof.
+rewrite /pofw.
+have := degL_le (mkseq (fun i => Zq.inzmod (sval a.[i])) 256).
+by rewrite size_mkseq.
+qed.
+
+(* injectivity of the evaluation map on representatives *)
+lemma peval_leaf_inj (u v : poly) :
+  deg u <= 256 => deg v <= 256 =>
+  (forall j, 0 <= j < 256 =>
+     peval u (Zq.ZModpRing.exp zZ (E 0 j))
+       = peval v (Zq.ZModpRing.exp zZ (E 0 j))) =>
+  u = v.
+proof.
+move=> hu hv hev.
+apply (peqm_deg_eq (PolyComRing.exp X 256 + poly1)).
+- by rewrite degX256 /#.
+- by rewrite degX256 /#.
+apply leaf_glue => j rgj.
+rewrite basis0E.
+by apply peqm_lin_root; apply hev.
+qed.
+
+(* the basemul theorem: pointwise products at the leaf roots represent  *)
+(* the product modulo X^256 + 1                                         *)
+lemma peval_mul_glue (w u v : poly) :
+  (forall j, 0 <= j < 256 =>
+     peval w (Zq.ZModpRing.exp zZ (E 0 j))
+       = peval u (Zq.ZModpRing.exp zZ (E 0 j))
+       * peval v (Zq.ZModpRing.exp zZ (E 0 j))) =>
+  peqm (PolyComRing.exp X 256 + poly1) w (u * v).
+proof.
+move=> hev.
+apply leaf_glue => j rgj.
+rewrite basis0E.
+apply peqm_lin_root.
+by rewrite pevalM hev.
+qed.

@@ -319,6 +319,40 @@ move=> [h eh] hroot.
 by rewrite eh pevalM hroot Zq.ZModpRing.mulr0.
 qed.
 
+(* equal evaluation gives congruence modulo the monomial at that point *)
+lemma peqm_lin_root (a : zmod) (p1 p2 : poly) :
+  peval p1 a = peval p2 a => peqm (X - polyC a) p1 p2.
+proof.
+move=> heq.
+have hroot : root (p1 - p2) a.
+- by rewrite pevalB heq Zq.ZModpRing.subrr.
+move/factor_theorem: hroot => [h eh].
+exists h.
+by rewrite eh PolyComRing.mulrC.
+qed.
+
+(* uniqueness: congruent polynomials of degree below the modulus are   *)
+(* equal (the "isomorphism" content of a CRS)                          *)
+lemma peqm_deg_eq (m p1 p2 : poly) :
+  deg p1 < deg m => deg p2 < deg m => peqm m p1 p2 => p1 = p2.
+proof.
+move=> h1 h2 [h eh].
+case (h = poly0) => [h0|hnz].
+- move: eh; rewrite h0 PolyComRing.mul0r => hsub.
+  by rewrite -PolyComRing.subr_eq0 hsub.
+have hm : m <> poly0.
+- by apply /negP => m0; move: h1; rewrite m0 deg0; smt(ge0_deg).
+have hdeg : deg (h * m) = deg h + deg m - 1.
+- apply degM_proper.
+  apply /negP => /Zq.ZModpField.mulf_eq0 [h0|h0].
+  + by move: hnz; rewrite -lc_eq0 h0.
+  + by move: hm; rewrite -lc_eq0 h0.
+have hlt : deg (p1 - p2) < deg m by smt(degB).
+move: hlt; rewrite eh hdeg.
+have : 1 <= deg h by rewrite deg_ge1.
+by smt().
+qed.
+
 (* ==================================================================== *)
 (* Products of monomials, root-based gluing                             *)
 (* ==================================================================== *)
