@@ -27,7 +27,7 @@ require import AllCore List Ring IntDiv BitEncoding StdOrder StdBigop.
 (*---*) import Bigint BIA IntOrder.
 
 (* -------------------------------------------------------------------- *)
-require import Nttlogspec Nttspec Nttzetas Nttalg Fnttalg.
+require import Nttlogspec Nttspec Nttzetas Nttalg Fnttalg Inttalg.
 require import Crspoly.
 (*---*) import Zq ZqP ZqP.BigCf.
 
@@ -660,4 +660,57 @@ rewrite hb.
 apply (peqm_mulm _ q).
 rewrite -hq -(basis_leaves 8 0) 1:// 1:/# basisX256.
 by apply h.
+qed.
+
+(* ==================================================================== *)
+(* Inverse restatement: the code's inverse output represents 2^32 * p   *)
+(* as an equality of polynomials                                        *)
+(* ==================================================================== *)
+lemma pofw_eval0 (p : wpoly) (j : int) :
+  0 <= j < 256 =>
+  peval (pofw p) (Zq.ZModpRing.exp zZ (E 0 j)) = Zq.inzmod (nttsum p 0 j 0).
+proof.
+move=> rgj.
+have hpm := pofw_nttsump p 0 j _ _; 1: done; 1: by move: rgj => /#.
+have hb : basis 0 j = X - polyC (Zq.ZModpRing.exp zZ (E 0 j)).
+- by rewrite /basis /xnp /= PolyComRing.expr1.
+move: hpm; rewrite hb => hpm.
+rewrite (peqm_lin_eval _ (nttsump p 0 j)) 1://.
+rewrite /nttsump /=.
+rewrite (: mkseq (fun t => Zq.inzmod (nttsum p 0 j t)) 1
+           = [Zq.inzmod (nttsum p 0 j 0)]) 1:mkseq1 1://.
+by rewrite polyL1 pevalC.
+qed.
+
+lemma intt_polyP (p v : wpoly) (B : int) :
+  q <= B => 2^8 * B < 2^31 => cbnd v B =>
+  (forall i, 0 <= i < 256 => sval v.[i] %% q = nttsum p 0 i 0 %% q) =>
+  pofw (iscale (invtree v 8)) = polyC (Zq.inzmod (2^32)) * pofw p.
+proof.
+move=> leqB hB hbnd hv.
+have [_ hs] := intt_ntt_alg p v B leqB hB hbnd hv.
+rewrite /pofw polyL_scale.
+apply poly_eqP => i ge0i.
+rewrite !polyLE.
+case (i < 256) => hcase.
+- rewrite !nth_mkseq 1,2:/# /=.
+  rewrite -Zq.inzmodM.
+  rewrite -Zq.eq_inzmod.
+  by rewrite hs 1:/#.
+by rewrite !nth_default ?size_mkseq 1,2:/#.
+qed.
+
+(* same, with the hypothesis in the algebraic view: v holds the         *)
+(* evaluations of pofw p at the 256 leaf roots                          *)
+lemma intt_poly_algP (p v : wpoly) (B : int) :
+  q <= B => 2^8 * B < 2^31 => cbnd v B =>
+  (forall j, 0 <= j < 256 =>
+     Zq.inzmod (sval v.[j]) = peval (pofw p) (Zq.ZModpRing.exp zZ (E 0 j))) =>
+  pofw (iscale (invtree v 8)) = polyC (Zq.inzmod (2^32)) * pofw p.
+proof.
+move=> leqB hB hbnd halg.
+apply (intt_polyP p v B) => //.
+move=> i rgi.
+rewrite Zq.eq_inzmod.
+by rewrite halg 1:// pofw_eval0.
 qed.
