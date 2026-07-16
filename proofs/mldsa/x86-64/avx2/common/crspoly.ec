@@ -474,3 +474,145 @@ move=> r hr.
 apply (peqm_root (mprod rs1)) => //.
 by apply mprod_root.
 qed.
+
+(* ==================================================================== *)
+(* Degrees of the monomial products                                     *)
+(* ==================================================================== *)
+lemma lc_XC (r : zmod) : lc (X - polyC r) = Zq.one.
+proof.
+rewrite (_ : X - polyC r = X + (- polyC r)) 1:// lcDl.
+- by rewrite degN; smt(degC_le degX).
+by rewrite lcX.
+qed.
+
+lemma deg_XC (r : zmod) : deg (X - polyC r) = 2.
+proof.
+rewrite (_ : X - polyC r = X + (- polyC r)) 1:// degDl.
+- by rewrite degN; smt(degC_le degX).
+by rewrite degX.
+qed.
+
+lemma deg_mprod (rs : zmod list) : deg (mprod rs) = 1 + size rs.
+proof.
+elim: rs => [|r rs ih].
+- by rewrite mprod_nil deg1.
+rewrite mprod_cons degM_proper.
+- rewrite lc_XC Zq.ZModpRing.mul1r.
+  apply /negP => h0.
+  have : mprod rs = poly0 by rewrite -lc_eq0 h0.
+  by rewrite -deg_eq0 ih; smt(size_ge0).
+by rewrite deg_XC ih /= /#.
+qed.
+
+lemma degC_mul_le (c : zmod) (p : poly) : deg (polyC c * p) <= deg p.
+proof.
+case (c = Zq.zero) => [->|hc].
+- by rewrite PolyComRing.mul0r deg0 ge0_deg.
+case (p = poly0) => [->|hp].
+- by rewrite PolyComRing.mulr0.
+rewrite degM_proper.
+- rewrite lcC.
+  apply /negP => /Zq.ZModpField.mulf_eq0 [h0|h0]; 1: by apply hc.
+  by move: hp; rewrite -lc_eq0 h0.
+by rewrite degC hc /= /#.
+qed.
+
+(* ==================================================================== *)
+(* Evaluation and degree of polynomial sums                             *)
+(* ==================================================================== *)
+lemma peval_big ['a] (P : 'a -> bool) (F : 'a -> poly) (s : 'a list) (a : zmod) :
+  peval (ZqP.BigPoly.PCA.big P F s) a
+    = ZqP.BigCf.BCA.big P (fun x => peval (F x) a) s.
+proof.
+elim: s => [|x s ih].
+- by rewrite ZqP.BigPoly.PCA.big_nil ZqP.BigCf.BCA.big_nil peval0.
+rewrite ZqP.BigPoly.PCA.big_cons ZqP.BigCf.BCA.big_cons.
+case (P x) => hP.
+- by rewrite pevalD ih.
+by apply ih.
+qed.
+
+lemma deg_big ['a] (P : 'a -> bool) (F : 'a -> poly) (s : 'a list) (n : int) :
+  0 <= n => (forall x, x \in s => P x => deg (F x) <= n) =>
+  deg (ZqP.BigPoly.PCA.big P F s) <= n.
+proof.
+move=> ge0n; elim: s => [|x s ih] hF.
+- by rewrite ZqP.BigPoly.PCA.big_nil deg0.
+rewrite ZqP.BigPoly.PCA.big_cons.
+case (P x) => hP; last first.
+- by apply ih; smt().
+have h1 : deg (F x) <= n by apply hF.
+have h2 : deg (ZqP.BigPoly.PCA.big P F s) <= n by apply ih; smt().
+by smt(degD).
+qed.
+
+(* ==================================================================== *)
+(* Lagrange interpolation over a uniq root list (the surjectivity half  *)
+(* of the CRS: any assignment of values at the roots is realized by a   *)
+(* polynomial of degree at most the number of roots)                    *)
+(* ==================================================================== *)
+op lag (rs : zmod list) (r : zmod) : poly =
+  polyC (Zq.inv (peval (mprod (rem r rs)) r)) * mprod (rem r rs).
+
+lemma lag_eval_same (rs : zmod list) (r : zmod) :
+  uniq rs => r \in rs => peval (lag rs r) r = Zq.one.
+proof.
+move=> hu hmem.
+rewrite /lag pevalM pevalC.
+apply Zq.ZModpField.mulVf.
+apply peval_mprod_out.
+rewrite (rem_filter r rs hu) mem_filter /predC1.
+by smt().
+qed.
+
+lemma lag_eval_other (rs : zmod list) (r r' : zmod) :
+  uniq rs => r' \in rs => r' <> r => peval (lag rs r) r' = Zq.zero.
+proof.
+move=> hu hm hne.
+rewrite /lag pevalM.
+rewrite (mprod_root (rem r rs) r').
+- rewrite (rem_filter r rs hu) mem_filter /predC1.
+  by smt().
+by rewrite Zq.ZModpRing.mulr0.
+qed.
+
+lemma deg_lag (rs : zmod list) (r : zmod) :
+  uniq rs => r \in rs => deg (lag rs r) <= size rs.
+proof.
+move=> hu hm.
+rewrite /lag.
+have := degC_mul_le (Zq.inv (peval (mprod (rem r rs)) r)) (mprod (rem r rs)).
+rewrite deg_mprod size_rem 1://.
+by smt().
+qed.
+
+op interp (rs : zmod list) (f : zmod -> zmod) : poly =
+  ZqP.BigPoly.PCA.big predT (fun r => polyC (f r) * lag rs r) rs.
+
+lemma interp_evalP (rs : zmod list) (f : zmod -> zmod) (r0 : zmod) :
+  uniq rs => r0 \in rs => peval (interp rs f) r0 = f r0.
+proof.
+move=> hu hm.
+rewrite /interp peval_big.
+rewrite (ZqP.BigCf.BCA.eq_big_perm _ _ _ _ (perm_to_rem _ _ hm)).
+rewrite ZqP.BigCf.BCA.big_cons /predT /=.
+rewrite pevalM pevalC lag_eval_same 1,2:// Zq.ZModpRing.mulr1.
+rewrite ZqP.BigCf.BCA.big1_seq /=.
+- move=> r hr.
+  have := hr; rewrite (rem_filter r0 rs hu) mem_filter /predC1 => -[hne hmem2].
+  rewrite /root pevalM pevalC (lag_eval_other rs r r0) 1:// 1:// 1:/#.
+  by rewrite Zq.ZModpRing.mulr0.
+by rewrite Zq.ZModpRing.addr0.
+qed.
+
+lemma deg_interp (rs : zmod list) (f : zmod -> zmod) :
+  uniq rs => deg (interp rs f) <= size rs.
+proof.
+move=> hu.
+rewrite /interp.
+apply deg_big; 1: smt(size_ge0).
+move=> r hr _.
+have h1 := degC_mul_le (f r) (lag rs r).
+have h2 := deg_lag rs r hu hr.
+by smt().
+qed.

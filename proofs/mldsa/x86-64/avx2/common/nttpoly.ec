@@ -809,3 +809,62 @@ have -> : Zq.inzmod (2^32 * sval ((pwmul v1 v2).[j]))
   by apply pwmul_cgr.
 by rewrite Zq.inzmodM h1 1:// h2 1://.
 qed.
+
+(* ==================================================================== *)
+(* Interpolation at the leaf roots (instance of the generic Lagrange    *)
+(* kit): any assignment of values at the 256 leaf roots is realized by  *)
+(* a polynomial of degree <= 256                                        *)
+(* ==================================================================== *)
+lemma size_leafroots : size (leafroots 8 0) = 256.
+proof.
+by rewrite /leafroots size_mkseq.
+qed.
+
+op leafinterp (f : int -> Zq.zmod) : poly =
+  interp (leafroots 8 0) (fun r => f (index r (leafroots 8 0))).
+
+lemma leafinterp_evalP (f : int -> Zq.zmod) (j : int) :
+  0 <= j < 256 =>
+  peval (leafinterp f) (Zq.ZModpRing.exp zZ (E 0 j)) = f j.
+proof.
+move=> rgj.
+have hmem : Zq.ZModpRing.exp zZ (E 0 j) \in leafroots 8 0.
+- rewrite /leafroots.
+  apply/mkseqP.
+  exists j => /=.
+  by smt().
+rewrite /leafinterp interp_evalP 1:uniq_leafroots 1:hmem /=.
+congr.
+have -> : Zq.ZModpRing.exp zZ (E 0 j) = nth witness (leafroots 8 0) j.
+- by rewrite /leafroots nth_mkseq 1:/# /=.
+by rewrite index_uniq 1:(size_leafroots) 1:/# 1:uniq_leafroots.
+qed.
+
+(* the interpolated representative of the pwmul output: a polynomial    *)
+(* of degree <= 256 whose leaf evaluations are the (2^32-scaled) output *)
+(* coefficients, and which is congruent to the product modulo X^256+1   *)
+lemma pwmul_reprP (p1 p2 v1 v2 : wpoly) :
+  (forall j, 0 <= j < 256 =>
+     Zq.inzmod (sval v1.[j]) = peval (pofw p1) (Zq.ZModpRing.exp zZ (E 0 j))) =>
+  (forall j, 0 <= j < 256 =>
+     Zq.inzmod (sval v2.[j]) = peval (pofw p2) (Zq.ZModpRing.exp zZ (E 0 j))) =>
+  exists (u : poly),
+       deg u <= 256
+    /\ (forall j, 0 <= j < 256 =>
+          peval u (Zq.ZModpRing.exp zZ (E 0 j))
+            = Zq.inzmod (2^32 * sval ((pwmul v1 v2).[j])))
+    /\ peqm (PolyComRing.exp X 256 + poly1) u (pofw p1 * pofw p2).
+proof.
+move=> h1 h2.
+exists (leafinterp (fun j => Zq.inzmod (2^32 * sval ((pwmul v1 v2).[j])))).
+do! split.
+- have := deg_interp (leafroots 8 0)
+    (fun r => (fun j => Zq.inzmod (2^32 * sval ((pwmul v1 v2).[j])))
+                (index r (leafroots 8 0))) uniq_leafroots.
+  by rewrite size_leafroots /leafinterp.
+- move=> j rgj.
+  by rewrite leafinterp_evalP.
+apply peval_mul_glue => j rgj.
+rewrite leafinterp_evalP 1://.
+by apply (pwmul_evalP p1 p2 v1 v2).
+qed.
