@@ -775,3 +775,37 @@ rewrite basis0E.
 apply peqm_lin_root.
 by rewrite pevalM hev.
 qed.
+
+(* ==================================================================== *)
+(* The pointwise (NTT-domain) multiplication of the code (pwmul, cf.    *)
+(* pointwise_montgomery_multiply_and_reduce) in the algebraic view      *)
+(* ==================================================================== *)
+lemma pwmul_cgr (a b : wpoly) (j : int) :
+  0 <= j < 256 =>
+  (2^32 * sval ((pwmul a b).[j])) %% q = (sval a.[j] * sval b.[j]) %% q.
+proof.
+move=> rgj.
+rewrite /pwmul initiE //=.
+by apply mmr_cgr.
+qed.
+
+(* on inputs holding the evaluations of pofw p1, pofw p2 at the leaf    *)
+(* roots, pwmul returns (2^-32 times) their pointwise products -- the   *)
+(* hypothesis shape consumed by peval_mul_glue                          *)
+lemma pwmul_evalP (p1 p2 v1 v2 : wpoly) :
+  (forall j, 0 <= j < 256 =>
+     Zq.inzmod (sval v1.[j]) = peval (pofw p1) (Zq.ZModpRing.exp zZ (E 0 j))) =>
+  (forall j, 0 <= j < 256 =>
+     Zq.inzmod (sval v2.[j]) = peval (pofw p2) (Zq.ZModpRing.exp zZ (E 0 j))) =>
+  forall j, 0 <= j < 256 =>
+    Zq.inzmod (2^32 * sval ((pwmul v1 v2).[j]))
+      = peval (pofw p1) (Zq.ZModpRing.exp zZ (E 0 j))
+      * peval (pofw p2) (Zq.ZModpRing.exp zZ (E 0 j)).
+proof.
+move=> h1 h2 j rgj.
+have -> : Zq.inzmod (2^32 * sval ((pwmul v1 v2).[j]))
+        = Zq.inzmod (sval v1.[j] * sval v2.[j]).
+- rewrite -Zq.eq_inzmod.
+  by apply pwmul_cgr.
+by rewrite Zq.inzmodM h1 1:// h2 1://.
+qed.

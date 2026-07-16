@@ -750,3 +750,51 @@ rewrite initiE //= /replace_ filliE //=.
 case: (n <= x < n + 8) => hx; first by smt().
 by rewrite initiE //= /#.
 qed.
+
+(* ==================================================================== *)
+(* Pointwise (NTT-domain) multiplication: every coefficient of the      *)
+(* product is the montgomery-multiplication of the matching             *)
+(* coefficients, cf. pointwise_montgomery_multiply_and_reduce.          *)
+(* ==================================================================== *)
+op pwmul (a b : wpoly) : wpoly =
+  Array256.init (fun j => mmr a.[j] b.[j]).
+
+(* Prefix-multiplied polynomial: coefficients [0, n) already written,   *)
+(* the rest still holding the destination's initial contents.           *)
+op pwmul_partial (a b t : wpoly) (n : int) : wpoly =
+  Array256.init (fun j => if j < n then mmr a.[j] b.[j] else t.[j]).
+
+(* -------------------------------------------------------------------- *)
+lemma pwmul_partial0 (a b t : wpoly) : pwmul_partial a b t 0 = t.
+proof. hint +listred. by apply/Array256.ext_eq => x rgx; rewrite initiE //#. qed.
+
+(* -------------------------------------------------------------------- *)
+lemma pwmul_partial_full (a b t : wpoly) : pwmul_partial a b t 256 = pwmul a b.
+proof.
+hint +listred.
+by apply/Array256.ext_eq => x rgx; rewrite !initiE //= ifT //#.
+qed.
+
+(* -------------------------------------------------------------------- *)
+lemma eqexcept_pwmul_partial (a b t : wpoly) (n j : int) :
+  n <= j => (pwmul_partial a b t n).[j] = t.[j].
+proof.
+hint +listred.
+move=> ?; case: (0 <= j < 256) => [rgj|?]; last by rewrite !get_out //#.
+by rewrite initiE //= ifF //#.
+qed.
+
+(* -------------------------------------------------------------------- *)
+lemma pwmul_partialS (a b t : wpoly) (n : int) :
+     0 <= n
+  => n + 8 <= 256
+  =>   pwmul_partial a b t (n + 8)
+     = replace_ (pwmul_partial a b t n) n
+         (mkseq (fun k => mmr a.[n + k] b.[n + k]) 8).
+proof.
+hint +listred.
+move=> ge0n hle; apply/Array256.ext_eq => x rgx.
+rewrite initiE //= /replace_ filliE //=.
+case: (n <= x < n + 8) => hx; first by smt().
+by rewrite initiE //= /#.
+qed.
