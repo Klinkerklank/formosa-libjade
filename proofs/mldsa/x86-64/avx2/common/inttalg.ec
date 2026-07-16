@@ -3,7 +3,7 @@
 
   The code-level proof (`Inttcorrect`) shows that the AVX2 procedure
   computes `iscale (invtree p 8)`.  This theory gives those operators
-  their meaning, as the inverse of the CRT tree of `Nttalg`:
+  their meaning, as the inverse of the CRT tree of `Fnttalg`:
 
   One `ireduce p base len z` is one Gentleman-Sande merge: from the two
   residues a = f mod (X^len - w), b = f mod (X^len + w) (blocks at base
@@ -44,7 +44,7 @@ require import StdRing StdOrder StdBigop.
 (*---*) import Bigint BIA IntOrder.
 
 (* -------------------------------------------------------------------- *)
-require import ListExtra Listred Nttlogspec Nttspec Nttzetas Nttalg.
+require import ListExtra Listred Nttlogspec Nttspec Nttzetas Fnttalg.
 
 (* -------------------------------------------------------------------- *)
 from Jasmin require import JUtils JWord.

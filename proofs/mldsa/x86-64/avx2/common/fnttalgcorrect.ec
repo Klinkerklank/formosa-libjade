@@ -3,7 +3,7 @@
 
   Combines the code-level functional correctness (`Fnttcorrect`,
   `Inttcorrect`: the procedures compute `reduce_tree` / `invtree` +
-  `iscale`) with the algebraic content of those operators (`Nttalg`),
+  `iscale`) with the algebraic content of those operators (`Fnttalg`),
   yielding end-to-end statements: under a magnitude assumption on the
   input coefficients, the procedures compute the (inverse) NTT of the
   input, coefficient-wise modulo q, with an explicit output bound.
@@ -24,7 +24,7 @@ from JazzEC require import Ml_dsa_65_avx2.
 require import Array256.
 
 (* -------------------------------------------------------------------- *)
-require import Nttlogspec Nttspec Nttzetas Nttalg.
+require import Nttlogspec Nttspec Nttzetas Fnttalg.
 require import Fnttcorrect.
 
 (* ==================================================================== *)
