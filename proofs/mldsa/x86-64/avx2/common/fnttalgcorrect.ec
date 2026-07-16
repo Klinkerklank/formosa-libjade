@@ -24,7 +24,7 @@ from JazzEC require import Ml_dsa_65_avx2.
 require import Array256.
 
 (* -------------------------------------------------------------------- *)
-require import Nttlogspec Nttspec Nttzetas Fnttalg.
+require import Nttlogspec Nttspec Nttzetas Nttalg Fnttalg.
 require import Fnttcorrect.
 
 (* ==================================================================== *)
