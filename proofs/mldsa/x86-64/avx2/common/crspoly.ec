@@ -341,6 +341,23 @@ rewrite cat_cons !mprod_cons ih.
 by rewrite PolyComRing.mulrA.
 qed.
 
+(* a member root gives a left factor of the product *)
+lemma mprod_mem_factor (rs : zmod list) (r : zmod) :
+  r \in rs => exists q, mprod rs = (X - polyC r) * q.
+proof.
+elim: rs => [|x rs ih] //.
+move=> hmem.
+case (r = x) => hrx.
+- exists (mprod rs).
+  by rewrite mprod_cons hrx.
+have hmem' : r \in rs by smt().
+have [q hq] := ih hmem'.
+exists ((X - polyC x) * q).
+rewrite mprod_cons hq.
+rewrite !PolyComRing.mulrA.
+by rewrite (PolyComRing.mulrC (X - polyC x) (X - polyC r)).
+qed.
+
 lemma peval_mprod_out (rs : zmod list) (a : zmod) :
   ! (a \in rs) => peval (mprod rs) a <> Zq.zero.
 proof.

@@ -641,3 +641,23 @@ rewrite PolyComRing.mulr1.
 rewrite -(basis_leaves 8 0) 1:// 1:/#.
 by rewrite basisX256.
 qed.
+
+(* the converse (CRT-tree descend): each leaf is a factor of X^256 + 1 *)
+lemma leaf_descend (u v : poly) :
+  peqm (PolyComRing.exp X 256 + poly1) u v =>
+  forall j, 0 <= j < 256 => peqm (basis 0 j) u v.
+proof.
+move=> h j rgj.
+have hmem : Zq.ZModpRing.exp zZ (E 0 j) \in leafroots 8 0.
+- rewrite /leafroots.
+  apply/mkseqP.
+  exists j => /=.
+  by smt().
+have [q hq] := mprod_mem_factor (leafroots 8 0) (Zq.ZModpRing.exp zZ (E 0 j)) hmem.
+have hb : basis 0 j = X - polyC (Zq.ZModpRing.exp zZ (E 0 j)).
+- by rewrite /basis /xnp /= PolyComRing.expr1.
+rewrite hb.
+apply (peqm_mulm _ q).
+rewrite -hq -(basis_leaves 8 0) 1:// 1:/# basisX256.
+by apply h.
+qed.
