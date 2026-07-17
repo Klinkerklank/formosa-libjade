@@ -1,145 +1,94 @@
-# Abstracting the NTT algebraic layer (notes for a later rework)
+# The algebraic layer: status and plan
 
-The current development (`nttalg.ec`, and its inverse counterpart) is
-deliberately elementary: statements are integer congruences (`x %% q`),
-transported by hand (`modzMml`-chains, local `cgrD`/`cgrB`/`cgrMr`
-helpers), and the polynomial residue "P mod (X^m - zeta^e)" exists only
-through its closed-form coefficient sum (`nttsum`). The underlying
-mathematics is: Zq a field, Rq = Zq[X]/(X^256+1), and the butterfly
-network is the iterated CRT along
+The int-level development (`nttalg.ec`, `fnttalg.ec`, `inttalg.ec`)
+is deliberately elementary: statements are integer congruences
+(`x %% q`) and the polynomial residues exist only through their
+closed-form coefficient sums (`nttsum`).  The algebraic layer links
+those untouched proofs to a polynomial view *in the ambient logic*,
+via a predicate relating word arrays to polynomials over Zq — no
+quotient construction anywhere; everything is a congruence
+`peqm m p1 p2 <=> exists h, p1 - p2 = h * m` on `poly` itself.
 
-    X^(2m) - zeta^(2e) = (X^m - zeta^e) (X^m + zeta^e),
-    X^m + zeta^e = X^m - zeta^(e+256),        zeta^256 = -1.
+## Done — the ML-DSA algebraic layer (M1–M5 of the original plan)
 
-Three levels of abstraction, in increasing ambition.
+- `crspoly.ec` — Zq (`ZModField`, prime q axiomatized), the
+  polynomial clone `ZqP`, the `peqm` congruence kit, factor theorem,
+  root-based gluing, degree-uniqueness (`peqm_deg_eq`).
+- `nttpoly.ec` — the linking predicate `pofw`, the basis
+  `X^(2^k) - zeta^(E k j)`, and, derived with no program reasoning
+  redone: the forward restatement (`reduce_tree_polyP`, `ntt_evalP` —
+  the NTT is multipoint evaluation at the 256 leaf roots), the CRS
+  instance (`leaf_glue` / `leaf_descend`: congruence mod X^256+1 iff
+  congruence at every leaf; distinctness via bitrev8 involutivity and
+  the odd-part order argument, no gcd), the ring-morphism properties
+  (`peval_leaf_inj`, `peval_mul_glue`), the inverse restatement
+  (`intt_polyP` / `intt_poly_algP`, an *equality* of polynomials),
+  Lagrange interpolation at the leaves (`leafinterp`), and the
+  end-to-end `intt_pwmul_polyP` (the Montgomery factors of the
+  pointwise product and of the inverse transform cancel exactly).
+- `pwmulcorrect.ec` / `pwmultest.ec` — code-level correctness of the
+  AVX2 pointwise multiplication, and the closing loop: `PolyMul.mul`
+  (ntt, pointwise multiply, inverse ntt) computes the product modulo
+  X^256 + 1 on suitably bounded inputs.
 
-## A. Work in Zq instead of int-mod-q (cheap, do first)
+## Done — generalization groundwork (EasyCrypt `comm-algebra` branch)
 
-Clone `ZModP.ZModField` for q and restate every congruence lemma as an
-*equation in Zq* (`inzmod (to_sint ...) = ...`).
+The generic content has been moved out of `crspoly.ec` upstream
+(PR 602 carries all of it):
 
-- All transport plumbing disappears: `ring` / field reasoning replaces
-  every `-modzDmr ... modzDmr` dance and the ad-hoc `cgrD/cgrB/cgrMr`.
-- `zpw` becomes `zeta ^ e` in Zq, with a single order-512 lemma
-  absorbing the exponent bookkeeping (`zexp_modE`, `zpwD`, `zpw_oppE`).
-- The word-level layer (`mmr_svalE`, `to_sintD_small`, coefficient
-  bounds) is unchanged and becomes the explicit int/Zq boundary.
-- Mechanical refactor of `nttalg.ec`; every later file gets shorter.
+- `Poly.ec` / `PolyComRing`: the peval lemma library (`pevalC/0/D/N/
+  B/MX/X/Z/M`, `peval_sum`, `peval_prod`; definition tightened to sum
+  over `[0, deg p)`), the `mprod` cluster (products of monic linear
+  factors, as `PCM` bigs), `degXBC`/`lcXBC`, `deg_mprod`.
+- `Poly.ec` / `Poly` (IDomain): `peval_mprod_out`; the `IDPoly`
+  instance is now matchable (`<=` aliases, clone-exported) — as is
+  `ZModpField` — so `ZqP` clones at field level and `ZqP.IDPoly`
+  feeds theory parameters directly.
+- `Poly.ec` / `PolyField` (new floor): Field coefficients; the
+  `Lagrange` sub-theory (`lag`, `interp`, evaluation and degree
+  lemmas).  Future home of the Euclide realization for k[X].
+- `CommAlgebra.ec` (new): stacked as **`Base`** — ideals
+  (`Ideal.ec`), divisibility, and the CRT cluster against explicit
+  Bezout witnesses (`comax x y = exists u v, u*x + v*y = 1`:
+  `comax_Gauss`, `crt_comax`, `crt_uniq_comax`) with no axiom beyond
+  the ring — and **`Euclidean`** — weight function and division,
+  gcds, Bezout, `coprime`, factorization; the coprime-phrased
+  `crt`/`crt_uniq` are corollaries of the witness-level cluster.
+  Co-primality was avoided in the ML-DSA layer by design; for the
+  generalization it enters only as the witness predicate, which
+  binomial moduli `X^n - c1`, `X^n - c2` discharge by the constant
+  `(c2 - c1)^-1`.
 
-## B. The polynomial reading (the actual "congruence system")
+## Phase 1 — rewire ML-DSA onto `CommAlgebra.Base` (next)
 
-Represent block contents as polynomials over Zq and state the tree
-invariant as a *remainder modulo the monic binomial* X^m - c.
+1. Clone `CommAlgebra.Base` in `crspoly.ec` with
+   `type t <= ZqP.poly, theory ID <= ZqP.IDPoly`; bridge
+   `peqm m p1 p2 <-> idgen [m] (p1 - p2)`.
+2. Binomial `comax` witnesses from distinctness of the zeta powers.
+3. Re-derive `leaf_glue`/`leaf_descend` from `crt_uniq_comax` and
+   descend; retire the root-based gluing (`peqm_glue1`, `peqm_glue`,
+   `peqm_mprod2`).
+4. Still local to `crspoly.ec` afterwards: `sdivP`/`factor_theorem`,
+   the `peqm` kit (until the bridge absorbs it), `peqm_deg_eq` —
+   all slated for replacement in phase 2.
 
-Obstacle: the standard library has no polynomial Euclidean division —
-`Poly.ec` has no `edivp`/`pmod`, and `PolyReduce` only quotients by
-X^n + 1. Two routes:
+## Phase 2 — after the polydiv rework
 
-1. Define remainder-by-monic-binomial directly (`bmod c m p`) with the
-   elementary existence/uniqueness lemma (uniqueness by the degree
-   argument, divisor monic). Self-contained, small.
-2. Land proper polynomial division in the stdlib (there is a `polydiv`
-   worktree in the EasyCrypt repository; this may be the moment to
-   upstream it) and instantiate.
+- Realize `Euclidean` at k[X] (`w := deg`; division by arbitrary
+  nonzero divisors — PolyField content), activating the gcd layer
+  and CRT reconstruction with canonical remainders.
+- ML-KEM instance: X^256+1 over Z_3329 splits into 128 quadratics
+  `X^2 - c`; leaves have linear residues (the basemul reading);
+  same witness-level gluing, constant `comax` witnesses.
+- Replace the hand-rolled `sdivP`/`peqm_deg_eq`/Lagrange by generic
+  monic-division facts (unique remainders subsume uniqueness and
+  interpolation).
 
-With B in place the whole tree reduces to two abstract facts:
+## Infrastructure notes
 
-- tower property:  bmod c m (bmod (c^2) (2m) p) = bmod c m p;
-- evaluation:      bmod c 1 p = P(c)  (constant polynomial).
-
-`nttsum` becomes a derived closed form instead of the definition, and
-the per-level lemmas are instances rather than inductions.
-
-## C. NTT as the CRT ring isomorphism Rq ~ Zq^256
-
-Package multiplicativity. The payoff is not the NTT itself but the next
-target: correctness of *pointwise multiplication in the NTT domain*
-(basemul) is exactly "NTT is a ring morphism", which follows from
-evaluation-map multiplicativity once B exists. No need for first-class
-iso packaging: state the morphism facts as standalone lemmas
-(map of product = pointwise product; intt . ntt = id) when
-poly-multiplication becomes a target.
-
-## Suggested order
-
-A now (so the inverse-NTT layer is written once in the clean style),
-B as a small dedicated file, C deferred until basemul.
-
----
-
-# Adopted plan: ambient congruences and root-based CRS (no quotients)
-
-Decisions (2026-07-16): keep the existing int-level proofs untouched;
-link the spec to the algebraic view *in the ambient logic*, via a
-predicate relating a word array to a polynomial over Zq.  No quotient
-constructions (`P/<I>`): everything is expressed through a congruence
-equality on `poly`.  Congruent representation systems (CRS) are taken
-with bases of the form (X^n - P_i)_i, deg P_i < n, where each basis
-element is a product of monomials and the roots are globally distinct.
-Pairwise co-primality is never mentioned: injectivity/gluing comes from
-roots and evaluation only.  (This covers ML-DSA, where everything
-splits into distinct linear factors; ML-KEM will need the
-generalization to higher-degree factors.)
-
-## M1 - `crspoly.ec`: the generic kit (over Zq)
-
-1. Zq: clone of `ZModP.ZModField` for q = 8380417.  Bridging lemmas
-   int-congruence <-> Zq equality (`inzmod x = inzmod y <=> x %% q =
-   y %% q`).  The `prime q` obligation is AXIOMATIZED (decision
-   2026-07-16): the fact is standard and externally checkable; an
-   in-logic certificate can be added later if desired.
-2. `poly` over Zq (stdlib `Poly`).  Congruence:
-       pred peqm (m p1 p2 : poly) = exists h, p1 - p2 = h * m
-   (existential witness: no division theory needed).  Kit: equivalence
-   relation, compatibility with +, -, *, scaling; and the restriction
-   rule `peqm (m1 * m2) p1 p2 => peqm m1 p1 p2` - the whole CRT-tree
-   "descend" direction is this one lemma.
-3. Factor theorem: `root p a <=> exists h, p = (X - C a) * h`
-   (=> by an explicit synthetic-division construction; <= by peval).
-4. Products of monomials: `mprod (rs : coeff list) = prod (X - C r)`.
-   Gluing, the core lemma (proved by induction on the root list,
-   using only evaluation + factor theorem + integral domain):
-       uniq (rs1 ++ rs2), disjoint roots =>
-       peqm (mprod rs1) u v => peqm (mprod rs2) u v =>
-       peqm (mprod rs1 * mprod rs2) u v
-   folded over a family: congruent on every basis element => congruent
-   modulo the product.
-
-## M2 - the linking predicate and the forward restatement
-
-5. `pofw (a : wpoly) : poly` (coefficients `inzmod (to_sint a.[i])`,
-   deg < 256) and its block variant `pofw_blk a base len`.
-6. Basis elements: `xnp n c = X^n - C c`;  level-k family
-   `basis k j = xnp (2^k) (zq zeta ^ (E k j))`.  Bridge zpw <-> Zq exp.
-7. Monomial-reduction lemma (the constructive congruence witness):
-       peqm (xnp n c) (X^(n*s + t)) (C (c^s) * X^t)
-   by induction on s; with big-sum linearity this gives
-   `peqm (basis k j) (pofw p) (nttsum-polynomial p k j)`.
-8. Forward restatement, *derived* from `reduce_tree_alg` (no
-   re-verification): block (k, j) of `reduce_tree p k` represents a
-   polynomial congruent to `pofw p` modulo `basis k j`.  At k = 0:
-   `peval (pofw p) (zeta^(E 0 j)) = inzmod (sval (ntt p).[j])`.
-
-## M3 - the ML-DSA CRS instance
-
-9. Root lists of the basis elements: roots of X^(2^k) - zeta^(E k j)
-   are explicit powers of zeta.  Distinctness from: order of zeta is
-   exactly 512 (zeta^512 = 1, zeta^256 = -1, order a power of two),
-   plus injectivity of j |-> E k j (from bitrev8 involutivity).
-10. Instantiate M1: the level-k family is a CRS; gluing corollary:
-    congruent on all 256 leaves => congruent modulo X^256 + 1.
-
-## M4 - inverse restatement
-
-11. From the int-level roundtrip: `pofw (iscale (invtree v 8)) =
-    C (inzmod 2^32) * pofw p` - an *equality* of polynomials (both
-    sides have degree < 256), from which the X^256+1 congruence forms
-    are immediate.
-
-## M5 - later payoff
-
-12. basemul/pointwise multiplication: products glue leaf-wise through
-    the CRS (this is where uniqueness/gluing is actually consumed).
-13. ML-KEM generalization: replace monomials by an abstract list of
-    pairwise root-disjoint low-degree factors (degree-2 for ML-KEM);
-    the kit of M1 is to be parameterized accordingly.
+- The dev is checked against the `comm-algebra` EasyCrypt (see the
+  opam pin); suite: `runtest ... --bin-args=-stdlib` at that tree.
+- Known upstream issue to report: overriding an anonymous parameter
+  subtheory referenced by nested clones crashes the cloner
+  (`ecThCloning.ml:472`); the Poly.ec named-parameter pattern is the
+  workaround (used by `CommAlgebra.Base`).

@@ -26,5 +26,7 @@ depends: [
 ]
 
 pin-depends: [
-  [ "easycrypt.dev" "git+https://github.com/EasyCrypt/easycrypt.git#main" ]
+  # Temporarily on the comm-algebra branch (PR 602: commutative algebra,
+  # peval/mprod/Lagrange stdlib additions); back to main once it lands.
+  [ "easycrypt.dev" "git+https://github.com/EasyCrypt/easycrypt.git#comm-algebra" ]
 ]
