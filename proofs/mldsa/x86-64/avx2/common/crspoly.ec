@@ -360,23 +360,6 @@ by rewrite degC hc /= /#.
 qed.
 
 (* ==================================================================== *)
-(* Degree of polynomial sums                                            *)
-(* ==================================================================== *)
-lemma deg_big ['a] (P : 'a -> bool) (F : 'a -> poly) (s : 'a list) (n : int) :
-  0 <= n => (forall x, x \in s => P x => deg (F x) <= n) =>
-  deg (ZqP.BigPoly.PCA.big P F s) <= n.
-proof.
-move=> ge0n; elim: s => [|x s ih] hF.
-- by rewrite ZqP.BigPoly.PCA.big_nil deg0.
-rewrite ZqP.BigPoly.PCA.big_cons.
-case (P x) => hP; last first.
-- by apply ih; smt().
-have h1 : deg (F x) <= n by apply hF.
-have h2 : deg (ZqP.BigPoly.PCA.big P F s) <= n by apply ih; smt().
-by smt(degD).
-qed.
-
-(* ==================================================================== *)
 (* Lagrange interpolation over a uniq root list (the surjectivity half  *)
 (* of the CRS: any assignment of values at the roots is realized by a   *)
 (* polynomial of degree at most the number of roots)                    *)
@@ -439,9 +422,9 @@ lemma deg_interp (rs : zmod list) (f : zmod -> zmod) :
   uniq rs => deg (interp rs f) <= size rs.
 proof.
 move=> hu.
-rewrite /interp.
-apply deg_big; 1: smt(size_ge0).
-move=> r hr _.
+rewrite /interp BigPoly.PCA.big_seq.
+apply BigPoly.deg_sum; 1: smt(size_ge0).
+move=> r /= hr.
 have h1 := degC_mul_le (f r) (lag rs r).
 have h2 := deg_lag rs r hu hr.
 by smt().
