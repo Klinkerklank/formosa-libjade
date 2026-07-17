@@ -29,7 +29,7 @@ require import AllCore List Ring IntDiv BitEncoding StdOrder StdBigop.
 (* -------------------------------------------------------------------- *)
 require import Nttlogspec Nttspec Nttzetas Nttalg Fnttalg Inttalg.
 require import Crspoly.
-(*---*) import Zq ZqP ZqP.BigCf.
+(*---*) import Zq ZqP ZqP.BigCf ZqP.Lagrange.
 
 (* -------------------------------------------------------------------- *)
 from Jasmin require import JUtils JWord.
