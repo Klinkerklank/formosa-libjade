@@ -215,29 +215,6 @@ qed.
 (* ==================================================================== *)
 (* Products of monomials, root-based gluing                             *)
 (* ==================================================================== *)
-op mprod (rs : zmod list) : poly =
-  BigPoly.PCM.big predT (fun r => X - polyC r) rs.
-
-lemma mprod_nil : mprod [] = poly1.
-proof. by rewrite /mprod BigPoly.PCM.big_nil. qed.
-
-lemma mprod_cons (r : zmod) (rs : zmod list) :
-  mprod (r :: rs) = (X - polyC r) * mprod rs.
-proof. by rewrite /mprod BigPoly.PCM.big_consT. qed.
-
-lemma mprod_cat (rs1 rs2 : zmod list) :
-  mprod (rs1 ++ rs2) = mprod rs1 * mprod rs2.
-proof. by rewrite /mprod BigPoly.PCM.big_cat. qed.
-
-(* a member root gives a left factor of the product *)
-lemma mprod_mem_factor (rs : zmod list) (r : zmod) :
-  r \in rs => exists q, mprod rs = (X - polyC r) * q.
-proof.
-move=> hmem; exists (mprod (rem r rs)).
-rewrite /mprod (BigPoly.PCM.eq_big_perm _ _ _ _ (perm_to_rem _ _ hmem)).
-by rewrite BigPoly.PCM.big_consT.
-qed.
-
 lemma peval_mprod_out (rs : zmod list) (a : zmod) :
   ! (a \in rs) => peval (mprod rs) a <> Zq.zero.
 proof.
@@ -248,13 +225,6 @@ rewrite mprod_cons pevalM pevalB pevalX pevalC.
 apply/negP => /Zq.ZModpField.mulf_eq0 [h0|h0].
 - by move: h0; rewrite Zq.ZModpRing.subr_eq0; smt().
 by move: h0; smt().
-qed.
-
-lemma mprod_root (rs : zmod list) (a : zmod) :
-  a \in rs => root (mprod rs) a.
-proof.
-move=> hin; have [q ->] := mprod_mem_factor rs a hin.
-by rewrite pevalM pevalB pevalX pevalC Zq.ZModpRing.subrr Zq.ZModpRing.mul0r.
 qed.
 
 (* one gluing step: a fresh root joins the modulus *)
@@ -320,32 +290,6 @@ qed.
 (* ==================================================================== *)
 (* Degrees of the monomial products                                     *)
 (* ==================================================================== *)
-lemma lc_XC (r : zmod) : lc (X - polyC r) = Zq.one.
-proof.
-rewrite (_ : X - polyC r = X + (- polyC r)) 1:// lcDl.
-- by rewrite degN; smt(degC_le degX).
-by rewrite lcX.
-qed.
-
-lemma deg_XC (r : zmod) : deg (X - polyC r) = 2.
-proof.
-rewrite (_ : X - polyC r = X + (- polyC r)) 1:// degDl.
-- by rewrite degN; smt(degC_le degX).
-by rewrite degX.
-qed.
-
-lemma deg_mprod (rs : zmod list) : deg (mprod rs) = 1 + size rs.
-proof.
-elim: rs => [|r rs ih].
-- by rewrite mprod_nil deg1.
-rewrite mprod_cons degM_proper.
-- rewrite lc_XC Zq.ZModpRing.mul1r.
-  apply /negP => h0.
-  have : mprod rs = poly0 by rewrite -lc_eq0 h0.
-  by rewrite -deg_eq0 ih; smt(size_ge0).
-by rewrite deg_XC ih /= /#.
-qed.
-
 (* ==================================================================== *)
 (* Lagrange interpolation over a uniq root list (the surjectivity half  *)
 (* of the CRS: any assignment of values at the roots is realized by a   *)
