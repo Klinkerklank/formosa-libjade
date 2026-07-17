@@ -61,7 +61,7 @@ lemma mul_polyP (a_ b_ : wpoly) (B : int) :
   cbnd a_ B => cbnd b_ B =>
   hoare[PolyMul.mul :
     arg = (a_, b_) ==>
-    peqm (PolyComRing.exp X 256 + poly1) (pofw res) (pofw a_ * pofw b_)].
+    peqm (exp X 256 + poly1) (pofw res) (pofw a_ * pofw b_)].
 proof.
 move=> ge0B hltB hsqB hba hbb.
 proc.
@@ -92,7 +92,7 @@ lemma mul_poly_redP (a_ b_ : wpoly) :
   cbnd a_ q => cbnd b_ q =>
   hoare[PolyMul.mul :
     arg = (a_, b_) ==>
-    peqm (PolyComRing.exp X 256 + poly1) (pofw res) (pofw a_ * pofw b_)].
+    peqm (exp X 256 + poly1) (pofw res) (pofw a_ * pofw b_)].
 proof.
 move=> hba hbb.
 by apply (mul_polyP a_ b_ q).

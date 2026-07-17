@@ -92,7 +92,7 @@ op pofw_blk (a : wpoly) (base len : int) : poly =
 
 (* the moduli *)
 op xnp (n : int) (c : Zq.zmod) : poly =
-  PolyComRing.exp X n - polyC c.
+  exp X n - polyC c.
 
 op basis (k j : int) : poly =
   xnp (2^k) (Zq.ZModpRing.exp zZ (E k j)).
@@ -105,21 +105,21 @@ op nttsump (p : wpoly) (k j : int) : poly =
 (* polyL structure                                                      *)
 (* ==================================================================== *)
 lemma polyL_cat (xs ys : Zq.zmod list) :
-  polyL (xs ++ ys) = polyL xs + PolyComRing.exp X (size xs) * polyL ys.
+  polyL (xs ++ ys) = polyL xs + exp X (size xs) * polyL ys.
 proof.
 elim: xs => [|c xs ih].
 - rewrite cat0s polyL_nil /=.
-  rewrite PolyComRing.expr0 PolyComRing.mul1r.
-  by rewrite PolyComRing.add0r.
+  rewrite expr0 mul1r.
+  by rewrite add0r.
 rewrite cat_cons !polyL_cons ih /=.
-rewrite PolyComRing.mulrDl -!PolyComRing.addrA.
+rewrite mulrDl -!addrA.
 congr.
 congr.
-rewrite (addzC 1 (size xs)) PolyComRing.exprS 1:size_ge0.
-rewrite -PolyComRing.mulrA (PolyComRing.mulrC (polyL ys) X).
-rewrite !PolyComRing.mulrA.
+rewrite (addzC 1 (size xs)) exprS 1:size_ge0.
+rewrite -mulrA [polyL ys * X]mulrC.
+rewrite !mulrA.
 congr.
-by rewrite PolyComRing.mulrC.
+by rewrite mulrC.
 qed.
 
 (* pointwise sum and scaling of equal-length coefficient lists *)
@@ -151,9 +151,9 @@ qed.
 (* Reduction modulo X^n - c                                             *)
 (* ==================================================================== *)
 lemma xnp_Xn (n : int) (c : Zq.zmod) :
-  peqm (xnp n c) (PolyComRing.exp X n) (polyC c).
+  peqm (xnp n c) (exp X n) (polyC c).
 proof.
-by exists poly1; rewrite PolyComRing.mul1r /xnp.
+by exists poly1; rewrite mul1r /xnp.
 qed.
 
 (* one chunk: X^n f1 + f0 == c f1 + f0 *)
@@ -297,7 +297,7 @@ qed.
 lemma polyL1 (x : Zq.zmod) : polyL [x] = polyC x.
 proof.
 rewrite polyL_cons polyL_nil.
-by rewrite PolyComRing.mul0r PolyComRing.addr0.
+by rewrite mul0r addr0.
 qed.
 
 (* at the leaves, congruence modulo X - c is evaluation *)
@@ -313,7 +313,7 @@ have c2 : B + (8 - 0) * q < 2^31 by move: hB => /#.
 have c3 : 0 <= j < 2^(8-0) by move: rgj => /= /#.
 have h := reduce_tree_polyP p B 0 j c1 ge0B c2 hbnd c3.
 move: h.
-rewrite /basis /xnp /= PolyComRing.expr1.
+rewrite /basis /xnp /= expr1.
 move/peqm_lin_eval => ->.
 rewrite /pofw_blk.
 have -> : mkseq
@@ -393,14 +393,14 @@ have -> : Zq.ZModpRing.exp zZ (E (k+1) j)
   by rewrite (: E k (2*j) + E k (2*j) = 2 * E k (2*j)) 1:/# E_double.
 rewrite /xnp.
 have eSk : 2^(k+1) = 2^k + 2^k by rewrite exprS 1:/# /#.
-rewrite eSk PolyComRing.exprD_nneg 1,2:#smt:(expr_ge0).
-pose A := PolyComRing.exp X (2^k).
+rewrite eSk exprD_nneg 1,2:#smt:(expr_ge0).
+pose A := exp X (2^k).
 pose w := Zq.ZModpRing.exp zZ (E k (2*j)).
-rewrite polyCN PolyComRing.opprK.
-rewrite PolyComRing.mulrDr !PolyComRing.mulrBl.
+rewrite polyCN opprK.
+rewrite mulrDr !mulrBl.
 rewrite polyCM.
-rewrite (PolyComRing.mulrC (polyC w) A).
-by rewrite PolyComRing.addrA PolyComRing.subrK.
+rewrite [polyC w * A]mulrC.
+by rewrite addrA subrK.
 qed.
 
 (* the basis elements are products of monomials over the leaf roots *)
@@ -420,8 +420,8 @@ have main : forall kk, 0 <= kk <= 8 => forall jj, 0 <= jj < 2^(8-kk) =>
       rewrite nth_mkseq 1:/# /=.
       have -> : i = 0 by smt().
       by rewrite ifT // /#.
-    rewrite mprod_cons mprod_nil PolyComRing.mulr1.
-    by rewrite /basis /xnp /= PolyComRing.expr1.
+    rewrite mprod_cons mprod_nil mulr1.
+    by rewrite /basis /xnp /= expr1.
   have rgk8 : 0 <= k < 8 by smt().
   have e8k : 2^(8-k) = 2 * 2^(7-k).
   + by rewrite (: 8 - k = (7-k)+1) 1:/# exprS 1:/#.
@@ -444,11 +444,11 @@ by apply (main k rgk j rgj).
 qed.
 
 (* the root of the tree is X^256 + 1 *)
-lemma basisX256 : basis 8 0 = PolyComRing.exp X 256 + poly1.
+lemma basisX256 : basis 8 0 = exp X 256 + poly1.
 proof.
 rewrite /basis /xnp /=.
 have -> : E 8 0 = 256 by rewrite /E.
-by rewrite zZ_256 polyCN PolyComRing.opprK.
+by rewrite zZ_256 polyCN opprK.
 qed.
 
 (* ==================================================================== *)
@@ -614,12 +614,12 @@ qed.
 (* ==================================================================== *)
 lemma peqm_1 (u v : poly) : peqm poly1 u v.
 proof.
-by exists (u - v); rewrite PolyComRing.mulr1.
+by exists (u - v); rewrite mulr1.
 qed.
 
 lemma leaf_glue (u v : poly) :
   (forall j, 0 <= j < 256 => peqm (basis 0 j) u v) =>
-  peqm (PolyComRing.exp X 256 + poly1) u v.
+  peqm (exp X 256 + poly1) u v.
 proof.
 move=> hleaf.
 have h : peqm (mprod (leafroots 8 0) * poly1) u v.
@@ -632,19 +632,19 @@ have h : peqm (mprod (leafroots 8 0) * poly1) u v.
     have rgj' : 0 <= jj < 256 by move: rgj => /#.
     have hj := hleaf jj rgj'.
     apply (peqm_root (basis 0 jj)) => //.
-    rewrite /basis /xnp /= PolyComRing.expr1.
+    rewrite /basis /xnp /= expr1.
     rewrite pevalB pevalX pevalC.
     by rewrite Zq.ZModpRing.subrr.
   by apply peqm_1.
 move: h.
-rewrite PolyComRing.mulr1.
+rewrite mulr1.
 rewrite -(basis_leaves 8 0) 1:// 1:/#.
 by rewrite basisX256.
 qed.
 
 (* the converse (CRT-tree descend): each leaf is a factor of X^256 + 1 *)
 lemma leaf_descend (u v : poly) :
-  peqm (PolyComRing.exp X 256 + poly1) u v =>
+  peqm (exp X 256 + poly1) u v =>
   forall j, 0 <= j < 256 => peqm (basis 0 j) u v.
 proof.
 move=> h j rgj.
@@ -655,7 +655,7 @@ have hmem : Zq.ZModpRing.exp zZ (E 0 j) \in leafroots 8 0.
   by smt().
 have [q hq] := mprod_mem_factor (leafroots 8 0) (Zq.ZModpRing.exp zZ (E 0 j)) hmem.
 have hb : basis 0 j = X - polyC (Zq.ZModpRing.exp zZ (E 0 j)).
-- by rewrite /basis /xnp /= PolyComRing.expr1.
+- by rewrite /basis /xnp /= expr1.
 rewrite hb.
 apply (peqm_mulm _ q).
 rewrite -hq -(basis_leaves 8 0) 1:// 1:/# basisX256.
@@ -673,7 +673,7 @@ proof.
 move=> rgj.
 have hpm := pofw_nttsump p 0 j _ _; 1: done; 1: by move: rgj => /#.
 have hb : basis 0 j = X - polyC (Zq.ZModpRing.exp zZ (E 0 j)).
-- by rewrite /basis /xnp /= PolyComRing.expr1.
+- by rewrite /basis /xnp /= expr1.
 move: hpm; rewrite hb => hpm.
 rewrite (peqm_lin_eval _ (nttsump p 0 j)) 1://.
 rewrite /nttsump /=.
@@ -723,12 +723,12 @@ qed.
 lemma basis0E (j : int) :
   basis 0 j = X - polyC (Zq.ZModpRing.exp zZ (E 0 j)).
 proof.
-by rewrite /basis /xnp /= PolyComRing.expr1.
+by rewrite /basis /xnp /= expr1.
 qed.
 
-lemma degX256 : deg (PolyComRing.exp X 256 + poly1) = 257.
+lemma degX256 : deg (exp X 256 + poly1) = 257.
 proof.
-have hX : deg (PolyComRing.exp X 256) = 257.
+have hX : deg (exp X 256) = 257.
 - rewrite degXn_proper.
   + by rewrite lcX; apply /Zq.ZModpField.lregP; apply Zq.ZModpRing.oner_neq0.
   + by done.
@@ -752,7 +752,7 @@ lemma peval_leaf_inj (u v : poly) :
   u = v.
 proof.
 move=> hu hv hev.
-apply (peqm_deg_eq (PolyComRing.exp X 256 + poly1)).
+apply (peqm_deg_eq (exp X 256 + poly1)).
 - by rewrite degX256 /#.
 - by rewrite degX256 /#.
 apply leaf_glue => j rgj.
@@ -767,7 +767,7 @@ lemma peval_mul_glue (w u v : poly) :
      peval w (Zq.ZModpRing.exp zZ (E 0 j))
        = peval u (Zq.ZModpRing.exp zZ (E 0 j))
        * peval v (Zq.ZModpRing.exp zZ (E 0 j))) =>
-  peqm (PolyComRing.exp X 256 + poly1) w (u * v).
+  peqm (exp X 256 + poly1) w (u * v).
 proof.
 move=> hev.
 apply leaf_glue => j rgj.
@@ -853,7 +853,7 @@ lemma pwmul_reprP (p1 p2 v1 v2 : wpoly) :
     /\ (forall j, 0 <= j < 256 =>
           peval u (Zq.ZModpRing.exp zZ (E 0 j))
             = Zq.inzmod (2^32 * sval ((pwmul v1 v2).[j])))
-    /\ peqm (PolyComRing.exp X 256 + poly1) u (pofw p1 * pofw p2).
+    /\ peqm (exp X 256 + poly1) u (pofw p1 * pofw p2).
 proof.
 move=> h1 h2.
 exists (leafinterp (fun j => Zq.inzmod (2^32 * sval ((pwmul v1 v2).[j])))).
@@ -910,7 +910,7 @@ lemma intt_pwmul_polyP (p1 p2 v1 v2 : wpoly) (B1 B2 : int) :
      Zq.inzmod (sval v1.[j]) = peval (pofw p1) (Zq.ZModpRing.exp zZ (E 0 j))) =>
   (forall j, 0 <= j < 256 =>
      Zq.inzmod (sval v2.[j]) = peval (pofw p2) (Zq.ZModpRing.exp zZ (E 0 j))) =>
-  peqm (PolyComRing.exp X 256 + poly1)
+  peqm (exp X 256 + poly1)
        (pofw (iscale (invtree (pwmul v1 v2) 8)))
        (pofw p1 * pofw p2).
 proof.

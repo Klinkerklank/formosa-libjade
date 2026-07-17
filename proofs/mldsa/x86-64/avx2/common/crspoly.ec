@@ -41,146 +41,6 @@ clone import Poly.PolyComRing as ZqP with
 import BigCf.
 
 (* ==================================================================== *)
-(* Evaluation is a ring morphism                                        *)
-(* ==================================================================== *)
-(* range-flexible form of peval *)
-lemma pevalE_ge (p : poly) (a : zmod) (n : int) : deg p <= n =>
-  peval p a = BCA.bigi predT (fun i => p.[i] * Zq.ZModpRing.exp a i) 0 n.
-proof.
-move=> hn; rewrite /peval.
-case (deg p + 1 <= n) => hcase.
-- rewrite (BCA.big_cat_int (deg p + 1) 0 n) 1:#smt:(ge0_deg) 1://.
-  have -> : BCA.bigi predT
-              (fun (i : int) => p.[i] * Zq.ZModpRing.exp a i) (deg p + 1) n
-          = Zq.zero.
-  + rewrite BCA.big1_seq //=.
-    move=> i /mem_range rgi.
-    by rewrite gedeg_coeff 1:/# Zq.ZModpRing.mul0r.
-  by rewrite Zq.ZModpRing.addr0.
-have -> : n = deg p by smt().
-rewrite (BCA.big_int_recr (deg p)) 1:#smt:(ge0_deg) /=.
-by rewrite gedeg_coeff // Zq.ZModpRing.mul0r Zq.ZModpRing.addr0.
-qed.
-
-lemma pevalC (c : zmod) (a : zmod) : peval (polyC c) a = c.
-proof.
-rewrite (pevalE_ge (polyC c) a 1) 1:degC_le.
-rewrite BCA.big_int1 /=.
-by rewrite polyCE /= Zq.ZModpRing.expr0 Zq.ZModpRing.mulr1.
-qed.
-
-lemma peval0 (a : zmod) : peval poly0 a = Zq.zero.
-proof. by rewrite pevalC. qed.
-
-lemma pevalD (p q : poly) (a : zmod) :
-  peval (p + q) a = peval p a + peval q a.
-proof.
-pose n := max (deg p) (deg q).
-rewrite (pevalE_ge (p+q) a n) 1:#smt:(degD).
-rewrite (pevalE_ge p a n) 1:/#.
-rewrite (pevalE_ge q a n) 1:/#.
-rewrite (BCA.eq_big_int 0 n _
-  (fun i => p.[i] * Zq.ZModpRing.exp a i + q.[i] * Zq.ZModpRing.exp a i)).
-- by move=> i rgi /=; rewrite polyDE Zq.ZModpRing.mulrDl.
-by rewrite BCA.big_split.
-qed.
-
-lemma pevalN (p : poly) (a : zmod) : peval (- p) a = - peval p a.
-proof.
-have hd : deg (- p) <= deg p by rewrite degN.
-rewrite (pevalE_ge (-p) a (deg p)) 1:hd.
-rewrite (pevalE_ge p a (deg p)) 1://.
-rewrite (BCA.eq_big_int 0 (deg p) _
-  (fun i => - (p.[i] * Zq.ZModpRing.exp a i))).
-- by move=> i rgi /=; rewrite polyNE Zq.ZModpRing.mulNr.
-by rewrite -BCA.sumrN.
-qed.
-
-lemma pevalB (p q : poly) (a : zmod) :
-  peval (p - q) a = peval p a - peval q a.
-proof. by rewrite pevalD pevalN. qed.
-
-lemma pevalMX (p : poly) (a : zmod) : peval (p * X) a = peval p a * a.
-proof.
-have hd : deg (p * X) <= deg p + 1.
-- case (p = poly0) => [->|nz].
-  - rewrite PolyComRing.mul0r.
-    by smt(ge0_deg).
-  have hX : X <> poly0.
-  - by rewrite -deg_eq0 degX.
-  have := degM_le p X nz hX.
-  by rewrite degX /#.
-rewrite (pevalE_ge (p * X) a (deg p + 1)) 1:hd.
-rewrite (pevalE_ge p a (deg p)) 1://.
-rewrite BCA.big_int_recl 1:#smt:(ge0_deg) /=.
-rewrite polyMXE lt0_coeff 1:// Zq.ZModpRing.mul0r Zq.ZModpRing.add0r.
-rewrite (BCA.eq_big_int 0 (deg p) _
-  (fun i => p.[i] * Zq.ZModpRing.exp a i * a)).
-- move=> i rgi /=.
-  rewrite polyMXE /= Zq.ZModpRing.exprS 1:/#.
-  by rewrite (Zq.ZModpRing.mulrC a) Zq.ZModpRing.mulrA.
-by rewrite -BCA.mulr_suml.
-qed.
-
-lemma pevalX (a : zmod) : peval X a = a.
-proof.
-have := pevalMX poly1 a.
-rewrite PolyComRing.mul1r pevalC.
-by rewrite Zq.ZModpRing.mul1r.
-qed.
-
-lemma pevalZ (c : zmod) (p : poly) (a : zmod) :
-  peval (c ** p) a = c * peval p a.
-proof.
-have hd : deg (c ** p) <= deg p by apply degZ_le.
-rewrite (pevalE_ge (c ** p) a (deg p)) 1:hd.
-rewrite (pevalE_ge p a (deg p)) 1://.
-rewrite (BCA.eq_big_int 0 (deg p) _
-  (fun i => c * (p.[i] * Zq.ZModpRing.exp a i))).
-- by move=> i rgi /=; rewrite polyZE Zq.ZModpRing.mulrA.
-by rewrite -BCA.mulr_sumr.
-qed.
-
-(* polyL structure lemmas used for the list inductions *)
-lemma polyL_nil : polyL [<:zmod>] = poly0.
-proof.
-by apply poly_eqP => i ge0; rewrite polyLE poly0E /=.
-qed.
-
-lemma polyL_cons (c : zmod) (xs : zmod list) :
-  polyL (c :: xs) = polyC c + polyL xs * X.
-proof.
-apply poly_eqP => i ge0.
-rewrite polyLE polyDE polyCE polyMXE polyLE.
-case (i = 0) => [->|nz] /=.
-- by rewrite nth_neg // Zq.ZModpRing.addr0.
-by rewrite Zq.ZModpRing.add0r /= ifF //.
-qed.
-
-lemma pevalM (p q : poly) (a : zmod) :
-  peval (p * q) a = peval p a * peval q a.
-proof.
-have main : forall (xs : zmod list) (r : poly),
-  peval (polyL xs * r) a = peval (polyL xs) a * peval r a.
-- elim=> [|c xs ih] r.
-  - rewrite polyL_nil PolyComRing.mul0r peval0.
-    by rewrite Zq.ZModpRing.mul0r.
-  rewrite polyL_cons PolyComRing.mulrDl pevalD.
-  rewrite -scalepE pevalZ.
-  have -> : polyL xs * X * r = polyL xs * r * X.
-  - rewrite -PolyComRing.mulrA (PolyComRing.mulrC X r).
-    by rewrite PolyComRing.mulrA.
-  rewrite pevalMX ih.
-  rewrite pevalD pevalC pevalMX.
-  rewrite Zq.ZModpRing.mulrDl.
-  congr.
-  rewrite -Zq.ZModpRing.mulrA (Zq.ZModpRing.mulrC (peval r a) a).
-  by rewrite Zq.ZModpRing.mulrA.
-have [xs [_ ->]] := surj_polyL p (deg p) _; 1: by done.
-by apply main.
-qed.
-
-(* ==================================================================== *)
 (* Division with remainder by a monic linear factor; factor theorem     *)
 (* ==================================================================== *)
 lemma sdivP (p : poly) (a : zmod) :
@@ -191,27 +51,27 @@ have main : forall (xs : zmod list),
 - elim=> [|c xs [h eh]].
   - exists poly0.
     rewrite polyL_nil peval0.
-    by rewrite PolyComRing.mulr0 PolyComRing.addr0.
+    by rewrite mulr0 addr0.
   exists (h * X + polyC (peval (polyL xs) a)).
   rewrite polyL_cons {1}eh.
   rewrite pevalD pevalC pevalMX.
-  rewrite PolyComRing.mulrDl PolyComRing.mulrDr polyCD.
-  rewrite PolyComRing.mulrA.
+  rewrite mulrDl mulrDr polyCD.
+  rewrite mulrA.
   have -> : (X - polyC a) * polyC (peval (polyL xs) a)
           = polyC (peval (polyL xs) a) * X - polyC (peval (polyL xs) a * a).
-  - rewrite PolyComRing.mulrBl polyCM.
+  - rewrite mulrBl polyCM.
     congr.
-    - by rewrite PolyComRing.mulrC.
-    by rewrite (PolyComRing.mulrC (polyC a)).
-  rewrite -(PolyComRing.addrA ((X - polyC a) * h * X)).
-  rewrite (PolyComRing.addrC (polyC c) (polyC (peval (polyL xs) a * a))).
-  rewrite (PolyComRing.addrA
+    - by rewrite mulrC.
+    by rewrite (mulrC (polyC a)).
+  rewrite -(addrA ((X - polyC a) * h * X)).
+  rewrite (addrC (polyC c) (polyC (peval (polyL xs) a * a))).
+  rewrite (addrA
     (polyC (peval (polyL xs) a) * X - polyC (peval (polyL xs) a * a))
     (polyC (peval (polyL xs) a * a)) (polyC c)).
-  rewrite PolyComRing.subrK.
-  rewrite PolyComRing.addrCA.
+  rewrite subrK.
+  rewrite addrCA.
   congr.
-  by rewrite PolyComRing.addrC.
+  by rewrite addrC.
 have [xs [_ ->]] := surj_polyL p (deg p) _; 1: by done.
 by apply main.
 qed.
@@ -223,7 +83,7 @@ split.
 - move=> hroot.
   have [h eh] := sdivP p a.
   exists h.
-  by rewrite eh hroot PolyComRing.addr0.
+  by rewrite eh hroot addr0.
 move=> [h ->].
 rewrite pevalM pevalB pevalX pevalC.
 by rewrite Zq.ZModpRing.subrr Zq.ZModpRing.mul0r.
@@ -236,13 +96,13 @@ pred peqm (m p1 p2 : poly) = exists h, p1 - p2 = h * m.
 
 lemma peqm_refl (m p : poly) : peqm m p p.
 proof.
-by exists poly0; rewrite PolyComRing.subrr PolyComRing.mul0r.
+by exists poly0; rewrite subrr mul0r.
 qed.
 
 lemma peqm_sym (m p1 p2 : poly) : peqm m p1 p2 => peqm m p2 p1.
 proof.
 move=> [h eh]; exists (- h).
-by rewrite -PolyComRing.opprB eh PolyComRing.mulNr.
+by rewrite -opprB eh mulNr.
 qed.
 
 lemma peqm_trans (m p2 p1 p3 : poly) :
@@ -250,8 +110,8 @@ lemma peqm_trans (m p2 p1 p3 : poly) :
 proof.
 move=> [h1 e1] [h2 e2]; exists (h1 + h2).
 have -> : p1 - p3 = (p1 - p2) + (p2 - p3).
-- by rewrite PolyComRing.addrA PolyComRing.subrK.
-by rewrite e1 e2 PolyComRing.mulrDl.
+- by rewrite addrA subrK.
+by rewrite e1 e2 mulrDl.
 qed.
 
 lemma peqm_eq (m p1 p2 : poly) : p1 = p2 => peqm m p1 p2.
@@ -260,7 +120,7 @@ proof. by move=> ->; apply peqm_refl. qed.
 (* the modulus is congruent to zero *)
 lemma peqm_m (m : poly) : peqm m m poly0.
 proof.
-by exists poly1; rewrite PolyComRing.subr0 PolyComRing.mul1r.
+by exists poly1; rewrite subr0 mul1r.
 qed.
 
 lemma peqmD (m p1 p2 q1 q2 : poly) :
@@ -268,16 +128,16 @@ lemma peqmD (m p1 p2 q1 q2 : poly) :
 proof.
 move=> [h1 e1] [h2 e2]; exists (h1 + h2).
 have -> : p1 + q1 - (p2 + q2) = (p1 - p2) + (q1 - q2).
-- by rewrite PolyComRing.opprD PolyComRing.addrACA.
-by rewrite e1 e2 PolyComRing.mulrDl.
+- by rewrite opprD addrACA.
+by rewrite e1 e2 mulrDl.
 qed.
 
 lemma peqmN (m p1 p2 : poly) : peqm m p1 p2 => peqm m (- p1) (- p2).
 proof.
 move=> [h eh]; exists (- h).
 have -> : - p1 - - p2 = -(p1 - p2).
-- by rewrite PolyComRing.opprK PolyComRing.opprB PolyComRing.addrC.
-by rewrite eh PolyComRing.mulNr.
+- by rewrite opprK opprB addrC.
+by rewrite eh mulNr.
 qed.
 
 lemma peqmB (m p1 p2 q1 q2 : poly) :
@@ -293,12 +153,12 @@ lemma peqmM (m p1 p2 q1 q2 : poly) :
 proof.
 move=> [h1 e1] [h2 e2]; exists (p1 * h2 + h1 * q2).
 have -> : p1 * q1 - p2 * q2 = p1 * (q1 - q2) + (p1 - p2) * q2.
-- rewrite PolyComRing.mulrBr PolyComRing.mulrBl.
-  by rewrite PolyComRing.addrA PolyComRing.subrK.
-rewrite e1 e2 PolyComRing.mulrDl.
-rewrite PolyComRing.mulrA.
+- rewrite mulrBr mulrBl.
+  by rewrite addrA subrK.
+rewrite e1 e2 mulrDl.
+rewrite mulrA.
 have -> : h1 * m * q2 = h1 * q2 * m.
-- by rewrite -PolyComRing.mulrA (PolyComRing.mulrC m q2) PolyComRing.mulrA.
+- by rewrite -mulrA (mulrC m q2) mulrA.
 by done.
 qed.
 
@@ -307,8 +167,8 @@ lemma peqm_mulm (m1 m2 p1 p2 : poly) :
   peqm (m1 * m2) p1 p2 => peqm m1 p1 p2.
 proof.
 move=> [h eh]; exists (h * m2).
-rewrite eh -PolyComRing.mulrA (PolyComRing.mulrC m1 m2).
-by rewrite PolyComRing.mulrA.
+rewrite eh -mulrA (mulrC m1 m2).
+by rewrite mulrA.
 qed.
 
 (* roots of the modulus are roots of the difference *)
@@ -328,7 +188,7 @@ have hroot : root (p1 - p2) a.
 - by rewrite pevalB heq Zq.ZModpRing.subrr.
 move/factor_theorem: hroot => [h eh].
 exists h.
-by rewrite eh PolyComRing.mulrC.
+by rewrite eh mulrC.
 qed.
 
 (* uniqueness: congruent polynomials of degree below the modulus are   *)
@@ -338,8 +198,8 @@ lemma peqm_deg_eq (m p1 p2 : poly) :
 proof.
 move=> h1 h2 [h eh].
 case (h = poly0) => [h0|hnz].
-- move: eh; rewrite h0 PolyComRing.mul0r => hsub.
-  by rewrite -PolyComRing.subr_eq0 hsub.
+- move: eh; rewrite h0 mul0r => hsub.
+  by rewrite -subr_eq0 hsub.
 have hm : m <> poly0.
 - by apply /negP => m0; move: h1; rewrite m0 deg0; smt(ge0_deg).
 have hdeg : deg (h * m) = deg h + deg m - 1.
@@ -370,9 +230,9 @@ lemma mprod_cat (rs1 rs2 : zmod list) :
   mprod (rs1 ++ rs2) = mprod rs1 * mprod rs2.
 proof.
 elim: rs1 => [|r rs1 ih].
-- by rewrite mprod_nil cat0s PolyComRing.mul1r.
+- by rewrite mprod_nil cat0s mul1r.
 rewrite cat_cons !mprod_cons ih.
-by rewrite PolyComRing.mulrA.
+by rewrite mulrA.
 qed.
 
 (* a member root gives a left factor of the product *)
@@ -388,8 +248,8 @@ have hmem' : r \in rs by smt().
 have [q hq] := ih hmem'.
 exists ((X - polyC x) * q).
 rewrite mprod_cons hq.
-rewrite !PolyComRing.mulrA.
-by rewrite (PolyComRing.mulrC (X - polyC x) (X - polyC r)).
+rewrite !mulrA.
+by rewrite (mulrC (X - polyC x) (X - polyC r)).
 qed.
 
 lemma peval_mprod_out (rs : zmod list) (a : zmod) :
@@ -428,7 +288,7 @@ have h0 : root h a.
 move/factor_theorem: h0 => [g eg].
 exists g.
 rewrite eh eg.
-by rewrite (PolyComRing.mulrC (X - polyC a) g) -PolyComRing.mulrA.
+by rewrite (mulrC (X - polyC a) g) -mulrA.
 qed.
 
 (* gluing a root list onto a modulus *)
@@ -439,8 +299,8 @@ lemma peqm_glue (rs : zmod list) (m p1 p2 : poly) :
   peqm m p1 p2 => peqm (mprod rs * m) p1 p2.
 proof.
 elim: rs => [|r rs ih] huniq hout hroots hpeqm.
-- by rewrite mprod_nil PolyComRing.mul1r.
-rewrite mprod_cons -PolyComRing.mulrA.
+- by rewrite mprod_nil mul1r.
+rewrite mprod_cons -mulrA.
 apply peqm_glue1.
 - rewrite pevalM.
   apply/negP => /Zq.ZModpField.mulf_eq0 [h0|h0].
@@ -507,9 +367,9 @@ qed.
 lemma degC_mul_le (c : zmod) (p : poly) : deg (polyC c * p) <= deg p.
 proof.
 case (c = Zq.zero) => [->|hc].
-- by rewrite PolyComRing.mul0r deg0 ge0_deg.
+- by rewrite mul0r deg0 ge0_deg.
 case (p = poly0) => [->|hp].
-- by rewrite PolyComRing.mulr0.
+- by rewrite mulr0.
 rewrite degM_proper.
 - rewrite lcC.
   apply /negP => /Zq.ZModpField.mulf_eq0 [h0|h0]; 1: by apply hc.
@@ -518,20 +378,8 @@ by rewrite degC hc /= /#.
 qed.
 
 (* ==================================================================== *)
-(* Evaluation and degree of polynomial sums                             *)
+(* Degree of polynomial sums                                            *)
 (* ==================================================================== *)
-lemma peval_big ['a] (P : 'a -> bool) (F : 'a -> poly) (s : 'a list) (a : zmod) :
-  peval (ZqP.BigPoly.PCA.big P F s) a
-    = ZqP.BigCf.BCA.big P (fun x => peval (F x) a) s.
-proof.
-elim: s => [|x s ih].
-- by rewrite ZqP.BigPoly.PCA.big_nil ZqP.BigCf.BCA.big_nil peval0.
-rewrite ZqP.BigPoly.PCA.big_cons ZqP.BigCf.BCA.big_cons.
-case (P x) => hP.
-- by rewrite pevalD ih.
-by apply ih.
-qed.
-
 lemma deg_big ['a] (P : 'a -> bool) (F : 'a -> poly) (s : 'a list) (n : int) :
   0 <= n => (forall x, x \in s => P x => deg (F x) <= n) =>
   deg (ZqP.BigPoly.PCA.big P F s) <= n.

@@ -7,6 +7,8 @@ provers = Z3@4.13
 pragmas = -Warn:uninit
 pragmas = -Warn:unused_unfold
 
+idirs = Jasmin:/Users/strub/Projects/jasmin-nist/_opam/lib/easycrypt/jasmin
+
 idirs = JazzEC:../arrays
 rdirs = ../arrays
 idirs = JazzEC:x86-64/avx2/ml_dsa_65
