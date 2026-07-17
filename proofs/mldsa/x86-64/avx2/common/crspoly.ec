@@ -31,11 +31,12 @@ clone import ZModP.ZModField as Zq with
   op p <- q.
 
 (* -------------------------------------------------------------------- *)
-(* Polynomials over Zq, at the IDomain level: ZqP.IDPoly is the ring    *)
-(* instance consumed by the generic CRT theories.                       *)
-clone import Poly.Poly as ZqP with
-  type coeff     <= Zq.zmod,
-  theory IDCoeff <= Zq.ZModpField.
+(* Polynomials over Zq, at the Field level (Lagrange interpolation);    *)
+(* ZqP.IDPoly is the ring instance consumed by the generic CRT          *)
+(* theories.                                                            *)
+clone import Poly.PolyField as ZqP with
+  type coeff    <= Zq.zmod,
+  theory FCoeff <= Zq.ZModpField.
 
 import BigCf.
 
@@ -278,74 +279,3 @@ qed.
 (* ==================================================================== *)
 (* Degrees of the monomial products                                     *)
 (* ==================================================================== *)
-(* ==================================================================== *)
-(* Lagrange interpolation over a uniq root list (the surjectivity half  *)
-(* of the CRS: any assignment of values at the roots is realized by a   *)
-(* polynomial of degree at most the number of roots)                    *)
-(* ==================================================================== *)
-op lag (rs : zmod list) (r : zmod) : poly =
-  polyC (Zq.inv (peval (mprod (rem r rs)) r)) * mprod (rem r rs).
-
-lemma lag_eval_same (rs : zmod list) (r : zmod) :
-  uniq rs => r \in rs => peval (lag rs r) r = Zq.one.
-proof.
-move=> hu hmem.
-rewrite /lag pevalM pevalC.
-apply Zq.ZModpField.mulVf.
-apply peval_mprod_out.
-rewrite (rem_filter r rs hu) mem_filter /predC1.
-by smt().
-qed.
-
-lemma lag_eval_other (rs : zmod list) (r r' : zmod) :
-  uniq rs => r' \in rs => r' <> r => peval (lag rs r) r' = Zq.zero.
-proof.
-move=> hu hm hne.
-rewrite /lag pevalM.
-rewrite (mprod_root (rem r rs) r').
-- rewrite (rem_filter r rs hu) mem_filter /predC1.
-  by smt().
-by rewrite Zq.ZModpRing.mulr0.
-qed.
-
-lemma deg_lag (rs : zmod list) (r : zmod) :
-  uniq rs => r \in rs => deg (lag rs r) <= size rs.
-proof.
-move=> hu hm.
-rewrite /lag -scalepE.
-have := degZ_le (Zq.inv (peval (mprod (rem r rs)) r)) (mprod (rem r rs)).
-rewrite deg_mprod size_rem 1://.
-by smt().
-qed.
-
-op interp (rs : zmod list) (f : zmod -> zmod) : poly =
-  ZqP.BigPoly.PCA.big predT (fun r => polyC (f r) * lag rs r) rs.
-
-lemma interp_evalP (rs : zmod list) (f : zmod -> zmod) (r0 : zmod) :
-  uniq rs => r0 \in rs => peval (interp rs f) r0 = f r0.
-proof.
-move=> hu hm.
-rewrite /interp peval_sum.
-rewrite (ZqP.BigCf.BCA.eq_big_perm _ _ _ _ (perm_to_rem _ _ hm)).
-rewrite ZqP.BigCf.BCA.big_cons /predT /=.
-rewrite pevalM pevalC lag_eval_same 1,2:// Zq.ZModpRing.mulr1.
-rewrite ZqP.BigCf.BCA.big1_seq /=.
-- move=> r hr.
-  have := hr; rewrite (rem_filter r0 rs hu) mem_filter /predC1 => -[hne hmem2].
-  rewrite /root pevalM pevalC (lag_eval_other rs r r0) 1:// 1:// 1:/#.
-  by rewrite Zq.ZModpRing.mulr0.
-by rewrite Zq.ZModpRing.addr0.
-qed.
-
-lemma deg_interp (rs : zmod list) (f : zmod -> zmod) :
-  uniq rs => deg (interp rs f) <= size rs.
-proof.
-move=> hu.
-rewrite /interp BigPoly.PCA.big_seq.
-apply BigPoly.deg_sum; 1: smt(size_ge0).
-move=> r /= hr.
-rewrite -scalepE.
-have h1 := degZ_le (f r) (lag rs r).
-have h2 := deg_lag rs r hu hr.
-by smt().
-qed.
