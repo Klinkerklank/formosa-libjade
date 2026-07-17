@@ -215,18 +215,6 @@ qed.
 (* ==================================================================== *)
 (* Products of monomials, root-based gluing                             *)
 (* ==================================================================== *)
-lemma peval_mprod_out (rs : zmod list) (a : zmod) :
-  ! (a \in rs) => peval (mprod rs) a <> Zq.zero.
-proof.
-elim: rs => [|r rs ih] hnin.
-- rewrite mprod_nil pevalC.
-  by apply Zq.ZModpRing.oner_neq0.
-rewrite mprod_cons pevalM pevalB pevalX pevalC.
-apply/negP => /Zq.ZModpField.mulf_eq0 [h0|h0].
-- by move: h0; rewrite Zq.ZModpRing.subr_eq0; smt().
-by move: h0; smt().
-qed.
-
 (* one gluing step: a fresh root joins the modulus *)
 lemma peqm_glue1 (m p1 p2 : poly) (a : zmod) :
   peval m a <> Zq.zero => root (p1 - p2) a =>
