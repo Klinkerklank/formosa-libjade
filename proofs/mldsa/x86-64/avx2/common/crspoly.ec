@@ -346,19 +346,6 @@ rewrite mprod_cons degM_proper.
 by rewrite deg_XC ih /= /#.
 qed.
 
-lemma degC_mul_le (c : zmod) (p : poly) : deg (polyC c * p) <= deg p.
-proof.
-case (c = Zq.zero) => [->|hc].
-- by rewrite mul0r deg0 ge0_deg.
-case (p = poly0) => [->|hp].
-- by rewrite mulr0.
-rewrite degM_proper.
-- rewrite lcC.
-  apply /negP => /Zq.ZModpField.mulf_eq0 [h0|h0]; 1: by apply hc.
-  by move: hp; rewrite -lc_eq0 h0.
-by rewrite degC hc /= /#.
-qed.
-
 (* ==================================================================== *)
 (* Lagrange interpolation over a uniq root list (the surjectivity half  *)
 (* of the CRS: any assignment of values at the roots is realized by a   *)
@@ -393,8 +380,8 @@ lemma deg_lag (rs : zmod list) (r : zmod) :
   uniq rs => r \in rs => deg (lag rs r) <= size rs.
 proof.
 move=> hu hm.
-rewrite /lag.
-have := degC_mul_le (Zq.inv (peval (mprod (rem r rs)) r)) (mprod (rem r rs)).
+rewrite /lag -scalepE.
+have := degZ_le (Zq.inv (peval (mprod (rem r rs)) r)) (mprod (rem r rs)).
 rewrite deg_mprod size_rem 1://.
 by smt().
 qed.
@@ -425,7 +412,8 @@ move=> hu.
 rewrite /interp BigPoly.PCA.big_seq.
 apply BigPoly.deg_sum; 1: smt(size_ge0).
 move=> r /= hr.
-have h1 := degC_mul_le (f r) (lag rs r).
+rewrite -scalepE.
+have h1 := degZ_le (f r) (lag rs r).
 have h2 := deg_lag rs r hu hr.
 by smt().
 qed.
