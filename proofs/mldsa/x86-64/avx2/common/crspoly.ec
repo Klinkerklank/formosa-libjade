@@ -423,7 +423,7 @@ lemma interp_evalP (rs : zmod list) (f : zmod -> zmod) (r0 : zmod) :
   uniq rs => r0 \in rs => peval (interp rs f) r0 = f r0.
 proof.
 move=> hu hm.
-rewrite /interp peval_big.
+rewrite /interp peval_sum.
 rewrite (ZqP.BigCf.BCA.eq_big_perm _ _ _ _ (perm_to_rem _ _ hm)).
 rewrite ZqP.BigCf.BCA.big_cons /predT /=.
 rewrite pevalM pevalC lag_eval_same 1,2:// Zq.ZModpRing.mulr1.
