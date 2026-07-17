@@ -216,39 +216,26 @@ qed.
 (* Products of monomials, root-based gluing                             *)
 (* ==================================================================== *)
 op mprod (rs : zmod list) : poly =
-  foldr (fun (r : zmod) acc => (X - polyC r) * acc) poly1 rs.
+  BigPoly.PCM.big predT (fun r => X - polyC r) rs.
 
 lemma mprod_nil : mprod [] = poly1.
-proof. by rewrite /mprod. qed.
+proof. by rewrite /mprod BigPoly.PCM.big_nil. qed.
 
 lemma mprod_cons (r : zmod) (rs : zmod list) :
   mprod (r :: rs) = (X - polyC r) * mprod rs.
-proof. by rewrite /mprod. qed.
+proof. by rewrite /mprod BigPoly.PCM.big_consT. qed.
 
 lemma mprod_cat (rs1 rs2 : zmod list) :
   mprod (rs1 ++ rs2) = mprod rs1 * mprod rs2.
-proof.
-elim: rs1 => [|r rs1 ih].
-- by rewrite mprod_nil cat0s mul1r.
-rewrite cat_cons !mprod_cons ih.
-by rewrite mulrA.
-qed.
+proof. by rewrite /mprod BigPoly.PCM.big_cat. qed.
 
 (* a member root gives a left factor of the product *)
 lemma mprod_mem_factor (rs : zmod list) (r : zmod) :
   r \in rs => exists q, mprod rs = (X - polyC r) * q.
 proof.
-elim: rs => [|x rs ih] //.
-move=> hmem.
-case (r = x) => hrx.
-- exists (mprod rs).
-  by rewrite mprod_cons hrx.
-have hmem' : r \in rs by smt().
-have [q hq] := ih hmem'.
-exists ((X - polyC x) * q).
-rewrite mprod_cons hq.
-rewrite !mulrA.
-by rewrite (mulrC (X - polyC x) (X - polyC r)).
+move=> hmem; exists (mprod (rem r rs)).
+rewrite /mprod (BigPoly.PCM.eq_big_perm _ _ _ _ (perm_to_rem _ _ hmem)).
+by rewrite BigPoly.PCM.big_consT.
 qed.
 
 lemma peval_mprod_out (rs : zmod list) (a : zmod) :
@@ -266,12 +253,8 @@ qed.
 lemma mprod_root (rs : zmod list) (a : zmod) :
   a \in rs => root (mprod rs) a.
 proof.
-elim: rs => [|r rs ih] hin; 1: by done.
-rewrite mprod_cons pevalM pevalB pevalX pevalC.
-case (a = r) => [->|neq].
-- by rewrite Zq.ZModpRing.subrr Zq.ZModpRing.mul0r.
-rewrite ih; 1: smt().
-by rewrite Zq.ZModpRing.mulr0.
+move=> hin; have [q ->] := mprod_mem_factor rs a hin.
+by rewrite pevalM pevalB pevalX pevalC Zq.ZModpRing.subrr Zq.ZModpRing.mul0r.
 qed.
 
 (* one gluing step: a fresh root joins the modulus *)
