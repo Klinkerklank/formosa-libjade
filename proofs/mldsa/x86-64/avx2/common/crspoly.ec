@@ -31,12 +31,11 @@ clone import ZModP.ZModField as Zq with
   op p <- q.
 
 (* -------------------------------------------------------------------- *)
-(* Polynomials over Zq.  We clone the ComRing-level polynomial theory:  *)
-(* the only integral-domain fact ever needed lives at the coefficient   *)
-(* level and comes from Zq.ZModpField directly.                         *)
-clone import Poly.PolyComRing as ZqP with
-  type coeff   <= Zq.zmod,
-  theory Coeff <= Zq.ZModpRing.
+(* Polynomials over Zq, at the IDomain level: ZqP.IDPoly is the ring    *)
+(* instance consumed by the generic CRT theories.                       *)
+clone import Poly.Poly as ZqP with
+  type coeff     <= Zq.zmod,
+  theory IDCoeff <= Zq.ZModpField.
 
 import BigCf.
 
