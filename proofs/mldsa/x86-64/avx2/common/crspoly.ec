@@ -32,11 +32,12 @@ clone import ZModP.ZModField as Zq with
 
 (* -------------------------------------------------------------------- *)
 (* Polynomials over Zq, at the Field level (Lagrange interpolation);    *)
-(* ZqP.IDPoly is the ring instance consumed by the generic CRT          *)
-(* theories.                                                            *)
+(* the coefficient field is passed as the single bundle Zq.ZModpFieldBd *)
+(* (references to Zq.ZModpRing + Zq.ZModpFieldMx), so every coefficient *)
+(* slot in the chain resolves to the one ring object on Zq.zmod.        *)
 clone import Poly.PolyField as ZqP with
-  type coeff    <= Zq.zmod,
-  theory FCoeff <= Zq.ZModpField.
+  type coeff <= Zq.zmod,
+  theory K   <= Zq.ZModpFieldBd.
 
 import BigCf.
 
@@ -204,7 +205,7 @@ have hm : m <> poly0.
 - by apply /negP => m0; move: h1; rewrite m0 deg0; smt(ge0_deg).
 have hdeg : deg (h * m) = deg h + deg m - 1.
 - apply degM_proper.
-  apply /negP => /Zq.ZModpField.mulf_eq0 [h0|h0].
+  apply /negP => /Zq.ZModpFieldMx.mulf_eq0 [h0|h0].
   + by move: hnz; rewrite -lc_eq0 h0.
   + by move: hm; rewrite -lc_eq0 h0.
 have hlt : deg (p1 - p2) < deg m by smt(degB).
@@ -224,7 +225,7 @@ proof.
 move=> hm hr [h eh].
 have h0 : root h a.
 - move: hr; rewrite eh pevalM.
-  rewrite Zq.ZModpField.mulf_eq0.
+  rewrite Zq.ZModpFieldMx.mulf_eq0.
   by case=> //.
 move/factor_theorem: h0 => [g eg].
 exists g.
@@ -244,7 +245,7 @@ elim: rs => [|r rs ih] huniq hout hroots hpeqm.
 rewrite mprod_cons -mulrA.
 apply peqm_glue1.
 - rewrite pevalM.
-  apply/negP => /Zq.ZModpField.mulf_eq0 [h0|h0].
+  apply/negP => /Zq.ZModpFieldMx.mulf_eq0 [h0|h0].
   - have := peval_mprod_out rs r _; 1: smt().
     by smt().
   have := hout r _; 1: by rewrite in_cons.

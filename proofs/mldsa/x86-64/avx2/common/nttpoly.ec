@@ -582,7 +582,7 @@ have main : forall e1 e2, 0 <= e1 < 512 => 0 <= e2 < 512 => e1 <= e2 =>
   + rewrite Zq.ZModpRing.mulrBr Zq.ZModpRing.mulr1.
     by rewrite -hsplit heq Zq.ZModpRing.subrr.
   move: hzero.
-  rewrite Zq.ZModpField.mulf_eq0.
+  rewrite Zq.ZModpFieldMx.mulf_eq0.
   case=> [h0|hz]; 1: by smt().
   have h1 : Zq.ZModpRing.exp zZ (f2 - f1) = Zq.one.
   + by smt(@Zq.ZModpRing).
@@ -730,7 +730,7 @@ lemma degX256 : deg (exp X 256 + poly1) = 257.
 proof.
 have hX : deg (exp X 256) = 257.
 - rewrite degXn_proper.
-  + by rewrite lcX; apply /Zq.ZModpField.lregP; apply Zq.ZModpRing.oner_neq0.
+  + by rewrite lcX; apply /Zq.ZModpFieldMx.Dom.lregP; apply Zq.ZModpRing.oner_neq0.
   + by done.
   by rewrite degX.
 by rewrite degDl hX // deg1.
