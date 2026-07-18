@@ -40,13 +40,23 @@ The generic content has been moved out of `crspoly.ec` upstream
   B/MX/X/Z/M`, `peval_sum`, `peval_prod`; definition tightened to sum
   over `[0, deg p)`), the `mprod` cluster (products of monic linear
   factors, as `PCM` bigs), `degXBC`/`lcXBC`, `deg_mprod`.
-- `Poly.ec` / `Poly` (IDomain): `peval_mprod_out`; the `IDPoly`
-  instance is now matchable (`<=` aliases, clone-exported) — as is
-  `ZModpField` — so `ZqP` clones at field level and `ZqP.IDPoly`
-  feeds theory parameters directly.
-- `Poly.ec` / `PolyField` (new floor): Field coefficients; the
-  `Lagrange` sub-theory (`lag`, `interp`, evaluation and degree
-  lemmas).  Future home of the Euclide realization for k[X].
+- `Poly.ec` / `Poly` (IDomain): `peval_mprod_out`; converted to the
+  mixin architecture — parameters `CR : ComRing` + `CoeffDom :
+  IDomainMixin`, `PolyComRing`'s `unit`/`invr` realized
+  definitionally (unit axioms proven), and `IDPoly` a delta-only
+  `IDomainMixin` over the one `PolyComRing` object (no duplicate
+  ring, no `clear`); `BigPoly`'s `CR` slot is a navigable alias.
+- `Poly.ec` / `PolyField` (new floor): coefficients as a single
+  `FieldBundle` parameter `K` (concrete instance:
+  `Zq.ZModpFieldBd`); the `Lagrange` sub-theory (`lag`, `interp`,
+  evaluation and degree lemmas).  Future home of the Euclide
+  realization for k[X].
+- `Ring.ec`: the mixin/bundle kit itself — `IDomainMixin`,
+  `FieldMixin` (factory: one axiom `unitfP`, everything derived,
+  nested realized `Dom`), `IDomainBundle`/`FieldBundle` (interface
+  objects for one-substitution instantiation).  `ZModP.ec`'s bundled
+  `ZModpField` clone is deleted; the field level is
+  `ZModpFieldMx`/`ZModpFieldBd` over the one `ZModpRing` object.
 - `CommAlgebra.ec` (new): stacked as **`Base`** — ideals
   (`Ideal.ec`), divisibility, and the CRT cluster against explicit
   Bezout witnesses (`comax x y = exists u v, u*x + v*y = 1`:
@@ -57,20 +67,27 @@ The generic content has been moved out of `crspoly.ec` upstream
   Co-primality was avoided in the ML-DSA layer by design; for the
   generalization it enters only as the witness predicate, which
   binomial moduli `X^n - c1`, `X^n - c2` discharge by the constant
-  `(c2 - c1)^-1`.
+  `(c2 - c1)^-1`.  `Ideal.Ideal` and `Base` take `R : ComRing` +
+  `Dom : IDomainMixin` (Ideal's op-by-op push-down retired), with
+  `Base` owning `BR` and pushing it into its `Ideal` clone.
 
-## Phase 1 — rewire ML-DSA onto `CommAlgebra.Base` (next)
+## Done — Phase 1: ML-DSA rewired onto `CommAlgebra.Base`
 
-1. Clone `CommAlgebra.Base` in `crspoly.ec` with
-   `type t <= ZqP.poly, theory ID <= ZqP.IDPoly`; bridge
-   `peqm m p1 p2 <-> idgen [m] (p1 - p2)`.
-2. Binomial `comax` witnesses from distinctness of the zeta powers.
-3. Re-derive `leaf_glue`/`leaf_descend` from `crt_uniq_comax` and
-   descend; retire the root-based gluing (`peqm_glue1`, `peqm_glue`,
-   `peqm_mprod2`).
-4. Still local to `crspoly.ec` afterwards: `sdivP`/`factor_theorem`,
-   the `peqm` kit (until the bridge absorbs it), `peqm_deg_eq` —
-   all slated for replacement in phase 2.
+- `crspoly.ec` clones `CommAlgebra.Base` as `ZqCA` in one coherent
+  substitution (`type t <= ZqP.poly, theory R <= ZqP.PolyComRing,
+  theory Dom <= ZqP.IDPoly, theory BR <= ZqP.BigPoly` with
+  `BAdd/BMul` renamed `PCA/PCM`); the bigops are definitionally
+  `ZqP.BigPoly`'s (no bridge lemma).
+- `peqm_dvd`: congruence is divisibility of the difference.
+- `comax_XnC`: distinct binomials `X^n - c` are comaximal, by the
+  constant Bezout witnesses.
+- `peqm_mprod` (CRT gluing over a distinct-root monomial product,
+  via `dvdr_prodl_comax`); `nttpoly.leaf_glue` goes through it, and
+  the root-based gluing (`peqm_glue1`, `peqm_glue`, `peqm_mprod2`,
+  `peqm_1`) is retired.
+- Still local to `crspoly.ec`: `sdivP`/`factor_theorem`, the `peqm`
+  kit (`peqm_root`/`peqm_lin_root` carry the evaluation-level leaf
+  facts), `peqm_deg_eq` — slated for replacement in phase 2.
 
 ## Phase 2 — after the polydiv rework
 
