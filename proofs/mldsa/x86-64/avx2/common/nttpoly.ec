@@ -29,7 +29,7 @@ require import AllCore List Ring IntDiv BitEncoding StdOrder StdBigop.
 (* -------------------------------------------------------------------- *)
 require import Nttlogspec Nttspec Nttzetas Nttalg Fnttalg Inttalg.
 require import Crspoly.
-(*---*) import Zq ZqP ZqP.BigCf ZqP.Lagrange.
+(*---*) import Zq ZqP ZqP.BigCf ZqP.Lagrange ZqCA.
 
 (* -------------------------------------------------------------------- *)
 from Jasmin require import JUtils JWord.
@@ -161,11 +161,11 @@ lemma xnp_chunk (n : int) (c : Zq.zmod) (xs ys : Zq.zmod list) :
 proof.
 move=> hsz.
 rewrite polyL_cat hsz.
-apply peqmD.
-- by apply peqm_refl.
-apply peqmM.
+apply eqmD.
+- by apply eqm_refl.
+apply eqmM.
 - by apply xnp_Xn.
-by apply peqm_refl.
+by apply eqm_refl.
 qed.
 
 (* the fold: a (n*m)-coefficient list reduces to the n-coefficient
@@ -194,23 +194,23 @@ elim: m ge0m g => [|m ge0m ih] g.
     case (i < n) => hc.
     - by rewrite nth_mkseq //#.
     by rewrite nth_default ?size_mkseq /#.
-  by apply peqm_refl.
+  by apply eqm_refl.
 rewrite (: n * (m + 1) = n + n * m) 1:/#.
 rewrite mkseq_add 1,2:/#.
-apply (peqm_trans _
+apply (eqm_trans _
   (polyL (mkseq g n) + polyC c * polyL (mkseq (fun i => g (n + i)) (n * m)))).
 - apply xnp_chunk.
   by rewrite size_mkseq /#.
-apply (peqm_trans _
+apply (eqm_trans _
   (polyL (mkseq g n) + polyC c * polyL (mkseq
      (fun t => BCA.bigi predT
         (fun s => Zq.ZModpRing.exp c s * g (n + (s * n + t))) 0 m) n))).
-- apply peqmD.
-  - by apply peqm_refl.
-  apply peqmM.
-  - by apply peqm_refl.
+- apply eqmD.
+  - by apply eqm_refl.
+  apply eqmM.
+  - by apply eqm_refl.
   by apply ih.
-apply peqm_eq.
+apply eqm_eq.
 rewrite polyL_scale polyL_add.
 congr.
 apply eq_in_mkseq => t rgt /=.
@@ -241,14 +241,14 @@ have := xnp_fold (2^k) (2^(8-k)) (Zq.ZModpRing.exp zZ (E k j))
   (fun i => Zq.inzmod (sval p.[i])) gt0n _; 1: by apply expr_ge0.
 rewrite e256 -/(pofw p) -/(basis k j).
 move=> h.
-apply (peqm_trans _
+apply (eqm_trans _
   (polyL (mkseq
      (fun t => BCA.bigi predT
         (fun s => Zq.ZModpRing.exp (Zq.ZModpRing.exp zZ (E k j)) s
                   * Zq.inzmod (sval p.[s * 2^k + t])) 0 (2^(8-k)))
      (2^k)))).
 - by apply h.
-apply peqm_eq.
+apply eqm_eq.
 rewrite /nttsump.
 congr.
 apply eq_in_mkseq => t rgt /=.
@@ -269,9 +269,9 @@ lemma reduce_tree_polyP (p : wpoly) (B k j : int) :
     (pofw_blk (reduce_tree p k) (j * 2^k) (2^k)).
 proof.
 move=> rgk ge0B hB hbnd rgj.
-apply (peqm_trans _ (nttsump p k j)).
+apply (eqm_trans _ (nttsump p k j)).
 - by apply pofw_nttsump.
-apply peqm_eq.
+apply eqm_eq.
 rewrite /nttsump /pofw_blk.
 congr.
 apply eq_in_mkseq => t rgt /=.
@@ -638,7 +638,7 @@ have [q hq] := mprod_mem_factor (leafroots 8 0) (Zq.ZModpRing.exp zZ (E 0 j)) hm
 have hb : basis 0 j = X - polyC (Zq.ZModpRing.exp zZ (E 0 j)).
 - by rewrite /basis /xnp /= expr1.
 rewrite hb.
-apply (peqm_mulm _ q).
+apply (eqm_mulm _ q).
 rewrite -hq -(basis_leaves 8 0) 1:// 1:/# basisX256.
 by apply h.
 qed.

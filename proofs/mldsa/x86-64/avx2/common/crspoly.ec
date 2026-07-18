@@ -41,6 +41,21 @@ clone import Poly.PolyField as ZqP with
 
 import BigCf.
 
+(* -------------------------------------------------------------------- *)
+(* The commutative-algebra instance over ZqP.poly: one coherent         *)
+(* substitution -- CommAlgebra.Base's ideal/CRT machinery with          *)
+(* ZqP.BigPoly as the authoritative big operators (definitionally).     *)
+clone import CommAlgebra.Base as ZqCA with
+  type t     <= ZqP.poly,
+  theory R   <= ZqP.PolyComRing,
+  theory Dom <= ZqP.IDPoly,
+  theory BR  <= ZqP.BigPoly { rename "BAdd" as "PCA" "BMul" as "PCM" }.
+
+(* congruence modulo a polynomial: the generic modulus-parametric       *)
+(* congruence of CommAlgebra.Base (kit: eqm_refl/sym/trans/eq, eqmP,    *)
+(* eqmD/N/B/M, eqm_mod0, eqm_mulm)                                      *)
+abbrev peqm (m p1 p2 : poly) = ZqCA.eqm m p1 p2.
+
 (* ==================================================================== *)
 (* Division with remainder by a monic linear factor; factor theorem     *)
 (* ==================================================================== *)
@@ -91,92 +106,15 @@ by rewrite Zq.ZModpRing.subrr Zq.ZModpRing.mul0r.
 qed.
 
 (* ==================================================================== *)
-(* Congruences modulo a polynomial                                      *)
+(* Congruences modulo a polynomial: the generic kit lives in ZqCA       *)
+(* (eqm_refl/sym/trans/eq, eqmD/N/B/M, eqm_mod0, eqm_mulm); below,      *)
+(* the facts that are genuinely about polynomials: roots and degrees    *)
 (* ==================================================================== *)
-pred peqm (m p1 p2 : poly) = exists h, p1 - p2 = h * m.
-
-lemma peqm_refl (m p : poly) : peqm m p p.
-proof.
-by exists poly0; rewrite subrr mul0r.
-qed.
-
-lemma peqm_sym (m p1 p2 : poly) : peqm m p1 p2 => peqm m p2 p1.
-proof.
-move=> [h eh]; exists (- h).
-by rewrite -opprB eh mulNr.
-qed.
-
-lemma peqm_trans (m p2 p1 p3 : poly) :
-  peqm m p1 p2 => peqm m p2 p3 => peqm m p1 p3.
-proof.
-move=> [h1 e1] [h2 e2]; exists (h1 + h2).
-have -> : p1 - p3 = (p1 - p2) + (p2 - p3).
-- by rewrite addrA subrK.
-by rewrite e1 e2 mulrDl.
-qed.
-
-lemma peqm_eq (m p1 p2 : poly) : p1 = p2 => peqm m p1 p2.
-proof. by move=> ->; apply peqm_refl. qed.
-
-(* the modulus is congruent to zero *)
-lemma peqm_m (m : poly) : peqm m m poly0.
-proof.
-by exists poly1; rewrite subr0 mul1r.
-qed.
-
-lemma peqmD (m p1 p2 q1 q2 : poly) :
-  peqm m p1 p2 => peqm m q1 q2 => peqm m (p1 + q1) (p2 + q2).
-proof.
-move=> [h1 e1] [h2 e2]; exists (h1 + h2).
-have -> : p1 + q1 - (p2 + q2) = (p1 - p2) + (q1 - q2).
-- by rewrite opprD addrACA.
-by rewrite e1 e2 mulrDl.
-qed.
-
-lemma peqmN (m p1 p2 : poly) : peqm m p1 p2 => peqm m (- p1) (- p2).
-proof.
-move=> [h eh]; exists (- h).
-have -> : - p1 - - p2 = -(p1 - p2).
-- by rewrite opprK opprB addrC.
-by rewrite eh mulNr.
-qed.
-
-lemma peqmB (m p1 p2 q1 q2 : poly) :
-  peqm m p1 p2 => peqm m q1 q2 => peqm m (p1 - q1) (p2 - q2).
-proof.
-move=> h1 h2; apply peqmD.
-- by apply h1.
-by apply peqmN.
-qed.
-
-lemma peqmM (m p1 p2 q1 q2 : poly) :
-  peqm m p1 p2 => peqm m q1 q2 => peqm m (p1 * q1) (p2 * q2).
-proof.
-move=> [h1 e1] [h2 e2]; exists (p1 * h2 + h1 * q2).
-have -> : p1 * q1 - p2 * q2 = p1 * (q1 - q2) + (p1 - p2) * q2.
-- rewrite mulrBr mulrBl.
-  by rewrite addrA subrK.
-rewrite e1 e2 mulrDl.
-rewrite mulrA.
-have -> : h1 * m * q2 = h1 * q2 * m.
-- by rewrite -mulrA (mulrC m q2) mulrA.
-by done.
-qed.
-
-(* restriction to a divisor of the modulus: the CRT-tree "descend"     *)
-lemma peqm_mulm (m1 m2 p1 p2 : poly) :
-  peqm (m1 * m2) p1 p2 => peqm m1 p1 p2.
-proof.
-move=> [h eh]; exists (h * m2).
-rewrite eh -mulrA (mulrC m1 m2).
-by rewrite mulrA.
-qed.
-
 (* roots of the modulus are roots of the difference *)
 lemma peqm_root (m p1 p2 : poly) (a : zmod) :
   peqm m p1 p2 => root m a => root (p1 - p2) a.
 proof.
-move=> [h eh] hroot.
+move=> /eqmP [h eh] hroot.
 by rewrite eh pevalM hroot Zq.ZModpRing.mulr0.
 qed.
 
@@ -188,7 +126,7 @@ move=> heq.
 have hroot : root (p1 - p2) a.
 - by rewrite pevalB heq Zq.ZModpRing.subrr.
 move/factor_theorem: hroot => [h eh].
-exists h.
+apply/eqmP; exists h.
 by rewrite eh mulrC.
 qed.
 
@@ -197,7 +135,7 @@ qed.
 lemma peqm_deg_eq (m p1 p2 : poly) :
   deg p1 < deg m => deg p2 < deg m => peqm m p1 p2 => p1 = p2.
 proof.
-move=> h1 h2 [h eh].
+move=> h1 h2 /eqmP [h eh].
 case (h = poly0) => [h0|hnz].
 - move: eh; rewrite h0 mul0r => hsub.
   by rewrite -subr_eq0 hsub.
@@ -215,21 +153,8 @@ by smt().
 qed.
 
 (* ==================================================================== *)
-(* The commutative-algebra instance over ZqP.poly: one coherent         *)
-(* substitution -- CommAlgebra.Base's ideal/CRT machinery with          *)
-(* ZqP.BigPoly as the authoritative big operators (definitionally).     *)
+(* Co-maximality and CRT gluing for the NTT moduli                      *)
 (* ==================================================================== *)
-clone CommAlgebra.Base as ZqCA with
-  type t     <= ZqP.poly,
-  theory R   <= ZqP.PolyComRing,
-  theory Dom <= ZqP.IDPoly,
-  theory BR  <= ZqP.BigPoly { rename "BAdd" as "PCA" "BMul" as "PCM" }.
-
-(* congruence is divisibility of the difference *)
-lemma peqm_dvd (m p1 p2 : poly) :
-  peqm m p1 p2 <=> ZqCA.I.(%|) m (p1 - p2).
-proof. by rewrite /peqm ZqCA.I.dvdrP. qed.
-
 (* distinct binomials X^n - c are comaximal: constant Bezout witnesses *)
 lemma comax_XnC (n : int) (c1 c2 : zmod) : c1 <> c2 =>
   ZqCA.comax (polyXn n - polyC c1) (polyXn n - polyC c2).
@@ -249,12 +174,12 @@ lemma peqm_mprod (rs : zmod list) (p1 p2 : poly) :
   (forall r, r \in rs => peqm (X - polyC r) p1 p2) =>
   peqm (mprod rs) p1 p2.
 proof.
-move=> hu hleaf; rewrite peqm_dvd.
-apply (ZqCA.dvdr_prodl_comax (fun r => X - polyC r)).
+move=> hu hleaf.
+apply (dvdr_prodl_comax (fun r => X - polyC r)).
 - move=> i j rgi rgj ne_ij; apply comax_XnC.
   by smt(index_uniq).
 rewrite allP => b /mapP [r [hr ->]] /=.
-by rewrite -peqm_dvd &(hleaf).
+by apply hleaf.
 qed.
 
 (* ==================================================================== *)
