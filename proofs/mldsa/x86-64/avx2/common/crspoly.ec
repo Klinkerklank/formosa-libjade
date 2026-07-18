@@ -22,7 +22,7 @@ require import AllCore List Ring IntDiv StdOrder StdBigop.
 
 (* -------------------------------------------------------------------- *)
 require import Nttlogspec.
-require ZModP Poly.
+require ZModP Poly CommAlgebra.
 
 (* ==================================================================== *)
 (* The field Zq (prime q axiomatized)                                   *)
@@ -215,66 +215,46 @@ by smt().
 qed.
 
 (* ==================================================================== *)
-(* Products of monomials, root-based gluing                             *)
+(* The commutative-algebra instance over ZqP.poly: one coherent         *)
+(* substitution -- CommAlgebra.Base's ideal/CRT machinery with          *)
+(* ZqP.BigPoly as the authoritative big operators (definitionally).     *)
 (* ==================================================================== *)
-(* one gluing step: a fresh root joins the modulus *)
-lemma peqm_glue1 (m p1 p2 : poly) (a : zmod) :
-  peval m a <> Zq.zero => root (p1 - p2) a =>
-  peqm m p1 p2 => peqm ((X - polyC a) * m) p1 p2.
+clone CommAlgebra.Base as ZqCA with
+  type t     <= ZqP.poly,
+  theory R   <= ZqP.PolyComRing,
+  theory Dom <= ZqP.IDPoly,
+  theory BR  <= ZqP.BigPoly { rename "BAdd" as "PCA" "BMul" as "PCM" }.
+
+(* congruence is divisibility of the difference *)
+lemma peqm_dvd (m p1 p2 : poly) :
+  peqm m p1 p2 <=> ZqCA.I.(%|) m (p1 - p2).
+proof. by rewrite /peqm ZqCA.I.dvdrP. qed.
+
+(* distinct binomials X^n - c are comaximal: constant Bezout witnesses *)
+lemma comax_XnC (n : int) (c1 c2 : zmod) : c1 <> c2 =>
+  ZqCA.comax (polyXn n - polyC c1) (polyXn n - polyC c2).
 proof.
-move=> hm hr [h eh].
-have h0 : root h a.
-- move: hr; rewrite eh pevalM.
-  rewrite Zq.ZModpFieldMx.mulf_eq0.
-  by case=> //.
-move/factor_theorem: h0 => [g eg].
-exists g.
-rewrite eh eg.
-by rewrite (mulrC (X - polyC a) g) -mulrA.
+move=> ne; rewrite /ZqCA.comax.
+exists (polyC (Zq.inv (c2 - c1))) (- polyC (Zq.inv (c2 - c1))).
+rewrite mulNr -mulrBr opprB addrAC addrCA subrr addr0.
+rewrite -polyCN -polyCD -polyCM.
+by rewrite Zq.ZModpFieldMx.mulVf // Zq.ZModpRing.subr_eq0 eq_sym.
 qed.
 
-(* gluing a root list onto a modulus *)
-lemma peqm_glue (rs : zmod list) (m p1 p2 : poly) :
+(* CRT gluing over a product of distinct monomials: congruence at each *)
+(* monomial gives congruence modulo the product, by pairwise           *)
+(* comaximality -- no root/evaluation argument                         *)
+lemma peqm_mprod (rs : zmod list) (p1 p2 : poly) :
   uniq rs =>
-  (forall r, r \in rs => peval m r <> Zq.zero) =>
-  (forall r, r \in rs => root (p1 - p2) r) =>
-  peqm m p1 p2 => peqm (mprod rs * m) p1 p2.
+  (forall r, r \in rs => peqm (X - polyC r) p1 p2) =>
+  peqm (mprod rs) p1 p2.
 proof.
-elim: rs => [|r rs ih] huniq hout hroots hpeqm.
-- by rewrite mprod_nil mul1r.
-rewrite mprod_cons -mulrA.
-apply peqm_glue1.
-- rewrite pevalM.
-  apply/negP => /Zq.ZModpFieldMx.mulf_eq0 [h0|h0].
-  - have := peval_mprod_out rs r _; 1: smt().
-    by smt().
-  have := hout r _; 1: by rewrite in_cons.
-  by smt().
-- by apply hroots; rewrite in_cons.
-apply ih.
-- by smt().
-- by move=> r' hr'; apply hout; rewrite in_cons; right.
-- by move=> r' hr'; apply hroots; rewrite in_cons; right.
-by apply hpeqm.
-qed.
-
-(* the CRS form: congruent modulo two root-disjoint monomial products
-   => congruent modulo their product *)
-lemma peqm_mprod2 (rs1 rs2 : zmod list) (p1 p2 : poly) :
-  uniq (rs1 ++ rs2) =>
-  peqm (mprod rs1) p1 p2 => peqm (mprod rs2) p1 p2 =>
-  peqm (mprod (rs1 ++ rs2)) p1 p2.
-proof.
-move=> hu h1 h2.
-rewrite mprod_cat.
-apply peqm_glue => //.
-- by smt(cat_uniq).
-- move=> r hr.
-  apply peval_mprod_out.
-  by smt(cat_uniq hasP).
-move=> r hr.
-apply (peqm_root (mprod rs1)) => //.
-by apply mprod_root.
+move=> hu hleaf; rewrite peqm_dvd.
+apply (ZqCA.dvdr_prodl_comax (fun r => X - polyC r)).
+- move=> i j rgi rgj ne_ij; apply comax_XnC.
+  by smt(index_uniq).
+rewrite allP => b /mapP [r [hr ->]] /=.
+by rewrite -peqm_dvd &(hleaf).
 qed.
 
 (* ==================================================================== *)

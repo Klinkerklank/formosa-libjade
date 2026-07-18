@@ -108,9 +108,7 @@ lemma polyL_cat (xs ys : Zq.zmod list) :
   polyL (xs ++ ys) = polyL xs + exp X (size xs) * polyL ys.
 proof.
 elim: xs => [|c xs ih].
-- rewrite cat0s polyL_nil /=.
-  rewrite expr0 mul1r.
-  by rewrite add0r.
+- by rewrite cat0s polyL_nil /= expr0 mul1r.
 rewrite cat_cons !polyL_cons ih /=.
 rewrite mulrDl -!addrA.
 congr.
@@ -612,34 +610,17 @@ qed.
 (* The gluing corollary: congruent on all 256 leaves =>                 *)
 (* congruent modulo X^256 + 1                                           *)
 (* ==================================================================== *)
-lemma peqm_1 (u v : poly) : peqm poly1 u v.
-proof.
-by exists (u - v); rewrite mulr1.
-qed.
-
 lemma leaf_glue (u v : poly) :
   (forall j, 0 <= j < 256 => peqm (basis 0 j) u v) =>
   peqm (exp X 256 + poly1) u v.
 proof.
 move=> hleaf.
-have h : peqm (mprod (leafroots 8 0) * poly1) u v.
-- apply peqm_glue.
-  + by apply uniq_leafroots.
-  + move=> r hr.
-    rewrite pevalC.
-    by apply Zq.ZModpRing.oner_neq0.
-  + move=> r /mkseqP [jj [rgj ->]] /=.
-    have rgj' : 0 <= jj < 256 by move: rgj => /#.
-    have hj := hleaf jj rgj'.
-    apply (peqm_root (basis 0 jj)) => //.
-    rewrite /basis /xnp /= expr1.
-    rewrite pevalB pevalX pevalC.
-    by rewrite Zq.ZModpRing.subrr.
-  by apply peqm_1.
-move: h.
-rewrite mulr1.
-rewrite -(basis_leaves 8 0) 1:// 1:/#.
-by rewrite basisX256.
+rewrite -basisX256 (basis_leaves 8 0) 1:// 1:/#.
+apply peqm_mprod; first by apply uniq_leafroots.
+move=> r /mkseqP [jj [rgj ->]] /=.
+have rgj' : 0 <= jj < 256 by move: rgj => /#.
+have := hleaf jj rgj'.
+by rewrite /basis /xnp /= expr1.
 qed.
 
 (* the converse (CRT-tree descend): each leaf is a factor of X^256 + 1 *)
