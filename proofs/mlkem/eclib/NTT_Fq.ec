@@ -463,7 +463,7 @@ rewrite eq_sym /br mulrDl /= (bsrev_cat 7 8) //= divzDr //= divz_small /=; [by a
 rewrite bsrev1 //= (addzC 1) -bsrev_mod /= -modzDm /= !bsrev_mod.
 move: (bsrev_add 1 7 1 q); rewrite mem_range /= addrC mulrC => ->.
 rewrite -(bsrev_mulr_pow2 1 7 q) //= mulrDr bsrev1 // -addrA.
-rewrite (ZqField.exprD _ (_ * (_ ^ _)%IntID)%Int) /=; [by apply unit_zroot|].
+rewrite (ZqField.exprD _ (_ * (_ ^ _)%IntID)%Int) /=; [by apply unit_zroot_ring|].
 by rewrite exp_zroot_128 incoeffN ZqField.mulNr ZqField.mul1r (mulzC _ 2).
 qed.
 

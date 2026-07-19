@@ -2264,10 +2264,14 @@ lemma unit_zroot :
   zroot <> Zq.zero.
 proof. by rewrite -eq_incoeff /q. qed.
 
+lemma unit_zroot_ring :
+  unit zroot.
+proof. by exists (incoeff 1175); rewrite -incoeffM_mod /q. qed.
+
 lemma inv_zroot :
   inv zroot = incoeff 1175.
 proof.
-  apply (ZqField.mulIr zroot); [by apply unit_zroot|].
+  apply (ZqField.mulIr zroot); [by apply unit_zroot_ring|].
   rewrite ZqField.mulVf; [by apply unit_zroot|].
   by rewrite -incoeffM_mod /q.
 qed.
@@ -2276,10 +2280,6 @@ lemma exp_zroot n :
   ZqRing.exp zroot n =
   incoeff (exp 17 (n %% 256) %% q).
 proof. by rewrite -!incoeff_mod (exp_mod _ _ _ exp_zroot_256) exp_incoeff modz_ge0. qed.
-
-lemma unit_zroot_ring :
-  unit zroot.
-proof. by exists (incoeff 1175); rewrite -incoeffM_mod /q. qed.
 
 lemma exp_zroot_128_ring :
   ZqRing.exp zroot 128 = incoeff (-1).
