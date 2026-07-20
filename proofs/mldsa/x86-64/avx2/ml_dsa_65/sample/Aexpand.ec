@@ -474,6 +474,80 @@ lemma take_sub (a : W8.t Array848.t) (k n m : int) :
 proof. by move=> h; rewrite /sub take_mkseq. qed.
 
 (* -------------------------------------------------------------------- *)
+(* local reduction hints for the bytestream decoder                     *)
+lemma and255E (x : W8.t) : x `&` W8.of_int 255 = x.
+proof.
+have -> : W8.of_int 255 = W8.onew.
+- by rewrite /onew /=.
+by done.
+qed.
+
+hint simplify and255E.
+
+lemma pack4_3_and_maskE (a b c : W8.t) :
+  W4u8.pack4 [a; b; c] `&` W32.of_int 8388607
+  = W4u8.pack4 [a; b; c `&` W8.of_int 127; W8.zero].
+proof.
+apply W4u8.allP => /=.
+by rewrite !W4u8.of_int_bits8_div //=.
+qed.
+
+hint simplify pack4_3_and_maskE.
+
+(* DECODING_TABLE.[0]: the dword permutation [0 1 2 0 3 4 5 0]          *)
+lemma DECODING_PERM_E :
+  W256.of_int 31385508682779410369523405889615886801803926611390921441280
+  = W8u32.pack8
+    [W32.zero; W32.of_int 1; W32.of_int 2; W32.zero;
+     W32.of_int 3; W32.of_int 4; W32.of_int 5; W32.zero].
+proof.
+apply W8u32.allP => /=.
+by rewrite !W8u32.of_int_bits32_div //=.
+qed.
+
+hint simplify DECODING_PERM_E.
+
+(* DECODING_TABLE.[1]: the in-lane 3-of-4 byte spread                   *)
+lemma DECODING_SHUFFLE_E :
+  W256.of_int 115359280993406415849895417079880437751483271933338715711596891385178068484352
+  = W32u8.pack32
+    [W8.zero; W8.of_int   1; W8.of_int   2; W8.of_int 255;
+     W8.of_int   3; W8.of_int   4; W8.of_int   5; W8.of_int 255;
+     W8.of_int   6; W8.of_int   7; W8.of_int   8; W8.of_int 255;
+     W8.of_int   9; W8.of_int  10; W8.of_int  11; W8.of_int 255;
+     W8.zero; W8.of_int   1; W8.of_int   2; W8.of_int 255;
+     W8.of_int   3; W8.of_int   4; W8.of_int   5; W8.of_int 255;
+     W8.of_int   6; W8.of_int   7; W8.of_int   8; W8.of_int 255;
+     W8.of_int   9; W8.of_int  10; W8.of_int  11; W8.of_int 255].
+proof. by apply W32u8.allP => /=. qed.
+
+hint simplify DECODING_SHUFFLE_E.
+
+(* DECODING_TABLE.[2]: the 8u32 23-bit mask, fused with the AND         *)
+lemma mask23_and_pack32E (x00 x01 x02 x03 x04 x05 x06 x07 x08 x09 x10 x11 x12 x13 x14 x15 x16 x17 x18 x19 x20 x21 x22 x23 x24 x25 x26 x27 x28 x29 x30 x31 : W8.t) :
+  W32u8.pack32
+    [x00; x01; x02; x03; x04; x05; x06; x07;
+     x08; x09; x10; x11; x12; x13; x14; x15;
+     x16; x17; x18; x19; x20; x21; x22; x23;
+     x24; x25; x26; x27; x28; x29; x30; x31] `&`
+  W256.of_int 226156397384342666605459106258636701594091082888230722833791023177481060351
+  = W32u8.pack32
+    [x00; x01; x02 `&` W8.of_int 127; W8.zero;
+     x04; x05; x06 `&` W8.of_int 127; W8.zero;
+     x08; x09; x10 `&` W8.of_int 127; W8.zero;
+     x12; x13; x14 `&` W8.of_int 127; W8.zero;
+     x16; x17; x18 `&` W8.of_int 127; W8.zero;
+     x20; x21; x22 `&` W8.of_int 127; W8.zero;
+     x24; x25; x26 `&` W8.of_int 127; W8.zero;
+     x28; x29; x30 `&` W8.of_int 127; W8.zero].
+proof.
+apply W32u8.allP => /=.
+by rewrite !W32u8.of_int_bits8_div //=.
+qed.
+
+hint simplify mask23_and_pack32E.
+
+(* -------------------------------------------------------------------- *)
 (* the bytestream decoder: the first 24 bytes of the loaded word, as    *)
 (* eight 3-byte candidates, zero-extended and masked to 23 bits         *)
 lemma matrix_A____bytestream_to_potential_coefficientsP (bs : W8.t list) :
@@ -483,7 +557,12 @@ lemma matrix_A____bytestream_to_potential_coefficientsP (bs : W8.t list) :
       res = W8u32.pack8
               (map (fun ws => W4u8.pack4 ws `&` W32.of_int (2 ^ 23 - 1))
                  (chunk 3 (take 24 bs))) ].
-proof. admitted.
+proof.
+proc; wp; skip => &hr [szbs ->].
+have -> : take 24 bs = mkseq (nth W8.zero bs) 24.
+- by rewrite -{1}(mkseq_nth W8.zero bs) szbs take_mkseq.
+by rewrite /chunk /mkseq -!iotaredE /=.
+qed.
 
 (* -------------------------------------------------------------------- *)
 lemma matrix_A__rejection_sample_multiple_blocksP (buf : W8.t Array848.t)

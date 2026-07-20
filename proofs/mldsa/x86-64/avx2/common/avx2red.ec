@@ -559,3 +559,42 @@ hint simplify (pack4_bits8_0, pack4_bits8_1, pack4_bits8_2, pack4_bits8_3,
                pack4_zeroE).
 hint simplify to_list_unpack32_128E.
 
+
+(* ==================================================================== *)
+(* Generic reductions for VPERMD / VPSHUFB_256                          *)
+
+(* -------------------------------------------------------------------- *)
+hint simplify W32.of_uintK.
+
+hint simplify W4u8.Pack.get_of_list.
+hint simplify W16u8.Pack.get_of_list.
+hint simplify W32u8.Pack.get_of_list.
+hint simplify W8u32.Pack.get_of_list.
+
+(* -------------------------------------------------------------------- *)
+lemma permdE (w : W256.t) (i : W32.t) :
+  permd w i = w \bits32 (to_uint i %% 8).
+proof. by rewrite /permd. qed.
+
+hint simplify permdE.
+
+(* -------------------------------------------------------------------- *)
+lemma VPERMD_E (i w : W256.t) :
+  VPERMD i w =
+    W8u32.pack8
+      [permd w (i \bits32 0); permd w (i \bits32 1);
+       permd w (i \bits32 2); permd w (i \bits32 3);
+       permd w (i \bits32 4); permd w (i \bits32 5);
+       permd w (i \bits32 6); permd w (i \bits32 7)].
+proof. by rewrite /VPERMD; apply W8u32.allP => /=. qed.
+
+hint simplify VPERMD_E.
+
+(* -------------------------------------------------------------------- *)
+lemma VPSHUFB_256_E (w m : W256.t) :
+  VPSHUFB_256 w m =
+    W2u128.pack2 [VPSHUFB_128 (w \bits128 0) (m \bits128 0);
+                  VPSHUFB_128 (w \bits128 1) (m \bits128 1)].
+proof. by rewrite /VPSHUFB_256; apply W2u128.allP => /=. qed.
+
+hint simplify VPSHUFB_256_E.
