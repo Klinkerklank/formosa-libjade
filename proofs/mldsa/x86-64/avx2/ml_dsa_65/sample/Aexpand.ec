@@ -7,6 +7,7 @@ import BitChunking.
 from Jasmin require import JWord JModel_x86.
 from JazzEC require import Ml_dsa_65_avx2.
 
+require import Avx2red.
 require import Array4 Array25 Array32 Array168 Array256 Array848 Array7680.
 require import WArray256 WArray848 WArray1024.
 require import XArray256 XArray7680.
@@ -373,32 +374,23 @@ by rewrite bs2int_cat bs2int_nseq_false.
 qed.
 
 (* -------------------------------------------------------------------- *)
-lemma to_list_unpack32 (x : W128.t) :
-  W4u32.Pack.to_list (W4u32.unpack32 x)
-  = [x \bits32 0; x \bits32 1; x \bits32 2; x \bits32 3].
-proof.
-by rewrite W4u32.unpack32E W4u32.Pack.to_listE /mkseq -iotaredE /= ?W4u32.Pack.initiE.
-qed.
-
 (* -------------------------------------------------------------------- *)
 (* the two 128-bit halves of the packed candidates                      *)
 lemma extract_lo (cs : W32.t list) : size cs = 8 =>
     W4u32.Pack.to_list (W4u32.unpack32 (VEXTRACTI128 (W8u32.pack8 cs) W8.zero))
   = take 4 cs.
 proof.
-case: cs => [|c0 [|c1 [|c2 [|c3 [|c4 [|c5 [|c6 [|c7 [|]]]]]]]]] //=;
-  2: by smt(size_ge0).
-by rewrite to_list_unpack32 /VEXTRACTI128 /=.
+by case: cs => [|c0 [|c1 [|c2 [|c3 [|c4 [|c5 [|c6 [|c7 [|]]]]]]]]] //=.
 qed.
 
 lemma extract_hi (cs : W32.t list) : size cs = 8 =>
     W4u32.Pack.to_list (W4u32.unpack32 (VEXTRACTI128 (W8u32.pack8 cs) W8.one))
   = drop 4 cs.
 proof.
-case: cs => [|c0 [|c1 [|c2 [|c3 [|c4 [|c5 [|c6 [|c7 [|]]]]]]]]] //=;
-  2: by smt(size_ge0).
-rewrite to_list_unpack32 /VEXTRACTI128.
-by have -> : b2i W8.one.[0] = 1 by rewrite W8.get_to_uint.
+case: cs => [|c0 [|c1 [|c2 [|c3 [|c4 [|c5 [|c6 [|c7 [|]]]]]]]]] //=.
+rewrite /VEXTRACTI128.
+- by have -> : b2i W8.one.[0] = 1 by rewrite W8.get_to_uint.
+by smt(size_ge0).
 qed.
 
 
@@ -471,119 +463,8 @@ lemma shuffle_compact (x : W128.t) (m : int) : 0 <= m < 16 =>
         (W16u8.pack16 (Array256.sub matrix_A__SHUFFLE_TABLE (16 * m) 16)))))
   = mask (int2bs 4 m) (W4u32.Pack.to_list (W4u32.unpack32 x)).
 proof.
-move=> rgm.
-case (m = 0) => [->|ne0].
-rewrite /sub /mkseq -iotaredE /=.
-have -> : VPSHUFB_128 x (W16u8.pack16 [W8.of_int 255; W8.of_int 255; W8.of_int 255; W8.of_int 255; W8.of_int 255; W8.of_int 255; W8.of_int 255; W8.of_int 255; W8.of_int 255; W8.of_int 255; W8.of_int 255; W8.of_int 255; W8.of_int 255; W8.of_int 255; W8.of_int 255; W8.of_int 255])
-        = W4u32.pack4 [W32.zero; W32.zero; W32.zero; W32.zero].
-- by apply W128.all_eq_eq; cbv W128.all_eq VPSHUFB_128 VPSHUFB_128_B W16u8.unpack8.
-rewrite /int2bs /mkseq -iotaredE /=.
-by rewrite W4u32.Pack.of_listK // to_list_unpack32 /=.
-case (m = 1) => [->|ne1].
-rewrite /sub /mkseq -iotaredE /=.
-have -> : VPSHUFB_128 x (W16u8.pack16 [W8.zero; W8.one; W8.of_int 2; W8.of_int 3; W8.of_int 255; W8.of_int 255; W8.of_int 255; W8.of_int 255; W8.of_int 255; W8.of_int 255; W8.of_int 255; W8.of_int 255; W8.of_int 255; W8.of_int 255; W8.of_int 255; W8.of_int 255])
-        = W4u32.pack4 [x \bits32 0; W32.zero; W32.zero; W32.zero].
-- by apply W128.all_eq_eq; cbv W128.all_eq VPSHUFB_128 VPSHUFB_128_B W16u8.unpack8.
-rewrite /int2bs /mkseq -iotaredE /=.
-by rewrite W4u32.Pack.of_listK // to_list_unpack32 /=.
-case (m = 2) => [->|ne2].
-rewrite /sub /mkseq -iotaredE /=.
-have -> : VPSHUFB_128 x (W16u8.pack16 [W8.of_int 4; W8.of_int 5; W8.of_int 6; W8.of_int 7; W8.of_int 255; W8.of_int 255; W8.of_int 255; W8.of_int 255; W8.of_int 255; W8.of_int 255; W8.of_int 255; W8.of_int 255; W8.of_int 255; W8.of_int 255; W8.of_int 255; W8.of_int 255])
-        = W4u32.pack4 [x \bits32 1; W32.zero; W32.zero; W32.zero].
-- by apply W128.all_eq_eq; cbv W128.all_eq VPSHUFB_128 VPSHUFB_128_B W16u8.unpack8.
-rewrite /int2bs /mkseq -iotaredE /=.
-by rewrite W4u32.Pack.of_listK // to_list_unpack32 /=.
-case (m = 3) => [->|ne3].
-rewrite /sub /mkseq -iotaredE /=.
-have -> : VPSHUFB_128 x (W16u8.pack16 [W8.zero; W8.one; W8.of_int 2; W8.of_int 3; W8.of_int 4; W8.of_int 5; W8.of_int 6; W8.of_int 7; W8.of_int 255; W8.of_int 255; W8.of_int 255; W8.of_int 255; W8.of_int 255; W8.of_int 255; W8.of_int 255; W8.of_int 255])
-        = W4u32.pack4 [x \bits32 0; x \bits32 1; W32.zero; W32.zero].
-- by apply W128.all_eq_eq; cbv W128.all_eq VPSHUFB_128 VPSHUFB_128_B W16u8.unpack8.
-rewrite /int2bs /mkseq -iotaredE /=.
-by rewrite W4u32.Pack.of_listK // to_list_unpack32 /=.
-case (m = 4) => [->|ne4].
-rewrite /sub /mkseq -iotaredE /=.
-have -> : VPSHUFB_128 x (W16u8.pack16 [W8.of_int 8; W8.of_int 9; W8.of_int 10; W8.of_int 11; W8.of_int 255; W8.of_int 255; W8.of_int 255; W8.of_int 255; W8.of_int 255; W8.of_int 255; W8.of_int 255; W8.of_int 255; W8.of_int 255; W8.of_int 255; W8.of_int 255; W8.of_int 255])
-        = W4u32.pack4 [x \bits32 2; W32.zero; W32.zero; W32.zero].
-- by apply W128.all_eq_eq; cbv W128.all_eq VPSHUFB_128 VPSHUFB_128_B W16u8.unpack8.
-rewrite /int2bs /mkseq -iotaredE /=.
-by rewrite W4u32.Pack.of_listK // to_list_unpack32 /=.
-case (m = 5) => [->|ne5].
-rewrite /sub /mkseq -iotaredE /=.
-have -> : VPSHUFB_128 x (W16u8.pack16 [W8.zero; W8.one; W8.of_int 2; W8.of_int 3; W8.of_int 8; W8.of_int 9; W8.of_int 10; W8.of_int 11; W8.of_int 255; W8.of_int 255; W8.of_int 255; W8.of_int 255; W8.of_int 255; W8.of_int 255; W8.of_int 255; W8.of_int 255])
-        = W4u32.pack4 [x \bits32 0; x \bits32 2; W32.zero; W32.zero].
-- by apply W128.all_eq_eq; cbv W128.all_eq VPSHUFB_128 VPSHUFB_128_B W16u8.unpack8.
-rewrite /int2bs /mkseq -iotaredE /=.
-by rewrite W4u32.Pack.of_listK // to_list_unpack32 /=.
-case (m = 6) => [->|ne6].
-rewrite /sub /mkseq -iotaredE /=.
-have -> : VPSHUFB_128 x (W16u8.pack16 [W8.of_int 4; W8.of_int 5; W8.of_int 6; W8.of_int 7; W8.of_int 8; W8.of_int 9; W8.of_int 10; W8.of_int 11; W8.of_int 255; W8.of_int 255; W8.of_int 255; W8.of_int 255; W8.of_int 255; W8.of_int 255; W8.of_int 255; W8.of_int 255])
-        = W4u32.pack4 [x \bits32 1; x \bits32 2; W32.zero; W32.zero].
-- by apply W128.all_eq_eq; cbv W128.all_eq VPSHUFB_128 VPSHUFB_128_B W16u8.unpack8.
-rewrite /int2bs /mkseq -iotaredE /=.
-by rewrite W4u32.Pack.of_listK // to_list_unpack32 /=.
-case (m = 7) => [->|ne7].
-rewrite /sub /mkseq -iotaredE /=.
-have -> : VPSHUFB_128 x (W16u8.pack16 [W8.zero; W8.one; W8.of_int 2; W8.of_int 3; W8.of_int 4; W8.of_int 5; W8.of_int 6; W8.of_int 7; W8.of_int 8; W8.of_int 9; W8.of_int 10; W8.of_int 11; W8.of_int 255; W8.of_int 255; W8.of_int 255; W8.of_int 255])
-        = W4u32.pack4 [x \bits32 0; x \bits32 1; x \bits32 2; W32.zero].
-- by apply W128.all_eq_eq; cbv W128.all_eq VPSHUFB_128 VPSHUFB_128_B W16u8.unpack8.
-rewrite /int2bs /mkseq -iotaredE /=.
-by rewrite W4u32.Pack.of_listK // to_list_unpack32 /=.
-case (m = 8) => [->|ne8].
-rewrite /sub /mkseq -iotaredE /=.
-have -> : VPSHUFB_128 x (W16u8.pack16 [W8.of_int 12; W8.of_int 13; W8.of_int 14; W8.of_int 15; W8.of_int 255; W8.of_int 255; W8.of_int 255; W8.of_int 255; W8.of_int 255; W8.of_int 255; W8.of_int 255; W8.of_int 255; W8.of_int 255; W8.of_int 255; W8.of_int 255; W8.of_int 255])
-        = W4u32.pack4 [x \bits32 3; W32.zero; W32.zero; W32.zero].
-- by apply W128.all_eq_eq; cbv W128.all_eq VPSHUFB_128 VPSHUFB_128_B W16u8.unpack8.
-rewrite /int2bs /mkseq -iotaredE /=.
-by rewrite W4u32.Pack.of_listK // to_list_unpack32 /=.
-case (m = 9) => [->|ne9].
-rewrite /sub /mkseq -iotaredE /=.
-have -> : VPSHUFB_128 x (W16u8.pack16 [W8.zero; W8.one; W8.of_int 2; W8.of_int 3; W8.of_int 12; W8.of_int 13; W8.of_int 14; W8.of_int 15; W8.of_int 255; W8.of_int 255; W8.of_int 255; W8.of_int 255; W8.of_int 255; W8.of_int 255; W8.of_int 255; W8.of_int 255])
-        = W4u32.pack4 [x \bits32 0; x \bits32 3; W32.zero; W32.zero].
-- by apply W128.all_eq_eq; cbv W128.all_eq VPSHUFB_128 VPSHUFB_128_B W16u8.unpack8.
-rewrite /int2bs /mkseq -iotaredE /=.
-by rewrite W4u32.Pack.of_listK // to_list_unpack32 /=.
-case (m = 10) => [->|ne10].
-rewrite /sub /mkseq -iotaredE /=.
-have -> : VPSHUFB_128 x (W16u8.pack16 [W8.of_int 4; W8.of_int 5; W8.of_int 6; W8.of_int 7; W8.of_int 12; W8.of_int 13; W8.of_int 14; W8.of_int 15; W8.of_int 255; W8.of_int 255; W8.of_int 255; W8.of_int 255; W8.of_int 255; W8.of_int 255; W8.of_int 255; W8.of_int 255])
-        = W4u32.pack4 [x \bits32 1; x \bits32 3; W32.zero; W32.zero].
-- by apply W128.all_eq_eq; cbv W128.all_eq VPSHUFB_128 VPSHUFB_128_B W16u8.unpack8.
-rewrite /int2bs /mkseq -iotaredE /=.
-by rewrite W4u32.Pack.of_listK // to_list_unpack32 /=.
-case (m = 11) => [->|ne11].
-rewrite /sub /mkseq -iotaredE /=.
-have -> : VPSHUFB_128 x (W16u8.pack16 [W8.zero; W8.one; W8.of_int 2; W8.of_int 3; W8.of_int 4; W8.of_int 5; W8.of_int 6; W8.of_int 7; W8.of_int 12; W8.of_int 13; W8.of_int 14; W8.of_int 15; W8.of_int 255; W8.of_int 255; W8.of_int 255; W8.of_int 255])
-        = W4u32.pack4 [x \bits32 0; x \bits32 1; x \bits32 3; W32.zero].
-- by apply W128.all_eq_eq; cbv W128.all_eq VPSHUFB_128 VPSHUFB_128_B W16u8.unpack8.
-rewrite /int2bs /mkseq -iotaredE /=.
-by rewrite W4u32.Pack.of_listK // to_list_unpack32 /=.
-case (m = 12) => [->|ne12].
-rewrite /sub /mkseq -iotaredE /=.
-have -> : VPSHUFB_128 x (W16u8.pack16 [W8.of_int 8; W8.of_int 9; W8.of_int 10; W8.of_int 11; W8.of_int 12; W8.of_int 13; W8.of_int 14; W8.of_int 15; W8.of_int 255; W8.of_int 255; W8.of_int 255; W8.of_int 255; W8.of_int 255; W8.of_int 255; W8.of_int 255; W8.of_int 255])
-        = W4u32.pack4 [x \bits32 2; x \bits32 3; W32.zero; W32.zero].
-- by apply W128.all_eq_eq; cbv W128.all_eq VPSHUFB_128 VPSHUFB_128_B W16u8.unpack8.
-rewrite /int2bs /mkseq -iotaredE /=.
-by rewrite W4u32.Pack.of_listK // to_list_unpack32 /=.
-case (m = 13) => [->|ne13].
-rewrite /sub /mkseq -iotaredE /=.
-have -> : VPSHUFB_128 x (W16u8.pack16 [W8.zero; W8.one; W8.of_int 2; W8.of_int 3; W8.of_int 8; W8.of_int 9; W8.of_int 10; W8.of_int 11; W8.of_int 12; W8.of_int 13; W8.of_int 14; W8.of_int 15; W8.of_int 255; W8.of_int 255; W8.of_int 255; W8.of_int 255])
-        = W4u32.pack4 [x \bits32 0; x \bits32 2; x \bits32 3; W32.zero].
-- by apply W128.all_eq_eq; cbv W128.all_eq VPSHUFB_128 VPSHUFB_128_B W16u8.unpack8.
-rewrite /int2bs /mkseq -iotaredE /=.
-by rewrite W4u32.Pack.of_listK // to_list_unpack32 /=.
-case (m = 14) => [->|ne14].
-rewrite /sub /mkseq -iotaredE /=.
-have -> : VPSHUFB_128 x (W16u8.pack16 [W8.of_int 4; W8.of_int 5; W8.of_int 6; W8.of_int 7; W8.of_int 8; W8.of_int 9; W8.of_int 10; W8.of_int 11; W8.of_int 12; W8.of_int 13; W8.of_int 14; W8.of_int 15; W8.of_int 255; W8.of_int 255; W8.of_int 255; W8.of_int 255])
-        = W4u32.pack4 [x \bits32 1; x \bits32 2; x \bits32 3; W32.zero].
-- by apply W128.all_eq_eq; cbv W128.all_eq VPSHUFB_128 VPSHUFB_128_B W16u8.unpack8.
-rewrite /int2bs /mkseq -iotaredE /=.
-by rewrite W4u32.Pack.of_listK // to_list_unpack32 /=.
-case (m = 15) => [->|ne15]; last by smt().
-rewrite /sub /mkseq -iotaredE /=.
-have -> : VPSHUFB_128 x (W16u8.pack16 [W8.zero; W8.one; W8.of_int 2; W8.of_int 3; W8.of_int 4; W8.of_int 5; W8.of_int 6; W8.of_int 7; W8.of_int 8; W8.of_int 9; W8.of_int 10; W8.of_int 11; W8.of_int 12; W8.of_int 13; W8.of_int 14; W8.of_int 15])
-        = W4u32.pack4 [x \bits32 0; x \bits32 1; x \bits32 2; x \bits32 3].
-- by apply W128.all_eq_eq; cbv W128.all_eq VPSHUFB_128 VPSHUFB_128_B W16u8.unpack8.
-rewrite /int2bs /mkseq -iotaredE /=.
-by rewrite W4u32.Pack.of_listK // to_list_unpack32 /=.
+move: m; apply/allP_range.
+by rewrite /range /sub /int2bs /mkseq -iotaredE /=.
 qed.
 
 (* -------------------------------------------------------------------- *)

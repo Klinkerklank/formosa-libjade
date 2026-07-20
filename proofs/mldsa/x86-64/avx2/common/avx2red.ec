@@ -480,3 +480,82 @@ proof. by cbv delta; rewrite !of_intwE /=; cbv delta. qed.
 hint simplify VPERM2I128_49E.
 
 (* -------------------------------------------------------------------- *)
+
+(* -------------------------------------------------------------------- *)
+lemma to_list_unpack32_128E (x : W128.t) :
+  W4u32.Pack.to_list (W4u32.unpack32 x)
+  = [x \bits32 0; x \bits32 1; x \bits32 2; x \bits32 3].
+proof.
+by rewrite W4u32.unpack32E W4u32.Pack.to_listE /mkseq -iotaredE /= ?W4u32.Pack.initiE.
+qed.
+
+(* -------------------------------------------------------------------- *)
+(* Symbolic execution of VPSHUFB_128 by simplification                  *)
+lemma VPSHUFB_128_B_E (w : W128.t) (m : W8.t) :
+  VPSHUFB_128_B w m
+  = if 128 <= to_uint m then W8.zero else w \bits8 (to_uint m %% 16).
+proof. by rewrite /VPSHUFB_128_B /=. qed.
+
+hint simplify VPSHUFB_128_B_E.
+
+lemma VPSHUFB_128_pack16E (w : W128.t) (b00 b01 b02 b03 b04 b05 b06 b07 b08 b09 b10 b11 b12 b13 b14 b15 : W8.t) :
+  VPSHUFB_128 w (W16u8.pack16 [b00; b01; b02; b03; b04; b05; b06; b07; b08; b09; b10; b11; b12; b13; b14; b15])
+  = W16u8.pack16
+    [VPSHUFB_128_B w b00;
+     VPSHUFB_128_B w b01;
+     VPSHUFB_128_B w b02;
+     VPSHUFB_128_B w b03;
+     VPSHUFB_128_B w b04;
+     VPSHUFB_128_B w b05;
+     VPSHUFB_128_B w b06;
+     VPSHUFB_128_B w b07;
+     VPSHUFB_128_B w b08;
+     VPSHUFB_128_B w b09;
+     VPSHUFB_128_B w b10;
+     VPSHUFB_128_B w b11;
+     VPSHUFB_128_B w b12;
+     VPSHUFB_128_B w b13;
+     VPSHUFB_128_B w b14;
+     VPSHUFB_128_B w b15].
+proof. by apply W128.all_eq_eq; cbv W128.all_eq VPSHUFB_128 W16u8.unpack8. qed.
+
+hint simplify VPSHUFB_128_pack16E.
+
+(* recombining four consecutive bytes into the dword they came from *)
+lemma pack4_bits8_0 (w : W128.t) :
+  W4u8.pack4 [w \bits8 0; w \bits8 1; w \bits8 2; w \bits8 3] = w \bits32 0.
+proof.
+apply W4u8.wordP => j hj.
+rewrite W4u8.pack4bE 1:// W128_bits32_bits8 1:// /=.
+by have [|[|[|]]]-> : j = 0 \/ j = 1 \/ j = 2 \/ j = 3 by smt().
+qed.
+lemma pack4_bits8_1 (w : W128.t) :
+  W4u8.pack4 [w \bits8 4; w \bits8 5; w \bits8 6; w \bits8 7] = w \bits32 1.
+proof.
+apply W4u8.wordP => j hj.
+rewrite W4u8.pack4bE 1:// W128_bits32_bits8 1:// /=.
+by have [|[|[|]]]-> : j = 0 \/ j = 1 \/ j = 2 \/ j = 3 by smt().
+qed.
+lemma pack4_bits8_2 (w : W128.t) :
+  W4u8.pack4 [w \bits8 8; w \bits8 9; w \bits8 10; w \bits8 11] = w \bits32 2.
+proof.
+apply W4u8.wordP => j hj.
+rewrite W4u8.pack4bE 1:// W128_bits32_bits8 1:// /=.
+by have [|[|[|]]]-> : j = 0 \/ j = 1 \/ j = 2 \/ j = 3 by smt().
+qed.
+lemma pack4_bits8_3 (w : W128.t) :
+  W4u8.pack4 [w \bits8 12; w \bits8 13; w \bits8 14; w \bits8 15] = w \bits32 3.
+proof.
+apply W4u8.wordP => j hj.
+rewrite W4u8.pack4bE 1:// W128_bits32_bits8 1:// /=.
+by have [|[|[|]]]-> : j = 0 \/ j = 1 \/ j = 2 \/ j = 3 by smt().
+qed.
+
+lemma pack4_zeroE :
+  W4u8.pack4 [W8.zero; W8.zero; W8.zero; W8.zero] = W32.zero.
+proof. by apply W32.all_eq_eq; cbv W32.all_eq W4u8.unpack8. qed.
+
+hint simplify (pack4_bits8_0, pack4_bits8_1, pack4_bits8_2, pack4_bits8_3,
+               pack4_zeroE).
+hint simplify to_list_unpack32_128E.
+
