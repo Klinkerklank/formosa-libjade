@@ -473,6 +473,86 @@ lemma take_sub (a : W8.t Array848.t) (k n m : int) :
   take n (Array848.sub a k m) = Array848.sub a k n.
 proof. by move=> h; rewrite /sub take_mkseq. qed.
 
+(* ==================================================================== *)
+(* Leaf lemmas for the scalar rejection-sampling tail                   *)
+(* ==================================================================== *)
+lemma to_uint_shr2 (g : W64.t) :
+  to_uint (g `>>` W8.of_int 2) = to_uint g %/ 4.
+proof. by rewrite W64.shr_div of_uintK /=. qed.
+
+(* -------------------------------------------------------------------- *)
+lemma sub3E (a : W8.t Array848.t) (k : int) :
+  Array848.sub a k 3 = [a.[k]; a.[k + 1]; a.[k + 2]].
+proof. by rewrite /sub /mkseq -iotaredE /=. qed.
+
+(* -------------------------------------------------------------------- *)
+lemma acceptE (w : W32.t) : accept w = (to_uint w < 8380417).
+proof. by rewrite /accept /modulus. qed.
+
+(* -------------------------------------------------------------------- *)
+lemma reject3E (x y z : W8.t) :
+  reject [x; y; z]
+  = if accept (W4u8.pack4 [x; y; z] `&` mask23)
+    then [W4u8.pack4 [x; y; z] `&` mask23] else [].
+proof. by rewrite rejectE /cands /chunk /mkseq -iotaredE /=. qed.
+
+(* -------------------------------------------------------------------- *)
+lemma zext32_8E (x : W8.t) :
+  zeroextu32 x = W4u8.pack4 [x; W8.zero; W8.zero; W8.zero].
+proof.
+rewrite W4u8.zeroextu32E &(W4u8.wordP) => i rgi.
+rewrite !W4u8.pack4bE 1,2:// initiE 1:// get_of_list 1://.
+by move: rgi; rewrite -(mema_iota 0 4).
+qed.
+
+(* -------------------------------------------------------------------- *)
+lemma shl8E (w : W32.t) :
+  w `<<` W8.of_int 8 = W4u8.pack4 [W8.zero; w \bits8 0; w \bits8 1; w \bits8 2].
+proof.
+apply W32.wordP; apply/allP_range.
+by rewrite /range -iotaredE /= /(`<<`) of_uintK /=.
+qed.
+
+(* -------------------------------------------------------------------- *)
+lemma shl16E (w : W32.t) :
+  w `<<` W8.of_int 16 = W4u8.pack4 [W8.zero; W8.zero; w \bits8 0; w \bits8 1].
+proof.
+apply W32.wordP; apply/allP_range.
+by rewrite /range -iotaredE /= /(`<<`) of_uintK /=.
+qed.
+
+(* -------------------------------------------------------------------- *)
+(* the scalar candidate assembly is the packed 3-byte group             *)
+lemma or3E (x y z : W8.t) :
+  (zeroextu32 x `|` (zeroextu32 y `<<` W8.of_int 8)) `|`
+  (zeroextu32 z `<<` W8.of_int 16)
+  = W4u8.pack4 [x; y; z].
+proof.
+by rewrite !zext32_8E shl8E shl16E; apply W4u8.allP => /=.
+qed.
+
+hint simplify or3E.
+
+(* -------------------------------------------------------------------- *)
+lemma agree_set (p : wpoly) (l : W32.t list) (c : W32.t) :
+  size l < 256 => agree p 0 l =>
+  agree p.[size l <- c] 0 (l ++ [c]).
+proof.
+move=> hsz; rewrite /agree => hag i /=; rewrite size_cat /= => rgi rgb.
+rewrite Array256.get_setE 1:/# nth_cat.
+case: (i = size l) => [-> /=|ne] //.
+by rewrite ifT 1:/#; smt().
+qed.
+
+(* -------------------------------------------------------------------- *)
+lemma agree_full (p : wpoly) (l1 l2 : W32.t list) :
+  256 <= size l1 => agree p 0 l1 =>
+  agree p 0 (l1 ++ l2).
+proof.
+move=> hsz; rewrite /agree => hag i /=; rewrite size_cat => rgi rgb.
+by rewrite nth_cat ifT 1:/#; smt().
+qed.
+
 (* -------------------------------------------------------------------- *)
 (* local reduction hints for the bytestream decoder                     *)
 lemma and255E (x : W8.t) : x `&` W8.of_int 255 = x.
@@ -571,7 +651,7 @@ lemma matrix_A__rejection_sample_multiple_blocksP (buf : W8.t Array848.t)
       randombytes = buf
     ==>
          agree res.`1 0 (reject (Array848.sub buf 0 840))
-      /\ to_uint res.`2 = size (reject (Array848.sub buf 0 840))
+      /\ to_uint res.`2 = min 256 (size (reject (Array848.sub buf 0 840)))
   ].
 proof.
 proc=> /=.
@@ -585,7 +665,9 @@ proc rewrite 1.13 W32Array256_set128E.
 proc rewrite 1.22 WArray256_get128E.
 proc rewrite 1.24 W32Array256_set128E.
 seq 1: (                        (* FIXME: code position *)
-     to_uint bytes_filled <= 1024
+     randombytes = buf
+  /\ to_uint bytes_filled <= 1024
+  /\ to_uint input_offset <= 5 * 168
   /\ (to_uint bytes_filled < (256 - 8) * 4 => to_uint input_offset = 5 * 168)
   /\ 3 %| to_uint input_offset
   /\ to_uint bytes_filled
@@ -593,7 +675,8 @@ seq 1: (                        (* FIXME: code position *)
   /\ agree polynomial 0 (reject (Array848.sub randombytes 0 (to_uint input_offset)))
 ).
 - while (
-       to_uint bytes_filled <= 1024
+       randombytes = buf
+    /\ to_uint bytes_filled <= 1024
     /\ to_uint input_offset <= 5 * 168
     /\ 24 %| to_uint input_offset
     /\ modulus = MODULUS8u32
@@ -769,9 +852,98 @@ split; 1: by congr; rewrite (b2i_lo _ _ hlt hlt2).
 split; 1: by rewrite hsz !size_cat szflo szfhi -/old; ring.
 exact hag2.
 
-admit.                          (* DON'T TOUCH *)
-
-admitted.
+(* the scalar tail: candidate-per-candidate rejection sampling *)
+seq 4 : (
+     randombytes = buf
+  /\ to_uint input_offset <= 840
+  /\ 3 %| to_uint input_offset
+  /\ to_uint filled <= 256
+  /\ to_uint filled = size (reject (Array848.sub buf 0 (to_uint input_offset)))
+  /\ agree polynomial 0 (reject (Array848.sub buf 0 (to_uint input_offset)))
+  /\ stop_sampling = W64.of_int (b2i (!(to_uint filled < 256 /\ to_uint input_offset < 838)))
+).
+- by auto=> &hr |> hbf hio h992 hdvd hsz hag; rewrite !ultE !to_uint_shr2 !of_uintK /=; smt().
+while (
+     randombytes = buf
+  /\ to_uint input_offset <= 840
+  /\ 3 %| to_uint input_offset
+  /\ to_uint filled <= 256
+  /\ to_uint filled = size (reject (Array848.sub buf 0 (to_uint input_offset)))
+  /\ agree polynomial 0 (reject (Array848.sub buf 0 (to_uint input_offset)))
+  /\ stop_sampling = W64.of_int (b2i (!(to_uint filled < 256 /\ to_uint input_offset < 838)))
+); last first.
+- skip=> &hr |> hio0 hdvd0 hfle0 hsz0 hag0 f off p hio hdvd hfle hsz hag hstop.
+  have hb : !(to_uint f < 256 /\ to_uint off < 838); 1: by apply of_int_b2i_eq1P; rewrite -hstop.
+  case: (838 <= to_uint off) => hoff.
+  - move: hsz hag; have -> : to_uint off = 840 by smt().
+    by move=> hsz hag; split; [exact hag | smt()].
+  have hf : to_uint f = 256 by smt().
+  have hoffcmp := W64.to_uint_cmp off.
+  have hsplit : Array848.sub randombytes{hr} 0 840
+    = Array848.sub randombytes{hr} 0 (to_uint off)
+      ++ Array848.sub randombytes{hr} (to_uint off) (840 - to_uint off).
+  - have {1}-> : 840 = to_uint off + (840 - to_uint off) by ring.
+    by rewrite sub_cat 1,2:/#; rewrite (_ : 0 + to_uint off = to_uint off) 1:/#.
+  rewrite hsplit reject_cat.
+  - by rewrite size_sub /#.
+  rewrite size_cat.
+  split.
+  - by apply agree_full; [smt() | exact hag].
+  smt(size_ge0).
+wp; skip => &hr |> hio hdvd hfle hsz hag hne.
+have hcmp := W64.to_uint_cmp input_offset{hr}.
+have {hne} [hf256 hoffb] : to_uint filled{hr} < 256 /\ to_uint input_offset{hr} < 838; 1: by move: hne; case: (to_uint filled{hr} < 256 /\ to_uint input_offset{hr} < 838) => //=.
+have e1 : to_uint (input_offset{hr} + one) = to_uint input_offset{hr} + 1; 1: by rewrite to_uintD_small /=; smt().
+have e2 : to_uint (input_offset{hr} + W64.of_int 2) = to_uint input_offset{hr} + 2; 1: by rewrite to_uintD_small of_uintK /=; smt().
+have e3 : to_uint (input_offset{hr} + W64.of_int 3) = to_uint input_offset{hr} + 3; 1: by rewrite to_uintD_small of_uintK /=; smt().
+have ef : to_uint (filled{hr} + one) = to_uint filled{hr} + 1; 1: by rewrite to_uintD_small /=; smt().
+have hext : Array848.sub randombytes{hr} 0 (to_uint input_offset{hr} + 3)
+          = Array848.sub randombytes{hr} 0 (to_uint input_offset{hr})
+            ++ [randombytes{hr}.[to_uint input_offset{hr}];
+                randombytes{hr}.[to_uint input_offset{hr} + 1];
+                randombytes{hr}.[to_uint input_offset{hr} + 2]].
+- rewrite sub_cat 1,2:/#.
+  by rewrite (_ : 0 + to_uint input_offset{hr} = to_uint input_offset{hr}) 1:/# sub3E.
+rewrite !e1 !e2 !e3 !ef !hext.
+rewrite reject_cat; 1: by rewrite size_sub /#.
+rewrite reject3E acceptE !ultE !of_uintK /=.
+pose b0 := randombytes{hr}.[to_uint input_offset{hr}].
+pose b1 := randombytes{hr}.[to_uint input_offset{hr} + 1].
+pose b2 := randombytes{hr}.[to_uint input_offset{hr} + 2].
+pose c := W4u8.pack4 [b0; b1; b2 `&` W8.of_int 127; W8.zero].
+rewrite !uleE !of_uintK /= !e3 !ef.
+have hle3 : to_uint input_offset{hr} + 3 <= 840 by smt().
+have hdvd3 : 3 %| (to_uint input_offset{hr} + 3) by smt().
+have hlst : size (reject (Array848.sub randombytes{hr} 0 (to_uint input_offset{hr}))) < 256 by smt().
+case: (to_uint c < MODULUS) => hacc /=.
+- have hagx : agree polynomial{hr}.[to_uint filled{hr} <- c] 0
+    (reject (Array848.sub randombytes{hr} 0 (to_uint input_offset{hr})) ++ [c]).
+  - by rewrite hsz; apply agree_set; [exact hlst | exact hag].
+  have hszx : to_uint filled{hr} + 1
+    = size (reject (Array848.sub randombytes{hr} 0 (to_uint input_offset{hr})) ++ [c]).
+  - by rewrite size_cat /= hsz.
+  split; [move=> h1 | move=> h1; split; [move=> h2 | move=> h2]].
+  - do 2? (split; 1: smt()); split; 1: smt().
+    split; 1: exact hszx.
+    split; 1: exact hagx.
+    by rewrite (_ : (to_uint filled{hr} + 1 < 256 /\ to_uint input_offset{hr} + 3 < 838) = false) 1:/#.
+  - do 2? (split; 1: smt()); split; 1: smt().
+    split; 1: exact hszx.
+    split; 1: exact hagx.
+    by rewrite (_ : (to_uint filled{hr} + 1 < 256 /\ to_uint input_offset{hr} + 3 < 838) = false) 1:/#.
+  do 2? (split; 1: smt()); split; 1: smt().
+  split; 1: exact hszx.
+  split; 1: exact hagx.
+  by rewrite (_ : (to_uint filled{hr} + 1 < 256 /\ to_uint input_offset{hr} + 3 < 838) = true) 1:/#.
+rewrite !cats0.
+split; [move=> h1; smt() | move=> h1; split; [move=> h2 | move=> h2]].
+- do 2? (split; 1: smt()); split; 1: smt().
+  split; 1: exact hag.
+  by rewrite (_ : (to_uint filled{hr} < 256 /\ to_uint input_offset{hr} + 3 < 838) = false) 1:/#.
+do 2? (split; 1: smt()); split; 1: smt().
+split; 1: exact hag.
+by rewrite (_ : (to_uint filled{hr} < 256 /\ to_uint input_offset{hr} + 3 < 838) = true) 1:/#.
+qed.
 
 (* -------------------------------------------------------------------- *)
 op Apoly (rho : rho) (rc : int * int) : wpoly.
@@ -834,7 +1006,7 @@ proof. admitted.
 (* -------------------------------------------------------------------- *)
 op reject_ok (nonce : W8.t list) (sz : int) (p : wpoly) (filled : int) =
      agree p 0 (reject (shake128_slice nonce 0 sz))
-  /\ filled = size (reject (shake128_slice nonce 0 sz)).
+  /\ filled = min 256 (size (reject (shake128_slice nonce 0 sz))).
 
 (* -------------------------------------------------------------------- *)
 lemma matrix_A____sample_4_polynomialsP
@@ -894,16 +1066,16 @@ seq ^stop_sampling<- : (#{/~{buf0, buf1, buf2, buf3}}pre /\
 - hoare split; last by conseq |>.
   exlim buf0, buf1, buf2, buf3 => buf0_ buf1_ buf2_ buf3_. (* FIXME *)
   ecall ->> (matrix_A__rejection_sample_multiple_blocksP buf0_) => /= [|>|]; sp.
-  seq 0 : (#{/~{filled}}pre /\ to_uint filled0 = size (reject (sub buf0_ 0 840))). (* FIXME *)
+  seq 0 : (#{/~{filled}}pre /\ to_uint filled0 = min 256 (size (reject (sub buf0_ 0 840)))). (* FIXME *)
   - by auto.
   ecall ->> (matrix_A__rejection_sample_multiple_blocksP buf1_) => /= [|>|]; sp.
-  seq 0 : (#{/~{filled}}pre /\ to_uint filled1 = size (reject (sub buf1_ 0 840))). (* FIXME *)
+  seq 0 : (#{/~{filled}}pre /\ to_uint filled1 = min 256 (size (reject (sub buf1_ 0 840)))). (* FIXME *)
   - by auto.
   ecall ->> (matrix_A__rejection_sample_multiple_blocksP buf2_) => /= [|>|]; sp.
-  seq 0 : (#{/~{filled}}pre /\ to_uint filled2 = size (reject (sub buf2_ 0 840))). (* FIXME *)
+  seq 0 : (#{/~{filled}}pre /\ to_uint filled2 = min 256 (size (reject (sub buf2_ 0 840)))). (* FIXME *)
   - by auto.
   ecall ->> (matrix_A__rejection_sample_multiple_blocksP buf3_) => /= [|>|]; sp.
-  seq 0 : (#{/~{filled}}pre /\ to_uint filled3 = size (reject (sub buf3_ 0 840))). (* FIXME *)
+  seq 0 : (#{/~{filled}}pre /\ to_uint filled3 = min 256 (size (reject (sub buf3_ 0 840)))). (* FIXME *)
   - by auto.
   auto=> &hr |> 5? h 4? i ile ilt; have: 0 <= i < 4 by smt().
   move=> {ile ilt}; apply: allP_range i => /=.
