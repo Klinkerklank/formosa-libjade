@@ -269,6 +269,301 @@ hint exact : W64.WRingA.oner_neq0.
 lemma of_int_b2i_eq1P (b : bool) : W64.of_int (b2i b) = W64.one => b.
 proof. by case: b => //; rewrite b2i0 /= eq_sym. qed.
 
+(* ==================================================================== *)
+(* Leaf lemmas for the vectorized rejection-sampling loop body          *)
+(* ==================================================================== *)
+(* filtering is masking by the acceptance bits *)
+lemma filter_mask' ['a] (p : 'a -> bool) (s : 'a list) :
+  filter p s = mask (map p s) s.
+proof. by elim: s => //= x s <-; case: (p x). qed.
+
+(* -------------------------------------------------------------------- *)
+lemma sub_cat (a : W8.t Array848.t) (off len1 len2 : int) :
+  0 <= len1 => 0 <= len2 =>
+     Array848.sub a off (len1 + len2)
+   = Array848.sub a off len1 ++ Array848.sub a (off + len1) len2.
+proof.
+move=> ge0_1 ge0_2; rewrite /sub mkseq_add //=; congr.
+by apply eq_in_mkseq => i rgi /=; congr; ring.
+qed.
+
+(* -------------------------------------------------------------------- *)
+lemma reject_cat (xs ys : W8.t list) : 3 %| size xs =>
+  reject (xs ++ ys) = reject xs ++ reject ys.
+proof. by move=> h; rewrite /reject chunk_cat // map_cat filter_cat. qed.
+
+(* -------------------------------------------------------------------- *)
+import BS2Int.
+
+abbrev mask23 = W32.of_int (2 ^ 23 - 1).
+
+op accept (w : W32.t) : bool = to_uint w < modulus.
+
+op cands (bs : W8.t list) : W32.t list =
+  map (fun ws => W4u8.pack4 ws `&` mask23) (chunk 3 bs).
+
+lemma rejectE (bs : W8.t list) : reject bs = filter accept (cands bs).
+proof. by rewrite /reject /cands /accept. qed.
+
+lemma size_cands (bs : W8.t list) : size (cands bs) = size bs %/ 3.
+proof. by rewrite /cands size_map size_chunk. qed.
+
+lemma cands_uint_lt (bs : W8.t list) (w : W32.t) :
+  w \in cands bs => 0 <= to_uint w < 2 ^ 23.
+proof.
+by move=> /mapP [ws [_ ->]]; rewrite W32.to_uint_and_mod // modz_cmp.
+qed.
+
+(* -------------------------------------------------------------------- *)
+lemma tosint_small (c : W32.t) : 0 <= to_uint c < 2 ^ 23 =>
+  to_sint c = to_uint c.
+proof.
+move=> bnd; rewrite /to_sint /smod ifF //.
+by move: bnd => /=; smt().
+qed.
+
+lemma tosint_q : to_sint (W32.of_int modulus) = modulus.
+proof. by rewrite /to_sint /smod of_uintK /modulus. qed.
+
+lemma msb_lane (c : W32.t) : 0 <= to_uint c < 2 ^ 23 =>
+  W32.msb (W8u32.wcmp Int.(<) c (W32.of_int modulus)) = accept c.
+proof.
+move=> bnd; rewrite /wcmp tosint_small // tosint_q /accept.
+by case: (to_uint c < modulus) => _ /=.
+qed.
+
+(* acceptance bits: the movemask of the comparison lists the accepted   *)
+(* candidates, least significant bit first                              *)
+lemma map_msb_cmpE (cs : W32.t list) :
+  size cs = 8 => (forall w, w \in cs => 0 <= to_uint w < 2 ^ 23) =>
+    map W32.msb (W8u32.to_list (VPCMPGT_8u32 MODULUS8u32 (W8u32.pack8 cs)))
+  = map accept cs.
+proof.
+move=> sz8 bnd.
+apply (eq_from_nth witness); 1: by rewrite size_map W8u32.size_to_list size_map sz8.
+move=> i; rewrite size_map W8u32.size_to_list => rgi.
+rewrite (nth_map witness witness); 1: by rewrite W8u32.size_to_list.
+rewrite (nth_map W32.zero witness); 1: by rewrite sz8.
+rewrite (nth_change_dfl W32.zero witness); 1: by rewrite W8u32.size_to_list.
+rewrite W8u32.nth_to_list /VPCMPGT_8u32 W8u32.map2bE 1://.
+have -> : W8u32.pack8 (nseq 8 (W32.of_int modulus)) \bits32 i = W32.of_int modulus.
+- by rewrite W8u32.pack8bE 1:// W8u32.Pack.get_of_list 1:// nth_nseq 1:/#.
+have -> : W8u32.pack8 cs \bits32 i = nth W32.zero cs i.
+- by rewrite W8u32.pack8bE 1:// W8u32.Pack.get_of_list 1://.
+rewrite msb_lane; 1: by apply bnd; apply mem_nth; rewrite sz8.
+done.
+qed.
+
+lemma to_uint_good (cs : W32.t list) :
+  size cs = 8 => (forall w, w \in cs => 0 <= to_uint w < 2 ^ 23) =>
+    to_uint (zeroextu64 (MOVEMASK_8u32 (VPCMPGT_8u32 MODULUS8u32 (W8u32.pack8 cs))))
+  = bs2int (map accept cs).
+proof.
+move=> sz8 bnd; rewrite to_uint_zeroextu64 /MOVEMASK_8u32 /=.
+have /= -> := map_msb_cmpE cs sz8 bnd.
+rewrite W32.to_uintE.
+have -> : w2bits (W32.bits2w (map accept cs)) = map accept cs ++ nseq 24 false.
+- apply (eq_from_nth false).
+  - by rewrite W32.size_w2bits size_cat size_map sz8 size_nseq.
+  move=> i; rewrite W32.size_w2bits => rgi.
+  rewrite w2bitsE nth_mkseq //= W32.get_bits2w // nth_cat size_map sz8.
+  case: (i < 8) => hc; 1: by done.
+  by rewrite nth_default ?size_map ?sz8 1:/# nth_nseq /#.
+by rewrite bs2int_cat bs2int_nseq_false.
+qed.
+
+(* -------------------------------------------------------------------- *)
+lemma to_list_unpack32 (x : W128.t) :
+  W4u32.Pack.to_list (W4u32.unpack32 x)
+  = [x \bits32 0; x \bits32 1; x \bits32 2; x \bits32 3].
+proof.
+by rewrite W4u32.unpack32E W4u32.Pack.to_listE /mkseq -iotaredE /= ?W4u32.Pack.initiE.
+qed.
+
+(* -------------------------------------------------------------------- *)
+lemma to_uint_and15 (g : W64.t) :
+  to_uint (g `&` W64.of_int 15) = to_uint g %% 16.
+proof.
+have := W64.to_uint_and_mod 4 g _ => //=.
+qed.
+
+lemma to_uint_shr4 (g : W64.t) :
+  to_uint (g `>>` W8.of_int 4) = to_uint g %/ 16.
+proof. by rewrite W64.shr_div of_uintK /=. qed.
+
+lemma popcnt6E (g : W64.t) :
+  (POPCNT_64 g).`6 = W64.of_int (count idfun (W64.w2bits g)).
+proof. by rewrite /POPCNT_64 /flags_w. qed.
+
+lemma popcnt_count (g : W64.t) (bs : bool list) :
+  size bs = 4 => to_uint g = bs2int bs =>
+  count idfun (W64.w2bits g) = count idfun bs.
+proof.
+move=> szb hg.
+have e1 : bs2int (W64.w2bits g) = bs2int (bs ++ nseq 60 false).
+- by rewrite -W64.to_uintE hg bs2int_cat bs2int_nseq_false szb /=.
+have h1 := bs2intK (W64.w2bits g).
+have h2 := bs2intK (bs ++ nseq 60 false).
+move: h1 h2; rewrite W64.size_w2bits size_cat szb size_nseq /= e1 => h1 h2.
+rewrite -h1 h2.
+by rewrite count_cat count_nseq /idfun /=.
+qed.
+
+lemma int2bs_take4 (bs : bool list) : size bs = 8 =>
+  int2bs 4 (bs2int (take 4 bs)) = take 4 bs.
+proof.
+by move=> szb; have := bs2intK (take 4 bs); rewrite size_take // szb.
+qed.
+
+lemma int2bs_drop4 (bs : bool list) : size bs = 8 =>
+  int2bs 4 (bs2int (drop 4 bs)) = drop 4 bs.
+proof.
+by move=> szb; have := bs2intK (drop 4 bs); rewrite size_drop // szb.
+qed.
+
+(* -------------------------------------------------------------------- *)
+(* writing four dwords at the end of the agreed prefix extends the      *)
+(* agreement by the first k of them                                     *)
+lemma agree_replace (p : wpoly) (old l : W32.t list) (k : int) :
+  0 <= k <= 4 => size l = 4 =>
+  agree p 0 old =>
+  agree (XArray256.PAE.replace_ p (size old) l) 0 (old ++ take k l).
+proof.
+move=> rgk szl; rewrite /agree => hag i rgi rgibase.
+rewrite /XArray256.PAE.replace_ Array256.filliE 1:/# szl /=.
+move: rgi rgibase; rewrite size_cat size_take 1:/# szl => rgi rgibase.
+rewrite nth_cat.
+case: (i < size old) => hio; last first.
+- rewrite ifT 1:/# nth_take 1,2:/#.
+  by rewrite (nth_change_dfl witness W32.zero) 1:/#.
+rewrite ifF 1:/#.
+by have := hag i _ _ => //#.
+qed.
+
+(* -------------------------------------------------------------------- *)
+(* the shuffle table compacts the dwords selected by the 4-bit mask to  *)
+(* the front, in order                                                  *)
+lemma shuffle_compact (x : W128.t) (m : int) : 0 <= m < 16 =>
+    take (count idfun (int2bs 4 m))
+      (W4u32.Pack.to_list (W4u32.unpack32 (VPSHUFB_128 x
+        (W16u8.pack16 (Array256.sub matrix_A__SHUFFLE_TABLE (16 * m) 16)))))
+  = mask (int2bs 4 m) (W4u32.Pack.to_list (W4u32.unpack32 x)).
+proof.
+move=> rgm.
+case (m = 0) => [->|ne0].
+rewrite /sub /mkseq -iotaredE /=.
+have -> : VPSHUFB_128 x (W16u8.pack16 [W8.of_int 255; W8.of_int 255; W8.of_int 255; W8.of_int 255; W8.of_int 255; W8.of_int 255; W8.of_int 255; W8.of_int 255; W8.of_int 255; W8.of_int 255; W8.of_int 255; W8.of_int 255; W8.of_int 255; W8.of_int 255; W8.of_int 255; W8.of_int 255])
+        = W4u32.pack4 [W32.zero; W32.zero; W32.zero; W32.zero].
+- by apply W128.all_eq_eq; cbv W128.all_eq VPSHUFB_128 VPSHUFB_128_B W16u8.unpack8.
+rewrite /int2bs /mkseq -iotaredE /=.
+by rewrite W4u32.Pack.of_listK // to_list_unpack32 /=.
+case (m = 1) => [->|ne1].
+rewrite /sub /mkseq -iotaredE /=.
+have -> : VPSHUFB_128 x (W16u8.pack16 [W8.zero; W8.one; W8.of_int 2; W8.of_int 3; W8.of_int 255; W8.of_int 255; W8.of_int 255; W8.of_int 255; W8.of_int 255; W8.of_int 255; W8.of_int 255; W8.of_int 255; W8.of_int 255; W8.of_int 255; W8.of_int 255; W8.of_int 255])
+        = W4u32.pack4 [x \bits32 0; W32.zero; W32.zero; W32.zero].
+- by apply W128.all_eq_eq; cbv W128.all_eq VPSHUFB_128 VPSHUFB_128_B W16u8.unpack8.
+rewrite /int2bs /mkseq -iotaredE /=.
+by rewrite W4u32.Pack.of_listK // to_list_unpack32 /=.
+case (m = 2) => [->|ne2].
+rewrite /sub /mkseq -iotaredE /=.
+have -> : VPSHUFB_128 x (W16u8.pack16 [W8.of_int 4; W8.of_int 5; W8.of_int 6; W8.of_int 7; W8.of_int 255; W8.of_int 255; W8.of_int 255; W8.of_int 255; W8.of_int 255; W8.of_int 255; W8.of_int 255; W8.of_int 255; W8.of_int 255; W8.of_int 255; W8.of_int 255; W8.of_int 255])
+        = W4u32.pack4 [x \bits32 1; W32.zero; W32.zero; W32.zero].
+- by apply W128.all_eq_eq; cbv W128.all_eq VPSHUFB_128 VPSHUFB_128_B W16u8.unpack8.
+rewrite /int2bs /mkseq -iotaredE /=.
+by rewrite W4u32.Pack.of_listK // to_list_unpack32 /=.
+case (m = 3) => [->|ne3].
+rewrite /sub /mkseq -iotaredE /=.
+have -> : VPSHUFB_128 x (W16u8.pack16 [W8.zero; W8.one; W8.of_int 2; W8.of_int 3; W8.of_int 4; W8.of_int 5; W8.of_int 6; W8.of_int 7; W8.of_int 255; W8.of_int 255; W8.of_int 255; W8.of_int 255; W8.of_int 255; W8.of_int 255; W8.of_int 255; W8.of_int 255])
+        = W4u32.pack4 [x \bits32 0; x \bits32 1; W32.zero; W32.zero].
+- by apply W128.all_eq_eq; cbv W128.all_eq VPSHUFB_128 VPSHUFB_128_B W16u8.unpack8.
+rewrite /int2bs /mkseq -iotaredE /=.
+by rewrite W4u32.Pack.of_listK // to_list_unpack32 /=.
+case (m = 4) => [->|ne4].
+rewrite /sub /mkseq -iotaredE /=.
+have -> : VPSHUFB_128 x (W16u8.pack16 [W8.of_int 8; W8.of_int 9; W8.of_int 10; W8.of_int 11; W8.of_int 255; W8.of_int 255; W8.of_int 255; W8.of_int 255; W8.of_int 255; W8.of_int 255; W8.of_int 255; W8.of_int 255; W8.of_int 255; W8.of_int 255; W8.of_int 255; W8.of_int 255])
+        = W4u32.pack4 [x \bits32 2; W32.zero; W32.zero; W32.zero].
+- by apply W128.all_eq_eq; cbv W128.all_eq VPSHUFB_128 VPSHUFB_128_B W16u8.unpack8.
+rewrite /int2bs /mkseq -iotaredE /=.
+by rewrite W4u32.Pack.of_listK // to_list_unpack32 /=.
+case (m = 5) => [->|ne5].
+rewrite /sub /mkseq -iotaredE /=.
+have -> : VPSHUFB_128 x (W16u8.pack16 [W8.zero; W8.one; W8.of_int 2; W8.of_int 3; W8.of_int 8; W8.of_int 9; W8.of_int 10; W8.of_int 11; W8.of_int 255; W8.of_int 255; W8.of_int 255; W8.of_int 255; W8.of_int 255; W8.of_int 255; W8.of_int 255; W8.of_int 255])
+        = W4u32.pack4 [x \bits32 0; x \bits32 2; W32.zero; W32.zero].
+- by apply W128.all_eq_eq; cbv W128.all_eq VPSHUFB_128 VPSHUFB_128_B W16u8.unpack8.
+rewrite /int2bs /mkseq -iotaredE /=.
+by rewrite W4u32.Pack.of_listK // to_list_unpack32 /=.
+case (m = 6) => [->|ne6].
+rewrite /sub /mkseq -iotaredE /=.
+have -> : VPSHUFB_128 x (W16u8.pack16 [W8.of_int 4; W8.of_int 5; W8.of_int 6; W8.of_int 7; W8.of_int 8; W8.of_int 9; W8.of_int 10; W8.of_int 11; W8.of_int 255; W8.of_int 255; W8.of_int 255; W8.of_int 255; W8.of_int 255; W8.of_int 255; W8.of_int 255; W8.of_int 255])
+        = W4u32.pack4 [x \bits32 1; x \bits32 2; W32.zero; W32.zero].
+- by apply W128.all_eq_eq; cbv W128.all_eq VPSHUFB_128 VPSHUFB_128_B W16u8.unpack8.
+rewrite /int2bs /mkseq -iotaredE /=.
+by rewrite W4u32.Pack.of_listK // to_list_unpack32 /=.
+case (m = 7) => [->|ne7].
+rewrite /sub /mkseq -iotaredE /=.
+have -> : VPSHUFB_128 x (W16u8.pack16 [W8.zero; W8.one; W8.of_int 2; W8.of_int 3; W8.of_int 4; W8.of_int 5; W8.of_int 6; W8.of_int 7; W8.of_int 8; W8.of_int 9; W8.of_int 10; W8.of_int 11; W8.of_int 255; W8.of_int 255; W8.of_int 255; W8.of_int 255])
+        = W4u32.pack4 [x \bits32 0; x \bits32 1; x \bits32 2; W32.zero].
+- by apply W128.all_eq_eq; cbv W128.all_eq VPSHUFB_128 VPSHUFB_128_B W16u8.unpack8.
+rewrite /int2bs /mkseq -iotaredE /=.
+by rewrite W4u32.Pack.of_listK // to_list_unpack32 /=.
+case (m = 8) => [->|ne8].
+rewrite /sub /mkseq -iotaredE /=.
+have -> : VPSHUFB_128 x (W16u8.pack16 [W8.of_int 12; W8.of_int 13; W8.of_int 14; W8.of_int 15; W8.of_int 255; W8.of_int 255; W8.of_int 255; W8.of_int 255; W8.of_int 255; W8.of_int 255; W8.of_int 255; W8.of_int 255; W8.of_int 255; W8.of_int 255; W8.of_int 255; W8.of_int 255])
+        = W4u32.pack4 [x \bits32 3; W32.zero; W32.zero; W32.zero].
+- by apply W128.all_eq_eq; cbv W128.all_eq VPSHUFB_128 VPSHUFB_128_B W16u8.unpack8.
+rewrite /int2bs /mkseq -iotaredE /=.
+by rewrite W4u32.Pack.of_listK // to_list_unpack32 /=.
+case (m = 9) => [->|ne9].
+rewrite /sub /mkseq -iotaredE /=.
+have -> : VPSHUFB_128 x (W16u8.pack16 [W8.zero; W8.one; W8.of_int 2; W8.of_int 3; W8.of_int 12; W8.of_int 13; W8.of_int 14; W8.of_int 15; W8.of_int 255; W8.of_int 255; W8.of_int 255; W8.of_int 255; W8.of_int 255; W8.of_int 255; W8.of_int 255; W8.of_int 255])
+        = W4u32.pack4 [x \bits32 0; x \bits32 3; W32.zero; W32.zero].
+- by apply W128.all_eq_eq; cbv W128.all_eq VPSHUFB_128 VPSHUFB_128_B W16u8.unpack8.
+rewrite /int2bs /mkseq -iotaredE /=.
+by rewrite W4u32.Pack.of_listK // to_list_unpack32 /=.
+case (m = 10) => [->|ne10].
+rewrite /sub /mkseq -iotaredE /=.
+have -> : VPSHUFB_128 x (W16u8.pack16 [W8.of_int 4; W8.of_int 5; W8.of_int 6; W8.of_int 7; W8.of_int 12; W8.of_int 13; W8.of_int 14; W8.of_int 15; W8.of_int 255; W8.of_int 255; W8.of_int 255; W8.of_int 255; W8.of_int 255; W8.of_int 255; W8.of_int 255; W8.of_int 255])
+        = W4u32.pack4 [x \bits32 1; x \bits32 3; W32.zero; W32.zero].
+- by apply W128.all_eq_eq; cbv W128.all_eq VPSHUFB_128 VPSHUFB_128_B W16u8.unpack8.
+rewrite /int2bs /mkseq -iotaredE /=.
+by rewrite W4u32.Pack.of_listK // to_list_unpack32 /=.
+case (m = 11) => [->|ne11].
+rewrite /sub /mkseq -iotaredE /=.
+have -> : VPSHUFB_128 x (W16u8.pack16 [W8.zero; W8.one; W8.of_int 2; W8.of_int 3; W8.of_int 4; W8.of_int 5; W8.of_int 6; W8.of_int 7; W8.of_int 12; W8.of_int 13; W8.of_int 14; W8.of_int 15; W8.of_int 255; W8.of_int 255; W8.of_int 255; W8.of_int 255])
+        = W4u32.pack4 [x \bits32 0; x \bits32 1; x \bits32 3; W32.zero].
+- by apply W128.all_eq_eq; cbv W128.all_eq VPSHUFB_128 VPSHUFB_128_B W16u8.unpack8.
+rewrite /int2bs /mkseq -iotaredE /=.
+by rewrite W4u32.Pack.of_listK // to_list_unpack32 /=.
+case (m = 12) => [->|ne12].
+rewrite /sub /mkseq -iotaredE /=.
+have -> : VPSHUFB_128 x (W16u8.pack16 [W8.of_int 8; W8.of_int 9; W8.of_int 10; W8.of_int 11; W8.of_int 12; W8.of_int 13; W8.of_int 14; W8.of_int 15; W8.of_int 255; W8.of_int 255; W8.of_int 255; W8.of_int 255; W8.of_int 255; W8.of_int 255; W8.of_int 255; W8.of_int 255])
+        = W4u32.pack4 [x \bits32 2; x \bits32 3; W32.zero; W32.zero].
+- by apply W128.all_eq_eq; cbv W128.all_eq VPSHUFB_128 VPSHUFB_128_B W16u8.unpack8.
+rewrite /int2bs /mkseq -iotaredE /=.
+by rewrite W4u32.Pack.of_listK // to_list_unpack32 /=.
+case (m = 13) => [->|ne13].
+rewrite /sub /mkseq -iotaredE /=.
+have -> : VPSHUFB_128 x (W16u8.pack16 [W8.zero; W8.one; W8.of_int 2; W8.of_int 3; W8.of_int 8; W8.of_int 9; W8.of_int 10; W8.of_int 11; W8.of_int 12; W8.of_int 13; W8.of_int 14; W8.of_int 15; W8.of_int 255; W8.of_int 255; W8.of_int 255; W8.of_int 255])
+        = W4u32.pack4 [x \bits32 0; x \bits32 2; x \bits32 3; W32.zero].
+- by apply W128.all_eq_eq; cbv W128.all_eq VPSHUFB_128 VPSHUFB_128_B W16u8.unpack8.
+rewrite /int2bs /mkseq -iotaredE /=.
+by rewrite W4u32.Pack.of_listK // to_list_unpack32 /=.
+case (m = 14) => [->|ne14].
+rewrite /sub /mkseq -iotaredE /=.
+have -> : VPSHUFB_128 x (W16u8.pack16 [W8.of_int 4; W8.of_int 5; W8.of_int 6; W8.of_int 7; W8.of_int 8; W8.of_int 9; W8.of_int 10; W8.of_int 11; W8.of_int 12; W8.of_int 13; W8.of_int 14; W8.of_int 15; W8.of_int 255; W8.of_int 255; W8.of_int 255; W8.of_int 255])
+        = W4u32.pack4 [x \bits32 1; x \bits32 2; x \bits32 3; W32.zero].
+- by apply W128.all_eq_eq; cbv W128.all_eq VPSHUFB_128 VPSHUFB_128_B W16u8.unpack8.
+rewrite /int2bs /mkseq -iotaredE /=.
+by rewrite W4u32.Pack.of_listK // to_list_unpack32 /=.
+case (m = 15) => [->|ne15]; last by smt().
+rewrite /sub /mkseq -iotaredE /=.
+have -> : VPSHUFB_128 x (W16u8.pack16 [W8.zero; W8.one; W8.of_int 2; W8.of_int 3; W8.of_int 4; W8.of_int 5; W8.of_int 6; W8.of_int 7; W8.of_int 8; W8.of_int 9; W8.of_int 10; W8.of_int 11; W8.of_int 12; W8.of_int 13; W8.of_int 14; W8.of_int 15])
+        = W4u32.pack4 [x \bits32 0; x \bits32 1; x \bits32 2; x \bits32 3].
+- by apply W128.all_eq_eq; cbv W128.all_eq VPSHUFB_128 VPSHUFB_128_B W16u8.unpack8.
+rewrite /int2bs /mkseq -iotaredE /=.
+by rewrite W4u32.Pack.of_listK // to_list_unpack32 /=.
+qed.
+
 (* -------------------------------------------------------------------- *)
 lemma matrix_A__rejection_sample_multiple_blocksP (buf : W8.t Array848.t)
 : hoare[
