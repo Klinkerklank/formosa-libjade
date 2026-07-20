@@ -185,11 +185,10 @@ lemma w256_ofint_bits8E (w i : int) :
 proof. admitted.
 
 (* -------------------------------------------------------------------- *)
-(*
 lemma matrix_A__shake128_absorb_34_4xP
   (rho_ : rho) (ds_ : W16.t Array4.t)
 : hoare[
-  M.matrix_A__shake128_absorb_34_4x :
+  M.shake128_absorb_34_4x :
       rho = rho_ /\ domain_separators = ds_
     ==>
       let state =
@@ -199,7 +198,6 @@ lemma matrix_A__shake128_absorb_34_4xP
 proof.
 proc.
 admitted.
-*)
 
 (* -------------------------------------------------------------------- *)
 lemma matrix_A____shake128_squeeze_multiple_blocks_4xP (data : W8.t list Array4.t)
@@ -289,7 +287,7 @@ proc rewrite 1.11 WArray256_get128E.
 proc rewrite 1.13 W32Array256_set128E.
 proc rewrite 1.22 WArray256_get128E.
 proc rewrite 1.24 W32Array256_set128E.
-seq ^while : (
+seq 1: (                        (* FIXME: code position *)
      to_uint bytes_filled <= 256
   /\ (to_uint bytes_filled < 256 => to_uint input_offset = 5 * 168)
   /\ 3 %| to_uint input_offset
@@ -306,17 +304,14 @@ seq ^while : (
   ); last first.
   - by hoare split; auto=> &hr |> * /=; smt(of_int_b2i_eq1P).
   exlim randombytes => rb.
-  proc change [0..1] : { randombytes <- rb; }.
-
- [by auto | cfold 1; wp -1].
-
-
+  proc change <1 : { randombytes <- rb; }; [by auto | cfold 1; wp -1].
   seq 2 : (#pre /\ potential_coefficients =
     W8u32.pack8 (map W4u8.pack4 (chunk 3 (sub randombytes (to_uint input_offset) 24)))).
   - hoare split; [conseq (_ : true ==> _); sp | by conseq |>].
-    admit.
-*)  
-    
+    admit.                      (* DON'T TOUCH *)
+  admit.                        (* FOR LLM *)
+
+admit.                          (* DON'T TOUCH *)
 
 admitted.
 
@@ -401,11 +396,12 @@ proof.
 proc=> /=.
 seq ^xof_state<- : #pre; first by auto.
 pose stop fs := W32.of_int (b2i (!has (fun w => w \ult W64.of_int 256) fs)).
-proc change [^stop_sampling<- .. ^stop_sampling<- & +2] : {
+proc change [^stop_sampling<- .. ^stop_sampling<- & +1] : {
   stop_sampling <- stop [filled0; filled1; filled2; filled3];
-}; first by auto=> &hr @/stop |>. 
+}; first by auto=> &hr @/stop |> *.
+
 exlim domain_separators => ds_.
-proc change [0..0] : { rho <- rho_; domain_separators <- ds_; }; first by auto.
+proc change <1 : { rho<- rho_; domain_separators <- ds_; }; first by auto.
 do 2! (cfold 1); wp -2; seq 0 : #{/~{rho}}pre; first by auto.
 pose Ads i := odflt ds_.[i] (omap A_ds (nth None rcs i)).
 pose nonce i := to_list rho_ ++ W2u8.to_list ds_.[i].
@@ -414,7 +410,7 @@ seq 0: (forall i, 0 <= i < 4 => ds_.[i] = Ads i).
 case@[ambient]: (forall i, 0 <= i < 4 => ds_.[i] = Ads i) => ?; last by exfalso.
 
 (* Initial absorption *)
-seq 1 : (xof_state \sha3for Array4.init (mk_absorbed \o nonce)).
+sp; seq 1 : (xof_state \sha3for Array4.init (mk_absorbed \o nonce)).
 - ecall (matrix_A__shake128_absorb_34_4xP rho_ ds_) => /=.
   auto=> &hr |> rst; apply/sha3for_eqR/Array4.ext_eq=> i ?.
   by rewrite mapiE -1:initiE.
@@ -432,17 +428,28 @@ seq 1: (
   auto=> |> &hr + ?; apply/sha3for_eqR/Array4.ext_eq.
   by move=> i rgi; rewrite mapiE // !initiE.
 
-seq ^stop_sampling<- & -1 : (#{/~{buf0, buf1, buf2, buf3}}pre /\
+seq ^stop_sampling<- : (#{/~{buf0, buf1, buf2, buf3}}pre /\
   (forall i, 0 <= i < 4 =>
      let p = ntho witness [polynomial0; polynomial1; polynomial2; polynomial3] i in
      let f = ntho witness [filled0; filled1; filled2; filled3] i in
         reject_ok data.[i] 840 p (to_uint f))).
 - hoare split; last by conseq |>.
-  ecall ->> (matrix_A__rejection_sample_multiple_blocksP buf0) => /= [|>|buf0_]; sp.
-  ecall ->> (matrix_A__rejection_sample_multiple_blocksP buf1) => /= [|>|buf1_]; sp.
-  ecall ->> (matrix_A__rejection_sample_multiple_blocksP buf2) => /= [|>|buf2_]; sp.
-  ecall ->> (matrix_A__rejection_sample_multiple_blocksP buf3) => /= [|>|buf3_]; sp.
-  by auto=> &hr |> * /#.
+  exlim buf0, buf1, buf2, buf3 => buf0_ buf1_ buf2_ buf3_. (* FIXME *)
+  ecall ->> (matrix_A__rejection_sample_multiple_blocksP buf0_) => /= [|>|]; sp.
+  seq 0 : (#{/~{filled}}pre /\ to_uint filled0 = size (reject (sub buf0_ 0 840))). (* FIXME *)
+  - by auto.
+  ecall ->> (matrix_A__rejection_sample_multiple_blocksP buf1_) => /= [|>|]; sp.
+  seq 0 : (#{/~{filled}}pre /\ to_uint filled1 = size (reject (sub buf1_ 0 840))). (* FIXME *)
+  - by auto.
+  ecall ->> (matrix_A__rejection_sample_multiple_blocksP buf2_) => /= [|>|]; sp.
+  seq 0 : (#{/~{filled}}pre /\ to_uint filled2 = size (reject (sub buf2_ 0 840))). (* FIXME *)
+  - by auto.
+  ecall ->> (matrix_A__rejection_sample_multiple_blocksP buf3_) => /= [|>|]; sp.
+  seq 0 : (#{/~{filled}}pre /\ to_uint filled3 = size (reject (sub buf3_ 0 840))). (* FIXME *)
+  - by auto.
+  auto=> &hr |> 5? h 4? i ile ilt; have: 0 <= i < 4 by smt().
+  move=> {ile ilt}; apply: allP_range i => /=.
+  by rewrite /ntho /reject_ok /= -!h.
 
   while (exists (k : int), (
        xof_state \sha3for Array4.init (mk_read (168 * k) \o nonce)
@@ -468,7 +475,7 @@ seq ^stop_sampling<- & -1 : (#{/~{buf0, buf1, buf2, buf3}}pre /\
   proc rewrite 5 injecta_848E.
   proc rewrite 6 injecta_848E.
 
-  proc change [^stop_sampling<- .. ^stop_sampling<- & +2] : {
+  proc change [^stop_sampling<- .. ^stop_sampling<- & +1] : {
     stop_sampling <- stop [filled0; filled1; filled2; filled3];
   }; first by auto=> &hr @/stop |>.
 
@@ -484,13 +491,13 @@ seq  4 : #pre  ; first by auto.
 seq -2 : # post; last  by auto.
 cfold 1; kill -1; [by auto | sp].
 
-seq ^while : (rho = rho_ /\ A_valid_up_to rho matrix_A 28).
+seq 1 : (rho = rho_ /\ A_valid_up_to rho matrix_A 28).
 - while (#{/~{matrix_A, chunk}}pre
     /\ 0 <= chunk <= 7
     /\ A_valid_up_to rho matrix_A (4 * chunk)
   ); last by auto=> &hr |> /#.
 
-  cfold 1; kill -1; first by auto.
+  wp -1 => /=; cfold 1; kill -1; first by auto.
   seq 3 : (#pre
     /\ aux   = Apoly rho (A_rc_of_index (4 * chunk    ))
     /\ aux_0 = Apoly rho (A_rc_of_index (4 * chunk + 1))
@@ -508,7 +515,7 @@ seq ^while : (rho = rho_ /\ A_valid_up_to rho matrix_A 28).
     rewrite mulrDr /= {2}(_ : 4 = size (mkseq tp 4)) //.
     by rewrite update_polys_A_valid_up_to //#.
 
-  seq ^while : (#pre /\
+  seq > ^while : (#pre /\
     (forall i, 0 <= i < 4 =>
        domain_separators.[i] = A_ds (A_rc_of_index (4 * chunk + i)))
   ).
@@ -542,7 +549,7 @@ seq ^while : (rho = rho_ /\ A_valid_up_to rho matrix_A 28).
     - by move=> _ r /allP_range @/ntho /=.
 
 cfold 1; kill -1; first by auto.
-seq ^while : (#pre /\
+seq > ^while : (#pre /\
   (forall i, 0 <= i < 2 =>
      domain_separators.[i] = A_ds (A_rc_of_index (28 + i)))
 ).
