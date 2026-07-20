@@ -121,7 +121,7 @@ fn rejection_sample_multiple_blocks(
 
     stop_sampling = 1;
     if (filled < COEFFICIENTS_IN_POLYNOMIAL) {
-        if (input_offset < REJECTION_SAMPLING_BYTES - 3) {
+        if (input_offset < REJECTION_SAMPLING_BYTES - 2) {
             stop_sampling = 0;
         }
     }
@@ -152,7 +152,7 @@ fn rejection_sample_multiple_blocks(
         stop_sampling = 0;
         if (filled >= COEFFICIENTS_IN_POLYNOMIAL) {
             stop_sampling = 1;
-        } else if (input_offset >= REJECTION_SAMPLING_BYTES - 3) {
+        } else if (input_offset >= REJECTION_SAMPLING_BYTES - 2) {
             stop_sampling = 1;
         }
     }

@@ -9142,7 +9142,7 @@ module M = {
     filled <- (filled `>>` (W8.of_int 2));
     stop_sampling <- (W64.of_int 1);
     if ((filled \ult (W64.of_int 256))) {
-      if ((input_offset \ult (W64.of_int ((5 * 168) - 3)))) {
+      if ((input_offset \ult (W64.of_int ((5 * 168) - 2)))) {
         stop_sampling <- (W64.of_int 0);
       } else {
         
@@ -9173,7 +9173,7 @@ module M = {
       if (((W64.of_int 256) \ule filled)) {
         stop_sampling <- (W64.of_int 1);
       } else {
-        if (((W64.of_int ((5 * 168) - 3)) \ule input_offset)) {
+        if (((W64.of_int ((5 * 168) - 2)) \ule input_offset)) {
           stop_sampling <- (W64.of_int 1);
         } else {
           

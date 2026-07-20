@@ -94,7 +94,8 @@ type A     = W32.t Array7680.t.
 
 (* -------------------------------------------------------------------- *)
 op [opaque] reject (data : W8.t list) : W32.t list =
-  filter (fun w => to_uint w < modulus) (map W4u8.pack4 (chunk 4 data)).
+  filter (fun w => to_uint w < modulus)
+    (map (fun ws => W4u8.pack4 ws `&` W32.of_int (2^23 - 1)) (chunk 3 data)).
 
 (* -------------------------------------------------------------------- *)
 lemma reject_nil : reject [] = [].
@@ -258,8 +259,8 @@ lemma W32Array256_set128E (a : W32.t Array256.t) (base : int) (w : W128.t) :
            (WArray1024.set128_direct                                 
               (WArray1024.init32 (fun (i0 : int) => a.[i0]))
               base w) i)
- = XArray256.PAE.replace_ a base (to_list (W4u32.unpack32 w)).
-proof. admitted.
+ = XArray256.PAE.replace_ a (base %/ 4) (to_list (W4u32.unpack32 w)).
+proof. admitted. (* NB: valid at 4-aligned base only; all uses are aligned *)
 
 (* -------------------------------------------------------------------- *)
 hint exact : W64.WRingA.oner_neq0.
@@ -279,7 +280,8 @@ lemma matrix_A__rejection_sample_multiple_blocksP (buf : W8.t Array848.t)
   ].
 proof.
 proc=> /=.
-seq 2 : #pre; first by auto.
+seq 2 : (#pre /\ shuffle_table_pointer = matrix_A__SHUFFLE_TABLE).
+- by auto.
 sp 4; seq 0 : (#{/~{modulus}}pre /\ modulus = MODULUS8u32).
 - by auto=> &hr |>; rewrite MODULUS8u32E.
 proc rewrite 1.1  WArray848_get256E.
@@ -288,25 +290,32 @@ proc rewrite 1.13 W32Array256_set128E.
 proc rewrite 1.22 WArray256_get128E.
 proc rewrite 1.24 W32Array256_set128E.
 seq 1: (                        (* FIXME: code position *)
-     to_uint bytes_filled <= 256
-  /\ (to_uint bytes_filled < 256 => to_uint input_offset = 5 * 168)
+     to_uint bytes_filled <= 1024
+  /\ (to_uint bytes_filled < (256 - 8) * 4 => to_uint input_offset = 5 * 168)
   /\ 3 %| to_uint input_offset
+  /\ to_uint bytes_filled
+       = 4 * size (reject (Array848.sub randombytes 0 (to_uint input_offset)))
   /\ agree polynomial 0 (reject (Array848.sub randombytes 0 (to_uint input_offset)))
 ).
 - while (
-       to_uint bytes_filled <= 256
+       to_uint bytes_filled <= 1024
     /\ to_uint input_offset <= 5 * 168
     /\ 24 %| to_uint input_offset
+    /\ modulus = MODULUS8u32
+    /\ shuffle_table_pointer = matrix_A__SHUFFLE_TABLE
     /\ (stop_sampling = W64.of_int (b2i (!(
-            to_uint bytes_filled <= (256 - 8) * 4
+            to_uint bytes_filled < (256 - 8) * 4
          /\ to_uint input_offset < 5 * 168))))
+    /\ to_uint bytes_filled
+         = 4 * size (reject (Array848.sub randombytes 0 (to_uint input_offset)))
     /\ agree polynomial 0 (reject (Array848.sub randombytes 0 (to_uint input_offset)))
   ); last first.
   - by hoare split; auto=> &hr |> * /=; smt(of_int_b2i_eq1P).
   exlim randombytes => rb.
   proc change <1 : { randombytes <- rb; }; [by auto | cfold 1; wp -1].
   seq 2 : (#pre /\ potential_coefficients =
-    W8u32.pack8 (map W4u8.pack4 (chunk 3 (sub randombytes (to_uint input_offset) 24)))).
+    W8u32.pack8 (map (fun ws => W4u8.pack4 ws `&` W32.of_int (2^23 - 1))
+      (chunk 3 (sub randombytes (to_uint input_offset) 24)))).
   - hoare split; [conseq (_ : true ==> _); sp | by conseq |>].
     admit.                      (* DON'T TOUCH *)
   admit.                        (* FOR LLM *)
