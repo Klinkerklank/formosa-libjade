@@ -859,22 +859,16 @@ proc.
 seq 1: (polynomial = reduce_tree p_ 6).
 - by call (polynomial__ntt_at_layer_7_and_6P p_); auto.
 exlim polynomial => q; seq 1: (polynomial = reduce_tree p_ 5).
-- call (polynomial__ntt_at_layer_5P q); auto=> &hr |>.
-  by rewrite (reduce_tree_step _ 5).
+- by call (polynomial__ntt_at_layer_5P q); auto=> &hr |>.
 exlim polynomial => {q} q; seq 1: (polynomial = reduce_tree p_ 4).
-- call (polynomial__ntt_at_layer_4P q); auto=> &hr |>.
-  by rewrite (reduce_tree_step _ 4).
+- by call (polynomial__ntt_at_layer_4P q); auto=> &hr |>.
 exlim polynomial => {q} q; seq 1: (polynomial = reduce_tree p_ 3).
-- call (polynomial__ntt_at_layer_3P q); auto=> &hr |>.
-  by rewrite (reduce_tree_step _ 3).
+- by call (polynomial__ntt_at_layer_3P q); auto=> &hr |>.
 exlim polynomial => {q} q; seq 1: (polynomial = reduce_tree p_ 2).
-- call (polynomial__ntt_at_layer_2P q); auto=> &hr |>.
-  by rewrite (reduce_tree_step _ 2).
+- by call (polynomial__ntt_at_layer_2P q); auto=> &hr |>.
 exlim polynomial => {q} q; seq 1: (polynomial = reduce_tree p_ 1).
-- call (polynomial__ntt_at_layer_1P q); auto=> &hr |>.
-  by rewrite (reduce_tree_step _ 1).
+- by call (polynomial__ntt_at_layer_1P q); auto=> &hr |>.
 exlim polynomial => {q} q; seq 1: (polynomial = reduce_tree p_ 0).
-- call (polynomial__ntt_at_layer_0P q); auto=> &hr |>.
-  by rewrite (reduce_tree_step _ 0).
+- by call (polynomial__ntt_at_layer_0P q); auto=> &hr |>.
 done.
 qed.

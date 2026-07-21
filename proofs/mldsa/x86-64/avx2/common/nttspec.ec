@@ -652,12 +652,12 @@ op ireduce_n (p : wpoly) (base len : int) (zs : W32.t list) =
 (* -------------------------------------------------------------------- *)
 lemma ireduce_n0 (p : wpoly) (base len : int) :
   ireduce_n p base len [] = p.
-proof. hint +listred. by rewrite /ireduce_n /= range_geq. qed.
+proof. hint +listred. by rewrite /ireduce_n /=. qed.
 
 (* -------------------------------------------------------------------- *)
 lemma ireduce_seq1 (p : wpoly) (base len : int) (z : W32.t) :
   ireduce_n p base len [z] = ireduce p base len z.
-proof. hint +listred. by rewrite /ireduce_n /= (rangeS 0). qed.
+proof. hint +listred. by rewrite /ireduce_n /=. qed.
 
 (* -------------------------------------------------------------------- *)
 lemma ireduce_n_cat (p : wpoly) (base len : int) (zs1 zs2 : W32.t list) :

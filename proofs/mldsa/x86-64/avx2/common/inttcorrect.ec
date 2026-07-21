@@ -385,10 +385,9 @@ sp; while (
        (flatten (map (fun (w : W256.t) => map ((\bits32) w) perm0L)
                      (take i (Array16.to_list zETAS_TO_INVERT_LAYER_0))))
 ); last first.
-- auto=> &hr |> *; do! (split=> *).
-  - by rewrite take0 /= ireduce_n0.
-  - rewrite take_oversize ?Array16.size_to_list 1://#.
-    by rewrite /ireduce_level /izetasL /=.
+- auto=> &hr |> *.
+  rewrite take_oversize ?Array16.size_to_list 1://#.
+  by rewrite /ireduce_level /izetasL /=.
 sp; exlim i, zetas => i_ zetas_.
 case@[ambient]: (0 <= i_ < 16) => ?; last first.
 - by conseq (_ : false ==> _); [smt() | exfalso].
@@ -414,10 +413,9 @@ sp; while (
           (fun (w : W256.t) => map (fun m => w \bits32 (2 * m)) perm1L)
           (take i (Array16.to_list zETAS_TO_INVERT_LAYER_1))))
 ); last first.
-- auto=> &hr |> *; do! (split=> *).
-  - by rewrite take0 /= ireduce_n0.
-  - rewrite take_oversize ?Array16.size_to_list 1://#.
-    by rewrite /ireduce_level /izetasL /=.
+- auto=> &hr |> *.
+  rewrite take_oversize ?Array16.size_to_list 1://#.
+  by rewrite /ireduce_level /izetasL /=.
 sp; exlim i, zetas => i_ zetas_.
 case@[ambient]: (0 <= i_ < 16) => ?; last first.
 - by conseq (_ : false ==> _); [smt() | exfalso].
@@ -446,10 +444,9 @@ sp; while (
           (fun (w : W256.t) => [w \bits32 0; w \bits32 4])
           (take i (Array16.to_list zETAS_TO_INVERT_LAYER_2))))
 ); last first.
-- auto=> &hr |> *; do! (split=> *).
-  - by rewrite take0 /= ireduce_n0.
-  - rewrite take_oversize ?Array16.size_to_list 1://#.
-    by rewrite /ireduce_level /izetasL /=.
+- auto=> &hr |> *.
+  rewrite take_oversize ?Array16.size_to_list 1://#.
+  by rewrite /ireduce_level /izetasL /=.
 sp; exlim i, zetas => i_ zetas_.
 case@[ambient]: (0 <= i_ < 16) => ?; last first.
 - by conseq (_ : false ==> _); [smt() | exfalso].
@@ -615,29 +612,21 @@ proof.
 hint +listred.
 proc.
 seq 1 : (polynomial = invtree p_ 1).
-- call (polynomial__invert_ntt_at_layer_0P p_); auto=> &hr |>.
-  by rewrite (invtree_step _ 0) // invtree0.
+- by call (polynomial__invert_ntt_at_layer_0P p_); auto=> &hr |>.
 exlim polynomial => q; seq 1 : (polynomial = invtree p_ 2).
-- call (polynomial__invert_ntt_at_layer_1P q); auto=> &hr |>.
-  by rewrite (invtree_step _ 1).
+- by call (polynomial__invert_ntt_at_layer_1P q); auto=> &hr |>.
 exlim polynomial => {q} q; seq 1 : (polynomial = invtree p_ 3).
-- call (polynomial__invert_ntt_at_layer_2P q); auto=> &hr |>.
-  by rewrite (invtree_step _ 2).
+- by call (polynomial__invert_ntt_at_layer_2P q); auto=> &hr |>.
 exlim polynomial => {q} q; seq 1 : (polynomial = invtree p_ 4).
-- call (polynomial__invert_ntt_at_layer_3P q); auto=> &hr |>.
-  by rewrite (invtree_step _ 3).
+- by call (polynomial__invert_ntt_at_layer_3P q); auto=> &hr |>.
 exlim polynomial => {q} q; seq 1 : (polynomial = invtree p_ 5).
-- call (polynomial__invert_ntt_at_layer_4P q); auto=> &hr |>.
-  by rewrite (invtree_step _ 4).
+- by call (polynomial__invert_ntt_at_layer_4P q); auto=> &hr |>.
 exlim polynomial => {q} q; seq 1 : (polynomial = invtree p_ 6).
-- call (polynomial__invert_ntt_at_layer_5P q); auto=> &hr |>.
-  by rewrite (invtree_step _ 5).
+- by call (polynomial__invert_ntt_at_layer_5P q); auto=> &hr |>.
 exlim polynomial => {q} q; seq 1 : (polynomial = invtree p_ 7).
-- call (polynomial__invert_ntt_at_layer_6P q); auto=> &hr |>.
-  by rewrite (invtree_step _ 6).
+- by call (polynomial__invert_ntt_at_layer_6P q); auto=> &hr |>.
 exlim polynomial => {q} q; seq 1 : (polynomial = invtree p_ 8).
-- call (polynomial__invert_ntt_at_layer_7P q); auto=> &hr |>.
-  by rewrite (invtree_step _ 7).
+- by call (polynomial__invert_ntt_at_layer_7P q); auto=> &hr |>.
 
 exlim polynomial => {q} q.
 pose w_ := W32.of_int 41978.
