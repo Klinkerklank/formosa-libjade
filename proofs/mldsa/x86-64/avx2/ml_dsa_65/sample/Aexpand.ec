@@ -122,6 +122,14 @@ require Xof.
 
 op shake128_slice : W8.t list -> int -> int -> W8.t list.
 
+axiom size_shake128_slice (n : W8.t list) (i m : int) :
+  0 <= m => size (shake128_slice n i m) = m.
+
+axiom shake128_slice_cat (n : W8.t list) (i m l : int) :
+  0 <= m => 0 <= l =>
+  shake128_slice n i (m + l)
+  = shake128_slice n i m ++ shake128_slice n (i + m) l.
+
 (* -------------------------------------------------------------------- *)
 type sha3_state = { absorbed : W8.t list; read : int option }.
 
@@ -211,6 +219,21 @@ lemma matrix_A____shake128_squeeze_multiple_blocks_4xP (data : W8.t list Array4.
       /\ (forall i, 0 <= i < 4 =>
             let b = ntho witness [res.`2; res.`3; res.`4; res.`5] i in
             Array848.sub b 0 840 = shake128_slice data.[i] 0 840)
+  ].
+proof.
+proc.
+admitted.
+
+(* -------------------------------------------------------------------- *)
+lemma shake128_squeezeblock4xP (data : W8.t list Array4.t) (k : int) :
+hoare[
+  M.shake128_squeezeblock4x :
+      state \sha3for Array4.map (mk_read (168 * k)) data
+    ==>
+         res.`1 \sha3for Array4.map (mk_read (168 * (k + 1))) data
+      /\ (forall i, 0 <= i < 4 =>
+            Array168.to_list (ntho witness [res.`2; res.`3; res.`4; res.`5] i)
+            = shake128_slice data.[i] (168 * k) 168)
   ].
 proof.
 proc.
@@ -1060,8 +1083,178 @@ seq > ^if : (
 by auto=> &hr |> hs; rewrite !uleE !of_uintK /= /#.
 qed.
 
+(* ==================================================================== *)
+(* Leaf lemmas for the one-block scalar sampler                         *)
+(* ==================================================================== *)
+lemma sub_cat168 (a : W8.t Array168.t) (off len1 len2 : int) :
+  0 <= len1 => 0 <= len2 =>
+     Array168.sub a off (len1 + len2)
+   = Array168.sub a off len1 ++ Array168.sub a (off + len1) len2.
+proof.
+move=> ge0_1 ge0_2; rewrite /sub mkseq_add //=; congr.
+by apply eq_in_mkseq => i rgi /=; congr; ring.
+qed.
+
+(* -------------------------------------------------------------------- *)
+lemma sub3E168 (a : W8.t Array168.t) (k : int) :
+  Array168.sub a k 3 = [a.[k]; a.[k + 1]; a.[k + 2]].
+proof. by rewrite /sub /mkseq -iotaredE /=. qed.
+
+(* -------------------------------------------------------------------- *)
+lemma sub168_full (a : W8.t Array168.t) :
+  Array168.sub a 0 168 = Array168.to_list a.
+proof. by rewrite /sub /to_list; apply eq_in_mkseq => i rgi /=. qed.
+
+(* -------------------------------------------------------------------- *)
+op cand168 (a : W8.t Array168.t) (n : int) : W32.t =
+  W4u8.pack4 [a.[n]; a.[n + 1]; a.[n + 2]] `&` mask23.
+
+(* -------------------------------------------------------------------- *)
+(* consuming one block candidate extends the accepted stream            *)
+lemma reject_step168 (S : W8.t list) (a : W8.t Array168.t) (n : int) :
+  3 %| size S => 0 <= n => 3 %| n =>
+  reject (S ++ Array168.sub a 0 (n + 3))
+  = reject (S ++ Array168.sub a 0 n)
+    ++ if accept (cand168 a n) then [cand168 a n] else [].
+proof.
+move=> hS hn hdvd.
+rewrite (sub_cat168 a 0 n 3) // catA.
+rewrite reject_cat; 1: by rewrite size_cat size_sub // /#.
+by rewrite (_ : 0 + n = n) 1:/# sub3E168 reject3E -/(cand168 a n).
+qed.
+
+(* -------------------------------------------------------------------- *)
+lemma of_int_b2i_eq1P8 (b : bool) : W8.of_int (b2i b) = W8.one => b.
+proof.
+by case: b => //= _; rewrite W8.to_uint_eq /=.
+qed.
+
+(* -------------------------------------------------------------------- *)
+(* The one-block scalar sampler: one 168-byte squeezed block extends    *)
+(* the accepted stream, with filled capped at 256                       *)
+lemma matrix_A__rejection_sample_one_blockP (S : W8.t list) (blk : W8.t Array168.t) :
+  hoare[ M.matrix_A__rejection_sample_one_block :
+      block = blk
+   /\ 3 %| size S
+   /\ agree polynomial 0 (reject S)
+   /\ to_uint filled = min 256 (size (reject S))
+   ==>
+      agree res.`1 0 (reject (S ++ Array168.to_list blk))
+   /\ to_uint res.`2 = min 256 (size (reject (S ++ Array168.to_list blk))) ].
+proof.
+proc.
+(* entry: nothing consumed yet; the flag encodes the loop guard      *)
+seq < ^while : (
+     block = blk
+  /\ 3 %| size S
+  /\ to_uint block_offset <= 168
+  /\ 3 %| to_uint block_offset
+  /\ agree polynomial 0 (reject (S ++ Array168.sub blk 0 (to_uint block_offset)))
+  /\ to_uint filled = min 256 (size (reject (S ++ Array168.sub blk 0 (to_uint block_offset))))
+  /\ stop_sampling = W8.of_int (b2i (!(to_uint filled < 256 /\ to_uint block_offset < 168)))
+).
+- auto=> &hr |> hS hag hf.
+  rewrite (_ : Array168.sub block{hr} 0 0 = []); 1: by rewrite /sub mkseq0.
+  by rewrite cats0 !uleE !of_uintK /=; smt().
+
+(* each iteration consumes one 3-byte candidate of the block         *)
+while (
+     block = blk
+  /\ 3 %| size S
+  /\ to_uint block_offset <= 168
+  /\ 3 %| to_uint block_offset
+  /\ agree polynomial 0 (reject (S ++ Array168.sub blk 0 (to_uint block_offset)))
+  /\ to_uint filled = min 256 (size (reject (S ++ Array168.sub blk 0 (to_uint block_offset))))
+  /\ stop_sampling = W8.of_int (b2i (!(to_uint filled < 256 /\ to_uint block_offset < 168)))
+); last first.
+(* loop exit: the block is consumed (offset = 168), or filled capped *)
+(* at 256 and the accepted prefix embeds into the full stream         *)
+- skip=> &hr |> hS0 hio0 hdvd0 hag0 hf0 off f p hio hdvd hag hf hstop.
+  have hb : !(to_uint f < 256 /\ to_uint off < 168); 1: by apply of_int_b2i_eq1P8; rewrite -hstop.
+  case: (168 <= to_uint off) => hoff.
+  - move: hag hf; have -> : to_uint off = 168 by smt().
+    by rewrite sub168_full => hag hf; split => //.
+  have hf256 : to_uint f = 256 by smt().
+  have hsz : 256 <= size (reject (S ++ Array168.sub block{hr} 0 (to_uint off))) by smt().
+  have -> : Array168.to_list block{hr}
+    = Array168.sub block{hr} 0 (to_uint off)
+      ++ Array168.sub block{hr} (to_uint off) (168 - to_uint off).
+  - rewrite -sub168_full.
+    have {1}-> : 168 = to_uint off + (168 - to_uint off) by ring.
+    rewrite sub_cat168; 1,2: smt(W64.to_uint_cmp).
+    by rewrite (_ : 0 + to_uint off = to_uint off) 1:/#.
+  rewrite catA reject_cat; 1: by rewrite size_cat size_sub; smt(W64.to_uint_cmp).
+  rewrite size_cat.
+  split; 1: by apply agree_full; [smt() | exact hag].
+  smt(size_ge0).
+(* one iteration; off0 names the current candidate's offset          *)
+exlim block_offset => off0.
+(* 1. load and mask the 3-byte candidate at off0                     *)
+seq ^if : (
+     block = blk
+  /\ 3 %| size S
+  /\ to_uint off0 < 168
+  /\ 3 %| to_uint off0
+  /\ to_uint filled < 256
+  /\ agree polynomial 0 (reject (S ++ Array168.sub blk 0 (to_uint off0)))
+  /\ to_uint filled = min 256 (size (reject (S ++ Array168.sub blk 0 (to_uint off0))))
+  /\ block_offset = off0 + W64.of_int 3
+  /\ coeff = cand168 blk (to_uint off0)
+).
+- auto=> &hr |> hS hio hdvd hag hf hne.
+  have {hne} [hf256 hoffb] : to_uint filled{hr} < 256 /\ to_uint block_offset{hr} < 168 by smt().
+  rewrite /cand168 !to_uintD_small ?of_uintK /=; 1,2: smt().
+  by rewrite hf256 hoffb.
+
+(* 2. filter: the candidate joins the accepted stream iff below q    *)
+seq > ^if : (
+     block = blk
+  /\ 3 %| size S
+  /\ to_uint block_offset <= 168
+  /\ 3 %| to_uint block_offset
+  /\ agree polynomial 0 (reject (S ++ Array168.sub blk 0 (to_uint block_offset)))
+  /\ to_uint filled = min 256 (size (reject (S ++ Array168.sub blk 0 (to_uint block_offset))))
+).
+- if.
+  (* accepted: stored at index filled, filled incremented *)
+  - auto=> &hr |> hS hoffb hdvd hf256 hag hf; rewrite ultE of_uintK /= -acceptE => hacc.
+    rewrite !to_uintD_small ?of_uintK /=; 1,2: smt(W64.to_uint_cmp).
+    rewrite !(reject_step168 S); 1,2,3: smt(W64.to_uint_cmp).
+    rewrite hacc /= size_cat /=.
+    have hsz : size (reject (S ++ Array168.sub block{hr} 0 (to_uint off0))) = to_uint filled{hr} by smt().
+    do 2? (split; 1: smt()).
+    split; 2: smt().
+    rewrite (_ : to_uint filled{hr} = size (reject (S ++ Array168.sub block{hr} 0 (to_uint off0)))) 1:/#.
+    by apply agree_set; [smt() | exact hag].
+  (* rejected: the filter drops the candidate, state unchanged *)
+  auto=> &hr |> hS hoffb hdvd hf256 hag hf; rewrite ultE of_uintK /= => hacc.
+  have {hacc} hacc : accept (cand168 block{hr} (to_uint off0)) = false; 1: by rewrite acceptE; smt().
+  rewrite !to_uintD_small ?of_uintK /=; 1: smt(W64.to_uint_cmp).
+  rewrite !(reject_step168 S); 1,2,3: smt(W64.to_uint_cmp).
+  rewrite hacc /= cats0.
+  do 2? (split; 1: smt()).
+  by split; [exact hag | exact hf].
+(* 3. re-encode the stop flag from the new counters                  *)
+by auto=> &hr |> hS hio hdvd hag hf; rewrite !uleE !of_uintK /= /#.
+qed.
+
+(* -------------------------------------------------------------------- *)
+op A_ds (rc : int * int) : W16.t =
+  W2u8.pack2 [W8.of_int rc.`2; W8.of_int rc.`1].
+
 (* -------------------------------------------------------------------- *)
 op Apoly (rho : rho) (rc : int * int) : wpoly.
+
+(* the A-matrix polynomial is the first 256 accepted candidates of the  *)
+(* lane's XOF stream; well-defined across slice lengths by              *)
+(* shake128_slice_cat                                                   *)
+axiom ApolyP (rho : rho) (rc : int * int) (m j : int) :
+  256 <= size (reject (shake128_slice
+                 (to_list rho ++ W2u8.to_list (A_ds rc)) 0 m)) =>
+  0 <= j < 256 =>
+  (Apoly rho rc).[j]
+  = nth W32.zero
+      (reject (shake128_slice (to_list rho ++ W2u8.to_list (A_ds rc)) 0 m)) j.
 
 (* -------------------------------------------------------------------- *)
 op A_rc_of_index (i : int) =
@@ -1079,10 +1272,6 @@ op poly_of_A (A : A) (rc : int * int) =
 op A_valid_up_to (rho : rho) (A : A) (i : int) =
   forall k, 0 <= k < i =>
     poly_of_A A (A_rc_of_index k) = Apoly rho (A_rc_of_index k).
-
-(* -------------------------------------------------------------------- *)
-op A_ds (rc : int * int) : W16.t =
-  W2u8.pack2 [W8.of_int rc.`2; W8.of_int rc.`1].
 
 (* -------------------------------------------------------------------- *)
 hint simplify mkseqSr_minus, mkseq0.
