@@ -1313,6 +1313,35 @@ op reject_ok (nonce : W8.t list) (sz : int) (p : wpoly) (filled : int) =
   /\ filled = min 256 (size (reject (shake128_slice nonce 0 sz))).
 
 (* -------------------------------------------------------------------- *)
+(* one squeezed block appended to a lane's consumed stream              *)
+lemma slice_cat_block (n : W8.t list) (k : int) (b : W8.t Array168.t) :
+  0 <= k =>
+  Array168.to_list b = shake128_slice n (168 * k) 168 =>
+  shake128_slice n 0 (168 * k) ++ Array168.to_list b
+  = shake128_slice n 0 (168 * (k + 1)).
+proof.
+move=> hk hb; rewrite hb (_ : 168 * (k + 1) = 168 * k + 168); 1: by ring.
+rewrite shake128_slice_cat 1,2:/#.
+by rewrite (_ : 0 + 168 * k = 168 * k) 1:/#.
+qed.
+
+(* -------------------------------------------------------------------- *)
+(* the four sampling lanes, staged: lanes below j are one block ahead   *)
+op lanes_ok (data : W8.t list Array4.t) (k j : int)
+            (ps : wpoly list) (fs : W64.t list) =
+  forall i, 0 <= i < 4 =>
+    reject_ok data.[i] (168 * (k + b2i (i < j)))
+      (nth witness ps i) (to_uint (nth witness fs i)).
+
+(* -------------------------------------------------------------------- *)
+(* each lane buffer starts with the block squeezed at offset 168 * k    *)
+op blocks_ok (data : W8.t list Array4.t) (k : int)
+             (bs : W8.t Array848.t list) =
+  forall i, 0 <= i < 4 =>
+    Array168.to_list (truncatea_168 (nth witness bs i))
+    = shake128_slice data.[i] (168 * k) 168.
+
+(* -------------------------------------------------------------------- *)
 lemma trunca_0E (a : W8.t Array848.t) :
   Array168.init (fun i => a.[0 + i]) = truncatea_168 a.
 proof. by rewrite -truncatea_168E; apply Array168.ext_eq => i rgi; rewrite !initiE. qed.
@@ -1482,153 +1511,103 @@ seq ^stop_sampling<- : (#{/~{buf0, buf1, buf2, buf3}}pre /\
     move=> _ r hr1 hr2.
     apply (sha3for_eqR r.`1 (Array4.map (mk_read (168 * (k + 1))) data)) => //.
     by apply Array4.ext_eq => i rgi; rewrite mapiE // initiE //= /data initiE.
-
-  (* install the squeezed blocks into the lane buffers *)
+  (* install the squeezed blocks: lanes_ok enters its staged form *)
   seq > ^buf3<- : (
        0 <= k
-    /\ (forall i, 0 <= i < 4 =>
-          reject_ok data.[i] (168 * k)
-            (ntho witness [polynomial0; polynomial1; polynomial2; polynomial3] i)
-            (to_uint (ntho witness [filled0; filled1; filled2; filled3] i)))
+    /\ lanes_ok data k 0 [polynomial0; polynomial1; polynomial2; polynomial3]
+                         [filled0; filled1; filled2; filled3]
     /\ xof_state \sha3for Array4.init (mk_read (168 * (k + 1)) \o nonce)
-    /\ (forall i, 0 <= i < 4 =>
-          Array168.to_list (truncatea_168 (ntho witness [buf0; buf1; buf2; buf3] i))
-          = shake128_slice data.[i] (168 * k) 168)
+    /\ blocks_ok data k [buf0; buf1; buf2; buf3]
   ).
   - auto=> &hr |> hk h hxf hblk.
+    split.
+    - by move: h; rewrite /lanes_ok /ntho /reject_ok /= => h; smt().
     move: (hblk 0) (hblk 1) (hblk 2) (hblk 3); rewrite /ntho /= => hb0 hb1 hb2 hb3.
-    move=> i rgi; move: rgi; move: i; apply/allP_range'; rewrite /ntho /=.
+    rewrite /blocks_ok; apply/allP_range => /=.
     by rewrite !trunc_inject hb0 hb1 hb2 hb3.
-
-  (* lane 0 samples its fresh block *)
+  (* each lane samples its fresh block, advancing lanes_ok by one *)
   exlim buf0 => b0_.
   seq > ^filled0<- : (
        0 <= k
-    /\ (forall i, 0 <= i < 4 =>
-          reject_ok data.[i] (168 * (k + b2i (i < 1)))
-            (ntho witness [polynomial0; polynomial1; polynomial2; polynomial3] i)
-            (to_uint (ntho witness [filled0; filled1; filled2; filled3] i)))
+    /\ lanes_ok data k 1 [polynomial0; polynomial1; polynomial2; polynomial3]
+                         [filled0; filled1; filled2; filled3]
     /\ xof_state \sha3for Array4.init (mk_read (168 * (k + 1)) \o nonce)
-    /\ (forall i, 0 <= i < 4 =>
-          Array168.to_list (truncatea_168 (ntho witness [buf0; buf1; buf2; buf3] i))
-          = shake128_slice data.[i] (168 * k) 168)
+    /\ blocks_ok data k [buf0; buf1; buf2; buf3]
   ).
   - wp.
     ecall (matrix_A__rejection_sample_one_blockP (shake128_slice data.[0] 0 (168 * k)) (truncatea_168 b0_)).
     auto=> &hr |> hk h hxf hblk.
-    have hsz : size (shake128_slice data.[0] 0 (168 * k)) = 168 * k.
-    - by rewrite size_shake128_slice /#.
-    move: (h 0) (hblk 0); rewrite /ntho /reject_ok /= => -[hag hf] hb0.
-    split; 1: smt().
+    move: h hblk; rewrite /lanes_ok /blocks_ok => h hblk.
+    move: (h 0) (hblk 0); rewrite /reject_ok /= => -[hag hf] hb0.
+    split; 1: smt(size_shake128_slice).
     move=> _ _ _ _ r hr1 hr2.
-    have hcat : shake128_slice data.[0] 0 (168 * k) ++ Array168.to_list (truncatea_168 buf0{hr})
-              = shake128_slice data.[0] 0 (168 * (k + 1)).
-    - rewrite hb0 (_ : 168 * (k + 1) = 168 * k + 168); 1: by ring.
-      rewrite shake128_slice_cat 1,2:/#.
-      by rewrite (_ : 0 + 168 * k = 168 * k) 1:/#.
-    move: (h 1) (h 2) (h 3); rewrite /ntho /reject_ok /= => h1 h2 h3.
-    move=> i ige ilt; move: ige ilt; move: i; apply/allP_range'; rewrite /ntho /reject_ok /=.
-    rewrite -!hcat.
+    have hcat := slice_cat_block data.[0] k _ hk hb0.
+    rewrite /lanes_ok /reject_ok /= => i rgi.
+    move: (h 0) (h 1) (h 2) (h 3) => /= h0 h1 h2 h3.
     by smt().
-
-  (* lane 1 likewise *)
   exlim buf1 => b1_.
   seq > ^filled1<- : (
        0 <= k
-    /\ (forall i, 0 <= i < 4 =>
-          reject_ok data.[i] (168 * (k + b2i (i < 2)))
-            (ntho witness [polynomial0; polynomial1; polynomial2; polynomial3] i)
-            (to_uint (ntho witness [filled0; filled1; filled2; filled3] i)))
+    /\ lanes_ok data k 2 [polynomial0; polynomial1; polynomial2; polynomial3]
+                         [filled0; filled1; filled2; filled3]
     /\ xof_state \sha3for Array4.init (mk_read (168 * (k + 1)) \o nonce)
-    /\ (forall i, 0 <= i < 4 =>
-          Array168.to_list (truncatea_168 (ntho witness [buf0; buf1; buf2; buf3] i))
-          = shake128_slice data.[i] (168 * k) 168)
+    /\ blocks_ok data k [buf0; buf1; buf2; buf3]
   ).
   - wp.
     ecall (matrix_A__rejection_sample_one_blockP (shake128_slice data.[1] 0 (168 * k)) (truncatea_168 b1_)).
     auto=> &hr |> hk h hxf hblk.
-    have hsz : size (shake128_slice data.[1] 0 (168 * k)) = 168 * k.
-    - by rewrite size_shake128_slice /#.
-    move: (h 1) (hblk 1); rewrite /ntho /reject_ok /= => -[hag hf] hb1.
-    split; 1: smt().
+    move: h hblk; rewrite /lanes_ok /blocks_ok => h hblk.
+    move: (h 1) (hblk 1); rewrite /reject_ok /= => -[hag hf] hb1.
+    split; 1: smt(size_shake128_slice).
     move=> _ _ _ _ r hr1 hr2.
-    have hcat : shake128_slice data.[1] 0 (168 * k) ++ Array168.to_list (truncatea_168 buf1{hr})
-              = shake128_slice data.[1] 0 (168 * (k + 1)).
-    - rewrite hb1 (_ : 168 * (k + 1) = 168 * k + 168); 1: by ring.
-      rewrite shake128_slice_cat 1,2:/#.
-      by rewrite (_ : 0 + 168 * k = 168 * k) 1:/#.
-    move: (h 0) (h 2) (h 3); rewrite /ntho /reject_ok /= => ho0 ho1 ho2.
-    move=> i ige ilt; move: ige ilt; move: i; apply/allP_range'; rewrite /ntho /reject_ok /=.
-    rewrite -!hcat.
+    have hcat := slice_cat_block data.[1] k _ hk hb1.
+    rewrite /lanes_ok /reject_ok /= => i rgi.
+    move: (h 0) (h 1) (h 2) (h 3) => /= h0 h1 h2 h3.
     by smt().
-  (* lane 2 likewise *)
   exlim buf2 => b2_.
   seq > ^filled2<- : (
        0 <= k
-    /\ (forall i, 0 <= i < 4 =>
-          reject_ok data.[i] (168 * (k + b2i (i < 3)))
-            (ntho witness [polynomial0; polynomial1; polynomial2; polynomial3] i)
-            (to_uint (ntho witness [filled0; filled1; filled2; filled3] i)))
+    /\ lanes_ok data k 3 [polynomial0; polynomial1; polynomial2; polynomial3]
+                         [filled0; filled1; filled2; filled3]
     /\ xof_state \sha3for Array4.init (mk_read (168 * (k + 1)) \o nonce)
-    /\ (forall i, 0 <= i < 4 =>
-          Array168.to_list (truncatea_168 (ntho witness [buf0; buf1; buf2; buf3] i))
-          = shake128_slice data.[i] (168 * k) 168)
+    /\ blocks_ok data k [buf0; buf1; buf2; buf3]
   ).
   - wp.
     ecall (matrix_A__rejection_sample_one_blockP (shake128_slice data.[2] 0 (168 * k)) (truncatea_168 b2_)).
     auto=> &hr |> hk h hxf hblk.
-    have hsz : size (shake128_slice data.[2] 0 (168 * k)) = 168 * k.
-    - by rewrite size_shake128_slice /#.
-    move: (h 2) (hblk 2); rewrite /ntho /reject_ok /= => -[hag hf] hb2.
-    split; 1: smt().
+    move: h hblk; rewrite /lanes_ok /blocks_ok => h hblk.
+    move: (h 2) (hblk 2); rewrite /reject_ok /= => -[hag hf] hb2.
+    split; 1: smt(size_shake128_slice).
     move=> _ _ _ _ r hr1 hr2.
-    have hcat : shake128_slice data.[2] 0 (168 * k) ++ Array168.to_list (truncatea_168 buf2{hr})
-              = shake128_slice data.[2] 0 (168 * (k + 1)).
-    - rewrite hb2 (_ : 168 * (k + 1) = 168 * k + 168); 1: by ring.
-      rewrite shake128_slice_cat 1,2:/#.
-      by rewrite (_ : 0 + 168 * k = 168 * k) 1:/#.
-    move: (h 0) (h 1) (h 3); rewrite /ntho /reject_ok /= => ho0 ho1 ho2.
-    move=> i ige ilt; move: ige ilt; move: i; apply/allP_range'; rewrite /ntho /reject_ok /=.
-    rewrite -!hcat.
+    have hcat := slice_cat_block data.[2] k _ hk hb2.
+    rewrite /lanes_ok /reject_ok /= => i rgi.
+    move: (h 0) (h 1) (h 2) (h 3) => /= h0 h1 h2 h3.
     by smt().
-  (* lane 3 likewise *)
   exlim buf3 => b3_.
   seq > ^filled3<- : (
        0 <= k
-    /\ (forall i, 0 <= i < 4 =>
-          reject_ok data.[i] (168 * (k + b2i (i < 4)))
-            (ntho witness [polynomial0; polynomial1; polynomial2; polynomial3] i)
-            (to_uint (ntho witness [filled0; filled1; filled2; filled3] i)))
+    /\ lanes_ok data k 4 [polynomial0; polynomial1; polynomial2; polynomial3]
+                         [filled0; filled1; filled2; filled3]
     /\ xof_state \sha3for Array4.init (mk_read (168 * (k + 1)) \o nonce)
-    /\ (forall i, 0 <= i < 4 =>
-          Array168.to_list (truncatea_168 (ntho witness [buf0; buf1; buf2; buf3] i))
-          = shake128_slice data.[i] (168 * k) 168)
+    /\ blocks_ok data k [buf0; buf1; buf2; buf3]
   ).
   - wp.
     ecall (matrix_A__rejection_sample_one_blockP (shake128_slice data.[3] 0 (168 * k)) (truncatea_168 b3_)).
     auto=> &hr |> hk h hxf hblk.
-    have hsz : size (shake128_slice data.[3] 0 (168 * k)) = 168 * k.
-    - by rewrite size_shake128_slice /#.
-    move: (h 3) (hblk 3); rewrite /ntho /reject_ok /= => -[hag hf] hb3.
-    split; 1: smt().
+    move: h hblk; rewrite /lanes_ok /blocks_ok => h hblk.
+    move: (h 3) (hblk 3); rewrite /reject_ok /= => -[hag hf] hb3.
+    split; 1: smt(size_shake128_slice).
     move=> _ _ _ _ r hr1 hr2.
-    have hcat : shake128_slice data.[3] 0 (168 * k) ++ Array168.to_list (truncatea_168 buf3{hr})
-              = shake128_slice data.[3] 0 (168 * (k + 1)).
-    - rewrite hb3 (_ : 168 * (k + 1) = 168 * k + 168); 1: by ring.
-      rewrite shake128_slice_cat 1,2:/#.
-      by rewrite (_ : 0 + 168 * k = 168 * k) 1:/#.
-    move: (h 0) (h 1) (h 2); rewrite /ntho /reject_ok /= => ho0 ho1 ho2.
-    move=> i ige ilt; move: ige ilt; move: i; apply/allP_range'; rewrite /ntho /reject_ok /=.
-    rewrite -!hcat.
+    have hcat := slice_cat_block data.[3] k _ hk hb3.
+    rewrite /lanes_ok /reject_ok /= => i rgi.
+    move: (h 0) (h 1) (h 2) (h 3) => /= h0 h1 h2 h3.
     by smt().
   (* the invariant advances to k + 1 *)
   auto=> &hr |> hk h hxf hblk.
   exists (k + 1) => /=.
   split; 1: smt().
   split; 1: exact hxf.
-  move: (h 0) (h 1) (h 2) (h 3); rewrite /ntho /reject_ok /= => h0 h1 h2 h3.
-  rewrite /ntho /reject_ok /=.
-  by smt().
+  by move: h; rewrite /lanes_ok /ntho /reject_ok /= => h; smt().
 qed.
 
 (* -------------------------------------------------------------------- *)
