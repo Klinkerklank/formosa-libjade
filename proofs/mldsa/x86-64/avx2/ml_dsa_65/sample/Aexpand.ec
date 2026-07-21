@@ -24,12 +24,16 @@ hint simplify b2i0, b2i1.
 (* -------------------------------------------------------------------- *)
 lemma allP_range (k : int) (p : int -> bool) :
   all p (range 0 k) <=> (forall i, 0 <= i < k => p i).
-proof. admitted.
+proof.
+rewrite allP; split=> h i.
+- by move=> rgi; apply h; rewrite mem_range.
+- by move=> /mem_range rgi; apply h.
+qed.
 
 (* -------------------------------------------------------------------- *)
 lemma allP_range' (k : int) (p : int -> bool) :
   all p (range 0 k) <=> (forall i, 0 <= i => i < k => p i).
-proof. admitted.
+proof. by rewrite allP_range; smt(). qed.
 
 (* -------------------------------------------------------------------- *)
 lemma sub0 (a : 'a Array848.t) (base : int) :
@@ -100,7 +104,7 @@ op [opaque] reject (data : W8.t list) : W32.t list =
 
 (* -------------------------------------------------------------------- *)
 lemma reject_nil : reject [] = [].
-proof. admitted.
+proof. by rewrite /reject chunk_nil /=. qed.
 
 hint simplify reject_nil.
 
@@ -113,7 +117,7 @@ op [opaque] agree (p : wpoly) (base : int) (coeffs : W32.t list) =
 
 (* -------------------------------------------------------------------- *)
 lemma agree_nil (p : wpoly) (base : int) : agree p base [].
-proof. admitted.
+proof. by rewrite /agree /= /#. qed.
 
 hint simplify agree_nil.
 
@@ -159,11 +163,6 @@ type sha3x4 = W256.t Array25.t.
 
 op (\sha3for) : sha3x4 -> sha3x4_state -> bool.
 
-lemma is_sha3x4_is_valid (rstate : sha3x4) (state : sha3x4_state) :
-  rstate \sha3for state => is_valid_sha3x4_state state.
-admitted.
-
-(* -------------------------------------------------------------------- *)
 lemma sha3for_eqR rstate s1 s2 :
   s1 = s2 => rstate \sha3for s1 => rstate \sha3for s2.
 proof. by move=> ->. qed.
@@ -171,28 +170,44 @@ proof. by move=> ->. qed.
 (* -------------------------------------------------------------------- *)
 lemma truncateu16_256E (w : W256.t) :
   truncateu16 w = w \bits16 0.
-proof. admitted.
+proof.
+apply: W16.ext_eq=> i rgi; rewrite bits16iE //=.
+rewrite /truncateu16 of_intwE rgi /= /W16.int_bit.
+rewrite modz_pow2_div ~-1://# modz_dvd.
+- by rewrite -{1}[2]expr1 dvdz_exp2l /#.
+- by rewrite -b2i_get /#.
+qed.
 
 (* -------------------------------------------------------------------- *)
 lemma bits8_256_shiftE (w : W256.t) (i : int) : 0 <= i < 16 =>
   (w `<<<` 8 * i) \bits8 i = w \bits8 0.
-proof. admitted.
+proof.
+move=> rgi; apply W8.wordP => j hj.
+by rewrite !bits8iE // shlwE; smt().
+qed.
 
 (* -------------------------------------------------------------------- *)
 lemma bits8_256_le_shiftE (w : W256.t) (i j : int) :
   0 <= i < 16 => 0 <= j < i =>
     (w `<<<` 8 * i) \bits8 j = W8.zero.
-proof. admitted.
+proof.
+move=> rgi rgj; apply W8.wordP => t ht.
+rewrite bits8iE // shlwE.
+by smt(W256.get_out W8.zerowE).
+qed.
 
 (* -------------------------------------------------------------------- *)
 lemma w256_shift_wintE (w i : int) :
   0 <= i < 256 => W256.of_int (w `<<` i) = W256.of_int w `<<<` i.
-proof. admitted.
+proof.
+move=> rgi.
+by rewrite W256.shlMP 1:/# /(`<<`) ifT 1:/#.
+qed.
 
 (* -------------------------------------------------------------------- *)
-lemma w256_ofint_bits8E (w i : int) :
+lemma w256_ofint_bits8E (w i : int) : 0 <= i < 32 =>
   (W256.of_int w) \bits8 i = W8.of_int (w %/ 2^(8*i)).
-proof. admitted.
+proof. by apply W32u8.of_int_bits8_div. qed.
 
 (* -------------------------------------------------------------------- *)
 lemma matrix_A__shake128_absorb_34_4xP
@@ -261,30 +276,72 @@ end section.
 
 (* -------------------------------------------------------------------- *)
 lemma WArray848_get256E (a : W8.t Array848.t) (base : int)  :
+  0 <= base <= 816 =>
     WArray848.get256_direct
-      (WArray848.init8 (fun (i : int) => a.[i]))
+      (WArray848.init8 ("_.[_]" a))
       base
   = W32u8.pack32 (Array848.sub a base 32).
-proof. admitted.
+proof.
+move=> rgb; rewrite get256E; congr; apply W32u8.Pack.ext_eq => j hj.
+rewrite initiE //= get_of_list //.
+rewrite /init8 WArray848.initiE 1:/# /=.
+by rewrite /sub nth_mkseq //=.
+qed.
 
 (* -------------------------------------------------------------------- *)
 lemma WArray256_get128E (a : W8.t Array256.t) (base : int) :
+  0 <= base <= 240 =>
     WArray256.get128_direct
-      (WArray256.init8 (fun (i : int) => a.[i]))
+      (WArray256.init8 ("_.[_]" a))
       base
   = W16u8.pack16 (Array256.sub a base 16).
-proof. admitted.
+proof.
+move=> rgb; rewrite get128E; congr; apply W16u8.Pack.ext_eq => j hj.
+rewrite initiE //= get_of_list //.
+rewrite /init8 WArray256.initiE 1:/# /=.
+by rewrite /sub nth_mkseq //=.
+qed.
 
 (* -------------------------------------------------------------------- *)
 lemma W32Array256_set128E (a : W32.t Array256.t) (base : int) (w : W128.t) :
-   Array256.init                                                               
-      (fun (i : int) =>                                                         
-         WArray1024.get32                                            
-           (WArray1024.set128_direct                                 
-              (WArray1024.init32 (fun (i0 : int) => a.[i0]))
+  0 <= base => 4 %| base => base + 16 <= 1024 =>
+   Array256.init
+      (fun (i : int) =>
+         WArray1024.get32
+           (WArray1024.set128_direct
+              (WArray1024.init32 ("_.[_]" a))
               base w) i)
  = XArray256.PAE.replace_ a (base %/ 4) (to_list (W4u32.unpack32 w)).
-proof. admitted. (* NB: valid at 4-aligned base only; all uses are aligned *)
+proof.
+move=> ge0 hdvd hle.
+apply Array256.ext_eq => i rgi.
+rewrite initiE //=.
+rewrite /XArray256.PAE.replace_.
+rewrite Array256.filliE 1:// /=.
+rewrite get32E.
+case: (base %/ 4 <= i < base %/ 4 + 4) => hcase //=.
+- have -> : W4u8.Pack.init (fun j => (WArray1024.set128_direct (WArray1024.init32 ("_.[_]" a)) base w).[4*i+j])
+          = W4u8.Pack.init (fun j => w \bits8 (4 * (i - base %/ 4) + j)).
+  - apply W4u8.Pack.init_ext => j hj /=.
+    rewrite set128E WArray1024.initiE 1:/# /= ifT 1:/#.
+    by congr; smt().
+  pose m := i - base %/ 4.
+  have rgm : 0 <= m < 4 by smt().
+  apply W4u8.wordP => j hj.
+  rewrite pack4bE // initiE //=.
+  move: rgm; rewrite -(mema_iota 0 4) -iotaredE /= => -[->|[->|[->|->]]] /=.
+  - by rewrite W128_bits32_bits8.
+  - by rewrite W128_bits32_bits8.
+  - by rewrite W128_bits32_bits8.
+  by rewrite W128_bits32_bits8.
+have -> : W4u8.Pack.init (fun j => (WArray1024.set128_direct (WArray1024.init32 ("_.[_]" a)) base w).[4*i+j])
+        = W4u8.Pack.init (fun j => a.[i] \bits8 j).
+- apply W4u8.Pack.init_ext => j hj /=.
+  rewrite set128E WArray1024.initiE 1:/# /= ifF 1:/#.
+  rewrite /init32 WArray1024.initiE 1:/# /=.
+  by rewrite (_ : (4*i+j) %/ 4 = i) 1:/# (_ : (4*i+j) %% 4 = j) 1:/#.
+by rewrite -/(W4u8.unpack8 a.[i]) W4u8.unpack8K.
+qed.
 
 (* -------------------------------------------------------------------- *)
 hint exact : W64.WRingA.oner_neq0.
@@ -894,11 +951,6 @@ seq 2 : (#pre /\ shuffle_table_pointer = matrix_A__SHUFFLE_TABLE).
 - by auto.
 sp 4; seq 0 : (#{/~{modulus}}pre /\ modulus = MODULUS8u32).
 - by auto=> &hr |>; rewrite MODULUS8u32E.
-proc rewrite 1.1  WArray848_get256E.
-proc rewrite 1.11 WArray256_get128E.
-proc rewrite 1.13 W32Array256_set128E.
-proc rewrite 1.22 WArray256_get128E.
-proc rewrite 1.24 W32Array256_set128E.
 seq 1: (                        (* FIXME: code position *)
      randombytes = buf
   /\ to_uint bytes_filled <= 1024
@@ -929,8 +981,11 @@ seq 1: (                        (* FIXME: code position *)
     potential_coefficients =
       W8u32.pack8 (cands (Array848.sub randombytes (to_uint input_offset) 24))).
   - ecall (matrix_A____bytestream_to_potential_coefficientsP (Array848.sub randombytes (to_uint input_offset) 32)).
-    auto=> &hr |> *.
-    by rewrite /cands size_sub //= take_sub //.
+    auto=> &hr |> hs hdvd hne.
+    move: hs => @/vsampled [#] hio0 hdvd0 hble hsz hag.
+    have hoff840 : to_uint input_offset{hr} < 840 by smt().
+    rewrite size_sub //= WArray848_get256E ~-1:#smt:(W64.to_uint_cmp) /=.
+    by rewrite /cands take_sub //.
   (* a. the acceptance mask: good lists the accepted candidates,       *)
   (*    least significant bit first                                     *)
   seq > ^good<- : (
@@ -967,12 +1022,16 @@ seq 1: (                        (* FIXME: code position *)
     move: hs => @/vsampled [#] hio0 hdvd0 hble hsz hag.
     have szcs : size (cands (Array848.sub buf (to_uint off0) 24)) = 8 by rewrite size_cands size_sub.
     have hfle := size_filter_take4 _ szcs.
+    have hidx : 0 <= to_uint ((good{hr} `&` W64.of_int 15) `<<` W8.of_int 4) <= 240.
+    - rewrite /(`<<`) of_uintK /= W64.to_uint_shl // to_uint_and15.
+      by rewrite pmod_small; smt(W64.to_uint_cmp).
+    rewrite W32Array256_set128E ~-1:#smt:(W64.to_uint_cmp).
+    rewrite WArray256_get128E ~-1:#smt:(W64.to_uint_cmp).
     rewrite /vsampled !(popcnt_step_lo _ _ (cands (Array848.sub buf (to_uint off0) 24))) //.
     rewrite !reject_block ~-1:#smt:(W64.to_uint_cmp) -!take4_cands_window.
     split; last by smt().
     do 3? (split; 1: smt()).
     split; 1: by rewrite size_cat /#.
-    rewrite -to_list_unpack32_128E.
     by apply agree_store_lo => //.
 
   (* c. likewise for the high half: the whole window is consumed       *)
@@ -989,6 +1048,13 @@ seq 1: (                        (* FIXME: code position *)
     move: hs => @/vsampled [#] hio0 hdvd0 hble hsz hag.
     have szcs : size (cands (Array848.sub buf (to_uint off0) 24)) = 8 by rewrite size_cands size_sub.
     have hfle := size_filter_drop4 _ szcs.
+    have hglt : bs2int (map accept (cands (Array848.sub buf (to_uint off0) 24))) < 256.
+    - by have := bs2int_le2Xs (map accept (cands (Array848.sub buf (to_uint off0) 24))); rewrite size_map szcs.
+    have hidx : 0 <= to_uint ((good{hr} `>>` W8.of_int 4) `<<` W8.of_int 4) <= 240.
+    - rewrite /(`<<`) of_uintK /= W64.to_uint_shl // to_uint_shr4 hgood.
+      by rewrite pmod_small; smt(bs2int_ge0).
+    rewrite W32Array256_set128E ~-1:#smt:(W64.to_uint_cmp).
+    rewrite WArray256_get128E ~-1:#smt:(W64.to_uint_cmp).
     have hsplit24 : reject (Array848.sub buf 0 (to_uint off0 + 24))
       = reject (Array848.sub buf 0 (to_uint off0 + 12))
         ++ filter accept (drop 4 (cands (Array848.sub buf (to_uint off0) 24))).
@@ -998,7 +1064,6 @@ seq 1: (                        (* FIXME: code position *)
     rewrite !hsplit24.
     do 3? (split; 1: smt()).
     split; 1: by rewrite size_cat /#.
-    rewrite -to_list_unpack32_128E.
     by apply agree_store_hi => //.
 
   (* d. re-encode the stop flag from the new counters                  *)
@@ -1651,10 +1716,10 @@ seq 1 : (rho = rho_ /\ A_valid_up_to rho matrix_A 28).
       move=> k ?; have [#|] ->> /=: k = 0 \/ k = 1 by smt().
       - rewrite /ds truncateu16_256E /= w256_shift_wintE //.
         rewrite (bits8_256_le_shiftE _ 1 0) //=.
-        by rewrite w256_ofint_bits8E.
+        by rewrite w256_ofint_bits8E //.
       - rewrite /ds truncateu16_256E /= w256_shift_wintE //.
         rewrite (bits8_256_shiftE _ 1) //=.
-        by rewrite !w256_ofint_bits8E /= [_ %/ 256]pdiv_small 1:/#.
+        by rewrite !w256_ofint_bits8E ~-1:// /= [_ %/ 256]pdiv_small 1:/#.
     by case: (i < lane{hr}) => ?; rewrite get_set_if //#.
 
   exlim chunk => chunk_.
@@ -1683,10 +1748,10 @@ seq > ^while : (#pre /\
       move=> k ?; have [#|] ->> /=: k = 0 \/ k = 1 by smt().
       - rewrite /ds truncateu16_256E /= w256_shift_wintE //.
         rewrite (bits8_256_le_shiftE _ 1 0) //=.
-        by rewrite w256_ofint_bits8E.
+        by rewrite w256_ofint_bits8E //.
       - rewrite /ds truncateu16_256E /= w256_shift_wintE //.
         rewrite (bits8_256_shiftE _ 1) //=.
-        by rewrite !w256_ofint_bits8E /= [_ %/ 256]pdiv_small 1:/#.
+        by rewrite !w256_ofint_bits8E ~-1:// /= [_ %/ 256]pdiv_small 1:/#.
     by case: (i < lane{hr}) => ?; rewrite get_set_if //#.
 
 seq 1: (#pre
