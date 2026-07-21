@@ -686,6 +686,86 @@ by smt(count_ge0).
 qed.
 
 (* -------------------------------------------------------------------- *)
+(* per-half bounds and call-site adapters: premises match the loop      *)
+(* invariant facts, conclusions match the wp-produced goal terms        *)
+lemma size_filter_take4 (cs : W32.t list) :
+  size cs = 8 => size (filter accept (take 4 cs)) <= 4.
+proof.
+move=> szcs; rewrite size_filter.
+by have := count_size accept (take 4 cs); rewrite size_take // szcs.
+qed.
+
+lemma size_filter_drop4 (cs : W32.t list) :
+  size cs = 8 => size (filter accept (drop 4 cs)) <= 4.
+proof.
+move=> szcs; rewrite size_filter.
+by have := count_size accept (drop 4 cs); rewrite size_drop // szcs.
+qed.
+
+(* -------------------------------------------------------------------- *)
+lemma popcnt_step_lo (bf g : W64.t) (cs : W32.t list) :
+  size cs = 8 => to_uint g = bs2int (map accept cs) => to_uint bf <= 1024 =>
+  to_uint (bf + ((POPCNT_64 (g `&` W64.of_int 15)).`6 `<<` W8.of_int 2))
+  = to_uint bf + 4 * size (filter accept (take 4 cs)).
+proof.
+move=> szcs hg hbf.
+rewrite (popcnt_step _ _ (take 4 (map accept cs))) //.
+- by rewrite size_take // size_map szcs.
+- by rewrite to_uint_and15 hg -(bs2int_mod (map accept cs) 4).
+by rewrite size_filter -(count_idfun_map accept) map_take.
+qed.
+
+lemma popcnt_step_hi (bf g : W64.t) (cs : W32.t list) :
+  size cs = 8 => to_uint g = bs2int (map accept cs) => to_uint bf <= 1024 =>
+  to_uint (bf + ((POPCNT_64 (g `>>` W8.of_int 4)).`6 `<<` W8.of_int 2))
+  = to_uint bf + 4 * size (filter accept (drop 4 cs)).
+proof.
+move=> szcs hg hbf.
+rewrite (popcnt_step _ _ (drop 4 (map accept cs))) //.
+- by rewrite size_drop // size_map szcs.
+- by rewrite to_uint_shr4 hg -(bs2int_div 4 (map accept cs)).
+by rewrite size_filter -(count_idfun_map accept) map_drop.
+qed.
+
+(* -------------------------------------------------------------------- *)
+lemma agree_store_lo (p : wpoly) (old cs : W32.t list) (g bf : W64.t) :
+  size cs = 8 => to_uint bf = 4 * size old =>
+  to_uint g = bs2int (map accept cs) => agree p 0 old =>
+  agree (XArray256.PAE.replace_ p (to_uint bf %/ 4)
+          (W4u32.Pack.to_list (W4u32.unpack32 (VPSHUFB_128
+            (VEXTRACTI128 (W8u32.pack8 cs) W8.zero)
+            (W16u8.pack16 (Array256.sub matrix_A__SHUFFLE_TABLE
+               (to_uint ((g `&` W64.of_int 15) `<<` W8.of_int 4)) 16))))))
+        0 (old ++ filter accept (take 4 cs)).
+proof.
+move=> szcs hbf hg hag.
+have -> : to_uint bf %/ 4 = size old by rewrite hbf /#.
+apply (agree_store _ _ _ _ (g `&` W64.of_int 15)) => //.
+- by rewrite extract_lo.
+- by rewrite size_take // szcs.
+by rewrite map_take to_uint_and15 hg -(bs2int_mod (map accept cs) 4).
+qed.
+
+lemma agree_store_hi (p : wpoly) (old cs : W32.t list) (g bf : W64.t) :
+  size cs = 8 => to_uint bf = 4 * size old =>
+  to_uint g = bs2int (map accept cs) => agree p 0 old =>
+  agree (XArray256.PAE.replace_ p (to_uint bf %/ 4)
+          (W4u32.Pack.to_list (W4u32.unpack32 (VPSHUFB_128
+            (VEXTRACTI128 (W8u32.pack8 cs) W8.one)
+            (W16u8.pack16 (Array256.sub matrix_A__SHUFFLE_TABLE
+               (to_uint ((g `>>` W8.of_int 4) `<<` W8.of_int 4)) 16))))))
+        0 (old ++ filter accept (drop 4 cs)).
+proof.
+move=> szcs hbf hg hag.
+have -> : to_uint bf %/ 4 = size old by rewrite hbf /#.
+apply (agree_store _ _ _ _ (g `>>` W8.of_int 4)) => //.
+- by rewrite extract_hi.
+- by rewrite size_drop // szcs.
+by rewrite map_drop to_uint_shr4 hg -(bs2int_div 4 (map accept cs)).
+qed.
+
+
+(* -------------------------------------------------------------------- *)
 (* local reduction hints for the bytestream decoder                     *)
 lemma and255E (x : W8.t) : x `&` W8.of_int 255 = x.
 proof.
@@ -862,28 +942,15 @@ seq 1: (                        (* FIXME: code position *)
   ).
   - auto=> &hr |> hs h992 h840 hdvd hgood.
     move: hs => @/vsampled [#] hio0 hdvd0 hble hsz hag.
-    pose cs := cands (Array848.sub buf (to_uint off0) 24).
-    have szcs : size cs = 8 by rewrite size_cands size_sub.
-    pose bits := map accept cs.
-    have szbits : size bits = 8 by rewrite size_map szcs.
-    have hlo : to_uint (good{hr} `&` W64.of_int 15) = bs2int (take 4 bits).
-    - by rewrite to_uint_and15 hgood -(bs2int_mod bits 4).
-    have szt : size (take 4 bits) = 4 by rewrite size_take // szbits.
-    have hcle : count idfun (take 4 bits) <= 4 by have := count_size idfun (take 4 bits); rewrite szt.
-    rewrite /vsampled !(popcnt_step _ _ (take 4 bits)) //.
-    rewrite !reject_block ~-1:#smt:(W64.to_uint_cmp).
-    rewrite -!take4_cands_window.
-    have hb1 : to_uint bytes_filled{hr} %/ 4 = size (reject (Array848.sub buf 0 (to_uint off0))) by rewrite hsz /#.
-    rewrite !hb1.
-    split; last by smt(count_ge0).
-    do 2? (split; 1: smt()).
-    split; 1: smt(count_ge0).
-    split; 1: by rewrite size_cat size_filter -(count_idfun_map accept) map_take /#.
+    have szcs : size (cands (Array848.sub buf (to_uint off0) 24)) = 8 by rewrite size_cands size_sub.
+    have hfle := size_filter_take4 _ szcs.
+    rewrite /vsampled !(popcnt_step_lo _ _ (cands (Array848.sub buf (to_uint off0) 24))) //.
+    rewrite !reject_block ~-1:#smt:(W64.to_uint_cmp) -!take4_cands_window.
+    split; last by smt().
+    do 3? (split; 1: smt()).
+    split; 1: by rewrite size_cat /#.
     rewrite -to_list_unpack32_128E.
-    apply (agree_store _ _ (take 4 cs) _ (good{hr} `&` W64.of_int 15)) => //.
-    - by rewrite extract_lo.
-    - by rewrite size_take // szcs.
-    by rewrite map_take -/bits.
+    by apply agree_store_lo => //.
 
   (* c. likewise for the high half: the whole window is consumed       *)
   seq > ^bytes_filled<- : (
@@ -897,42 +964,23 @@ seq 1: (                        (* FIXME: code position *)
   ).
   - auto=> &hr |> hs h1008 h840 hdvd hgood.
     move: hs => @/vsampled [#] hio0 hdvd0 hble hsz hag.
-    pose cs := cands (Array848.sub buf (to_uint off0) 24).
-    have szcs : size cs = 8 by rewrite size_cands size_sub.
-    pose bits := map accept cs.
-    have szbits : size bits = 8 by rewrite size_map szcs.
-    have hhi : to_uint (good{hr} `>>` W8.of_int 4) = bs2int (drop 4 bits).
-    - by rewrite to_uint_shr4 hgood -(bs2int_div 4 bits).
-    have szd : size (drop 4 bits) = 4 by rewrite size_drop // szbits.
-    have hcle : count idfun (drop 4 bits) <= 4 by have := count_size idfun (drop 4 bits); rewrite szd.
-    have hb1 : to_uint bytes_filled{hr} %/ 4 = size (reject (Array848.sub buf 0 (to_uint off0 + 12))) by rewrite hsz /#.
-    have hsplit24 : reject (Array848.sub buf 0 (to_uint off0 + 24)) = reject (Array848.sub buf 0 (to_uint off0 + 12)) ++ filter accept (drop 4 cs).
+    have szcs : size (cands (Array848.sub buf (to_uint off0) 24)) = 8 by rewrite size_cands size_sub.
+    have hfle := size_filter_drop4 _ szcs.
+    have hsplit24 : reject (Array848.sub buf 0 (to_uint off0 + 24))
+      = reject (Array848.sub buf 0 (to_uint off0 + 12))
+        ++ filter accept (drop 4 (cands (Array848.sub buf (to_uint off0) 24))).
     - rewrite (_ : to_uint off0 + 24 = to_uint off0 + 12 + 12); 1: by ring.
       by rewrite reject_block ~-1:#smt:(W64.to_uint_cmp) -drop4_cands_window.
-    rewrite /vsampled !(popcnt_step _ _ (drop 4 bits)) //.
-    rewrite !hsplit24 !hb1.
-    do 2? (split; 1: smt()).
-    split; 1: smt(count_ge0).
-    split; 1: by rewrite size_cat size_filter -(count_idfun_map accept) map_drop /#.
+    rewrite /vsampled !(popcnt_step_hi _ _ (cands (Array848.sub buf (to_uint off0) 24))) //.
+    rewrite !hsplit24.
+    do 3? (split; 1: smt()).
+    split; 1: by rewrite size_cat /#.
     rewrite -to_list_unpack32_128E.
-    apply (agree_store _ _ (drop 4 cs) _ (good{hr} `>>` W8.of_int 4)) => //.
-    - by rewrite extract_hi.
-    - by rewrite size_drop // szcs.
-    by rewrite map_drop -/bits.
+    by apply agree_store_hi => //.
 
   (* d. re-encode the stop flag from the new counters                  *)
   auto=> &hr |> hs h840 hdvd.
-  rewrite !uleE !of_uintK /= !to_uintD_small ?of_uintK /=; 1: smt().
-  split; [move=> h1 | move=> h1; split; [move=> h2 | move=> h2]].
-  - split; 1: exact hs.
-    split; 1: smt().
-    by rewrite (_ : (to_uint bytes_filled{hr} < 992 /\ to_uint off0 + 24 < 840) = false) 1:/#.
-  - split; 1: exact hs.
-    split; 1: smt().
-    by rewrite (_ : (to_uint bytes_filled{hr} < 992 /\ to_uint off0 + 24 < 840) = false) 1:/#.
-  split; 1: exact hs.
-  split; 1: smt().
-  by rewrite (_ : (to_uint bytes_filled{hr} < 992 /\ to_uint off0 + 24 < 840) = true) 1:/#.
+  by rewrite !uleE !of_uintK /= !to_uintD_small ?of_uintK /#.
 
 (* The scalar tail: candidate-per-candidate rejection sampling         *)
 (* entry: filled switches from byte count to coefficient count       *)
