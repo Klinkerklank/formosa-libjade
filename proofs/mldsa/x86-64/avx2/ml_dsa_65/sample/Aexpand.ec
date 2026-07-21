@@ -1458,7 +1458,7 @@ seq ^stop_sampling<- : (#{/~{buf0, buf1, buf2, buf3}}pre /\
       have hds : ds_.[i] = A_ds rc.
       - by move: E; rewrite /ntho => E; rewrite hds_ // /Ads E.
       have hdata : data.[i] = to_list rho_ ++ W2u8.to_list (A_ds rc).
-      - by rewrite /data initiE //= /nonce hds.
+      - by rewrite /data initiE ~-1://= /nonce hds.
       have hsz : 256 <= size (reject (shake128_slice data.[i] 0 (168 * k))) by smt().
       apply Array256.ext_eq => j rgj.
       rewrite (ApolyP rho_ rc (168 * k) j) //; 1: by move: hsz; rewrite hdata.
@@ -1519,12 +1519,11 @@ seq ^stop_sampling<- : (#{/~{buf0, buf1, buf2, buf3}}pre /\
     /\ xof_state \sha3for Array4.init (mk_read (168 * (k + 1)) \o nonce)
     /\ blocks_ok data k [buf0; buf1; buf2; buf3]
   ).
-  - auto=> &hr |> hk h hxf hblk.
-    split.
-    - by move: h; rewrite /lanes_ok /ntho /reject_ok /= => h; smt().
-    move: (hblk 0) (hblk 1) (hblk 2) (hblk 3); rewrite /ntho /= => hb0 hb1 hb2 hb3.
+  - auto=> &hr |> hk h hxf hblk; split; first by smt().
+    move: (hblk 0) (hblk 1) (hblk 2) (hblk 3) => @/ntho /= 4?.
     rewrite /blocks_ok; apply/allP_range => /=.
-    by rewrite !trunc_inject hb0 hb1 hb2 hb3.
+    by rewrite !trunc_inject.
+
   (* each lane samples its fresh block, advancing lanes_ok by one *)
   exlim buf0 => b0_.
   seq > ^filled0<- : (
@@ -1534,17 +1533,15 @@ seq ^stop_sampling<- : (#{/~{buf0, buf1, buf2, buf3}}pre /\
     /\ xof_state \sha3for Array4.init (mk_read (168 * (k + 1)) \o nonce)
     /\ blocks_ok data k [buf0; buf1; buf2; buf3]
   ).
-  - wp.
-    ecall (matrix_A__rejection_sample_one_blockP (shake128_slice data.[0] 0 (168 * k)) (truncatea_168 b0_)).
+  - wp; ecall (matrix_A__rejection_sample_one_blockP
+      (shake128_slice data.[0] 0 (168 * k)) (truncatea_168 b0_)).
     auto=> &hr |> hk h hxf hblk.
-    move: h hblk; rewrite /lanes_ok /blocks_ok => h hblk.
-    move: (h 0) (hblk 0); rewrite /reject_ok /= => -[hag hf] hb0.
-    split; 1: smt(size_shake128_slice).
-    move=> _ _ _ _ r hr1 hr2.
+    move: (h 0) (hblk 0) => @/reject_ok /= [hag hf] hb0.
+    split; first by rewrite !size_shake128_slice /= /#.
+    move=> _ _ _ _ r hr1 hr2 i rgi.
     have hcat := slice_cat_block data.[0] k _ hk hb0.
-    rewrite /lanes_ok /reject_ok /= => i rgi.
-    move: (h 0) (h 1) (h 2) (h 3) => /= h0 h1 h2 h3.
-    by smt().
+    by move: (h 0 _) (h 1 _) (h 2 _) (h 3 _) => //#.
+
   exlim buf1 => b1_.
   seq > ^filled1<- : (
        0 <= k
@@ -1553,17 +1550,15 @@ seq ^stop_sampling<- : (#{/~{buf0, buf1, buf2, buf3}}pre /\
     /\ xof_state \sha3for Array4.init (mk_read (168 * (k + 1)) \o nonce)
     /\ blocks_ok data k [buf0; buf1; buf2; buf3]
   ).
-  - wp.
-    ecall (matrix_A__rejection_sample_one_blockP (shake128_slice data.[1] 0 (168 * k)) (truncatea_168 b1_)).
+  - wp; ecall (matrix_A__rejection_sample_one_blockP
+      (shake128_slice data.[1] 0 (168 * k)) (truncatea_168 b1_)).
     auto=> &hr |> hk h hxf hblk.
-    move: h hblk; rewrite /lanes_ok /blocks_ok => h hblk.
-    move: (h 1) (hblk 1); rewrite /reject_ok /= => -[hag hf] hb1.
-    split; 1: smt(size_shake128_slice).
-    move=> _ _ _ _ r hr1 hr2.
+    move: (h 1) (hblk 1) => @/reject_ok /= [hag hf] hb1.
+    split; first by rewrite !size_shake128_slice /= /#.
+    move=> _ _ _ _ r hr1 hr2 i rgi.
     have hcat := slice_cat_block data.[1] k _ hk hb1.
-    rewrite /lanes_ok /reject_ok /= => i rgi.
-    move: (h 0) (h 1) (h 2) (h 3) => /= h0 h1 h2 h3.
-    by smt().
+    by move: (h 0 _) (h 1 _) (h 2 _) (h 3 _) => //#.
+
   exlim buf2 => b2_.
   seq > ^filled2<- : (
        0 <= k
@@ -1572,17 +1567,15 @@ seq ^stop_sampling<- : (#{/~{buf0, buf1, buf2, buf3}}pre /\
     /\ xof_state \sha3for Array4.init (mk_read (168 * (k + 1)) \o nonce)
     /\ blocks_ok data k [buf0; buf1; buf2; buf3]
   ).
-  - wp.
-    ecall (matrix_A__rejection_sample_one_blockP (shake128_slice data.[2] 0 (168 * k)) (truncatea_168 b2_)).
+  - wp; ecall (matrix_A__rejection_sample_one_blockP
+      (shake128_slice data.[2] 0 (168 * k)) (truncatea_168 b2_)).
     auto=> &hr |> hk h hxf hblk.
-    move: h hblk; rewrite /lanes_ok /blocks_ok => h hblk.
-    move: (h 2) (hblk 2); rewrite /reject_ok /= => -[hag hf] hb2.
-    split; 1: smt(size_shake128_slice).
-    move=> _ _ _ _ r hr1 hr2.
+    move: (h 2) (hblk 2) => @/reject_ok /= [hag hf] hb2.
+    split; first by rewrite !size_shake128_slice /= /#.
+    move=> _ _ _ _ r hr1 hr2 i rgi.
     have hcat := slice_cat_block data.[2] k _ hk hb2.
-    rewrite /lanes_ok /reject_ok /= => i rgi.
-    move: (h 0) (h 1) (h 2) (h 3) => /= h0 h1 h2 h3.
-    by smt().
+    by move: (h 0 _) (h 1 _) (h 2 _) (h 3 _) => //#.
+
   exlim buf3 => b3_.
   seq > ^filled3<- : (
        0 <= k
@@ -1591,23 +1584,18 @@ seq ^stop_sampling<- : (#{/~{buf0, buf1, buf2, buf3}}pre /\
     /\ xof_state \sha3for Array4.init (mk_read (168 * (k + 1)) \o nonce)
     /\ blocks_ok data k [buf0; buf1; buf2; buf3]
   ).
-  - wp.
-    ecall (matrix_A__rejection_sample_one_blockP (shake128_slice data.[3] 0 (168 * k)) (truncatea_168 b3_)).
+  - wp; ecall (matrix_A__rejection_sample_one_blockP
+      (shake128_slice data.[3] 0 (168 * k)) (truncatea_168 b3_)).
     auto=> &hr |> hk h hxf hblk.
-    move: h hblk; rewrite /lanes_ok /blocks_ok => h hblk.
-    move: (h 3) (hblk 3); rewrite /reject_ok /= => -[hag hf] hb3.
-    split; 1: smt(size_shake128_slice).
-    move=> _ _ _ _ r hr1 hr2.
+    move: (h 3) (hblk 3) => @/reject_ok /= [hag hf] hb3.
+    split; first by rewrite !size_shake128_slice /= /#.
+    move=> _ _ _ _ r hr1 hr2 i rgi.
     have hcat := slice_cat_block data.[3] k _ hk hb3.
-    rewrite /lanes_ok /reject_ok /= => i rgi.
-    move: (h 0) (h 1) (h 2) (h 3) => /= h0 h1 h2 h3.
-    by smt().
+    by move: (h 0 _) (h 1 _) (h 2 _) (h 3 _) => //#.
+
   (* the invariant advances to k + 1 *)
   auto=> &hr |> hk h hxf hblk.
-  exists (k + 1) => /=.
-  split; 1: smt().
-  split; 1: exact hxf.
-  by move: h; rewrite /lanes_ok /ntho /reject_ok /= => h; smt().
+  by exists (k + 1) => /=; split* => //#.
 qed.
 
 (* -------------------------------------------------------------------- *)
