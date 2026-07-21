@@ -915,9 +915,9 @@ while (
   - move: hsz hag; have -> : to_uint off = 840 by smt().
     by move=> hsz hag; split; [exact hag | smt()].
   have hf : to_uint f = 256 by smt().
-  have hoffcmp := W64.to_uint_cmp off.
   have -> : 840 = to_uint off + (840 - to_uint off) by ring.
-  rewrite reject_block 1,2:/# // size_cat.
+  rewrite reject_block; 1,2: smt(W64.to_uint_cmp); 1: exact hdvd.
+  rewrite size_cat.
   split; 1: by apply agree_full; [smt() | exact hag].
   smt(size_ge0).
 (* one iteration; off0 names the current candidate's offset          *)
@@ -934,10 +934,8 @@ seq 12 : (
 ).
 - auto=> &hr |> hs hne.
   have {hne} [hf256 hoffb] : to_uint filled{hr} < 256 /\ to_uint input_offset{hr} < 838; 1: by move: hne; case: (to_uint filled{hr} < 256 /\ to_uint input_offset{hr} < 838) => //=.
-  have hcmp := W64.to_uint_cmp input_offset{hr}.
-  have e1 : to_uint (input_offset{hr} + one) = to_uint input_offset{hr} + 1; 1: by rewrite to_uintD_small /=; smt().
-  have e2 : to_uint (input_offset{hr} + W64.of_int 2) = to_uint input_offset{hr} + 2; 1: by rewrite to_uintD_small of_uintK /=; smt().
-  by rewrite /cand !e1 !e2 /=; smt().
+  rewrite /cand !to_uintD_small ?of_uintK /=; 1,2: smt().
+  by rewrite hf256 hoffb.
 (* 2. filter: the candidate joins the accepted prefix iff it is      *)
 (*    below the field modulus, and filled counts the store            *)
 seq 1 : (
@@ -946,23 +944,20 @@ seq 1 : (
 ).
 - if.
   (* accepted: stored at index filled, filled incremented *)
-  - auto=> &hr |> hs hf256 hoffb hacc.
-    have hoffcmp := W64.to_uint_cmp off0.
-    have e3 : to_uint (off0 + W64.of_int 3) = to_uint off0 + 3; 1: by rewrite to_uintD_small of_uintK /=; smt().
-    have ef : to_uint (filled{hr} + one) = to_uint filled{hr} + 1; 1: by rewrite to_uintD_small /=; smt().
-    have haccb : accept (cand randombytes{hr} (to_uint off0)); 1: by rewrite acceptE; move: hacc; rewrite ultE of_uintK /=.
+  - auto=> &hr |> hs hf256 hoffb; rewrite ultE of_uintK /= -acceptE => hacc.
     move: hs => @/sampled [#] hio hdvd hfle hsz hag.
-    rewrite /sampled !e3 !ef !reject_step 1,2:/# haccb /= size_cat /=.
-    do 3? (split; 1: smt()).
-    split; 1: smt().
+    rewrite /sampled !to_uintD_small ?of_uintK /=; 1,2: smt(W64.to_uint_cmp).
+    rewrite !reject_step; 1,2: smt(W64.to_uint_cmp).
+    rewrite hacc /= size_cat /=.
+    do 4? (split; 1: smt()).
     by rewrite hsz; apply agree_set; [by move: hf256; rewrite hsz | exact hag].
   (* rejected: the filter drops the candidate, state unchanged *)
-  auto=> &hr |> hs hf256 hoffb hacc.
-  have hoffcmp := W64.to_uint_cmp off0.
-  have e3 : to_uint (off0 + W64.of_int 3) = to_uint off0 + 3; 1: by rewrite to_uintD_small of_uintK /=; smt().
-  have haccb : accept (cand randombytes{hr} (to_uint off0)) = false; 1: by rewrite acceptE; move: hacc; rewrite ultE of_uintK /=; smt().
+  auto=> &hr |> hs hf256 hoffb; rewrite ultE of_uintK /= => hacc.
+  have {hacc} hacc : accept (cand randombytes{hr} (to_uint off0)) = false; 1: by rewrite acceptE; smt().
   move: hs => @/sampled [#] hio hdvd hfle hsz hag.
-  rewrite /sampled !e3 !reject_step 1,2:/# haccb /= cats0.
+  rewrite /sampled !to_uintD_small ?of_uintK /=; 1: smt(W64.to_uint_cmp).
+  rewrite !reject_step; 1,2: smt(W64.to_uint_cmp).
+  rewrite hacc /= cats0.
   do 3? (split; 1: smt()).
   split; [exact hsz | exact hag].
 (* 3. re-encode the stop flag from the new counters                  *)
