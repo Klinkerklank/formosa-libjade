@@ -7,7 +7,7 @@ require import AllCore IntDiv.
 
 from Jasmin require import JModel_x86.
 
-require import Array1280 WArray5120.
+from JazzEC require import Array1280 WArray5120.
 
 (* init32 is a right inverse of get32 at aligned W32 positions. *)
 lemma get32_init32 (f : int -> W32.t) (i : int) :

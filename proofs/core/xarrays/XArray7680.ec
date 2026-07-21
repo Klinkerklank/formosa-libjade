@@ -1,6 +1,6 @@
 (* -------------------------------------------------------------------- *)
 require import AllCore JWordExtra JArrayExtra CircuitBindings.
-require (*--*) Array7680.
+from JazzEC require (*--*) Array7680.
 
 from Jasmin require import JWord.
 

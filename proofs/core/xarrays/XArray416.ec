@@ -1,6 +1,6 @@
 (* -------------------------------------------------------------------- *)
 require import AllCore List IntDiv JWordExtra JArrayExtra CircuitBindings.
-require (*--*) Array416.
+from JazzEC require (*--*) Array416.
 require import XWord13 JWordExtra.
 
 from Jasmin require import JWord.
@@ -62,7 +62,8 @@ clone BSWAS as BSWAS_416u8_128 with
 
   proof le_size by done.
 
-require import WArray416 BitEncoding.
+from JazzEC require import WArray416.
+require import BitEncoding.
 import Array416 BitChunking.
 
 lemma BSWAS_416u8_128_slicesetE (t : W8.t Array416.t) o (s : W128.t) :
