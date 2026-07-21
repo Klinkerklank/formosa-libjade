@@ -899,32 +899,36 @@ seq 4 : (
   /\ stop_sampling = W64.of_int (b2i (!(to_uint filled < 256 /\ to_uint input_offset < 838)))
 ).
 - by auto=> &hr |> hbf hio h992 hdvd hsz hag; rewrite /sampled !ultE !to_uint_shr2 !of_uintK /=; smt().
+
 (* each iteration consumes one 3-byte candidate, preserving sampled  *)
 while (
      randombytes = buf
   /\ sampled buf polynomial (to_uint filled) (to_uint input_offset)
   /\ stop_sampling = W64.of_int (b2i (!(to_uint filled < 256 /\ to_uint input_offset < 838)))
 ); last first.
+
 (* loop exit: either the stream is consumed (offset = 840), or the   *)
 (* polynomial is full (filled = 256) and the accepted prefix embeds   *)
 (* into the full stream's reject                                      *)
 - skip=> &hr |> hs0 f off p hs hstop.
   move: hs => @/sampled [#] hio hdvd hfle hsz hag.
-  have hb : !(to_uint f < 256 /\ to_uint off < 838); 1: by apply of_int_b2i_eq1P; rewrite -hstop.
+  have hb : !(to_uint f < 256 /\ to_uint off < 838).
+  - by apply of_int_b2i_eq1P; rewrite -hstop.
   case: (838 <= to_uint off) => hoff.
   - move: hsz hag; have -> : to_uint off = 840 by smt().
     by move=> hsz hag; split; [exact hag | smt()].
   have hf : to_uint f = 256 by smt().
   have -> : 840 = to_uint off + (840 - to_uint off) by ring.
   rewrite reject_block; 1,2: smt(W64.to_uint_cmp); 1: exact hdvd.
-  rewrite size_cat.
-  split; 1: by apply agree_full; [smt() | exact hag].
+  rewrite size_cat; split; 1: by apply agree_full; [smt() | exact hag].
   smt(size_ge0).
+
 (* one iteration; off0 names the current candidate's offset          *)
 exlim input_offset => off0.
+
 (* 1. load the 3-byte window at off0 into the masked candidate,      *)
 (*    advancing the offset past it                                    *)
-seq 12 : (
+seq ^if : (
      randombytes = buf
   /\ sampled buf polynomial (to_uint filled) (to_uint off0)
   /\ to_uint filled < 256
@@ -932,13 +936,13 @@ seq 12 : (
   /\ input_offset = off0 + W64.of_int 3
   /\ coeff = cand buf (to_uint off0)
 ).
-- auto=> &hr |> hs hne.
-  have {hne} [hf256 hoffb] : to_uint filled{hr} < 256 /\ to_uint input_offset{hr} < 838; 1: by move: hne; case: (to_uint filled{hr} < 256 /\ to_uint input_offset{hr} < 838) => //=.
-  rewrite /cand !to_uintD_small ?of_uintK /=; 1,2: smt().
-  by rewrite hf256 hoffb.
+- auto=> &hr |> hs hne; have {hne} [hf256 hoffb] :
+    to_uint filled{hr} < 256 /\ to_uint input_offset{hr} < 838 by smt().
+  by rewrite /cand !to_uintD_small ?of_uintK /= ~-1:/#.
+
 (* 2. filter: the candidate joins the accepted prefix iff it is      *)
 (*    below the field modulus, and filled counts the store            *)
-seq 1 : (
+seq > (^if) : (
      randombytes = buf
   /\ sampled buf polynomial (to_uint filled) (to_uint input_offset)
 ).
@@ -947,26 +951,21 @@ seq 1 : (
   - auto=> &hr |> hs hf256 hoffb; rewrite ultE of_uintK /= -acceptE => hacc.
     move: hs => @/sampled [#] hio hdvd hfle hsz hag.
     rewrite /sampled !to_uintD_small ?of_uintK /=; 1,2: smt(W64.to_uint_cmp).
-    rewrite !reject_step; 1,2: smt(W64.to_uint_cmp).
-    rewrite hacc /= size_cat /=.
+    rewrite !reject_step ~-1:#smt:(W64.to_uint_cmp) hacc /= size_cat /=.
     do 4? (split; 1: smt()).
     by rewrite hsz; apply agree_set; [by move: hf256; rewrite hsz | exact hag].
   (* rejected: the filter drops the candidate, state unchanged *)
   auto=> &hr |> hs hf256 hoffb; rewrite ultE of_uintK /= => hacc.
-  have {hacc} hacc : accept (cand randombytes{hr} (to_uint off0)) = false; 1: by rewrite acceptE; smt().
+  have {hacc} hacc : accept (cand randombytes{hr} (to_uint off0)) = false.
+  - by rewrite acceptE; smt().
   move: hs => @/sampled [#] hio hdvd hfle hsz hag.
   rewrite /sampled !to_uintD_small ?of_uintK /=; 1: smt(W64.to_uint_cmp).
   rewrite !reject_step; 1,2: smt(W64.to_uint_cmp).
   rewrite hacc /= cats0.
-  do 3? (split; 1: smt()).
-  split; [exact hsz | exact hag].
+  do 3? (split; 1: smt()); split; [exact hsz | exact hag].
+
 (* 3. re-encode the stop flag from the new counters                  *)
-auto=> &hr |> hs.
-rewrite !uleE !of_uintK /=.
-split; [move=> h1 | move=> h1; split; [move=> h2 | move=> h2]].
-- by rewrite (_ : (to_uint filled{hr} < 256 /\ to_uint input_offset{hr} < 838) = false) 1:/#.
-- by rewrite (_ : (to_uint filled{hr} < 256 /\ to_uint input_offset{hr} < 838) = false) 1:/#.
-by rewrite (_ : (to_uint filled{hr} < 256 /\ to_uint input_offset{hr} < 838) = true) 1:/#.
+by auto=> &hr |> hs; rewrite !uleE !of_uintK /= /#.
 qed.
 
 (* -------------------------------------------------------------------- *)
