@@ -80,19 +80,6 @@ clone import PrefixArray as PA_848_168 with
   proof le_size by done.
 
 (* -------------------------------------------------------------------- *)
-op ntho ['a] = nth<:'a>.
-
-lemma ntho0 ['a] (x0 : 'a) (x : 'a) (s : 'a list) :
-  nth x0 (x :: s) 0 = x.
-proof. done. qed.
-
-lemma nthoS ['a] (x0 : 'a) (x : 'a) (s : 'a list) (n : int):
-  0 < n => nth x0 (x :: s) n = nth x0 s (n - 1).
-proof. by move=> ? /=; rewrite ifF 1:/#. qed.
-
-hint simplify ntho0, nthoS.
-
-(* -------------------------------------------------------------------- *)
 type rho   = W8.t Array32.t.
 type wpoly = W32.t Array256.t.
 type A     = W32.t Array7680.t.
@@ -232,7 +219,7 @@ lemma matrix_A____shake128_squeeze_multiple_blocks_4xP (data : W8.t list Array4.
     ==>
          res.`1 \sha3for Array4.map (mk_read (168 * 5)) data
       /\ (forall i, 0 <= i < 4 =>
-            let b = ntho witness [res.`2; res.`3; res.`4; res.`5] i in
+            let b = nth witness [res.`2; res.`3; res.`4; res.`5] i in
             Array848.sub b 0 840 = shake128_slice data.[i] 0 840)
   ].
 proof.
@@ -247,7 +234,7 @@ hoare[
     ==>
          res.`1 \sha3for Array4.map (mk_read (168 * (k + 1))) data
       /\ (forall i, 0 <= i < 4 =>
-            Array168.to_list (ntho witness [res.`2; res.`3; res.`4; res.`5] i)
+            Array168.to_list (nth witness [res.`2; res.`3; res.`4; res.`5] i)
             = shake128_slice data.[i] (168 * k) 168)
   ].
 proof.
@@ -259,20 +246,12 @@ op MODULUS8u32 =
   W8u32.pack8 (nseq 8 (W32.of_int modulus)).
 
 (* -------------------------------------------------------------------- *)
-section.
-hint simplify nseq0, nseqS.
-hint simplify range_geq, range_ltn.
-
-lemma MODULUS8u32E :
-  W256.of_int
-    0x007fe001007fe001007fe001007fe001007fe001007fe001007fe001007fe001
-  = MODULUS8u32.
+lemma MODULUS8u32E : mODULUS_VECTOR = MODULUS8u32.
 proof.
 apply/W8u32.wordP=> i rgi; rewrite pack8bE //= get_of_list //.
-rewrite nth_nseq //= of_int_bits32_div //=.
-by move: i rgi; apply/allP_range.
+rewrite of_int_bits32_div //=.
+by with hint +listred (move: i rgi; apply/allP_range => /=).
 qed.
-end section.
 
 (* -------------------------------------------------------------------- *)
 lemma WArray848_get256E (a : W8.t Array848.t) (base : int)  :
@@ -409,7 +388,7 @@ proof. by rewrite /to_sint /smod of_uintK /modulus. qed.
 lemma msb_lane (c : W32.t) : 0 <= to_uint c < 2 ^ 23 =>
   W32.msb (W8u32.wcmp Int.(<) c (W32.of_int modulus)) = accept c.
 proof.
-move=> bnd; rewrite /wcmp tosint_small // tosint_q /accept.
+move=> bnd; rewrite /wcmp tosint_small ~-1:// tosint_q /accept.
 by case: (to_uint c < modulus) => _ /=.
 qed.
 
@@ -471,7 +450,6 @@ rewrite /VEXTRACTI128.
 - by have -> : b2i W8.one.[0] = 1 by rewrite W8.get_to_uint.
 by smt(size_ge0).
 qed.
-
 
 (* -------------------------------------------------------------------- *)
 lemma to_uint_and15 (g : W64.t) :
@@ -569,7 +547,7 @@ lemma zext32_8E (x : W8.t) :
 proof.
 rewrite W4u8.zeroextu32E &(W4u8.wordP) => i rgi.
 rewrite !W4u8.pack4bE 1,2:// initiE 1:// get_of_list 1://.
-by move: rgi; rewrite -(mema_iota 0 4).
+by move: rgi => /#.
 qed.
 
 (* -------------------------------------------------------------------- *)
@@ -1339,10 +1317,6 @@ op A_valid_up_to (rho : rho) (A : A) (i : int) =
     poly_of_A A (A_rc_of_index k) = Apoly rho (A_rc_of_index k).
 
 (* -------------------------------------------------------------------- *)
-hint simplify mkseqSr_minus, mkseq0.
-hint simplify range_geq, range_ltn.
-
-(* -------------------------------------------------------------------- *)
 op update_poly (a : A) (base : int) (p : W32.t Array256.t) =
   replace_ a (256 * base) (to_list p).
 
@@ -1354,23 +1328,63 @@ op update_polys (a : A) (base : int) (ps : W32.t Array256.t list) =
 
 (* -------------------------------------------------------------------- *)
 lemma update_polys_A_valid_up_to (rho : rho) (a : A) (base : int) (tp : wpoly list) :
+     0 <= base => base + size tp <= 30 =>
      A_valid_up_to rho a base
   => (forall i, 0 <= i < size tp =>
         nth witness tp i = Apoly rho (A_rc_of_index (base + i)))
   => A_valid_up_to rho (update_polys a base tp) (base + size tp).
 proof.
-
-admitted.
+hint +listred.
+move=> ge0b; elim/last_ind: tp => [|tp t IH] hle hav hnth /=.
+- by rewrite /update_polys /=.
+move: hle; rewrite size_rcons => hle.
+have hstep : update_polys a base (rcons tp t)
+           = update_poly (update_polys a base tp) (base + size tp) t.
+- rewrite /update_polys size_rcons rangeSr 1:size_ge0.
+  rewrite zip_rcons; 1: smt(size_range size_ge0).
+  by rewrite foldl_rcons.
+rewrite hstep.
+have hIH : A_valid_up_to rho (update_polys a base tp) (base + size tp).
+- apply IH; 1: smt(); 1: exact hav.
+  move=> i rgi; have := hnth i _; 1: smt(size_rcons).
+  by rewrite nth_rcons ifT 1:/#.
+have pidxE : forall k, poly_index_in_A (A_rc_of_index k) = 256 * k.
+- by move=> k; rewrite /poly_index_in_A /A_rc_of_index /=; smt().
+move=> k [ge0k ltk].
+case: (k = base + size tp) => hk; last first.
+- have hpres : poly_of_A (update_poly (update_polys a base tp) (base + size tp) t) (A_rc_of_index k)
+             = poly_of_A (update_polys a base tp) (A_rc_of_index k).
+  - rewrite /poly_of_A !pidxE; congr.
+    rewrite /sub; apply (eq_in_mkseq _ _ _ _) => m rgm /=.
+    rewrite /update_poly /XArray7680.PAE.replace_ Array7680.filliE 1:/# Array256.size_to_list.
+    by rewrite ifF 1:/#.
+  rewrite hpres; apply hIH => /#.
+have hT : t = Apoly rho (A_rc_of_index (base + size tp)).
+- have := hnth (size tp) _; 1: smt(size_rcons size_ge0).
+  by rewrite nth_rcons ifF 1:/# /=.
+rewrite hk -hT.
+apply Array256.ext_eq => m rgm.
+rewrite /poly_of_A pidxE Array256.get_of_list ~-1://.
+rewrite /sub nth_mkseq 1:// /=.
+rewrite /update_poly /XArray7680.PAE.replace_ Array7680.filliE 1:/# Array256.size_to_list ifT 1:/#.
+by move=> /=; congr; ring.
+qed.
 
 (* -------------------------------------------------------------------- *)
 lemma replace_256_7680E (a : W32.t Array7680.t) (base : int) (b : W32.t Array256.t) :
-  Array7680.init                                               
-    (fun (i : int) =>                                          
+  Array7680.init
+    (fun (i : int) =>
        if base * 256 <= i < base * 256 + 256 then
          b.[i - base * 256]
        else a.[i])
   = update_poly a base b.
-proof. admitted.
+proof.
+apply Array7680.ext_eq => i rgi.
+rewrite initiE // /update_poly /XArray7680.PAE.replace_ Array7680.filliE 1:// Array256.size_to_list /to_list.
+case: (base * 256 <= i < base * 256 + 256) => hcase.
+- by rewrite nth_mkseq 1:/# /=; smt().
+by smt().
+qed.
 
 (* -------------------------------------------------------------------- *)
 op reject_ok (nonce : W8.t list) (sz : int) (p : wpoly) (filled : int) =
@@ -1428,13 +1442,14 @@ lemma matrix_A____sample_4_polynomialsP
          rho = rho_
       /\ (forall i, 0 <= i < 4 =>
            domain_separators.[i] =
-             odflt domain_separators.[i] (omap A_ds (ntho None rcs i)))
+             odflt domain_separators.[i] (omap A_ds (nth None rcs i)))
     ==>
          forall i, 0 <= i < 4 =>
-           let resi = ntho witness [res.`1; res.`2; res.`3; res.`4] i in
-           odflt true (omap (fun rc => resi = Apoly rho_ rc) (ntho None rcs i))
+           let resi = nth witness [res.`1; res.`2; res.`3; res.`4] i in
+           odflt true (omap (fun rc => resi = Apoly rho_ rc) (nth None rcs i))
 ].
 proof.
+hint +listred -delta nth.
 proc=> /=.
 seq ^xof_state<- : #pre; first by auto.
 pose stop fs := W32.of_int (b2i (!has (fun w => w \ult W64.of_int 256) fs)).
@@ -1462,7 +1477,7 @@ pose data := Array4.init nonce.
 seq 1: (
      xof_state \sha3for Array4.init (mk_read (168 * 5) \o nonce)
   /\ (forall i, 0 <= i < 4 =>
-        let b = ntho witness [buf0; buf1; buf2; buf3] i in
+        let b = nth witness [buf0; buf1; buf2; buf3] i in
         Array848.sub b 0 840 = shake128_slice data.[i] 0 840)).
 - ecall ->> (matrix_A____shake128_squeeze_multiple_blocks_4xP data) => /=.
   - move=> &hr |>; apply: sha3for_eqR.
@@ -1472,8 +1487,8 @@ seq 1: (
 
 seq ^stop_sampling<- : (#{/~{buf0, buf1, buf2, buf3}}pre /\
   (forall i, 0 <= i < 4 =>
-     let p = ntho witness [polynomial0; polynomial1; polynomial2; polynomial3] i in
-     let f = ntho witness [filled0; filled1; filled2; filled3] i in
+     let p = nth witness [polynomial0; polynomial1; polynomial2; polynomial3] i in
+     let f = nth witness [filled0; filled1; filled2; filled3] i in
         reject_ok data.[i] 840 p (to_uint f))).
 - hoare split; last by conseq |>.
   exlim buf0, buf1, buf2, buf3 => buf0_ buf1_ buf2_ buf3_. (* FIXME *)
@@ -1491,14 +1506,14 @@ seq ^stop_sampling<- : (#{/~{buf0, buf1, buf2, buf3}}pre /\
   - by auto.
   auto=> &hr |> 5? h 4? i ile ilt; have: 0 <= i < 4 by smt().
   move=> {ile ilt}; apply: allP_range i => /=.
-  by rewrite /ntho /reject_ok /= -!h.
+by with hint +listred (rewrite /= /reject_ok -!h /=).
 
   while (exists (k : int), (
        0 <= k
     /\ xof_state \sha3for Array4.init (mk_read (168 * k) \o nonce)
     /\ (forall i, 0 <= i < 4 =>
-          let p = ntho witness [polynomial0; polynomial1; polynomial2; polynomial3] i in
-          let f = ntho witness [filled0; filled1; filled2; filled3] i in
+          let p = nth witness [polynomial0; polynomial1; polynomial2; polynomial3] i in
+          let f = nth witness [filled0; filled1; filled2; filled3] i in
           reject_ok data.[i] (168 * k) p (to_uint f))
     /\ (stop_sampling = stop [filled0; filled1; filled2; filled3])
   )); last first.
@@ -1517,11 +1532,11 @@ seq ^stop_sampling<- : (#{/~{buf0, buf1, buf2, buf3}}pre /\
       agree p 0 (reject (shake128_slice data.[i] 0 (168 * k))) =>
       to_uint f = min 256 (size (reject (shake128_slice data.[i] 0 (168 * k)))) =>
       256 <= to_uint f =>
-      odflt true (omap (fun rc => p = Apoly rho_ rc) (ntho None rcs i)).
+      odflt true (omap (fun rc => p = Apoly rho_ rc) (nth None rcs i)).
     - move=> p f i rgi hag hf hf256.
-      case _: (ntho None rcs i) => //= rc E.
+      case _: (nth None rcs i) => //= rc E.
       have hds : ds_.[i] = A_ds rc.
-      - by move: E; rewrite /ntho => E; rewrite hds_ // /Ads E.
+      - by rewrite hds_ // /Ads E.
       have hdata : data.[i] = to_list rho_ ++ W2u8.to_list (A_ds rc).
       - by rewrite /data initiE ~-1://= /nonce hds.
       have hsz : 256 <= size (reject (shake128_slice data.[i] 0 (168 * k))) by smt().
@@ -1530,7 +1545,7 @@ seq ^stop_sampling<- : (#{/~{buf0, buf1, buf2, buf3}}pre /\
       rewrite -hdata.
       by move: hag => @/agree hag; smt().
     move=> i ile ilt; have: 0 <= i < 4 by smt().
-    move=> {ile ilt}; apply: allP_range i => /=.
+    move=> {ile ilt}; with hint +listred (apply: allP_range i => /=).
     do 3? split.
     - have /= := h 0 _; 1: done.
       rewrite /reject_ok => -[hag hf].
@@ -1561,11 +1576,11 @@ seq ^stop_sampling<- : (#{/~{buf0, buf1, buf2, buf3}}pre /\
        0 <= k
     /\ (forall i, 0 <= i < 4 =>
           reject_ok data.[i] (168 * k)
-            (ntho witness [polynomial0; polynomial1; polynomial2; polynomial3] i)
-            (to_uint (ntho witness [filled0; filled1; filled2; filled3] i)))
+            (nth witness [polynomial0; polynomial1; polynomial2; polynomial3] i)
+            (to_uint (nth witness [filled0; filled1; filled2; filled3] i)))
     /\ aux \sha3for Array4.init (mk_read (168 * (k + 1)) \o nonce)
     /\ (forall i, 0 <= i < 4 =>
-          Array168.to_list (ntho witness [aux_0; aux_1; aux_2; aux_3] i)
+          Array168.to_list (nth witness [aux_0; aux_1; aux_2; aux_3] i)
           = shake128_slice data.[i] (168 * k) 168)
   ).
   - ecall (shake128_squeezeblock4xP data k).
@@ -1585,9 +1600,8 @@ seq ^stop_sampling<- : (#{/~{buf0, buf1, buf2, buf3}}pre /\
     /\ blocks_ok data k [buf0; buf1; buf2; buf3]
   ).
   - auto=> &hr |> hk h hxf hblk; split; first by smt().
-    move: (hblk 0) (hblk 1) (hblk 2) (hblk 3) => @/ntho /= 4?.
-    rewrite /blocks_ok; apply/allP_range => /=.
-    by rewrite !trunc_inject.
+    move: (hblk 0) (hblk 1) (hblk 2) (hblk 3) => /= 4?.
+    by with hint +listred (rewrite /blocks_ok; apply/allP_range => /=; rewrite !trunc_inject).
 
   (* each lane samples its fresh block, advancing lanes_ok by one *)
   exlim buf0 => b0_.
@@ -1639,7 +1653,11 @@ seq ^stop_sampling<- : (#{/~{buf0, buf1, buf2, buf3}}pre /\
     split; first by rewrite !size_shake128_slice /= /#.
     move=> _ _ _ _ r hr1 hr2 i rgi.
     have hcat := slice_cat_block data.[2] k _ hk hb2.
-    by move: (h 0 _) (h 1 _) (h 2 _) (h 3 _) => //#.
+    move: (h 0 _) (h 1 _) (h 2 _) (h 3 _) => // h0 h1 h2 h3.
+    case: (i = 0) => [->/=|n0]; first by smt().
+    case: (i = 1) => [->/=|n1]; first by smt().
+    case: (i = 2) => [->/=|n2]; first by smt().
+    by have -> /=: i = 3 by smt(); smt().
 
   exlim buf3 => b3_.
   seq > ^filled3<- : (
@@ -1656,7 +1674,12 @@ seq ^stop_sampling<- : (#{/~{buf0, buf1, buf2, buf3}}pre /\
     split; first by rewrite !size_shake128_slice /= /#.
     move=> _ _ _ _ r hr1 hr2 i rgi.
     have hcat := slice_cat_block data.[3] k _ hk hb3.
-    by move: (h 0 _) (h 1 _) (h 2 _) (h 3 _) => //#.
+    move: (h 0 _) (h 1 _) (h 2 _) (h 3 _) => // h0 h1 h2 h3.
+    case: (i = 0) => [->/=|n0]; first by smt().
+    case: (i = 1) => [->/=|n1]; first by smt().
+    case: (i = 2) => [->/=|n2]; first by smt().
+    have -> /=: i = 3 by smt().
+    by rewrite /reject_ok /= -hcat /=.
 
   (* the invariant advances to k + 1 *)
   auto=> &hr |> hk h hxf hblk.
@@ -1693,9 +1716,12 @@ seq 1 : (rho = rho_ /\ A_valid_up_to rho matrix_A 28).
     do 2! (hoare split; last by auto=> /#); auto=> &hr |> 4?.
     pose tp i := Apoly rho{hr} (A_rc_of_index (4 * chunk{hr} + i)).
     pose pa := update_polys matrix_A{hr} (4 * chunk{hr}) (mkseq tp 4).
-    rewrite (_ : update_poly _ _ _ = pa); first done.
-    rewrite mulrDr /= {2}(_ : 4 = size (mkseq tp 4)) //.
-    by rewrite update_polys_A_valid_up_to //#.
+    rewrite (_ : update_poly _ _ _ = pa);
+      first by with hint +listred (rewrite /pa /update_polys /=).
+    rewrite mulrDr /= {2}(_ : 4 = size (mkseq tp 4)); first by rewrite size_mkseq.
+    apply update_polys_A_valid_up_to; 1,3: smt().
+    - by rewrite size_mkseq /#.
+    by move=> i; rewrite size_mkseq /= => rgi; rewrite nth_mkseq 1:/# /=.
 
   seq > ^while : (#pre /\
     (forall i, 0 <= i < 4 =>
@@ -1727,8 +1753,8 @@ seq 1 : (rho = rho_ /\ A_valid_up_to rho matrix_A 28).
     (mkseq (fun i => Some (A_rc_of_index (4 * chunk_ + i))) 4)
   ).
   - auto=> &hr |> 4? dsE; split.
-    - by apply/allP_range' => @/ntho /= /#.
-    - by move=> _ r /allP_range @/ntho /=.
+    - by with hint +listred (apply/allP_range' => /= /#).
+    - by with hint +listred (move=> _ r /allP_range /=).
 
 cfold 1; kill -1; first by auto.
 seq > ^while : (#pre /\
@@ -1762,13 +1788,17 @@ seq 1: (#pre
   auto=> &hr |> 2?.
   pose tp i := Apoly rho{hr} (A_rc_of_index (28 + i)).
   pose pa := update_polys matrix_A{hr} 28 (mkseq tp 2).
-  rewrite (_ : update_poly _ _ _ = pa); first by done.
-  by rewrite (update_polys_A_valid_up_to _ _ 28) //#.
+  rewrite (_ : update_poly _ _ _ = pa);
+    first by with hint +listred (rewrite /pa /update_polys /=).
+  rewrite (_ : 30 = 28 + size (mkseq tp 2)); first by rewrite size_mkseq.
+  apply update_polys_A_valid_up_to; 1,3: smt().
+  - by rewrite size_mkseq /#.
+  by move=> i; rewrite size_mkseq /= => rgi; rewrite nth_mkseq 1:/# /=.
 
 call (matrix_A____sample_4_polynomialsP rho_
   [Some (A_rc_of_index 28); Some (A_rc_of_index 29)]
 ).
 auto=> &hr |> ? h; split.
-- by apply/allP_range' => @/ntho /= /#.
-- by move=> _ r /allP_range @/ntho.
+- by with hint +listred (apply/allP_range' => /= /#).
+- by with hint +listred (move=> _ r /allP_range /=).
 qed.
