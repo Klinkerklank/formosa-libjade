@@ -10,7 +10,7 @@ require import Avx2red.
 require import Errshuffle.
 require import Prefixarray.
 require import Sha3x4. import Shake256x4.
-require import Array4 Array25 Array64 Array136 Array256 Array272 Array2048.
+require import Array4 Array25 Array64 Array136 Array256 Array272 Array1280 Array1536 Array2048.
 require import WArray272 WArray1024 WArray2048.
 
 (* -------------------------------------------------------------------- *)
@@ -1512,4 +1512,129 @@ auto=> &hr |> hk2 hln hxf hblk.
 exists (k + 1); do ! split => //; 1: smt().
 move=> i rgi.
 by move: (hln 0 _) (hln 1 _) (hln 2 _) (hln 3 _) => //#.
+qed.
+
+(* ==================================================================== *)
+(* The error-vector assembly: three staged batches fill s1 and s2       *)
+(* ==================================================================== *)
+
+(* -------------------------------------------------------------------- *)
+op poly_of_s1 (s : W32.t Array1280.t) (r : int) : wpoly =
+  Array256.init (fun j => s.[256 * r + j]).
+
+op poly_of_s2 (s : W32.t Array1536.t) (r : int) : wpoly =
+  Array256.init (fun j => s.[256 * r + j]).
+
+(* -------------------------------------------------------------------- *)
+lemma poly_s1_write (s : W32.t Array1280.t) (p : wpoly) (lo hi j : int) :
+  0 <= j < 5 => hi = lo + 256 => 0 <= lo <= 1024 => 256 %| lo =>
+  poly_of_s1 (Array1280.init (fun i =>
+      if lo <= i < hi then p.[i - lo] else s.[i])) j
+  = if 256 * j = lo then p else poly_of_s1 s j.
+proof.
+move=> rgj -> rglo hdvd; case: (256 * j = lo) => [heq|ne].
+- apply Array256.ext_eq => i rgi.
+  rewrite /poly_of_s1 Array256.initiE //=.
+  have hb : 0 <= 256 * j + i < 1280 by smt().
+  rewrite Array1280.initiE 1:hb /=.
+  by smt().
+apply Array256.ext_eq => i rgi.
+rewrite /poly_of_s1 !initiE //= initiE 1:/# /=.
+by rewrite ifF 1:/#.
+qed.
+
+lemma poly_s2_write (s : W32.t Array1536.t) (p : wpoly) (lo hi j : int) :
+  0 <= j < 6 => hi = lo + 256 => 0 <= lo <= 1280 => 256 %| lo =>
+  poly_of_s2 (Array1536.init (fun i =>
+      if lo <= i < hi then p.[i - lo] else s.[i])) j
+  = if 256 * j = lo then p else poly_of_s2 s j.
+proof.
+move=> rgj -> rglo hdvd; case: (256 * j = lo) => [heq|ne].
+- apply Array256.ext_eq => i rgi.
+  rewrite /poly_of_s2 initiE //= initiE 1:/# /=.
+  by smt().
+apply Array256.ext_eq => i rgi.
+rewrite /poly_of_s2 !initiE //= initiE 1:/# /=.
+by rewrite ifF 1:/#.
+qed.
+
+(* -------------------------------------------------------------------- *)
+lemma w16_of_intD (a b : int) :
+  0 <= a => 0 <= b => a + b < W16.modulus =>
+  W16.of_int a + W16.of_int b = W16.of_int (a + b).
+proof.
+move=> ha hb hab.
+have hm : W16.modulus = 65536 by done.
+move: hab; rewrite hm => hab.
+rewrite W16.to_uint_eq to_uintD_small !of_uintK hm.
+- by rewrite !pmod_small /#.
+by rewrite !pmod_small /#.
+qed.
+
+(* -------------------------------------------------------------------- *)
+lemma sample____error_vectorsP (rho_ : W8.t Array64.t) :
+hoare[ M.sample____error_vectors :
+    rho_prime = rho_
+  ==>
+     (forall r, 0 <= r < 5 =>
+        poly_of_s1 res.`1 r = Spoly rho_ (W16.of_int r))
+  /\ (forall r, 0 <= r < 6 =>
+        poly_of_s2 res.`2 r = Spoly rho_ (W16.of_int (5 + r))) ].
+proof.
+proc.
+sp.
+seq 5 : (rho_prime = rho_
+  /\ forall r, 0 <= r < 4 => poly_of_s1 s1 r = Spoly rho_ (W16.of_int r)).
+- wp; ecall (error_4x____sample_polynomialsP rho_ (W16.of_int 0)).
+  auto=> &hr |> result hres r rgr rgr2.
+  do 4! (rewrite poly_s1_write ~-1:/#).
+  case: (r = 0) => [->/=|n0].
+  - have /= := hres 0 _; 1: done.
+    by done.
+  case: (r = 1) => [->/=|n1].
+  - have /= := hres 1 _; 1: done.
+    by done.
+  case: (r = 2) => [->/=|n2].
+  - have /= := hres 2 _; 1: done.
+    by done.
+  have ->/=: r = 3 by smt().
+  have /= := hres 3 _; 1: done.
+    by done.
+seq 5 : (rho_prime = rho_
+  /\ (forall r, 0 <= r < 5 => poly_of_s1 s1 r = Spoly rho_ (W16.of_int r))
+  /\ (forall r, 0 <= r < 3 => poly_of_s2 s2 r = Spoly rho_ (W16.of_int (5 + r)))).
+- wp; ecall (error_4x____sample_polynomialsP rho_ (W16.of_int 4)).
+  auto=> &hr |> h1s result hres.
+  split.
+  - move=> r rgr rgr2.
+    rewrite poly_s1_write ~-1:/#.
+    case: (r = 4) => [->/=|n4].
+    - have /= := hres 0 _; 1: done.
+      by done.
+    by rewrite ifF 1:/# h1s /#.
+  move=> r rgr rgr2.
+  do 3! (rewrite poly_s2_write ~-1:/#).
+  case: (r = 0) => [->/=|n0].
+  - have /= := hres 1 _; 1: done.
+    by done.
+  case: (r = 1) => [->/=|n1].
+  - have /= := hres 2 _; 1: done.
+    by done.
+  have ->/=: r = 2 by smt().
+  have /= := hres 3 _; 1: done.
+  by done.
+wp; ecall (error_4x____sample_polynomialsP rho_ (W16.of_int 8)).
+auto=> &hr |> h1s h2s result hres.
+move=> r rgr rgr2.
+do 3! (rewrite poly_s2_write ~-1:/#).
+case: (r = 3) => [->/=|n3].
+- have /= := hres 0 _; 1: done.
+  by done.
+case: (r = 4) => [->/=|n4].
+- have /= := hres 1 _; 1: done.
+  by done.
+case: (r = 5) => [->/=|n5].
+- have /= := hres 2 _; 1: done.
+  by done.
+by rewrite ?ifF ~-1:/# h2s /#.
 qed.
