@@ -1,5 +1,5 @@
 (* -------------------------------------------------------------------- *)
-require import AllCore CoreUtils List IntDiv BitEncoding.
+require import AllCore CoreUtils List List_extra IntDiv BitEncoding.
 
 import BitChunking.
 
@@ -8,6 +8,8 @@ from Jasmin require import JWord JModel_x86.
 from JazzEC require import Ml_dsa_65_avx2.
 
 require import Avx2red.
+require import Prefixarray.
+require import Sha3x4. import Shake128x4.
 require import Array2 Array4 Array25 Array32 Array168 Array256 Array848 Array7680.
 require import WArray2 WArray256 WArray848 WArray1024.
 require import XArray256 XArray7680.
@@ -22,53 +24,8 @@ op modulus : int = 8380417.
 hint simplify b2i0, b2i1.
 
 (* -------------------------------------------------------------------- *)
-lemma allP_range (k : int) (p : int -> bool) :
-  all p (range 0 k) <=> (forall i, 0 <= i < k => p i).
-proof.
-rewrite allP; split=> h i.
-- by move=> rgi; apply h; rewrite mem_range.
-- by move=> /mem_range rgi; apply h.
-qed.
-
 (* -------------------------------------------------------------------- *)
-lemma allP_range' (k : int) (p : int -> bool) :
-  all p (range 0 k) <=> (forall i, 0 <= i => i < k => p i).
-proof. by rewrite allP_range; smt(). qed.
-
-(* -------------------------------------------------------------------- *)
-lemma sub0 (a : 'a Array848.t) (base : int) :
-  Array848.sub a base 0 = [].
-proof. by rewrite /sub mkseq0. qed.
-
-hint simplify sub0.
-
-(* -------------------------------------------------------------------- *)
-theory PrefixArray.
-  op sizeB : int.
-  op sizeS : int.
-
-  axiom le_size : sizeB <= sizeS.
-
-  clone import PolyArray as AB with op size <- sizeB.
-  clone import PolyArray as AS with op size <- sizeS.
-
-  op truncatea'B (a : 'a AS.t) : 'a AB.t =
-    AB.init (fun i => a.[i]).
-
-  op injecta'S (a : 'a AS.t) (b : 'a AB.t) : 'a AS.t =
-    AS.init (fun i => if 0 <= i < sizeB then b.[i] else a.[i]).
-
-  lemma truncatea'BE (a : 'a AS.t) :
-    AB.init (fun i => a.[i]) = truncatea'B a.
-  proof. by done. qed.
-
-  lemma injecta'SE (a : 'a AS.t) (b : 'a AB.t) :
-    AS.init (fun i => if 0 <= i < sizeB then b.[i] else a.[i])
-    = injecta'S a b.
-  proof. by done. qed.
-end PrefixArray.
-
-clone import PrefixArray as PA_848_168 with
+clone import Prefixarray.PrefixArray as PA_848_168 with
       op sizeB <- 168,
       op sizeS <- 848,
   theory AB    <- Array168,
@@ -109,148 +66,6 @@ proof. by rewrite /agree /= /#. qed.
 hint simplify agree_nil.
 
 (* -------------------------------------------------------------------- *)
-require Xof.
-
-op shake128_slice : W8.t list -> int -> int -> W8.t list.
-
-axiom size_shake128_slice (n : W8.t list) (i m : int) :
-  0 <= m => size (shake128_slice n i m) = m.
-
-axiom shake128_slice_cat (n : W8.t list) (i m l : int) :
-  0 <= m => 0 <= l =>
-  shake128_slice n i (m + l)
-  = shake128_slice n i m ++ shake128_slice n (i + m) l.
-
-(* -------------------------------------------------------------------- *)
-type sha3_state = { absorbed : W8.t list; read : int option }.
-
-op is_valid_sha3_state (state : sha3_state) =
-  match state.`read with None => true | Some i => 0 <= i end.
-
-(* -------------------------------------------------------------------- *)
-op mk_absorbing (data : W8.t list) =
-  {| absorbed = data; read = None |}.
-
-(* -------------------------------------------------------------------- *)
-op mk_absorbed (data : W8.t list) =
-  {| absorbed = data; read = Some 0 |}.
-
-(* -------------------------------------------------------------------- *)
-op mk_read (read : int) (data : W8.t list) =
-  {| absorbed = data; read = Some read |}.
-
-(* -------------------------------------------------------------------- *)
-type sha3x4_state = sha3_state Array4.t.
-
-op is_valid_sha3x4_state (state : sha3x4_state) =
-  Array4.all is_valid_sha3_state state.
-
-(* -------------------------------------------------------------------- *)
-type sha3x4 = W256.t Array25.t.
-
-op (\sha3for) : sha3x4 -> sha3x4_state -> bool.
-
-lemma sha3for_eqR rstate s1 s2 :
-  s1 = s2 => rstate \sha3for s1 => rstate \sha3for s2.
-proof. by move=> ->. qed.
-
-(* -------------------------------------------------------------------- *)
-lemma truncateu16_256E (w : W256.t) :
-  truncateu16 w = w \bits16 0.
-proof.
-apply: W16.ext_eq=> i rgi; rewrite bits16iE //=.
-rewrite /truncateu16 of_intwE rgi /= /W16.int_bit.
-rewrite modz_pow2_div ~-1://# modz_dvd.
-- by rewrite -{1}[2]expr1 dvdz_exp2l /#.
-- by rewrite -b2i_get /#.
-qed.
-
-(* -------------------------------------------------------------------- *)
-lemma bits8_256_shiftE (w : W256.t) (i : int) : 0 <= i < 16 =>
-  (w `<<<` 8 * i) \bits8 i = w \bits8 0.
-proof.
-move=> rgi; apply W8.wordP => j hj.
-by rewrite !bits8iE // shlwE; smt().
-qed.
-
-(* -------------------------------------------------------------------- *)
-lemma bits8_256_le_shiftE (w : W256.t) (i j : int) :
-  0 <= i < 16 => 0 <= j < i =>
-    (w `<<<` 8 * i) \bits8 j = W8.zero.
-proof.
-move=> rgi rgj; apply W8.wordP => t ht.
-rewrite bits8iE // shlwE.
-by smt(W256.get_out W8.zerowE).
-qed.
-
-(* -------------------------------------------------------------------- *)
-lemma w256_shift_wintE (w i : int) :
-  0 <= i < 256 => W256.of_int (w `<<` i) = W256.of_int w `<<<` i.
-proof.
-move=> rgi.
-by rewrite W256.shlMP 1:/# /(`<<`) ifT 1:/#.
-qed.
-
-(* -------------------------------------------------------------------- *)
-lemma w256_ofint_bits8E (w i : int) : 0 <= i < 32 =>
-  (W256.of_int w) \bits8 i = W8.of_int (w %/ 2^(8*i)).
-proof. by apply W32u8.of_int_bits8_div. qed.
-
-(* ==================================================================== *)
-(* Keccak-level trust boundary.  The interleaved-sponge primitives of   *)
-(* the extraction are specified against the abstract [\sha3for]         *)
-(* relation; these five admitted specifications are the link between    *)
-(* the (formosa-keccak verified) Keccak code and the abstract stream    *)
-(* model, and are the only admitted facts of this file.  The wrapper    *)
-(* procedures below them are proved.                                    *)
-
-lemma state_init_avx2x4P :
-  hoare[ M.__state_init_avx2x4 :
-    true ==> res \sha3for Array4.init (fun _ => mk_absorbing []) ].
-proof. admitted. (* Keccak trust boundary *)
-
-lemma absorb_bcast_avx2x4P (rho_ : W8.t Array32.t) :
-  hoare[ M.a32____absorb_bcast_avx2x4 :
-       st \sha3for Array4.init (fun _ => mk_absorbing [])
-    /\ buf = rho_ /\ aT = 0 /\ _TRAILB = 0 /\ _RATE8 = 168
-    ==> res.`1 \sha3for Array4.init (fun _ => mk_absorbing (to_list rho_)) ].
-proof. admitted. (* Keccak trust boundary *)
-
-lemma absorb_2_final_avx2x4P (pre_ : W8.t list) (ds_ : W16.t Array4.t) :
-  hoare[ M.a2____absorb_avx2x4 :
-       st \sha3for Array4.init (fun _ => mk_absorbing pre_)
-    /\ to_list buf0 = W2u8.to_list ds_.[0]
-    /\ to_list buf1 = W2u8.to_list ds_.[1]
-    /\ to_list buf2 = W2u8.to_list ds_.[2]
-    /\ to_list buf3 = W2u8.to_list ds_.[3]
-    /\ aT = size pre_ /\ _TRAILB = 31 /\ _RATE8 = 168
-    ==> res.`1 \sha3for
-          Array4.map (fun w => mk_absorbed (pre_ ++ W2u8.to_list w)) ds_ ].
-proof. admitted. (* Keccak trust boundary *)
-
-lemma keccakf1600_avx2x4P (data : W8.t list Array4.t) (k : int) :
-  hoare[ M._keccakf1600_avx2x4 :
-       0 <= k /\ a \sha3for Array4.map (mk_read (168 * k)) data
-    ==> res \sha3for Array4.map (mk_read (168 * (k + 1))) data ].
-proof. admitted. (* Keccak trust boundary *)
-
-lemma dumpstate_avx2x4P (data : W8.t list Array4.t) (k : int) :
-  hoare[ M.a168____dumpstate_avx2x4 :
-       0 <= k /\ st \sha3for Array4.map (mk_read (168 * (k + 1))) data
-    /\ offset = 0 /\ _LEN = 168
-    ==> forall i, 0 <= i < 4 =>
-          Array168.to_list (nth witness [res.`1; res.`2; res.`3; res.`4] i)
-          = shake128_slice data.[i] (168 * k) 168 ].
-proof. admitted. (* Keccak trust boundary *)
-
-(* -------------------------------------------------------------------- *)
-(* the 16-bit domain separator, stored through WArray2, reads back as   *)
-(* its two bytes                                                        *)
-lemma pack2_to_listE (a : W8.t Array2.t) (w : W16.t) :
-  Array2.to_list (Array2.init (WArray2.get8
-    (WArray2.set16_direct (WArray2.init8 ("_.[_]" a)) 0 w)))
-  = W2u8.to_list w.
-proof. by rewrite /to_list /mkseq -iotaredE /=. qed.
 
 (* -------------------------------------------------------------------- *)
 lemma matrix_A__shake128_absorb_34_4xP
@@ -268,11 +83,11 @@ proc.
 (* state initialization *)
 seq 5 : (rho = rho_ /\ domain_separators = ds_ /\
          state \sha3for Array4.init (fun _ => mk_absorbing [])).
-- by call state_init_avx2x4P; auto.
+- by call state_init_avx2x4_128P; auto.
 (* rho is absorbed identically into the four lanes *)
 seq 1 : (domain_separators = ds_ /\
          state \sha3for Array4.init (fun _ => mk_absorbing (to_list rho_))).
-- by call (absorb_bcast_avx2x4P rho_); auto.
+- by call (absorb_bcast_avx2x4_128P rho_); auto.
 (* the four domain separators are marshaled to byte pairs *)
 seq 4 : (state \sha3for Array4.init (fun _ => mk_absorbing (to_list rho_))
          /\ to_list d0 = W2u8.to_list ds_.[0]
@@ -281,63 +96,11 @@ seq 4 : (state \sha3for Array4.init (fun _ => mk_absorbing (to_list rho_))
          /\ to_list d3 = W2u8.to_list ds_.[3]).
 - by auto=> &hr |> hst; rewrite ?pack2_to_listE.
 (* the final absorb completes each lane's stream *)
-call (absorb_2_final_avx2x4P (to_list rho_) ds_).
+call (absorb_2_final_avx2x4_128P (to_list rho_) ds_).
 by skip => &hr |> hst h0 h1 h2 h3; rewrite Array32.size_to_list.
 qed.
 
-(* -------------------------------------------------------------------- *)
-(* one squeezed block appended to a lane's consumed stream              *)
-lemma slice_cat_block (n : W8.t list) (k : int) (b : W8.t Array168.t) :
-  0 <= k =>
-  Array168.to_list b = shake128_slice n (168 * k) 168 =>
-  shake128_slice n 0 (168 * k) ++ Array168.to_list b
-  = shake128_slice n 0 (168 * (k + 1)).
-proof.
-move=> hk hb; rewrite hb (_ : 168 * (k + 1) = 168 * k + 168); 1: by ring.
-rewrite shake128_slice_cat 1,2:/#.
-by rewrite (_ : 0 + 168 * k = 168 * k) 1:/#.
-qed.
 
-(* -------------------------------------------------------------------- *)
-lemma shake128_squeezeblock4xP (data : W8.t list Array4.t) (k : int) :
-hoare[
-  M.shake128_squeezeblock4x :
-      0 <= k /\ state \sha3for Array4.map (mk_read (168 * k)) data
-    ==>
-         res.`1 \sha3for Array4.map (mk_read (168 * (k + 1))) data
-      /\ (forall i, 0 <= i < 4 =>
-            Array168.to_list (nth witness [res.`2; res.`3; res.`4; res.`5] i)
-            = shake128_slice data.[i] (168 * k) 168)
-  ].
-proof.
-proc.
-(* the permutation advances every lane by one block *)
-seq 1 : (0 <= k /\ state \sha3for Array4.map (mk_read (168 * (k + 1))) data).
-- by call (keccakf1600_avx2x4P data k); auto.
-(* the fresh block is read off the rate part of the state *)
-by sp; call (dumpstate_avx2x4P data k); auto.
-qed.
-
-(* -------------------------------------------------------------------- *)
-(* writing a block into its 168-byte window extends the byte prefix     *)
-lemma sub_window_catE (b : W8.t Array848.t) (a : W8.t Array168.t) (i : int) :
-  0 <= i < 5 =>
-  Array848.sub
-    (Array848.init (fun j =>
-       if i * 168 <= j < i * 168 + 168 then a.[j - i * 168] else b.[j]))
-    0 (168 * (i + 1))
-  = Array848.sub b 0 (168 * i) ++ Array168.to_list a.
-proof.
-move=> rgi; apply (eq_from_nth witness).
-- rewrite Array848.size_sub 1:/# size_cat Array848.size_sub 1:/#.
-  by rewrite Array168.size_to_list /#.
-move=> j; rewrite Array848.size_sub 1:/# => rgj.
-rewrite Array848.nth_sub 1:/# /= initiE 1:/# /=.
-rewrite nth_cat Array848.size_sub 1:/#.
-case: (j < 168 * i) => hcase.
-- by rewrite ifF 1:/# Array848.nth_sub /#.
-by rewrite ifT 1:/# Array168.get_to_list /#.
-qed.
 
 (* -------------------------------------------------------------------- *)
 lemma matrix_A____shake128_squeeze_multiple_blocks_4xP (data : W8.t list Array4.t)
@@ -366,13 +129,13 @@ while (0 <= i <= 5
   move: (hblk 0 _) (hblk 1 _) (hblk 2 _) (hblk 3 _) => //= hb0 hb1 hb2 hb3.
   do! split; 1,2: smt().
   - by rewrite sub_window_catE 1:/# hs0
-       (slice_cat_block data.[0] i{hr} r.`2 hi0 hb0).
+       (shake128_slice_cat_block data.[0] i{hr} r.`2 hi0 hb0).
   - by rewrite sub_window_catE 1:/# hs1
-       (slice_cat_block data.[1] i{hr} r.`3 hi0 hb1).
+       (shake128_slice_cat_block data.[1] i{hr} r.`3 hi0 hb1).
   - by rewrite sub_window_catE 1:/# hs2
-       (slice_cat_block data.[2] i{hr} r.`4 hi0 hb2).
+       (shake128_slice_cat_block data.[2] i{hr} r.`4 hi0 hb2).
   by rewrite sub_window_catE 1:/# hs3
-     (slice_cat_block data.[3] i{hr} r.`5 hi0 hb3).
+     (shake128_slice_cat_block data.[3] i{hr} r.`5 hi0 hb3).
 (* entry: nothing is read yet; exit: the five windows cover 840 bytes *)
 skip => &hr |> hst; split.
 - by do! split; smt(size_shake128_slice size_eq0).
@@ -465,30 +228,7 @@ by rewrite -/(W4u8.unpack8 a.[i]) W4u8.unpack8K.
 qed.
 
 (* -------------------------------------------------------------------- *)
-hint exact : W64.WRingA.oner_neq0.
-
 (* -------------------------------------------------------------------- *)
-lemma of_int_b2i_eq1P (b : bool) : W64.of_int (b2i b) = W64.one => b.
-proof. by case: b => //; rewrite b2i0 /= eq_sym. qed.
-
-(* ==================================================================== *)
-(* Leaf lemmas for the vectorized rejection-sampling loop body          *)
-(* ==================================================================== *)
-(* filtering is masking by the acceptance bits *)
-lemma filter_mask' ['a] (p : 'a -> bool) (s : 'a list) :
-  filter p s = mask (map p s) s.
-proof. by elim: s => //= x s <-; case: (p x). qed.
-
-(* -------------------------------------------------------------------- *)
-lemma sub_cat (a : W8.t Array848.t) (off len1 len2 : int) :
-  0 <= len1 => 0 <= len2 =>
-     Array848.sub a off (len1 + len2)
-   = Array848.sub a off len1 ++ Array848.sub a (off + len1) len2.
-proof.
-move=> ge0_1 ge0_2; rewrite /sub mkseq_add //=; congr.
-by apply eq_in_mkseq => i rgi /=; congr; ring.
-qed.
-
 (* -------------------------------------------------------------------- *)
 lemma reject_cat (xs ys : W8.t list) : 3 %| size xs =>
   reject (xs ++ ys) = reject xs ++ reject ys.
@@ -594,35 +334,6 @@ by smt(size_ge0).
 qed.
 
 (* -------------------------------------------------------------------- *)
-lemma to_uint_and15 (g : W64.t) :
-  to_uint (g `&` W64.of_int 15) = to_uint g %% 16.
-proof.
-have := W64.to_uint_and_mod 4 g _ => //=.
-qed.
-
-lemma to_uint_shr4 (g : W64.t) :
-  to_uint (g `>>` W8.of_int 4) = to_uint g %/ 16.
-proof. by rewrite W64.shr_div of_uintK /=. qed.
-
-lemma popcnt6E (g : W64.t) :
-  (POPCNT_64 g).`6 = W64.of_int (count idfun (W64.w2bits g)).
-proof. by rewrite /POPCNT_64 /flags_w. qed.
-
-lemma popcnt_count (g : W64.t) (bs : bool list) :
-  size bs = 4 => to_uint g = bs2int bs =>
-  count idfun (W64.w2bits g) = count idfun bs.
-proof.
-move=> szb hg.
-have e1 : bs2int (W64.w2bits g) = bs2int (bs ++ nseq 60 false).
-- by rewrite -W64.to_uintE hg bs2int_cat bs2int_nseq_false szb /=.
-have h1 := bs2intK (W64.w2bits g).
-have h2 := bs2intK (bs ++ nseq 60 false).
-move: h1 h2; rewrite W64.size_w2bits size_cat szb size_nseq /= e1 => h1 h2.
-rewrite -h1 h2.
-by rewrite count_cat count_nseq /idfun /=.
-qed.
-
-(* -------------------------------------------------------------------- *)
 (* writing four dwords at the end of the agreed prefix extends the      *)
 (* agreement by the first k of them                                     *)
 lemma agree_replace (p : wpoly) (old l : W32.t list) (k : int) :
@@ -642,36 +353,6 @@ by have := hag i _ _ => //#.
 qed.
 
 (* -------------------------------------------------------------------- *)
-(* the shuffle table compacts the dwords selected by the 4-bit mask to  *)
-(* the front, in order                                                  *)
-lemma shuffle_compact (x : W128.t) (m : int) : 0 <= m < 16 =>
-    take (count idfun (int2bs 4 m))
-      (W4u32.Pack.to_list (W4u32.unpack32 (VPSHUFB_128 x
-        (W16u8.pack16 (Array256.sub matrix_A__SHUFFLE_TABLE (16 * m) 16)))))
-  = mask (int2bs 4 m) (W4u32.Pack.to_list (W4u32.unpack32 x)).
-proof.
-move: m; apply/allP_range.
-by rewrite /range /sub /int2bs /mkseq -iotaredE /=.
-qed.
-
-(* -------------------------------------------------------------------- *)
-lemma take_sub (a : W8.t Array848.t) (k n m : int) :
-  0 <= n <= m =>
-  take n (Array848.sub a k m) = Array848.sub a k n.
-proof. by move=> h; rewrite /sub take_mkseq. qed.
-
-(* ==================================================================== *)
-(* Leaf lemmas for the scalar rejection-sampling tail                   *)
-(* ==================================================================== *)
-lemma to_uint_shr2 (g : W64.t) :
-  to_uint (g `>>` W8.of_int 2) = to_uint g %/ 4.
-proof. by rewrite W64.shr_div of_uintK /=. qed.
-
-(* -------------------------------------------------------------------- *)
-lemma sub3E (a : W8.t Array848.t) (k : int) :
-  Array848.sub a k 3 = [a.[k]; a.[k + 1]; a.[k + 2]].
-proof. by rewrite /sub /mkseq -iotaredE /=. qed.
-
 (* -------------------------------------------------------------------- *)
 lemma acceptE (w : W32.t) : accept w = (to_uint w < 8380417).
 proof. by rewrite /accept /modulus. qed.
@@ -682,43 +363,6 @@ lemma reject3E (x y z : W8.t) :
   = if accept (W4u8.pack4 [x; y; z] `&` mask23)
     then [W4u8.pack4 [x; y; z] `&` mask23] else [].
 proof. by rewrite rejectE /cands /chunk /mkseq -iotaredE /=. qed.
-
-(* -------------------------------------------------------------------- *)
-lemma zext32_8E (x : W8.t) :
-  zeroextu32 x = W4u8.pack4 [x; W8.zero; W8.zero; W8.zero].
-proof.
-rewrite W4u8.zeroextu32E &(W4u8.wordP) => i rgi.
-rewrite !W4u8.pack4bE 1,2:// initiE 1:// get_of_list 1://.
-by move: rgi => /#.
-qed.
-
-(* -------------------------------------------------------------------- *)
-lemma shl8E (w : W32.t) :
-  w `<<` W8.of_int 8 = W4u8.pack4 [W8.zero; w \bits8 0; w \bits8 1; w \bits8 2].
-proof.
-apply W32.wordP; apply/allP_range.
-by rewrite /range -iotaredE /= /(`<<`) of_uintK /=.
-qed.
-
-(* -------------------------------------------------------------------- *)
-lemma shl16E (w : W32.t) :
-  w `<<` W8.of_int 16 = W4u8.pack4 [W8.zero; W8.zero; w \bits8 0; w \bits8 1].
-proof.
-apply W32.wordP; apply/allP_range.
-by rewrite /range -iotaredE /= /(`<<`) of_uintK /=.
-qed.
-
-(* -------------------------------------------------------------------- *)
-(* the scalar candidate assembly is the packed 3-byte group             *)
-lemma or3E (x y z : W8.t) :
-  (zeroextu32 x `|` (zeroextu32 y `<<` W8.of_int 8)) `|`
-  (zeroextu32 z `<<` W8.of_int 16)
-  = W4u8.pack4 [x; y; z].
-proof.
-by rewrite !zext32_8E shl8E shl16E; apply W4u8.allP => /=.
-qed.
-
-hint simplify or3E.
 
 (* -------------------------------------------------------------------- *)
 lemma agree_set (p : wpoly) (l : W32.t list) (c : W32.t) :
@@ -752,7 +396,7 @@ lemma reject_block (a : W8.t Array848.t) (n m : int) :
   reject (Array848.sub a 0 (n + m))
   = reject (Array848.sub a 0 n) ++ reject (Array848.sub a n m).
 proof.
-move=> hn hm hdvd; rewrite sub_cat // (_ : 0 + n = n) 1:/#.
+move=> hn hm hdvd; rewrite sub_cat_848 // (_ : 0 + n = n) 1:/#.
 by rewrite reject_cat // size_sub /#.
 qed.
 
@@ -764,7 +408,7 @@ lemma reject_step (a : W8.t Array848.t) (n : int) :
   = reject (Array848.sub a 0 n)
     ++ if accept (cand a n) then [cand a n] else [].
 proof.
-by move=> hn hdvd; rewrite reject_block // sub3E reject3E -/(cand a n).
+by move=> hn hdvd; rewrite reject_block // sub3E_848 reject3E -/(cand a n).
 qed.
 
 (* -------------------------------------------------------------------- *)
@@ -794,7 +438,7 @@ proof. by move=> h; rewrite /cands chunk_cat // map_cat. qed.
 (* -------------------------------------------------------------------- *)
 lemma sub_window (a : W8.t Array848.t) (n : int) :
   Array848.sub a n 24 = Array848.sub a n 12 ++ Array848.sub a (n + 12) 12.
-proof. by rewrite (_ : 24 = 12 + 12) 1:// sub_cat. qed.
+proof. by rewrite (_ : 24 = 12 + 12) 1:// sub_cat_848. qed.
 
 (* -------------------------------------------------------------------- *)
 (* the two 4-candidate halves of a 24-byte window                       *)
@@ -814,11 +458,6 @@ proof.
 rewrite sub_window cands_cat ?size_sub //.
 by rewrite drop_size_cat ?size_cands ?size_sub // rejectE.
 qed.
-
-(* -------------------------------------------------------------------- *)
-lemma count_idfun_map ['a] (p : 'a -> bool) (s : 'a list) :
-  count idfun (map p s) = count p s.
-proof. by rewrite count_map; apply eq_count => x @/preim @/idfun. qed.
 
 (* -------------------------------------------------------------------- *)
 (* the shuffle-table row selected by a 4-bit acceptance mask            *)
@@ -966,80 +605,6 @@ qed.
 
 
 (* -------------------------------------------------------------------- *)
-(* local reduction hints for the bytestream decoder                     *)
-lemma and255E (x : W8.t) : x `&` W8.of_int 255 = x.
-proof.
-have -> : W8.of_int 255 = W8.onew.
-- by rewrite /onew /=.
-by done.
-qed.
-
-hint simplify and255E.
-
-lemma pack4_3_and_maskE (a b c : W8.t) :
-  W4u8.pack4 [a; b; c] `&` W32.of_int 8388607
-  = W4u8.pack4 [a; b; c `&` W8.of_int 127; W8.zero].
-proof.
-apply W4u8.allP => /=.
-by rewrite !W4u8.of_int_bits8_div //=.
-qed.
-
-hint simplify pack4_3_and_maskE.
-
-(* DECODING_TABLE.[0]: the dword permutation [0 1 2 0 3 4 5 0]          *)
-lemma DECODING_PERM_E :
-  W256.of_int 31385508682779410369523405889615886801803926611390921441280
-  = W8u32.pack8
-    [W32.zero; W32.of_int 1; W32.of_int 2; W32.zero;
-     W32.of_int 3; W32.of_int 4; W32.of_int 5; W32.zero].
-proof.
-apply W8u32.allP => /=.
-by rewrite !W8u32.of_int_bits32_div //=.
-qed.
-
-hint simplify DECODING_PERM_E.
-
-(* DECODING_TABLE.[1]: the in-lane 3-of-4 byte spread                   *)
-lemma DECODING_SHUFFLE_E :
-  W256.of_int 115359280993406415849895417079880437751483271933338715711596891385178068484352
-  = W32u8.pack32
-    [W8.zero; W8.of_int   1; W8.of_int   2; W8.of_int 255;
-     W8.of_int   3; W8.of_int   4; W8.of_int   5; W8.of_int 255;
-     W8.of_int   6; W8.of_int   7; W8.of_int   8; W8.of_int 255;
-     W8.of_int   9; W8.of_int  10; W8.of_int  11; W8.of_int 255;
-     W8.zero; W8.of_int   1; W8.of_int   2; W8.of_int 255;
-     W8.of_int   3; W8.of_int   4; W8.of_int   5; W8.of_int 255;
-     W8.of_int   6; W8.of_int   7; W8.of_int   8; W8.of_int 255;
-     W8.of_int   9; W8.of_int  10; W8.of_int  11; W8.of_int 255].
-proof. by apply W32u8.allP => /=. qed.
-
-hint simplify DECODING_SHUFFLE_E.
-
-(* DECODING_TABLE.[2]: the 8u32 23-bit mask, fused with the AND         *)
-lemma mask23_and_pack32E (x00 x01 x02 x03 x04 x05 x06 x07 x08 x09 x10 x11 x12 x13 x14 x15 x16 x17 x18 x19 x20 x21 x22 x23 x24 x25 x26 x27 x28 x29 x30 x31 : W8.t) :
-  W32u8.pack32
-    [x00; x01; x02; x03; x04; x05; x06; x07;
-     x08; x09; x10; x11; x12; x13; x14; x15;
-     x16; x17; x18; x19; x20; x21; x22; x23;
-     x24; x25; x26; x27; x28; x29; x30; x31] `&`
-  W256.of_int 226156397384342666605459106258636701594091082888230722833791023177481060351
-  = W32u8.pack32
-    [x00; x01; x02 `&` W8.of_int 127; W8.zero;
-     x04; x05; x06 `&` W8.of_int 127; W8.zero;
-     x08; x09; x10 `&` W8.of_int 127; W8.zero;
-     x12; x13; x14 `&` W8.of_int 127; W8.zero;
-     x16; x17; x18 `&` W8.of_int 127; W8.zero;
-     x20; x21; x22 `&` W8.of_int 127; W8.zero;
-     x24; x25; x26 `&` W8.of_int 127; W8.zero;
-     x28; x29; x30 `&` W8.of_int 127; W8.zero].
-proof.
-apply W32u8.allP => /=.
-by rewrite !W32u8.of_int_bits8_div //=.
-qed.
-
-hint simplify mask23_and_pack32E.
-
-(* -------------------------------------------------------------------- *)
 (* the bytestream decoder: the first 24 bytes of the loaded word, as    *)
 (* eight 3-byte candidates, zero-extended and masked to 23 bits         *)
 lemma matrix_A____bytestream_to_potential_coefficientsP (bs : W8.t list) :
@@ -1105,7 +670,7 @@ seq 1: (                        (* FIXME: code position *)
     move: hs => @/vsampled [#] hio0 hdvd0 hble hsz hag.
     have hoff840 : to_uint input_offset{hr} < 840 by smt().
     rewrite size_sub //= WArray848_get256E ~-1:#smt:(W64.to_uint_cmp) /=.
-    by rewrite /cands take_sub //.
+    by rewrite /cands take_sub_848 //.
   (* a. the acceptance mask: good lists the accepted candidates,       *)
   (*    least significant bit first                                     *)
   seq > ^good<- : (
@@ -1271,25 +836,8 @@ qed.
 (* ==================================================================== *)
 (* Leaf lemmas for the one-block scalar sampler                         *)
 (* ==================================================================== *)
-lemma sub_cat168 (a : W8.t Array168.t) (off len1 len2 : int) :
-  0 <= len1 => 0 <= len2 =>
-     Array168.sub a off (len1 + len2)
-   = Array168.sub a off len1 ++ Array168.sub a (off + len1) len2.
-proof.
-move=> ge0_1 ge0_2; rewrite /sub mkseq_add //=; congr.
-by apply eq_in_mkseq => i rgi /=; congr; ring.
-qed.
-
 (* -------------------------------------------------------------------- *)
-lemma sub3E168 (a : W8.t Array168.t) (k : int) :
-  Array168.sub a k 3 = [a.[k]; a.[k + 1]; a.[k + 2]].
-proof. by rewrite /sub /mkseq -iotaredE /=. qed.
-
 (* -------------------------------------------------------------------- *)
-lemma sub168_full (a : W8.t Array168.t) :
-  Array168.sub a 0 168 = Array168.to_list a.
-proof. by rewrite /sub /to_list; apply eq_in_mkseq => i rgi /=. qed.
-
 (* -------------------------------------------------------------------- *)
 op cand168 (a : W8.t Array168.t) (n : int) : W32.t =
   W4u8.pack4 [a.[n]; a.[n + 1]; a.[n + 2]] `&` mask23.
@@ -1303,15 +851,9 @@ lemma reject_step168 (S : W8.t list) (a : W8.t Array168.t) (n : int) :
     ++ if accept (cand168 a n) then [cand168 a n] else [].
 proof.
 move=> hS hn hdvd.
-rewrite (sub_cat168 a 0 n 3) // catA.
+rewrite (sub_cat_168 a 0 n 3) // catA.
 rewrite reject_cat; 1: by rewrite size_cat size_sub // /#.
-by rewrite (_ : 0 + n = n) 1:/# sub3E168 reject3E -/(cand168 a n).
-qed.
-
-(* -------------------------------------------------------------------- *)
-lemma of_int_b2i_eq1P8 (b : bool) : W8.of_int (b2i b) = W8.one => b.
-proof.
-by case: b => //= _; rewrite W8.to_uint_eq /=.
+by rewrite (_ : 0 + n = n) 1:/# sub3E_168 reject3E -/(cand168 a n).
 qed.
 
 (* -------------------------------------------------------------------- *)
@@ -1338,9 +880,7 @@ seq < ^while : (
   /\ to_uint filled = min 256 (size (reject (S ++ Array168.sub blk 0 (to_uint block_offset))))
   /\ stop_sampling = W8.of_int (b2i (!(to_uint filled < 256 /\ to_uint block_offset < 168)))
 ).
-- auto=> &hr |> hS hag hf.
-  rewrite (_ : Array168.sub block{hr} 0 0 = []); 1: by rewrite /sub mkseq0.
-  by rewrite cats0 !uleE !of_uintK /=; smt().
+- by auto=> &hr |> hS hag hf; rewrite cats0 !uleE !of_uintK /=; smt().
 
 (* each iteration consumes one 3-byte candidate of the block         *)
 while (
@@ -1358,15 +898,15 @@ while (
   have hb : !(to_uint f < 256 /\ to_uint off < 168); 1: by apply of_int_b2i_eq1P8; rewrite -hstop.
   case: (168 <= to_uint off) => hoff.
   - move: hag hf; have -> : to_uint off = 168 by smt().
-    by rewrite sub168_full => hag hf; split => //.
+    by rewrite sub_full_168 => hag hf; split => //.
   have hf256 : to_uint f = 256 by smt().
   have hsz : 256 <= size (reject (S ++ Array168.sub block{hr} 0 (to_uint off))) by smt().
   have -> : Array168.to_list block{hr}
     = Array168.sub block{hr} 0 (to_uint off)
       ++ Array168.sub block{hr} (to_uint off) (168 - to_uint off).
-  - rewrite -sub168_full.
+  - rewrite -sub_full_168.
     have {1}-> : 168 = to_uint off + (168 - to_uint off) by ring.
-    rewrite sub_cat168; 1,2: smt(W64.to_uint_cmp).
+    rewrite sub_cat_168; 1,2: smt(W64.to_uint_cmp).
     by rewrite (_ : 0 + to_uint off = to_uint off) 1:/#.
   rewrite catA reject_cat; 1: by rewrite size_cat size_sub; smt(W64.to_uint_cmp).
   rewrite size_cat.
@@ -1747,7 +1287,7 @@ by with hint +listred (rewrite /= /reject_ok -!h /=).
     move: (h 0) (hblk 0) => @/reject_ok /= [hag hf] hb0.
     split; first by rewrite !size_shake128_slice /= /#.
     move=> _ _ _ _ r hr1 hr2 i rgi.
-    have hcat := slice_cat_block data.[0] k _ hk hb0.
+    have hcat := shake128_slice_cat_block data.[0] k _ hk hb0.
     by move: (h 0 _) (h 1 _) (h 2 _) (h 3 _) => //#.
 
   exlim buf1 => b1_.
@@ -1764,7 +1304,7 @@ by with hint +listred (rewrite /= /reject_ok -!h /=).
     move: (h 1) (hblk 1) => @/reject_ok /= [hag hf] hb1.
     split; first by rewrite !size_shake128_slice /= /#.
     move=> _ _ _ _ r hr1 hr2 i rgi.
-    have hcat := slice_cat_block data.[1] k _ hk hb1.
+    have hcat := shake128_slice_cat_block data.[1] k _ hk hb1.
     by move: (h 0 _) (h 1 _) (h 2 _) (h 3 _) => //#.
 
   exlim buf2 => b2_.
@@ -1781,7 +1321,7 @@ by with hint +listred (rewrite /= /reject_ok -!h /=).
     move: (h 2) (hblk 2) => @/reject_ok /= [hag hf] hb2.
     split; first by rewrite !size_shake128_slice /= /#.
     move=> _ _ _ _ r hr1 hr2 i rgi.
-    have hcat := slice_cat_block data.[2] k _ hk hb2.
+    have hcat := shake128_slice_cat_block data.[2] k _ hk hb2.
     move: (h 0 _) (h 1 _) (h 2 _) (h 3 _) => // h0 h1 h2 h3.
     case: (i = 0) => [->/=|n0]; first by smt().
     case: (i = 1) => [->/=|n1]; first by smt().
@@ -1802,7 +1342,7 @@ by with hint +listred (rewrite /= /reject_ok -!h /=).
     move: (h 3) (hblk 3) => @/reject_ok /= [hag hf] hb3.
     split; first by rewrite !size_shake128_slice /= /#.
     move=> _ _ _ _ r hr1 hr2 i rgi.
-    have hcat := slice_cat_block data.[3] k _ hk hb3.
+    have hcat := shake128_slice_cat_block data.[3] k _ hk hb3.
     move: (h 0 _) (h 1 _) (h 2 _) (h 3 _) => // h0 h1 h2 h3.
     case: (i = 0) => [->/=|n0]; first by smt().
     case: (i = 1) => [->/=|n1]; first by smt().

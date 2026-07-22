@@ -146,3 +146,28 @@ move=> ?; apply/eq_sym/(eq_from_nth x0).
 rewrite size_mkseq lez_maxr 1:/# => j rgj.
 by rewrite nth_mkseq //= nth_drop //#.
 qed.
+
+(* -------------------------------------------------------------------- *)
+lemma allP_range (k : int) (p : int -> bool) :
+  all p (range 0 k) <=> (forall i, 0 <= i < k => p i).
+proof.
+rewrite allP; split=> h i.
+- by move=> rgi; apply h; rewrite mem_range.
+- by move=> /mem_range rgi; apply h.
+qed.
+
+(* -------------------------------------------------------------------- *)
+lemma allP_range' (k : int) (p : int -> bool) :
+  all p (range 0 k) <=> (forall i, 0 <= i => i < k => p i).
+proof. by rewrite allP_range; smt(). qed.
+
+(* -------------------------------------------------------------------- *)
+(* filtering is masking by the map of the predicate *)
+lemma filter_mask' ['a] (p : 'a -> bool) (s : 'a list) :
+  filter p s = mask (map p s) s.
+proof. by elim: s => //= x s <-; case: (p x). qed.
+
+(* -------------------------------------------------------------------- *)
+lemma count_idfun_map ['a] (p : 'a -> bool) (s : 'a list) :
+  count idfun (map p s) = count p s.
+proof. by rewrite count_map; apply eq_count => x @/preim @/idfun. qed.

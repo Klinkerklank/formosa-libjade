@@ -12,10 +12,10 @@
       (`mmrP`).
 *)
 
-require import AllCore CoreUtils List Ring IntDiv BitEncoding.
+require import AllCore CoreUtils List List_extra Ring IntDiv BitEncoding.
 require import StdRing StdOrder.
 
-import BitChunking.
+import BitChunking BS2Int.
 
 (* -------------------------------------------------------------------- *)
 from Jasmin require import JWord JArray.
@@ -29,6 +29,7 @@ from JazzEC require import Ml_dsa_65_avx2.
 
 (* -------------------------------------------------------------------- *)
 require import WArray1024.
+require import Array2 WArray2.
 require import Array4 Array8 Array16 Array256.
 require import XArray256.
 
@@ -386,7 +387,7 @@ lemma wpoly_set256_aligned (s : int) (p : wpoly) (w : W256.t) :
   =>   Array256.init
           (fun (i : int) =>
             get32
-              (set256_direct (init32 ("_.[_]" p)) (4 * s) w) i)
+              (WArray1024.set256_direct (WArray1024.init32 ("_.[_]" p)) (4 * s) w) i)
      = Array256.fill (fun i =>  w \bits32 (i - s)) s 8 p.
 proof.
 hint +listred.
@@ -408,7 +409,7 @@ lemma wpoly_set256_alignedE (s : int) (p : wpoly) (w : W256.t) :
   =>   Array256.init                                                           
           (fun (i : int) =>                                                     
             get32
-              (set256_direct (init32 ("_.[_]" p)) s w) i)
+              (WArray1024.set256_direct (WArray1024.init32 ("_.[_]" p)) s w) i)
      = Array256.fill (fun i =>  w \bits32 (i - s %/ 4)) (s %/ 4) 8 p.
 proof. by move=> ?; have := wpoly_set256_aligned (s %/ 4) p w; smt(). qed.
 
@@ -598,3 +599,240 @@ lemma VPSHUFB_256_E (w m : W256.t) :
 proof. by rewrite /VPSHUFB_256; apply W2u128.allP => /=. qed.
 
 hint simplify VPSHUFB_256_E.
+
+(* ==================================================================== *)
+(* Word-level helper lemmas shared by the ML-DSA samplers               *)
+
+(* -------------------------------------------------------------------- *)
+lemma truncateu16_256E (w : W256.t) :
+  truncateu16 w = w \bits16 0.
+proof.
+apply: W16.ext_eq=> i rgi; rewrite bits16iE //=.
+rewrite /truncateu16 of_intwE rgi /= /W16.int_bit.
+rewrite modz_pow2_div ~-1://# modz_dvd.
+- by rewrite -{1}[2]expr1 dvdz_exp2l /#.
+- by rewrite -b2i_get /#.
+qed.
+
+(* -------------------------------------------------------------------- *)
+lemma bits8_256_shiftE (w : W256.t) (i : int) : 0 <= i < 16 =>
+  (w `<<<` 8 * i) \bits8 i = w \bits8 0.
+proof.
+move=> rgi; apply W8.wordP => j hj.
+by rewrite !bits8iE // shlwE; smt().
+qed.
+
+(* -------------------------------------------------------------------- *)
+lemma bits8_256_le_shiftE (w : W256.t) (i j : int) :
+  0 <= i < 16 => 0 <= j < i =>
+    (w `<<<` 8 * i) \bits8 j = W8.zero.
+proof.
+move=> rgi rgj; apply W8.wordP => t ht.
+rewrite bits8iE // shlwE.
+by smt(W256.get_out W8.zerowE).
+qed.
+
+(* -------------------------------------------------------------------- *)
+lemma w256_shift_wintE (w i : int) :
+  0 <= i < 256 => W256.of_int (w `<<` i) = W256.of_int w `<<<` i.
+proof.
+move=> rgi.
+by rewrite W256.shlMP 1:/# /(`<<`) ifT 1:/#.
+qed.
+
+(* -------------------------------------------------------------------- *)
+lemma w256_ofint_bits8E (w i : int) : 0 <= i < 32 =>
+  (W256.of_int w) \bits8 i = W8.of_int (w %/ 2^(8*i)).
+proof. by apply W32u8.of_int_bits8_div. qed.
+
+
+(* -------------------------------------------------------------------- *)
+(* the 16-bit domain separator, stored through WArray2, reads back as   *)
+(* its two bytes                                                        *)
+lemma pack2_set16_to_listE (a : W8.t Array2.t) (w : W16.t) :
+  Array2.to_list (Array2.init (WArray2.get8
+    (WArray2.set16 (WArray2.init8 ("_.[_]" a)) 0 w)))
+  = W2u8.to_list w.
+proof. by rewrite /to_list /mkseq -iotaredE /=. qed.
+
+(* -------------------------------------------------------------------- *)
+lemma pack2_to_listE (a : W8.t Array2.t) (w : W16.t) :
+  Array2.to_list (Array2.init (WArray2.get8
+    (WArray2.set16_direct (WArray2.init8 ("_.[_]" a)) 0 w)))
+  = W2u8.to_list w.
+proof. by rewrite /to_list /mkseq -iotaredE /=. qed.
+
+(* -------------------------------------------------------------------- *)
+hint exact : W64.WRingA.oner_neq0.
+
+(* -------------------------------------------------------------------- *)
+lemma of_int_b2i_eq1P (b : bool) : W64.of_int (b2i b) = W64.one => b.
+proof. by case: b => //; rewrite b2i0 /= eq_sym. qed.
+
+(* ==================================================================== *)
+(* Leaf lemmas for the vectorized rejection-sampling loop body          *)
+(* ==================================================================== *)
+(* -------------------------------------------------------------------- *)
+lemma to_uint_and15 (g : W64.t) :
+  to_uint (g `&` W64.of_int 15) = to_uint g %% 16.
+proof.
+have := W64.to_uint_and_mod 4 g _ => //=.
+qed.
+
+lemma to_uint_shr4 (g : W64.t) :
+  to_uint (g `>>` W8.of_int 4) = to_uint g %/ 16.
+proof. by rewrite W64.shr_div of_uintK /=. qed.
+
+lemma popcnt6E (g : W64.t) :
+  (POPCNT_64 g).`6 = W64.of_int (count idfun (W64.w2bits g)).
+proof. by rewrite /POPCNT_64 /flags_w. qed.
+
+lemma popcnt_count (g : W64.t) (bs : bool list) :
+  size bs = 4 => to_uint g = bs2int bs =>
+  count idfun (W64.w2bits g) = count idfun bs.
+proof.
+move=> szb hg.
+have e1 : bs2int (W64.w2bits g) = bs2int (bs ++ nseq 60 false).
+- by rewrite -W64.to_uintE hg bs2int_cat bs2int_nseq_false szb /=.
+have h1 := bs2intK (W64.w2bits g).
+have h2 := bs2intK (bs ++ nseq 60 false).
+move: h1 h2; rewrite W64.size_w2bits size_cat szb size_nseq /= e1 => h1 h2.
+rewrite -h1 h2.
+by rewrite count_cat count_nseq /idfun /=.
+qed.
+
+(* -------------------------------------------------------------------- *)
+(* the shuffle table compacts the dwords selected by the 4-bit mask to  *)
+(* the front, in order                                                  *)
+lemma shuffle_compact (x : W128.t) (m : int) : 0 <= m < 16 =>
+    take (count idfun (int2bs 4 m))
+      (W4u32.Pack.to_list (W4u32.unpack32 (VPSHUFB_128 x
+        (W16u8.pack16 (Array256.sub matrix_A__SHUFFLE_TABLE (16 * m) 16)))))
+  = mask (int2bs 4 m) (W4u32.Pack.to_list (W4u32.unpack32 x)).
+proof.
+move: m; apply/allP_range.
+by rewrite /range /sub /int2bs /mkseq -iotaredE /=.
+qed.
+
+(* -------------------------------------------------------------------- *)
+lemma to_uint_shr2 (g : W64.t) :
+  to_uint (g `>>` W8.of_int 2) = to_uint g %/ 4.
+proof. by rewrite W64.shr_div of_uintK /=. qed.
+
+(* -------------------------------------------------------------------- *)
+lemma zext32_8E (x : W8.t) :
+  zeroextu32 x = W4u8.pack4 [x; W8.zero; W8.zero; W8.zero].
+proof.
+rewrite W4u8.zeroextu32E &(W4u8.wordP) => i rgi.
+rewrite !W4u8.pack4bE 1,2:// initiE 1:// get_of_list 1://.
+by move: rgi => /#.
+qed.
+
+(* -------------------------------------------------------------------- *)
+lemma shl8E (w : W32.t) :
+  w `<<` W8.of_int 8 = W4u8.pack4 [W8.zero; w \bits8 0; w \bits8 1; w \bits8 2].
+proof.
+apply W32.wordP; apply/allP_range.
+by rewrite /range -iotaredE /= /(`<<`) of_uintK /=.
+qed.
+
+(* -------------------------------------------------------------------- *)
+lemma shl16E (w : W32.t) :
+  w `<<` W8.of_int 16 = W4u8.pack4 [W8.zero; W8.zero; w \bits8 0; w \bits8 1].
+proof.
+apply W32.wordP; apply/allP_range.
+by rewrite /range -iotaredE /= /(`<<`) of_uintK /=.
+qed.
+
+(* -------------------------------------------------------------------- *)
+(* the scalar candidate assembly is the packed 3-byte group             *)
+lemma or3E (x y z : W8.t) :
+  (zeroextu32 x `|` (zeroextu32 y `<<` W8.of_int 8)) `|`
+  (zeroextu32 z `<<` W8.of_int 16)
+  = W4u8.pack4 [x; y; z].
+proof.
+by rewrite !zext32_8E shl8E shl16E; apply W4u8.allP => /=.
+qed.
+
+hint simplify or3E.
+
+(* -------------------------------------------------------------------- *)
+(* local reduction hints for the bytestream decoder                     *)
+lemma and255E (x : W8.t) : x `&` W8.of_int 255 = x.
+proof.
+have -> : W8.of_int 255 = W8.onew.
+- by rewrite /onew /=.
+by done.
+qed.
+
+hint simplify and255E.
+
+lemma pack4_3_and_maskE (a b c : W8.t) :
+  W4u8.pack4 [a; b; c] `&` W32.of_int 8388607
+  = W4u8.pack4 [a; b; c `&` W8.of_int 127; W8.zero].
+proof.
+apply W4u8.allP => /=.
+by rewrite !W4u8.of_int_bits8_div //=.
+qed.
+
+hint simplify pack4_3_and_maskE.
+
+(* DECODING_TABLE.[0]: the dword permutation [0 1 2 0 3 4 5 0]          *)
+lemma DECODING_PERM_E :
+  W256.of_int 31385508682779410369523405889615886801803926611390921441280
+  = W8u32.pack8
+    [W32.zero; W32.of_int 1; W32.of_int 2; W32.zero;
+     W32.of_int 3; W32.of_int 4; W32.of_int 5; W32.zero].
+proof.
+apply W8u32.allP => /=.
+by rewrite !W8u32.of_int_bits32_div //=.
+qed.
+
+hint simplify DECODING_PERM_E.
+
+(* DECODING_TABLE.[1]: the in-lane 3-of-4 byte spread                   *)
+lemma DECODING_SHUFFLE_E :
+  W256.of_int 115359280993406415849895417079880437751483271933338715711596891385178068484352
+  = W32u8.pack32
+    [W8.zero; W8.of_int   1; W8.of_int   2; W8.of_int 255;
+     W8.of_int   3; W8.of_int   4; W8.of_int   5; W8.of_int 255;
+     W8.of_int   6; W8.of_int   7; W8.of_int   8; W8.of_int 255;
+     W8.of_int   9; W8.of_int  10; W8.of_int  11; W8.of_int 255;
+     W8.zero; W8.of_int   1; W8.of_int   2; W8.of_int 255;
+     W8.of_int   3; W8.of_int   4; W8.of_int   5; W8.of_int 255;
+     W8.of_int   6; W8.of_int   7; W8.of_int   8; W8.of_int 255;
+     W8.of_int   9; W8.of_int  10; W8.of_int  11; W8.of_int 255].
+proof. by apply W32u8.allP => /=. qed.
+
+hint simplify DECODING_SHUFFLE_E.
+
+(* DECODING_TABLE.[2]: the 8u32 23-bit mask, fused with the AND         *)
+lemma mask23_and_pack32E (x00 x01 x02 x03 x04 x05 x06 x07 x08 x09 x10 x11 x12 x13 x14 x15 x16 x17 x18 x19 x20 x21 x22 x23 x24 x25 x26 x27 x28 x29 x30 x31 : W8.t) :
+  W32u8.pack32
+    [x00; x01; x02; x03; x04; x05; x06; x07;
+     x08; x09; x10; x11; x12; x13; x14; x15;
+     x16; x17; x18; x19; x20; x21; x22; x23;
+     x24; x25; x26; x27; x28; x29; x30; x31] `&`
+  W256.of_int 226156397384342666605459106258636701594091082888230722833791023177481060351
+  = W32u8.pack32
+    [x00; x01; x02 `&` W8.of_int 127; W8.zero;
+     x04; x05; x06 `&` W8.of_int 127; W8.zero;
+     x08; x09; x10 `&` W8.of_int 127; W8.zero;
+     x12; x13; x14 `&` W8.of_int 127; W8.zero;
+     x16; x17; x18 `&` W8.of_int 127; W8.zero;
+     x20; x21; x22 `&` W8.of_int 127; W8.zero;
+     x24; x25; x26 `&` W8.of_int 127; W8.zero;
+     x28; x29; x30 `&` W8.of_int 127; W8.zero].
+proof.
+apply W32u8.allP => /=.
+by rewrite !W32u8.of_int_bits8_div //=.
+qed.
+
+hint simplify mask23_and_pack32E.
+
+(* -------------------------------------------------------------------- *)
+lemma of_int_b2i_eq1P8 (b : bool) : W8.of_int (b2i b) = W8.one => b.
+proof.
+by case: b => //= _; rewrite W8.to_uint_eq /=.
+qed.
+
