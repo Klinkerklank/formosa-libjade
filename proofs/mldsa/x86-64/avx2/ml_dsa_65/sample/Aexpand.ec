@@ -8,8 +8,8 @@ from Jasmin require import JWord JModel_x86.
 from JazzEC require import Ml_dsa_65_avx2.
 
 require import Avx2red.
-require import Array4 Array25 Array32 Array168 Array256 Array848 Array7680.
-require import WArray256 WArray848 WArray1024.
+require import Array2 Array4 Array25 Array32 Array168 Array256 Array848 Array7680.
+require import WArray2 WArray256 WArray848 WArray1024.
 require import XArray256 XArray7680.
 
 (* -------------------------------------------------------------------- *)
@@ -196,6 +196,62 @@ lemma w256_ofint_bits8E (w i : int) : 0 <= i < 32 =>
   (W256.of_int w) \bits8 i = W8.of_int (w %/ 2^(8*i)).
 proof. by apply W32u8.of_int_bits8_div. qed.
 
+(* ==================================================================== *)
+(* Keccak-level trust boundary.  The interleaved-sponge primitives of   *)
+(* the extraction are specified against the abstract [\sha3for]         *)
+(* relation; these five admitted specifications are the link between    *)
+(* the (formosa-keccak verified) Keccak code and the abstract stream    *)
+(* model, and are the only admitted facts of this file.  The wrapper    *)
+(* procedures below them are proved.                                    *)
+
+lemma state_init_avx2x4P :
+  hoare[ M.__state_init_avx2x4 :
+    true ==> res \sha3for Array4.init (fun _ => mk_absorbing []) ].
+proof. admitted. (* Keccak trust boundary *)
+
+lemma absorb_bcast_avx2x4P (rho_ : W8.t Array32.t) :
+  hoare[ M.a32____absorb_bcast_avx2x4 :
+       st \sha3for Array4.init (fun _ => mk_absorbing [])
+    /\ buf = rho_ /\ aT = 0 /\ _TRAILB = 0 /\ _RATE8 = 168
+    ==> res.`1 \sha3for Array4.init (fun _ => mk_absorbing (to_list rho_)) ].
+proof. admitted. (* Keccak trust boundary *)
+
+lemma absorb_2_final_avx2x4P (pre_ : W8.t list) (ds_ : W16.t Array4.t) :
+  hoare[ M.a2____absorb_avx2x4 :
+       st \sha3for Array4.init (fun _ => mk_absorbing pre_)
+    /\ to_list buf0 = W2u8.to_list ds_.[0]
+    /\ to_list buf1 = W2u8.to_list ds_.[1]
+    /\ to_list buf2 = W2u8.to_list ds_.[2]
+    /\ to_list buf3 = W2u8.to_list ds_.[3]
+    /\ aT = size pre_ /\ _TRAILB = 31 /\ _RATE8 = 168
+    ==> res.`1 \sha3for
+          Array4.map (fun w => mk_absorbed (pre_ ++ W2u8.to_list w)) ds_ ].
+proof. admitted. (* Keccak trust boundary *)
+
+lemma keccakf1600_avx2x4P (data : W8.t list Array4.t) (k : int) :
+  hoare[ M._keccakf1600_avx2x4 :
+       0 <= k /\ a \sha3for Array4.map (mk_read (168 * k)) data
+    ==> res \sha3for Array4.map (mk_read (168 * (k + 1))) data ].
+proof. admitted. (* Keccak trust boundary *)
+
+lemma dumpstate_avx2x4P (data : W8.t list Array4.t) (k : int) :
+  hoare[ M.a168____dumpstate_avx2x4 :
+       0 <= k /\ st \sha3for Array4.map (mk_read (168 * (k + 1))) data
+    /\ offset = 0 /\ _LEN = 168
+    ==> forall i, 0 <= i < 4 =>
+          Array168.to_list (nth witness [res.`1; res.`2; res.`3; res.`4] i)
+          = shake128_slice data.[i] (168 * k) 168 ].
+proof. admitted. (* Keccak trust boundary *)
+
+(* -------------------------------------------------------------------- *)
+(* the 16-bit domain separator, stored through WArray2, reads back as   *)
+(* its two bytes                                                        *)
+lemma pack2_to_listE (a : W8.t Array2.t) (w : W16.t) :
+  Array2.to_list (Array2.init (WArray2.get8
+    (WArray2.set16_direct (WArray2.init8 ("_.[_]" a)) 0 w)))
+  = W2u8.to_list w.
+proof. by rewrite /to_list /mkseq -iotaredE /=. qed.
+
 (* -------------------------------------------------------------------- *)
 lemma matrix_A__shake128_absorb_34_4xP
   (rho_ : rho) (ds_ : W16.t Array4.t)
@@ -209,7 +265,79 @@ lemma matrix_A__shake128_absorb_34_4xP
   ].
 proof.
 proc.
-admitted.
+(* state initialization *)
+seq 5 : (rho = rho_ /\ domain_separators = ds_ /\
+         state \sha3for Array4.init (fun _ => mk_absorbing [])).
+- by call state_init_avx2x4P; auto.
+(* rho is absorbed identically into the four lanes *)
+seq 1 : (domain_separators = ds_ /\
+         state \sha3for Array4.init (fun _ => mk_absorbing (to_list rho_))).
+- by call (absorb_bcast_avx2x4P rho_); auto.
+(* the four domain separators are marshaled to byte pairs *)
+seq 4 : (state \sha3for Array4.init (fun _ => mk_absorbing (to_list rho_))
+         /\ to_list d0 = W2u8.to_list ds_.[0]
+         /\ to_list d1 = W2u8.to_list ds_.[1]
+         /\ to_list d2 = W2u8.to_list ds_.[2]
+         /\ to_list d3 = W2u8.to_list ds_.[3]).
+- by auto=> &hr |> hst; rewrite ?pack2_to_listE.
+(* the final absorb completes each lane's stream *)
+call (absorb_2_final_avx2x4P (to_list rho_) ds_).
+by skip => &hr |> hst h0 h1 h2 h3; rewrite Array32.size_to_list.
+qed.
+
+(* -------------------------------------------------------------------- *)
+(* one squeezed block appended to a lane's consumed stream              *)
+lemma slice_cat_block (n : W8.t list) (k : int) (b : W8.t Array168.t) :
+  0 <= k =>
+  Array168.to_list b = shake128_slice n (168 * k) 168 =>
+  shake128_slice n 0 (168 * k) ++ Array168.to_list b
+  = shake128_slice n 0 (168 * (k + 1)).
+proof.
+move=> hk hb; rewrite hb (_ : 168 * (k + 1) = 168 * k + 168); 1: by ring.
+rewrite shake128_slice_cat 1,2:/#.
+by rewrite (_ : 0 + 168 * k = 168 * k) 1:/#.
+qed.
+
+(* -------------------------------------------------------------------- *)
+lemma shake128_squeezeblock4xP (data : W8.t list Array4.t) (k : int) :
+hoare[
+  M.shake128_squeezeblock4x :
+      0 <= k /\ state \sha3for Array4.map (mk_read (168 * k)) data
+    ==>
+         res.`1 \sha3for Array4.map (mk_read (168 * (k + 1))) data
+      /\ (forall i, 0 <= i < 4 =>
+            Array168.to_list (nth witness [res.`2; res.`3; res.`4; res.`5] i)
+            = shake128_slice data.[i] (168 * k) 168)
+  ].
+proof.
+proc.
+(* the permutation advances every lane by one block *)
+seq 1 : (0 <= k /\ state \sha3for Array4.map (mk_read (168 * (k + 1))) data).
+- by call (keccakf1600_avx2x4P data k); auto.
+(* the fresh block is read off the rate part of the state *)
+by sp; call (dumpstate_avx2x4P data k); auto.
+qed.
+
+(* -------------------------------------------------------------------- *)
+(* writing a block into its 168-byte window extends the byte prefix     *)
+lemma sub_window_catE (b : W8.t Array848.t) (a : W8.t Array168.t) (i : int) :
+  0 <= i < 5 =>
+  Array848.sub
+    (Array848.init (fun j =>
+       if i * 168 <= j < i * 168 + 168 then a.[j - i * 168] else b.[j]))
+    0 (168 * (i + 1))
+  = Array848.sub b 0 (168 * i) ++ Array168.to_list a.
+proof.
+move=> rgi; apply (eq_from_nth witness).
+- rewrite Array848.size_sub 1:/# size_cat Array848.size_sub 1:/#.
+  by rewrite Array168.size_to_list /#.
+move=> j; rewrite Array848.size_sub 1:/# => rgj.
+rewrite Array848.nth_sub 1:/# /= initiE 1:/# /=.
+rewrite nth_cat Array848.size_sub 1:/#.
+case: (j < 168 * i) => hcase.
+- by rewrite ifF 1:/# Array848.nth_sub /#.
+by rewrite ifT 1:/# Array168.get_to_list /#.
+qed.
 
 (* -------------------------------------------------------------------- *)
 lemma matrix_A____shake128_squeeze_multiple_blocks_4xP (data : W8.t list Array4.t)
@@ -224,22 +352,36 @@ lemma matrix_A____shake128_squeeze_multiple_blocks_4xP (data : W8.t list Array4.
   ].
 proof.
 proc.
-admitted.
-
-(* -------------------------------------------------------------------- *)
-lemma shake128_squeezeblock4xP (data : W8.t list Array4.t) (k : int) :
-hoare[
-  M.shake128_squeezeblock4x :
-      state \sha3for Array4.map (mk_read (168 * k)) data
-    ==>
-         res.`1 \sha3for Array4.map (mk_read (168 * (k + 1))) data
-      /\ (forall i, 0 <= i < 4 =>
-            Array168.to_list (nth witness [res.`2; res.`3; res.`4; res.`5] i)
-            = shake128_slice data.[i] (168 * k) 168)
-  ].
-proof.
-proc.
-admitted.
+sp.
+(* each iteration squeezes one block into every lane's next window *)
+while (0 <= i <= 5
+    /\ state \sha3for Array4.map (mk_read (168 * i)) data
+    /\ Array848.sub b0 0 (168 * i) = shake128_slice data.[0] 0 (168 * i)
+    /\ Array848.sub b1 0 (168 * i) = shake128_slice data.[1] 0 (168 * i)
+    /\ Array848.sub b2 0 (168 * i) = shake128_slice data.[2] 0 (168 * i)
+    /\ Array848.sub b3 0 (168 * i) = shake128_slice data.[3] 0 (168 * i)).
+- exlim i => i_.
+  wp; ecall (shake128_squeezeblock4xP data i_).
+  skip => &hr |> hi0 _ hst hs0 hs1 hs2 hs3 hlt r hres hblk /=.
+  move: (hblk 0 _) (hblk 1 _) (hblk 2 _) (hblk 3 _) => //= hb0 hb1 hb2 hb3.
+  do! split; 1,2: smt().
+  - by rewrite sub_window_catE 1:/# hs0
+       (slice_cat_block data.[0] i{hr} r.`2 hi0 hb0).
+  - by rewrite sub_window_catE 1:/# hs1
+       (slice_cat_block data.[1] i{hr} r.`3 hi0 hb1).
+  - by rewrite sub_window_catE 1:/# hs2
+       (slice_cat_block data.[2] i{hr} r.`4 hi0 hb2).
+  by rewrite sub_window_catE 1:/# hs3
+     (slice_cat_block data.[3] i{hr} r.`5 hi0 hb3).
+(* entry: nothing is read yet; exit: the five windows cover 840 bytes *)
+skip => &hr |> hst; split.
+- by do! split; smt(size_shake128_slice size_eq0).
+move=> b00 b10 b20 b30 i0 state0 hge5 hi0 hi5 hrel h0 h1 h2 h3.
+have ->>: i0 = 5 by smt().
+split; first by exact hrel.
+move=> j hj0 hj4.
+by have [->|[->|[->|->]]] /=: j = 0 \/ j = 1 \/ j = 2 \/ j = 3 by smt().
+qed.
 
 (* -------------------------------------------------------------------- *)
 op MODULUS8u32 =
@@ -1390,19 +1532,6 @@ qed.
 op reject_ok (nonce : W8.t list) (sz : int) (p : wpoly) (filled : int) =
      agree p 0 (reject (shake128_slice nonce 0 sz))
   /\ filled = min 256 (size (reject (shake128_slice nonce 0 sz))).
-
-(* -------------------------------------------------------------------- *)
-(* one squeezed block appended to a lane's consumed stream              *)
-lemma slice_cat_block (n : W8.t list) (k : int) (b : W8.t Array168.t) :
-  0 <= k =>
-  Array168.to_list b = shake128_slice n (168 * k) 168 =>
-  shake128_slice n 0 (168 * k) ++ Array168.to_list b
-  = shake128_slice n 0 (168 * (k + 1)).
-proof.
-move=> hk hb; rewrite hb (_ : 168 * (k + 1) = 168 * k + 168); 1: by ring.
-rewrite shake128_slice_cat 1,2:/#.
-by rewrite (_ : 0 + 168 * k = 168 * k) 1:/#.
-qed.
 
 (* -------------------------------------------------------------------- *)
 (* the four sampling lanes, staged: lanes below j are one block ahead   *)
