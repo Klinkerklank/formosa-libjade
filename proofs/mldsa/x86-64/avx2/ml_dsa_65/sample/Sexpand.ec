@@ -396,3 +396,561 @@ do ! split.
 - rewrite (shr8_bs2int _ (map saccept (zs ++ zs'))) // map_cat.
   by rewrite (_ : 8 = size (map saccept zs)) 1:szmap // drop_size_cat.
 qed.
+
+(* ==================================================================== *)
+(* The vectorized rejection loop with its integrated scalar tail        *)
+(* ==================================================================== *)
+
+lemma sub16E_272 (a : W8.t Array272.t) (k : int) :
+  Array272.sub a k 16 = [a.[k]; a.[k + 1]; a.[k + 2]; a.[k + 3]; a.[k + 4]; a.[k + 5]; a.[k + 6]; a.[k + 7]; a.[k + 8]; a.[k + 9]; a.[k + 10]; a.[k + 11]; a.[k + 12]; a.[k + 13]; a.[k + 14]; a.[k + 15]].
+proof. by rewrite /sub /mkseq -iotaredE /=. qed.
+
+lemma sub4E_272 (a : W8.t Array272.t) (k : int) :
+  Array272.sub a k 4 = [a.[k]; a.[k + 1]; a.[k + 2]; a.[k + 3]].
+proof. by rewrite /sub /mkseq -iotaredE /=. qed.
+
+lemma WArray272_get128E (a : W8.t Array272.t) (base : int) :
+  0 <= base <= 256 =>
+    WArray272.get128_direct (WArray272.init8 ("_.[_]" a)) base
+  = W16u8.pack16 (Array272.sub a base 16).
+proof.
+move=> rgb; rewrite get128E; congr; apply W16u8.Pack.ext_eq => j hj.
+rewrite initiE //= get_of_list //.
+rewrite /init8 WArray272.initiE 1:/# /=.
+by rewrite /sub nth_mkseq //=.
+qed.
+
+lemma scands_nib (bs : W8.t list) (z : W8.t) :
+  z \in scands bs => to_uint z < 16.
+proof.
+rewrite /scands => /flattenP [l] [] /mapP [b] [_ ->].
+rewrite /nibbles /= => -[->|->].
+- exact to_uint_lonib_lt16.
+- exact to_uint_hinib_lt16.
+qed.
+
+op svsampled (b : W8.t Array272.t) (p : wpoly) (bf off : int) =
+     off <= 256
+  /\ 4 %| off
+  /\ bf <= 1020
+  /\ bf = 4 * size (sreject (Array272.sub b 0 off))
+  /\ agree p 0 (sreject (Array272.sub b 0 off)).
+
+lemma sub1E_272 (a : W8.t Array272.t) (k : int) :
+  Array272.sub a k 1 = [a.[k]].
+proof. by rewrite /sub /mkseq -iotaredE /=. qed.
+
+lemma sreject_step272 (a : W8.t Array272.t) (n : int) : 0 <= n =>
+  sreject (Array272.sub a 0 (n + 1))
+  = sreject (Array272.sub a 0 n)
+    ++ ((if saccept (a.[n] `&` W8.of_int 15)
+         then [scoeff (a.[n] `&` W8.of_int 15)] else [])
+        ++
+        (if saccept (a.[n] `>>>` 4)
+         then [scoeff (a.[n] `>>>` 4)] else [])).
+proof.
+move=> hn; rewrite sreject_block // sub1E_272.
+by rewrite sreject1E.
+qed.
+
+lemma zext_and15E (b : W8.t) :
+  zeroextu32 b `&` W32.of_int 15 = zeroextu32 (b `&` W8.of_int 15).
+proof.
+rewrite !zext32_8E.
+apply W32.wordP; apply/allP_range.
+rewrite /range -iotaredE /=.
+rewrite !W32.of_intwE /W32.int_bit /=.
+by rewrite !W8.of_intwE /W8.int_bit /=.
+qed.
+
+lemma zext_shr4E (b : W8.t) :
+  zeroextu32 b `>>` W8.of_int 4 = zeroextu32 (b `>>>` 4).
+proof.
+rewrite !zext32_8E /(`>>`) of_uintK /=.
+apply W32.wordP; apply/allP_range.
+rewrite /range -iotaredE /=.
+by rewrite ?W32.get_out // ?W8.get_out //= ?orbF; rewrite !W8.get_to_uint /=.
+qed.
+
+op ssampled (b : W8.t Array272.t) (p : wpoly) (fl off : int) =
+     off <= 272
+  /\ fl <= 256
+  /\ fl = min 256 (size (sreject (Array272.sub b 0 off)))
+  /\ agree p 0 (sreject (Array272.sub b 0 off)).
+
+lemma error_4x__rejection_sample_multiple_blocksP (buf : W8.t Array272.t)
+: hoare[
+  M.error_4x__rejection_sample_multiple_blocks :
+      randombytes = buf
+    ==>
+         agree res.`1 0 (sreject (Array272.sub buf 0 272))
+      /\ to_uint res.`2 = min 256 (size (sreject (Array272.sub buf 0 272)))
+  ].
+proof.
+proc => /=.
+seq 6 : (randombytes = buf
+  /\ eta_0 = VPBROADCAST_32u8 (W8.of_int 4)
+  /\ bound = VPBROADCAST_32u8 (W8.of_int 9)).
+- by auto => &hr |>; rewrite !truncateu8_bcastE.
+sp 3.
+seq 1 : (
+     randombytes = buf
+  /\ to_uint bytes_filled <= 1020
+  /\ to_uint xof_offset <= 256
+  /\ 4 %| to_uint xof_offset
+  /\ (to_uint bytes_filled < 992 => to_uint xof_offset = 256)
+  /\ to_uint bytes_filled = 4 * size (sreject (Array272.sub buf 0 (to_uint xof_offset)))
+  /\ agree error 0 (sreject (Array272.sub buf 0 (to_uint xof_offset)))
+).
+- while (
+       randombytes = buf
+    /\ eta_0 = VPBROADCAST_32u8 (W8.of_int 4)
+    /\ bound = VPBROADCAST_32u8 (W8.of_int 9)
+    /\ svsampled buf error (to_uint bytes_filled) (to_uint xof_offset)
+    /\ (to_uint bytes_filled < 992 /\ to_uint xof_offset < 256 =>
+          16 %| to_uint xof_offset)
+    /\ stop_sampling = W64.of_int (b2i (!(
+            to_uint bytes_filled < 992
+         /\ to_uint xof_offset < 256)))
+  ); last first.
+  - by hoare split; auto=> &hr @/svsampled |> * /=; smt(of_int_b2i_eq1P).
+  exlim xof_offset => off0.
+  seq 2 : (
+       randombytes = buf
+    /\ eta_0 = VPBROADCAST_32u8 (W8.of_int 4)
+    /\ bound = VPBROADCAST_32u8 (W8.of_int 9)
+    /\ svsampled buf error (to_uint bytes_filled) (to_uint xof_offset)
+    /\ to_uint bytes_filled < 992
+    /\ to_uint off0 < 256
+    /\ 16 %| to_uint off0
+    /\ xof_offset = off0
+    /\ stop_sampling = W64.of_int 0
+    /\ coefficients
+         = W32u8.pack32 (scands (Array272.sub buf (to_uint off0) 16))
+  ).
+  - ecall (error_4x____bytestream_to_coefficientsP
+             (W16u8.pack16 (Array272.sub buf (to_uint off0) 16))).
+    auto=> &hr |> hsv hlt hflag.
+    have {hflag} [h992 h256] : to_uint bytes_filled{hr} < 992 /\ to_uint xof_offset{hr} < 256
+      by smt(of_int_b2i_eq1P).
+    by rewrite WArray272_get128E 1:#smt:(W64.to_uint_cmp) sub16E_272 /= /#.
+  seq 5 : (
+       randombytes = buf
+    /\ eta_0 = VPBROADCAST_32u8 (W8.of_int 4)
+    /\ bound = VPBROADCAST_32u8 (W8.of_int 9)
+    /\ svsampled buf error (to_uint bytes_filled) (to_uint xof_offset)
+    /\ to_uint bytes_filled < 992
+    /\ to_uint off0 < 256
+    /\ 16 %| to_uint off0
+    /\ xof_offset = off0
+    /\ stop_sampling = W64.of_int 0
+    /\ to_uint good_overall
+         = bs2int (map saccept (scands (Array272.sub buf (to_uint off0) 16)))
+    /\ coefficients
+         = W32u8.pack32 (map cbyte (scands (Array272.sub buf (to_uint off0) 16)))
+    /\ coefficient_block = VEXTRACTI128 coefficients W8.zero
+  ).
+  - auto=> &hr |> hsv h992 h256 h16.
+    by rewrite !sub16E_272 movemask_scands16E scands16E VPSUB_bcast4_pack32E /= /cbyte.
+  exlim error => p0.
+  exlim bytes_filled => bf0.
+  exlim good_overall => go0.
+  exlim coefficient_block => cb0.
+  seq 2 : (
+       randombytes = buf
+    /\ eta_0 = VPBROADCAST_32u8 (W8.of_int 4)
+    /\ bound = VPBROADCAST_32u8 (W8.of_int 9)
+    /\ svsampled buf error (to_uint bytes_filled) (to_uint xof_offset)
+    /\ xof_offset = off0 + W64.of_int 4
+    /\ stop_sampling = W64.of_int 0
+    /\ to_uint off0 < 256
+    /\ 16 %| to_uint off0
+    /\ to_uint good_overall
+         = bs2int (map saccept (scands (Array272.sub buf (to_uint off0 + 4) 12)))
+    /\ coefficients
+         = W32u8.pack32 (map cbyte (scands (Array272.sub buf (to_uint off0) 16)))
+    /\ coefficient_block = VEXTRACTI128 coefficients W8.zero
+  ).
+  - wp; ecall (error_4x____write_out_8_coefficientsP p0
+        (sreject (Array272.sub buf 0 (to_uint off0)))
+        (scands (Array272.sub buf (to_uint off0) 4))
+        (scands (Array272.sub buf (to_uint off0 + 4) 12))
+        bf0 go0 cb0).
+    auto=> &hr |> hsv h992 h256 h16 hgo.
+    move: hsv => @/svsampled [#] hoffle hdvd4 hbfle hsz hag.
+    do ! split.
+    - rewrite !sub4E_272 !sub16E_272 scands16E.
+      by rewrite /scands /= /nibbles /= /cbyte /=.
+    - by rewrite size_scands size_sub.
+    - by move=> z /scands_nib.
+    - move: hgo; rewrite (_ : 16 = 4 + 12) 1:// PA_272_136.sub_cat_272 // scands_cat => hgo.
+      exact hgo.
+    - by smt(size_ge0).
+    - by smt().
+    - exact hag.
+    move=> _ _ _ _ _ _ _ result [# hragree hrsz hrgo].
+    have hle8 : size (map scoeff (filter saccept
+                  (scands (Array272.sub randombytes{hr} (to_uint xof_offset{hr}) 4)))) <= 8.
+    - rewrite size_map size_filter.
+      have := count_size saccept (scands (Array272.sub randombytes{hr} (to_uint xof_offset{hr}) 4)).
+      by rewrite size_scands Array272.size_sub /#.
+    have hoff4 : to_uint (xof_offset{hr} + W64.of_int 4) = to_uint xof_offset{hr} + 4.
+    - rewrite to_uintD_small of_uintK /=.
+      + by move: h256 => /#.
+      by [].
+    have hsplit : sreject (Array272.sub randombytes{hr} 0 (to_uint xof_offset{hr} + 4))
+      = sreject (Array272.sub randombytes{hr} 0 (to_uint xof_offset{hr}))
+        ++ map scoeff (filter saccept (scands (Array272.sub randombytes{hr} (to_uint xof_offset{hr}) 4))).
+    - by rewrite sreject_block ~-1:#smt:(W64.to_uint_cmp) -srejectE.
+    rewrite hoff4 hsplit.
+    do ! split.
+    - by smt().
+    - by smt().
+    - by smt(size_ge0 size_cat).
+    - exact hrsz.
+    - exact hragree.
+  if; last first.
+  - auto=> &hr |> hsv hlt h16 hgo hnl.
+    rewrite !uleE ?ultE !of_uintK /= !to_uintD_small ?of_uintK /=.
+    - by move: hlt => /#.
+    move: hnl; rewrite ultE of_uintK /= => hnl.
+    by smt().
+  sp 1.
+  exlim error => p1.
+  exlim bytes_filled => bf1.
+  exlim good_overall => go1.
+  exlim coefficient_block => cb1.
+  seq 2 : (
+       randombytes = buf
+    /\ eta_0 = VPBROADCAST_32u8 (W8.of_int 4)
+    /\ bound = VPBROADCAST_32u8 (W8.of_int 9)
+    /\ svsampled buf error (to_uint bytes_filled) (to_uint xof_offset)
+    /\ xof_offset = off0 + W64.of_int 8
+    /\ stop_sampling = W64.of_int 0
+    /\ to_uint off0 < 256
+    /\ 16 %| to_uint off0
+    /\ to_uint good_overall
+         = bs2int (map saccept (scands (Array272.sub buf (to_uint off0 + 8) 8)))
+    /\ coefficients
+         = W32u8.pack32 (map cbyte (scands (Array272.sub buf (to_uint off0) 16)))
+  ).
+  - wp; ecall (error_4x____write_out_8_coefficientsP p1
+        (sreject (Array272.sub buf 0 (to_uint off0 + 4)))
+        (scands (Array272.sub buf (to_uint off0 + 4) 4))
+        (scands (Array272.sub buf (to_uint off0 + 8) 8))
+        bf1 go1 cb1).
+    auto=> &hr |> hsv h256o h16 hgo hlt992.
+    have hoff4 : to_uint (off0 + W64.of_int 4) = to_uint off0 + 4.
+    - rewrite to_uintD_small of_uintK /=.
+      + by move: h256o => /#.
+      by [].
+    move: hsv; rewrite hoff4 => hsv.
+    move: hlt992; rewrite ultE of_uintK /= => hlt992.
+    move: hsv => @/svsampled [#] hoffle hdvd4 hbfle hsz hag.
+    do ! split.
+    - rewrite !sub4E_272 !sub16E_272 scands16E.
+      rewrite /scands /= /nibbles /= /cbyte /=.
+      by rewrite VEXTRACTI128_0_pack32E VPSRLDQ8_pack16E /=.
+    - by rewrite size_scands size_sub.
+    - by move=> z /scands_nib.
+    - by move: hgo; rewrite (_ : 12 = 4 + 8) 1:// PA_272_136.sub_cat_272 //
+                    scands_cat -!addzA /=.
+    - by smt(size_ge0).
+    - by smt().
+    - exact hag.
+    move=> _ _ _ _ _ _ _ result [# hragree hrsz hrgo].
+    have hle8 : size (map scoeff (filter saccept
+                  (scands (Array272.sub randombytes{hr} (to_uint off0 + 4) 4)))) <= 8.
+    - rewrite size_map size_filter.
+      have := count_size saccept (scands (Array272.sub randombytes{hr} (to_uint off0 + 4) 4)).
+      by rewrite size_scands Array272.size_sub /#.
+    have hoff8 : to_uint (off0 + W64.of_int 8) = to_uint off0 + 8.
+    - rewrite to_uintD_small of_uintK /=.
+      + by move: h256o => /#.
+      by [].
+    have hsplit : sreject (Array272.sub randombytes{hr} 0 (to_uint off0 + 8))
+      = sreject (Array272.sub randombytes{hr} 0 (to_uint off0 + 4))
+        ++ map scoeff (filter saccept (scands (Array272.sub randombytes{hr} (to_uint off0 + 4) 4))).
+    - rewrite (_ : to_uint off0 + 8 = to_uint off0 + 4 + 4) 1:/#.
+      by rewrite sreject_block ~-1:#smt:(W64.to_uint_cmp) -srejectE.
+    rewrite hoff8 hsplit.
+    do ! split.
+    - by smt().
+    - by smt().
+    - by smt(size_ge0 size_cat).
+    - exact hrsz.
+    - exact hragree.
+  if; last first.
+  - auto=> &hr |> hsv h256o h16 hgo hnl.
+    rewrite !uleE ?ultE !of_uintK /= !to_uintD_small ?of_uintK /=.
+    - by move: h256o => /#.
+    move: hnl; rewrite ultE of_uintK /= => hnl.
+    by smt().
+  sp 1.
+  exlim error => p2.
+  exlim bytes_filled => bf2.
+  exlim good_overall => go2.
+  exlim coefficient_block => cb2.
+  seq 2 : (
+       randombytes = buf
+    /\ eta_0 = VPBROADCAST_32u8 (W8.of_int 4)
+    /\ bound = VPBROADCAST_32u8 (W8.of_int 9)
+    /\ svsampled buf error (to_uint bytes_filled) (to_uint xof_offset)
+    /\ xof_offset = off0 + W64.of_int 12
+    /\ stop_sampling = W64.of_int 0
+    /\ to_uint off0 < 256
+    /\ 16 %| to_uint off0
+    /\ to_uint good_overall
+         = bs2int (map saccept (scands (Array272.sub buf (to_uint off0 + 12) 4)))
+    /\ coefficients
+         = W32u8.pack32 (map cbyte (scands (Array272.sub buf (to_uint off0) 16)))
+    /\ coefficient_block = VEXTRACTI128 coefficients W8.one
+  ).
+  - wp; ecall (error_4x____write_out_8_coefficientsP p2
+        (sreject (Array272.sub buf 0 (to_uint off0 + 8)))
+        (scands (Array272.sub buf (to_uint off0 + 8) 4))
+        (scands (Array272.sub buf (to_uint off0 + 12) 4))
+        bf2 go2 cb2).
+    auto=> &hr |> hsv h256o h16 hgo hlt992.
+    have hoff8 : to_uint (off0 + W64.of_int 8) = to_uint off0 + 8.
+    - rewrite to_uintD_small of_uintK /=.
+      + by move: h256o => /#.
+      by [].
+    move: hsv; rewrite hoff8 => hsv.
+    move: hlt992; rewrite ultE of_uintK /= => hlt992.
+    move: hsv => @/svsampled [#] hoffle hdvd4 hbfle hsz hag.
+    do ! split.
+    - rewrite !sub4E_272 !sub16E_272 scands16E.
+      rewrite /scands /= /nibbles /= /cbyte /=.
+      by rewrite VEXTRACTI128_1_pack32E /=.
+    - by rewrite size_scands size_sub.
+    - by move=> z /scands_nib.
+    - by move: hgo; rewrite (_ : 8 = 4 + 4) 1:// PA_272_136.sub_cat_272 //
+                    scands_cat -!addzA /=.
+    - by smt(size_ge0).
+    - by smt().
+    - exact hag.
+    move=> _ _ _ _ _ _ _ result [# hragree hrsz hrgo].
+    have hle8 : size (map scoeff (filter saccept
+                  (scands (Array272.sub randombytes{hr} (to_uint off0 + 8) 4)))) <= 8.
+    - rewrite size_map size_filter.
+      have := count_size saccept (scands (Array272.sub randombytes{hr} (to_uint off0 + 8) 4)).
+      by rewrite size_scands Array272.size_sub /#.
+    have hoff12 : to_uint (off0 + W64.of_int 12) = to_uint off0 + 12.
+    - rewrite to_uintD_small of_uintK /=.
+      + by move: h256o => /#.
+      by [].
+    have hsplit : sreject (Array272.sub randombytes{hr} 0 (to_uint off0 + 12))
+      = sreject (Array272.sub randombytes{hr} 0 (to_uint off0 + 8))
+        ++ map scoeff (filter saccept (scands (Array272.sub randombytes{hr} (to_uint off0 + 8) 4))).
+    - rewrite (_ : to_uint off0 + 12 = to_uint off0 + 8 + 4) 1:/#.
+      by rewrite sreject_block ~-1:#smt:(W64.to_uint_cmp) -srejectE.
+    rewrite hoff12 hsplit.
+    do ! split.
+    - by smt().
+    - by smt().
+    - by smt(size_ge0 size_cat).
+    - exact hrsz.
+    - exact hragree.
+  if; last first.
+  - auto=> &hr |> hsv h256o h16 hgo hnl.
+    rewrite !uleE ?ultE !of_uintK /= !to_uintD_small ?of_uintK /=.
+    - by move: h256o => /#.
+    move: hnl; rewrite ultE of_uintK /= => hnl.
+    by smt().
+  sp 1.
+  exlim error => p3.
+  exlim bytes_filled => bf3.
+  exlim good_overall => go3.
+  exlim coefficient_block => cb3.
+  seq 2 : (
+       randombytes = buf
+    /\ eta_0 = VPBROADCAST_32u8 (W8.of_int 4)
+    /\ bound = VPBROADCAST_32u8 (W8.of_int 9)
+    /\ svsampled buf error (to_uint bytes_filled) (to_uint xof_offset)
+    /\ xof_offset = off0 + W64.of_int 16
+    /\ stop_sampling = W64.of_int 0
+    /\ to_uint off0 < 256
+    /\ 16 %| to_uint off0
+  ).
+  - wp; ecall (error_4x____write_out_8_coefficientsP p3
+        (sreject (Array272.sub buf 0 (to_uint off0 + 12)))
+        (scands (Array272.sub buf (to_uint off0 + 12) 4))
+        (scands (Array272.sub buf (to_uint off0 + 16) 0))
+        bf3 go3 cb3).
+    auto=> &hr |> hsv h256o h16 hgo hlt992.
+    have hoff12 : to_uint (off0 + W64.of_int 12) = to_uint off0 + 12.
+    - rewrite to_uintD_small of_uintK /=.
+      + by move: h256o => /#.
+      by [].
+    move: hsv; rewrite hoff12 => hsv.
+    move: hlt992; rewrite ultE of_uintK /= => hlt992.
+    move: hsv => @/svsampled [#] hoffle hdvd4 hbfle hsz hag.
+    do ! split.
+    - rewrite !sub4E_272 !sub16E_272 scands16E.
+      rewrite /scands /= /nibbles /= /cbyte /=.
+      by rewrite VEXTRACTI128_1_pack32E VPSRLDQ8_pack16E /=.
+    - by rewrite size_scands size_sub.
+    - by move=> z /scands_nib.
+    - by move: hgo; rewrite /= ?cats0.
+    - by smt(size_ge0).
+    - by smt().
+    - exact hag.
+    move=> _ _ _ _ _ _ _ result [# hragree hrsz hrgo].
+    have hle8 : size (map scoeff (filter saccept
+                  (scands (Array272.sub randombytes{hr} (to_uint off0 + 12) 4)))) <= 8.
+    - rewrite size_map size_filter.
+      have := count_size saccept (scands (Array272.sub randombytes{hr} (to_uint off0 + 12) 4)).
+      by rewrite size_scands Array272.size_sub /#.
+    have hoff16 : to_uint (off0 + W64.of_int 16) = to_uint off0 + 16.
+    - rewrite to_uintD_small of_uintK /=.
+      + by move: h256o => /#.
+      by [].
+    have hsplit : sreject (Array272.sub randombytes{hr} 0 (to_uint off0 + 16))
+      = sreject (Array272.sub randombytes{hr} 0 (to_uint off0 + 12))
+        ++ map scoeff (filter saccept (scands (Array272.sub randombytes{hr} (to_uint off0 + 12) 4))).
+    - rewrite (_ : to_uint off0 + 16 = to_uint off0 + 12 + 4) 1:/#.
+      by rewrite sreject_block ~-1:#smt:(W64.to_uint_cmp) -srejectE.
+    rewrite hoff16 hsplit.
+    do ! split.
+    - by smt().
+    - by smt().
+    - by smt(size_ge0 size_cat).
+    - exact hrsz.
+    - exact hragree.
+  auto=> &hr |> hsv h256o h16.
+  rewrite !uleE ?ultE !of_uintK /= !to_uintD_small ?of_uintK /=.
+  - by move: h256o => /#.
+  by smt(dvdzD dvdzz).
+seq < ^while : (
+     randombytes = buf
+  /\ ssampled buf error (to_uint filled) (to_uint xof_offset)
+  /\ stop_sampling = W64.of_int (b2i (!(
+        to_uint xof_offset < 272 /\ to_uint filled < 256)))
+).
+- auto=> &hr |> hbfle hoffle hdvd himp hsz hag.
+  rewrite /ssampled !ultE !to_uint_shr2 !of_uintK /=.
+  by smt().
+while (
+     randombytes = buf
+  /\ ssampled buf error (to_uint filled) (to_uint xof_offset)
+  /\ stop_sampling = W64.of_int (b2i (!(
+        to_uint xof_offset < 272 /\ to_uint filled < 256)))
+); last first.
+- skip=> &hr |> _ e0 f0 off0x hs hstop.
+  have @/ssampled [#] hoffle hfle hsz hag := hs.
+  have hb : !(to_uint off0x < 272 /\ to_uint f0 < 256).
+  - by apply of_int_b2i_eq1P; rewrite -hstop.
+  case: (272 <= to_uint off0x) => hoff.
+  - move: hsz hag; have -> : to_uint off0x = 272 by smt().
+    by move=> hsz hag; split; [exact hag | smt()].
+  have hf : to_uint f0 = 256 by smt().
+  have -> : 272 = to_uint off0x + (272 - to_uint off0x) by ring.
+  rewrite sreject_block; 1,2: smt(W64.to_uint_cmp).
+  rewrite size_cat; split; 1: by apply agree_full; [smt() | exact hag].
+  by smt(size_ge0).
+seq 2 : (
+     randombytes = buf
+  /\ ssampled randombytes error (to_uint filled) (to_uint xof_offset)
+  /\ to_uint filled < 256
+  /\ to_uint xof_offset < 272
+  /\ stop_sampling = W64.of_int 0
+  /\ coefficient = zeroextu32 (randombytes.[to_uint xof_offset] `&` W8.of_int 15)
+).
+- auto=> &hr |> hs hne.
+  have [hf256 hoff272] : to_uint filled{hr} < 256 /\ to_uint xof_offset{hr} < 272
+    by smt(of_int_b2i_eq1P).
+  by rewrite zext_and15E /=; smt(of_int_b2i_eq1P).
+seq > ^if : (
+     randombytes = buf
+  /\ to_uint xof_offset < 272
+  /\ stop_sampling = W64.of_int 0
+  /\ to_uint filled <= 256
+  /\ to_uint filled
+       = min 256 (size (sreject (Array272.sub randombytes 0 (to_uint xof_offset))
+           ++ (if saccept (randombytes.[to_uint xof_offset] `&` W8.of_int 15)
+               then [scoeff (randombytes.[to_uint xof_offset] `&` W8.of_int 15)] else [])))
+  /\ agree error 0 (sreject (Array272.sub randombytes 0 (to_uint xof_offset))
+           ++ (if saccept (randombytes.[to_uint xof_offset] `&` W8.of_int 15)
+               then [scoeff (randombytes.[to_uint xof_offset] `&` W8.of_int 15)] else []))
+).
+- if.
+  - auto=> &hr |> hs hf256 hoff272.
+    move=> hacc; move: hacc; rewrite ultE of_uintK /= pmod_small.
+    - by have /= := W8.to_uint_cmp (randombytes{hr}.[to_uint xof_offset{hr}] `&` W8.of_int 15); smt().
+    move=> hacc.
+    have @/ssampled [#] hoffle hfle hsz hag := hs.
+    have hszeq : to_uint filled{hr}
+      = size (sreject (Array272.sub randombytes{hr} 0 (to_uint xof_offset{hr}))) by smt().
+    have -> : - (zeroextu32 (randombytes{hr}.[to_uint xof_offset{hr}] `&` W8.of_int 15) - W32.of_int 4) = scoeff (randombytes{hr}.[to_uint xof_offset{hr}] `&` W8.of_int 15).
+    - by rewrite /scoeff; ring.
+    have hsacc : saccept (randombytes{hr}.[to_uint xof_offset{hr}] `&` W8.of_int 15) by exact hacc.
+    rewrite hsacc /=.
+    rewrite !to_uintD_small ?of_uintK /=; 1: smt().
+    do ! split; 1,2: smt(size_cat).
+    rewrite hszeq; apply agree_set; 1: smt().
+    exact hag.
+  auto=> &hr |> hs hf256 hoff272.
+  move=> hrej; move: hrej; rewrite ultE of_uintK /= pmod_small.
+  - by have /= := W8.to_uint_cmp (randombytes{hr}.[to_uint xof_offset{hr}] `&` W8.of_int 15); smt().
+  move=> hrej.
+  have @/ssampled [#] hoffle hfle hsz hag := hs.
+  rewrite ifF; 1: by rewrite /saccept /#.
+  rewrite cats0.
+  do ! split; 1,2: smt().
+  exact hag.
+seq > ^if : (
+     randombytes = buf
+  /\ to_uint xof_offset < 272
+  /\ stop_sampling = W64.of_int 0
+  /\ ssampled randombytes error (to_uint filled) (to_uint xof_offset + 1)
+).
+- if.
+  - sp 2; if.
+    - auto=> &hr |> hoff272 hfle hmin.
+      move=> hag hfu hacc.
+      move: hfu; rewrite ultE of_uintK /= => hf256.
+      move: hacc; rewrite zext_shr4E ultE of_uintK /= pmod_small.
+      + by have /= := W8.to_uint_cmp (randombytes{hr}.[to_uint xof_offset{hr}] `>>>` 4); smt().
+      move=> hacc.
+      have hsacc : saccept (randombytes{hr}.[to_uint xof_offset{hr}] `>>>` 4) by exact hacc.
+      have -> : - (zeroextu32 (randombytes{hr}.[to_uint xof_offset{hr}] `>>>` 4) - W32.of_int 4)
+                = scoeff (randombytes{hr}.[to_uint xof_offset{hr}] `>>>` 4).
+      + by rewrite /scoeff; ring.
+      rewrite /ssampled.
+      rewrite sreject_step272; 1: smt(W64.to_uint_cmp).
+      rewrite hsacc /= catA.
+      have hszeq : to_uint filled{hr}
+        = size (sreject (Array272.sub randombytes{hr} 0 (to_uint xof_offset{hr}))
+                ++ (if saccept (randombytes{hr}.[to_uint xof_offset{hr}] `&` W8.of_int 15) then [scoeff (randombytes{hr}.[to_uint xof_offset{hr}] `&` W8.of_int 15)] else [])) by smt().
+      rewrite !to_uintD_small ?of_uintK /=; 1: smt().
+      do ! split; 1,2,3: smt(size_cat size_ge0).
+      rewrite hszeq; apply agree_set; 1: smt(size_cat).
+      exact hag.
+    auto=> &hr |> hoff272 hfle hmin.
+    move=> hag hfu hrej.
+    move: hfu; rewrite ultE of_uintK /= => hf256.
+    move: hrej; rewrite zext_shr4E ultE of_uintK /= pmod_small.
+    + by have /= := W8.to_uint_cmp (randombytes{hr}.[to_uint xof_offset{hr}] `>>>` 4); smt().
+    move=> hrej.
+    have hsrej : saccept (randombytes{hr}.[to_uint xof_offset{hr}] `>>>` 4) = false by smt().
+    rewrite /ssampled.
+    rewrite sreject_step272; 1: smt(W64.to_uint_cmp).
+    rewrite hsrej /= cats0.
+    do ! split; 1,2,3: smt(size_cat size_ge0).
+    exact hag.
+  auto=> &hr |> hoff272 hfle hmin.
+  move=> hag hnf.
+  move: hnf; rewrite ultE of_uintK /= => hnf.
+  have hf256 : to_uint filled{hr} = 256 by smt().
+  rewrite /ssampled.
+  rewrite sreject_step272; 1: smt(W64.to_uint_cmp).
+  rewrite catA.
+  do ! split; 1,2,3: smt(size_cat size_ge0).
+  by apply agree_full; [smt(size_ge0) | exact hag].
+auto=> &hr |> hoff272.
+move=> hs.
+have @/ssampled [#] hoffle hfle hsz hag := hs.
+rewrite !uleE !of_uintK /= !to_uintD_small ?of_uintK /=; 1: smt().
+by smt().
+qed.
