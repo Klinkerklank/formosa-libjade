@@ -337,3 +337,62 @@ by rewrite to_uint_zeroextu64 W32.to_uintE bits2wK //=.
 qed.
 
 end section.
+
+(* -------------------------------------------------------------------- *)
+(* the write-out step as a proc spec: one 8-candidate group is          *)
+(* compacted, sign-extended and stored; the mask window advances        *)
+
+lemma WArray2048_get64E (a : W8.t Array2048.t) (base : int) :
+  0 <= base <= 2040 =>
+    WArray2048.get64_direct (WArray2048.init8 ("_.[_]" a)) base
+  = W8u8.pack8 (Array2048.sub a base 8).
+proof.
+move=> rgb; rewrite get64E; congr; apply W8u8.Pack.ext_eq => j hj.
+rewrite initiE //= get_of_list //.
+rewrite /init8 WArray2048.initiE 1:/# /=.
+by rewrite /sub nth_mkseq //=.
+qed.
+
+lemma error_4x____write_out_8_coefficientsP
+  (p_ : wpoly) (old : W32.t list) (zs zs' : W8.t list)
+  (bf_ go_ : W64.t) (cb_ : W128.t) :
+hoare[ M.error_4x____write_out_8_coefficients :
+     error = p_ /\ bytes_filled = bf_ /\ good_overall = go_
+  /\ coefficient_block = cb_
+  /\ take 8 (W16u8.to_list cb_) = map cbyte zs
+  /\ size zs = 8
+  /\ (forall z, z \in zs => to_uint z < 16)
+  /\ to_uint go_ = bs2int (map saccept (zs ++ zs'))
+  /\ size old <= 248
+  /\ to_uint bf_ = 4 * size old
+  /\ agree p_ 0 old
+  ==>
+     agree res.`1 0 (old ++ map scoeff (filter saccept zs))
+  /\ to_uint res.`2 = 4 * size (old ++ map scoeff (filter saccept zs))
+  /\ to_uint res.`3 = bs2int (map saccept zs') ].
+proof.
+proc.
+wp; skip => &hr |> hcb szzs hnib hgo szold hbf hag.
+have szmap : size (map saccept zs) = 8 by rewrite size_map szzs.
+have hand : to_uint (good_overall{hr} `&` W64.of_int 255)
+            = bs2int (map saccept zs).
+- rewrite (and255_bs2int _ (map saccept (zs ++ zs'))) // map_cat.
+  by rewrite (_ : 8 = size (map saccept zs)) 1:szmap // take_size_cat.
+have hm : 0 <= bs2int (map saccept zs) < 256.
+- by rewrite bs2int_ge0 /=; have := bs2int_le2Xs (map saccept zs); rewrite szmap.
+have hidx : to_uint ((good_overall{hr} `&` W64.of_int 255) `<<` W8.of_int 3)
+            = 8 * bs2int (map saccept zs).
+- by apply (shuffle_slot8 _ (map saccept zs)).
+do ! split.
+- rewrite WArray2048_get64E 1:hidx 1:/#.
+  rewrite wpoly_set256_alignedE 1,2:#smt:(size_ge0).
+  rewrite (_ : to_uint bytes_filled{hr} %/ 4 = size old) 1:/#.
+  rewrite -truncateu64_128E.
+  by apply sagree_store.
+- rewrite (popcnt_step8 _ _ (map saccept zs)) // 1:/#.
+  rewrite size_cat size_map size_filter.
+  rewrite (count_map saccept idfun) hbf /preim /idfun /=.
+  by ring.
+- rewrite (shr8_bs2int _ (map saccept (zs ++ zs'))) // map_cat.
+  by rewrite (_ : 8 = size (map saccept zs)) 1:szmap // drop_size_cat.
+qed.
