@@ -162,3 +162,36 @@ proof.
 move=> hn hm; rewrite sub_cat_272 // (_ : 0 + n = n) 1:/#.
 by rewrite sreject_cat.
 qed.
+
+(* -------------------------------------------------------------------- *)
+(* the candidate stream of a 16-byte window, in decoded order           *)
+lemma scands16E (b00 b01 b02 b03 b04 b05 b06 b07 b08 b09 b10 b11 b12 b13 b14 b15 : W8.t) :
+  scands [b00; b01; b02; b03; b04; b05; b06; b07; b08; b09; b10; b11; b12; b13; b14; b15]
+  = [b00 `&` W8.of_int 15; b00 `>>>` 4;
+     b01 `&` W8.of_int 15; b01 `>>>` 4;
+     b02 `&` W8.of_int 15; b02 `>>>` 4;
+     b03 `&` W8.of_int 15; b03 `>>>` 4;
+     b04 `&` W8.of_int 15; b04 `>>>` 4;
+     b05 `&` W8.of_int 15; b05 `>>>` 4;
+     b06 `&` W8.of_int 15; b06 `>>>` 4;
+     b07 `&` W8.of_int 15; b07 `>>>` 4;
+     b08 `&` W8.of_int 15; b08 `>>>` 4;
+     b09 `&` W8.of_int 15; b09 `>>>` 4;
+     b10 `&` W8.of_int 15; b10 `>>>` 4;
+     b11 `&` W8.of_int 15; b11 `>>>` 4;
+     b12 `&` W8.of_int 15; b12 `>>>` 4;
+     b13 `&` W8.of_int 15; b13 `>>>` 4;
+     b14 `&` W8.of_int 15; b14 `>>>` 4;
+     b15 `&` W8.of_int 15; b15 `>>>` 4].
+proof. by rewrite /scands /= /nibbles /=. qed.
+
+(* -------------------------------------------------------------------- *)
+(* SIMD decode: the 32 bytes of the result are the 32 nibble candidates *)
+(* of the 16 input bytes, in stream order                               *)
+lemma error_4x____bytestream_to_coefficientsP (bs_ : W128.t) :
+  hoare[ M.error_4x____bytestream_to_coefficients :
+    bytestream = bs_ ==> res = W32u8.pack32 (scands (W16u8.to_list bs_)) ].
+proof.
+proc; wp; skip => &hr |>.
+by rewrite scands16E nibble_decodeE.
+qed.

@@ -836,3 +836,126 @@ proof.
 by case: b => //= _; rewrite W8.to_uint_eq /=.
 qed.
 
+
+(* ==================================================================== *)
+(* Reductions for the error-vector (expandS) bytestream decoder:        *)
+(* 16 bytes -> 32 nibble candidates via VPMOVZX / VPSLL / VPOR / VPAND  *)
+
+lemma truncateu8_256E (w : W256.t) : truncateu8 w = w \bits8 0.
+proof.
+apply: W8.ext_eq=> i rgi; rewrite bits8iE //=.
+rewrite /truncateu8 of_intwE rgi /= /W8.int_bit.
+rewrite modz_pow2_div ~-1://# modz_dvd.
+- by rewrite -{1}[2]expr1 dvdz_exp2l /#.
+- by rewrite -b2i_get /#.
+qed.
+
+(* the broadcast nibble mask assembled by the extracted code            *)
+lemma NIBBLE_MASK_E :
+  truncateu8 (W2u128.pack2 [VMOV_64 (W64.of_int ((1 `<<` 4) - 1)); W128.zero])
+  = W8.of_int 15.
+proof.
+by rewrite truncateu8_256E -(W256_bits128_bits8 _ 0 0) // W2u128.pack2bE //.
+qed.
+
+(* -------------------------------------------------------------------- *)
+lemma VPMOVZX_16u8_16u16_pack16E (x : W128.t) :
+  VPMOVZX_16u8_16u16 x
+  = W16u16.pack16 [MOVZX_u16u8 (x \bits8 0); MOVZX_u16u8 (x \bits8 1); MOVZX_u16u8 (x \bits8 2); MOVZX_u16u8 (x \bits8 3); MOVZX_u16u8 (x \bits8 4); MOVZX_u16u8 (x \bits8 5); MOVZX_u16u8 (x \bits8 6); MOVZX_u16u8 (x \bits8 7); MOVZX_u16u8 (x \bits8 8); MOVZX_u16u8 (x \bits8 9); MOVZX_u16u8 (x \bits8 10); MOVZX_u16u8 (x \bits8 11); MOVZX_u16u8 (x \bits8 12); MOVZX_u16u8 (x \bits8 13); MOVZX_u16u8 (x \bits8 14); MOVZX_u16u8 (x \bits8 15)].
+proof.
+by apply W256.all_eq_eq;
+   cbv W256.all_eq VPMOVZX_16u8_16u16 W16u8.unpack8 W16u16.unpack16.
+qed.
+
+lemma MOVZX_u16u8E (b : W8.t) : MOVZX_u16u8 b = W2u8.pack2 [b; W8.zero].
+proof.
+apply W2u8.allP => /=.
+rewrite /MOVZX_u16u8 !W2u8.of_int_bits8_div //=.
+by rewrite pdiv_small 1:W8.to_uint_cmp.
+qed.
+
+lemma VPSLL_16u16_pack16E (l0 l1 l2 l3 l4 l5 l6 l7 l8 l9 l10 l11 l12 l13 l14 l15 : W16.t) (cnt : W128.t) :
+  VPSLL_16u16 (W16u16.pack16 [l0; l1; l2; l3; l4; l5; l6; l7; l8; l9; l10; l11; l12; l13; l14; l15]) cnt
+  = W16u16.pack16
+    [l0 `<<<` to_uint (W64.of_int (to_uint cnt));
+     l1 `<<<` to_uint (W64.of_int (to_uint cnt));
+     l2 `<<<` to_uint (W64.of_int (to_uint cnt));
+     l3 `<<<` to_uint (W64.of_int (to_uint cnt));
+     l4 `<<<` to_uint (W64.of_int (to_uint cnt));
+     l5 `<<<` to_uint (W64.of_int (to_uint cnt));
+     l6 `<<<` to_uint (W64.of_int (to_uint cnt));
+     l7 `<<<` to_uint (W64.of_int (to_uint cnt));
+     l8 `<<<` to_uint (W64.of_int (to_uint cnt));
+     l9 `<<<` to_uint (W64.of_int (to_uint cnt));
+     l10 `<<<` to_uint (W64.of_int (to_uint cnt));
+     l11 `<<<` to_uint (W64.of_int (to_uint cnt));
+     l12 `<<<` to_uint (W64.of_int (to_uint cnt));
+     l13 `<<<` to_uint (W64.of_int (to_uint cnt));
+     l14 `<<<` to_uint (W64.of_int (to_uint cnt));
+     l15 `<<<` to_uint (W64.of_int (to_uint cnt))].
+proof.
+by apply W256.all_eq_eq; cbv W256.all_eq VPSLL_16u16 W16u16.unpack16.
+qed.
+
+(* -------------------------------------------------------------------- *)
+(* regrouping a pack16 of byte pairs as a pack32 of bytes               *)
+lemma pack16_2E (b00 b01 b02 b03 b04 b05 b06 b07 b08 b09 b10 b11 b12 b13 b14 b15 b16 b17 b18 b19 b20 b21 b22 b23 b24 b25 b26 b27 b28 b29 b30 b31 : W8.t) :
+  W16u16.pack16 [W2u8.pack2 [b00; b01]; W2u8.pack2 [b02; b03]; W2u8.pack2 [b04; b05]; W2u8.pack2 [b06; b07]; W2u8.pack2 [b08; b09]; W2u8.pack2 [b10; b11]; W2u8.pack2 [b12; b13]; W2u8.pack2 [b14; b15]; W2u8.pack2 [b16; b17]; W2u8.pack2 [b18; b19]; W2u8.pack2 [b20; b21]; W2u8.pack2 [b22; b23]; W2u8.pack2 [b24; b25]; W2u8.pack2 [b26; b27]; W2u8.pack2 [b28; b29]; W2u8.pack2 [b30; b31]]
+  = W32u8.pack32 [b00; b01; b02; b03; b04; b05; b06; b07; b08; b09; b10; b11; b12; b13; b14; b15; b16; b17; b18; b19; b20; b21; b22; b23; b24; b25; b26; b27; b28; b29; b30; b31].
+proof.
+by apply W256.all_eq_eq;
+   cbv W256.all_eq W16u16.unpack16 W32u8.unpack8 W2u8.unpack8.
+qed.
+
+lemma VPBROADCAST_32u8_pack16E (w : W8.t) :
+  VPBROADCAST_32u8 w = W16u16.pack16 [W2u8.pack2 [w; w]; W2u8.pack2 [w; w]; W2u8.pack2 [w; w]; W2u8.pack2 [w; w]; W2u8.pack2 [w; w]; W2u8.pack2 [w; w]; W2u8.pack2 [w; w]; W2u8.pack2 [w; w]; W2u8.pack2 [w; w]; W2u8.pack2 [w; w]; W2u8.pack2 [w; w]; W2u8.pack2 [w; w]; W2u8.pack2 [w; w]; W2u8.pack2 [w; w]; W2u8.pack2 [w; w]; W2u8.pack2 [w; w]].
+proof.
+by rewrite /VPBROADCAST_32u8 -iotaredE /= -pack16_2E.
+qed.
+
+(* -------------------------------------------------------------------- *)
+(* one 16-bit lane: zero-extended byte or-ed with its 4-shift, masked   *)
+lemma nib_laneE (b : W8.t) :
+  (W2u8.pack2 [b; W8.zero] `|` (W2u8.pack2 [b; W8.zero] `<<<` 4)) `&`
+  W2u8.pack2 [W8.of_int 15; W8.of_int 15]
+  = W2u8.pack2 [b `&` W8.of_int 15; b `>>>` 4].
+proof.
+apply W16.wordP; apply/allP_range.
+rewrite /range -iotaredE /=.
+rewrite !W8.of_intwE /W8.int_bit /=.
+rewrite ?W16.get_out // ?orbF.
+by rewrite !W8.get_to_uint /=.
+qed.
+
+(* -------------------------------------------------------------------- *)
+(* the assembled decoder dataflow: byte 2j is the low nibble of input   *)
+(* byte j, byte 2j+1 its high nibble                                    *)
+lemma nibble_decodeE (x : W128.t) :
+  (VPMOVZX_16u8_16u16 x `|`
+   VPSLL_16u16 (VPMOVZX_16u8_16u16 x) (W128.of_int 4)) `&`
+  VPBROADCAST_32u8
+    (truncateu8 (W2u128.pack2 [VMOV_64 (W64.of_int ((1 `<<` 4) - 1)); W128.zero]))
+  = W32u8.pack32
+      [(x \bits8  0) `&` W8.of_int 15; (x \bits8  0) `>>>` 4;
+       (x \bits8  1) `&` W8.of_int 15; (x \bits8  1) `>>>` 4;
+       (x \bits8  2) `&` W8.of_int 15; (x \bits8  2) `>>>` 4;
+       (x \bits8  3) `&` W8.of_int 15; (x \bits8  3) `>>>` 4;
+       (x \bits8  4) `&` W8.of_int 15; (x \bits8  4) `>>>` 4;
+       (x \bits8  5) `&` W8.of_int 15; (x \bits8  5) `>>>` 4;
+       (x \bits8  6) `&` W8.of_int 15; (x \bits8  6) `>>>` 4;
+       (x \bits8  7) `&` W8.of_int 15; (x \bits8  7) `>>>` 4;
+       (x \bits8  8) `&` W8.of_int 15; (x \bits8  8) `>>>` 4;
+       (x \bits8  9) `&` W8.of_int 15; (x \bits8  9) `>>>` 4;
+       (x \bits8 10) `&` W8.of_int 15; (x \bits8 10) `>>>` 4;
+       (x \bits8 11) `&` W8.of_int 15; (x \bits8 11) `>>>` 4;
+       (x \bits8 12) `&` W8.of_int 15; (x \bits8 12) `>>>` 4;
+       (x \bits8 13) `&` W8.of_int 15; (x \bits8 13) `>>>` 4;
+       (x \bits8 14) `&` W8.of_int 15; (x \bits8 14) `>>>` 4;
+       (x \bits8 15) `&` W8.of_int 15; (x \bits8 15) `>>>` 4].
+proof.
+rewrite NIBBLE_MASK_E VPBROADCAST_32u8_pack16E.
+rewrite VPMOVZX_16u8_16u16_pack16E VPSLL_16u16_pack16E !of_uintK /=.
+rewrite !MOVZX_u16u8E /=.
+rewrite !nib_laneE.
+by rewrite pack16_2E.
+qed.
