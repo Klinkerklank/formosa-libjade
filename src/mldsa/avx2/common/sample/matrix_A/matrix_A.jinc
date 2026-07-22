@@ -90,6 +90,10 @@ namespace matrix_A {
         }
 
         while (stop_sampling != 1) {
+            // The coefficient counters are dead across the permutation but
+            // live-carried into the next block; spill them so the inlined x4
+            // Keccak has enough GP registers (see mlkem gen_matrix refill loop).
+            () = #spill(filled0, filled1, filled2, filled3);
             xof_state,
             buf0[0:SHAKE128_RATE],
             buf1[0:SHAKE128_RATE],
@@ -102,6 +106,7 @@ namespace matrix_A {
                 buf2[0:SHAKE128_RATE],
                 buf3[0:SHAKE128_RATE]
             );
+            () = #unspill(filled0, filled1, filled2, filled3);
 
             filled = filled0;
             polynomial0, filled = rejection_sample_one_block(polynomial0, filled, buf0[0:SHAKE128_RATE]);

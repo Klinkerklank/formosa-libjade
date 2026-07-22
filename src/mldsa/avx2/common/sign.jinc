@@ -284,11 +284,11 @@ fn __sign_internal(
 
     reg ui64 j;
 
-    () = #spill(signature, randomness, signing_key, message_pointer, message_size);
+    () = #spill(signature, randomness, signing_key, context_pointer, context_size, message_pointer, message_size);
     #[declassify] seed_for_matrix_A = signing_key[0:32];
     matrix_A = sample::__matrix_A(seed_for_matrix_A);
 
-    () = #unspill(signing_key, message_pointer, message_size);
+    () = #unspill(signing_key, context_pointer, context_size, message_pointer, message_size);
     message_representative = __derive_message_representative(
         signing_key[64:VERIFICATION_KEY_HASH_SIZE],
         context_pointer,
