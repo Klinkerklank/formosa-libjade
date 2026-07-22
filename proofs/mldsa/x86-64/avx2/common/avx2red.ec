@@ -959,3 +959,133 @@ rewrite !MOVZX_u16u8E /=.
 rewrite !nib_laneE.
 by rewrite pack16_2E.
 qed.
+
+(* -------------------------------------------------------------------- *)
+lemma VPSUB_32u8E (u w : W256.t) :
+    VPSUB_32u8 u w
+  = W32u8.pack32 [
+      (u \bits8  0) - (w \bits8  0);
+      (u \bits8  1) - (w \bits8  1);
+      (u \bits8  2) - (w \bits8  2);
+      (u \bits8  3) - (w \bits8  3);
+      (u \bits8  4) - (w \bits8  4);
+      (u \bits8  5) - (w \bits8  5);
+      (u \bits8  6) - (w \bits8  6);
+      (u \bits8  7) - (w \bits8  7);
+      (u \bits8  8) - (w \bits8  8);
+      (u \bits8  9) - (w \bits8  9);
+      (u \bits8 10) - (w \bits8 10);
+      (u \bits8 11) - (w \bits8 11);
+      (u \bits8 12) - (w \bits8 12);
+      (u \bits8 13) - (w \bits8 13);
+      (u \bits8 14) - (w \bits8 14);
+      (u \bits8 15) - (w \bits8 15);
+      (u \bits8 16) - (w \bits8 16);
+      (u \bits8 17) - (w \bits8 17);
+      (u \bits8 18) - (w \bits8 18);
+      (u \bits8 19) - (w \bits8 19);
+      (u \bits8 20) - (w \bits8 20);
+      (u \bits8 21) - (w \bits8 21);
+      (u \bits8 22) - (w \bits8 22);
+      (u \bits8 23) - (w \bits8 23);
+      (u \bits8 24) - (w \bits8 24);
+      (u \bits8 25) - (w \bits8 25);
+      (u \bits8 26) - (w \bits8 26);
+      (u \bits8 27) - (w \bits8 27);
+      (u \bits8 28) - (w \bits8 28);
+      (u \bits8 29) - (w \bits8 29);
+      (u \bits8 30) - (w \bits8 30);
+      (u \bits8 31) - (w \bits8 31)
+    ].
+proof. by cbv delta. qed.
+
+(* -------------------------------------------------------------------- *)
+(* the broadcast-constant assembly VMOV_64 / zeroext / truncate / bcast *)
+lemma truncateu8_bcastE (n : int) :
+  truncateu8 (W2u128.pack2 [VMOV_64 (W64.of_int n); W128.zero]) = W8.of_int n.
+proof.
+rewrite truncateu8_256E -(W256_bits128_bits8 _ 0 0) // W2u128.pack2bE //.
+rewrite W2u128.Pack.get_of_list //=.
+rewrite -(W128_bits64_bits8 _ 0 0) // W2u64.pack2bE // W2u64.Pack.get_of_list //=.
+by rewrite W8u8.of_int_bits8_div //= divz1.
+qed.
+
+(* -------------------------------------------------------------------- *)
+(* signed byte-to-dword extension of a 4 - z coefficient byte           *)
+lemma MOVSX_u32s8_subE (z : W8.t) :
+  to_uint z < 128 =>
+  MOVSX_u32s8 (W8.of_int 4 - z) = W32.of_int 4 - zeroextu32 z.
+proof.
+move=> hz; rewrite /MOVSX_u32s8.
+have -> : W8.of_int 4 - z = W8.of_int (4 - to_uint z).
+- by rewrite -{1}(W8.to_uintK z); ring.
+have -> : to_sint (W8.of_int (4 - to_uint z)) = 4 - to_uint z.
+- rewrite /to_sint /smod W8.of_uintK.
+  by smt(W8.to_uint_cmp).
+rewrite /zeroextu32.
+by rewrite -{2}(W8.to_uintK z); ring.
+qed.
+
+(* -------------------------------------------------------------------- *)
+lemma VPMOVSX_8u8_8u32_to_listE (w : W64.t) :
+  W8u32.Pack.to_list (W8u32.unpack32 (VPMOVSX_8u8_8u32 w))
+  = map MOVSX_u32s8 (W8u8.to_list w).
+proof. by rewrite /VPMOVSX_8u8_8u32 /=. qed.
+
+(* -------------------------------------------------------------------- *)
+(* acceptance as the sign of the z - 9 comparison byte                  *)
+lemma msb_sub9E (z : W8.t) :
+  to_uint z < 16 =>
+  W8.msb (z - W8.of_int 9) = (to_uint z < 9).
+proof.
+move=> hz; rewrite /msb.
+have -> : z - W8.of_int 9 = W8.of_int (to_uint z - 9).
+- by rewrite -{1}(W8.to_uintK z); ring.
+rewrite W8.of_uintK.
+by smt(W8.to_uint_cmp).
+qed.
+
+(* -------------------------------------------------------------------- *)
+(* 8-candidate versions of the popcount byte-counter lemmas             *)
+lemma popcnt_count8 (g : W64.t) (bs : bool list) :
+  size bs = 8 => to_uint g = bs2int bs =>
+  count idfun (W64.w2bits g) = count idfun bs.
+proof.
+move=> szb hg.
+have e1 : bs2int (W64.w2bits g) = bs2int (bs ++ nseq 56 false).
+- by rewrite -W64.to_uintE hg bs2int_cat bs2int_nseq_false szb /=.
+have h1 := bs2intK (W64.w2bits g).
+have h2 := bs2intK (bs ++ nseq 56 false).
+move: h1 h2; rewrite W64.size_w2bits size_cat szb size_nseq /= e1 => h1 h2.
+rewrite -h1 h2.
+by rewrite count_cat count_nseq /idfun /=.
+qed.
+
+lemma popcnt_step8 (bf h : W64.t) (bs : bool list) :
+  size bs = 8 => to_uint h = bs2int bs => to_uint bf <= 1024 =>
+  to_uint (bf + ((POPCNT_64 h).`6 `<<` W8.of_int 2))
+  = to_uint bf + 4 * count idfun bs.
+proof.
+move=> szbs hh hbf.
+have hcle : count idfun bs <= 8 by have := count_size idfun bs; rewrite szbs.
+have hcnt : count idfun (W64.w2bits h) = count idfun bs.
+- by apply popcnt_count8.
+have hp : to_uint ((POPCNT_64 h).`6 `<<` W8.of_int 2) = 4 * count idfun bs.
+- rewrite popcnt6E hcnt /(`<<`) of_uintK /= W64.to_uint_shl // of_uintK /ptr_modulus.
+  rewrite pmod_small; 1: by move: hcle => /=; smt(count_ge0).
+  rewrite pmod_small; 1: by move: hcle => /=; smt(count_ge0).
+  by ring.
+by rewrite W64.to_uintD_small hp /=; smt(count_ge0).
+qed.
+
+(* -------------------------------------------------------------------- *)
+(* the shuffle-table row selected by an 8-bit acceptance mask           *)
+lemma shuffle_slot8 (h : W64.t) (bs : bool list) :
+  size bs = 8 => to_uint h = bs2int bs =>
+  to_uint (h `<<` W8.of_int 3) = 8 * bs2int bs.
+proof.
+move=> szbs hh.
+have hbnd : 0 <= bs2int bs < 256.
+- by rewrite bs2int_ge0 /=; have := bs2int_le2Xs bs; rewrite szbs.
+by rewrite /(`<<`) of_uintK /= W64.to_uint_shl // hh pmod_small /#.
+qed.

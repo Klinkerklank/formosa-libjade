@@ -1,15 +1,17 @@
 (* -------------------------------------------------------------------- *)
-require import AllCore CoreUtils List List_extra IntDiv.
+require import AllCore CoreUtils List List_extra IntDiv BitEncoding.
+import BS2Int.
 
 (* -------------------------------------------------------------------- *)
 from Jasmin require import JWord JModel_x86.
 from JazzEC require import Ml_dsa_65_avx2.
 
 require import Avx2red.
+require import Errshuffle.
 require import Prefixarray.
 require import Sha3x4. import Shake256x4.
-require import Array4 Array25 Array64 Array136 Array256 Array272.
-require import WArray272.
+require import Array4 Array25 Array64 Array136 Array256 Array272 Array2048.
+require import WArray272 WArray1024 WArray2048.
 
 (* -------------------------------------------------------------------- *)
 clone import Prefixarray.PrefixArray as PA_272_136 with
@@ -194,4 +196,109 @@ lemma error_4x____bytestream_to_coefficientsP (bs_ : W128.t) :
 proof.
 proc; wp; skip => &hr |>.
 by rewrite scands16E nibble_decodeE.
+qed.
+
+(* -------------------------------------------------------------------- *)
+(* -------------------------------------------------------------------- *)
+(* the coefficient byte of a candidate, as computed by VPSUB_32u8       *)
+op cbyte (z : W8.t) : W8.t = W8.of_int 4 - z.
+
+(* -------------------------------------------------------------------- *)
+op [opaque] agree (p : wpoly) (base : int) (coeffs : W32.t list) =
+  forall i,
+       0 <= i < size coeffs
+    => 0 <= i + base < 256
+    => p.[base + i] = nth W32.zero coeffs i.
+
+(* -------------------------------------------------------------------- *)
+lemma agree_nil (p : wpoly) (base : int) : agree p base [].
+proof. by rewrite /agree /= /#. qed.
+
+hint simplify agree_nil.
+
+(* -------------------------------------------------------------------- *)
+lemma agree_set (p : wpoly) (l : W32.t list) (c : W32.t) :
+  size l < 256 => agree p 0 l =>
+  agree p.[size l <- c] 0 (l ++ [c]).
+proof.
+move=> hsz; rewrite /agree => hag i /=; rewrite size_cat /= => rgi rgb.
+rewrite Array256.get_setE 1:/# nth_cat.
+case: (i = size l) => [-> /=|ne] //.
+by rewrite ifT 1:/#; smt().
+qed.
+
+(* -------------------------------------------------------------------- *)
+lemma agree_full (p : wpoly) (l1 l2 : W32.t list) :
+  256 <= size l1 => agree p 0 l1 =>
+  agree p 0 (l1 ++ l2).
+proof.
+move=> hsz; rewrite /agree => hag i /=; rewrite size_cat => rgi rgb.
+by rewrite nth_cat ifT 1:/#; smt().
+qed.
+
+(* -------------------------------------------------------------------- *)
+(* writing eight dwords at the end of the agreed prefix extends the     *)
+(* agreement by the first k of them                                     *)
+lemma agree_fill8 (p : wpoly) (old : W32.t list) (w : W256.t) (k : int) :
+  0 <= k <= 8 => size old <= 248 =>
+  agree p 0 old =>
+  agree (Array256.fill (fun i => w \bits32 (i - size old)) (size old) 8 p)
+        0 (old ++ take k (W8u32.Pack.to_list (W8u32.unpack32 w))).
+proof.
+move=> rgk szold; rewrite /agree => hag i rgi rgibase.
+rewrite Array256.filliE 1:/#.
+move: rgi; rewrite size_cat size_take 1:/# W8u32.Pack.size_to_list => rgi.
+rewrite nth_cat.
+case: (i < size old) => hio; last first.
+- rewrite ifT 1:/# nth_take 1,2:/#.
+  rewrite W8u32.Pack.to_listE nth_mkseq 1:/# /=.
+  by rewrite W8u32.get_unpack32 1:/#.
+rewrite ifF 1:/#.
+by have := hag i _ _ => //#.
+qed.
+
+(* -------------------------------------------------------------------- *)
+(* the whole compact-sign-extend-store step for one 8-candidate group   *)
+lemma sagree_store (p : wpoly) (old : W32.t list) (zs : W8.t list)
+                   (x : W128.t) (h : W64.t) :
+  take 8 (W16u8.to_list x) = map cbyte zs =>
+  size zs = 8 =>
+  (forall z, z \in zs => to_uint z < 16) =>
+  to_uint h = bs2int (map saccept zs) =>
+  size old <= 248 =>
+  agree p 0 old =>
+  agree (Array256.fill
+           (fun i =>
+              VPMOVSX_8u8_8u32 (truncateu64 (VPSHUFB_128 x
+                (VMOV_64 (W8u8.pack8 (Array2048.sub eRROR_VECTOR_SHUFFLE_TABLE
+                   (to_uint (h `<<` W8.of_int 3)) 8)))))
+              \bits32 (i - size old))
+           (size old) 8 p)
+        0 (old ++ map scoeff (filter saccept zs)).
+proof.
+move=> hx szzs hnib hh szold hag.
+have szbits : size (map saccept zs) = 8 by rewrite size_map.
+have hm : 0 <= bs2int (map saccept zs) < 256.
+- by rewrite bs2int_ge0 /=; have := bs2int_le2Xs (map saccept zs); rewrite szbits.
+have hint2bs : int2bs 8 (bs2int (map saccept zs)) = map saccept zs.
+- by have := bs2intK (map saccept zs); rewrite szbits.
+have hcle : count idfun (map saccept zs) <= 8.
+- by have := count_size idfun (map saccept zs); rewrite szbits.
+have hVto : forall (w : W64.t),
+  W8u32.Pack.to_list (W8u32.unpack32 (VPMOVSX_8u8_8u32 w))
+  = map MOVSX_u32s8 (W8u8.to_list w).
+- by move=> w; rewrite /VPMOVSX_8u8_8u32 /=.
+pose Y := VPSHUFB_128 x
+  (VMOV_64 (W8u8.pack8 (Array2048.sub eRROR_VECTOR_SHUFFLE_TABLE
+     (to_uint (h `<<` W8.of_int 3)) 8))).
+have heq : take (count idfun (map saccept zs))
+             (map MOVSX_u32s8 (W8u8.to_list (truncateu64 Y)))
+           = map scoeff (filter saccept zs).
+- rewrite -map_take -{1}hint2bs /Y (shuffle_slot8 h (map saccept zs)) //.
+  rewrite (shuffle_compact8 x (bs2int (map saccept zs))) //.
+  rewrite hint2bs hx -map_mask filter_mask' -map_comp.
+  apply eq_in_map => z hz /=.
+  by rewrite /(\o) /scoeff /cbyte MOVSX_u32s8_subE 1:#smt:(mem_mask).
+rewrite -heq -hVto.
+by apply agree_fill8 => //; smt(count_ge0).
 qed.
