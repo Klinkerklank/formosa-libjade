@@ -954,3 +954,173 @@ have @/ssampled [#] hoffle hfle hsz hag := hs.
 rewrite !uleE !of_uintK /= !to_uintD_small ?of_uintK /=; 1: smt().
 by smt().
 qed.
+
+(* -------------------------------------------------------------------- *)
+(* The one-block scalar sampler: one 136-byte squeezed block extends    *)
+(* the accepted stream, with filled capped at 256                       *)
+
+lemma sub1E_136 (a : W8.t Array136.t) (k : int) :
+  Array136.sub a k 1 = [a.[k]].
+proof. by rewrite /sub /mkseq -iotaredE /=. qed.
+
+lemma sreject_stepS136 (S : W8.t list) (a : W8.t Array136.t) (n : int) : 0 <= n =>
+  sreject (S ++ Array136.sub a 0 (n + 1))
+  = sreject (S ++ Array136.sub a 0 n)
+    ++ ((if saccept (a.[n] `&` W8.of_int 15)
+         then [scoeff (a.[n] `&` W8.of_int 15)] else [])
+        ++
+        (if saccept (a.[n] `>>>` 4)
+         then [scoeff (a.[n] `>>>` 4)] else [])).
+proof.
+move=> hn.
+rewrite (PA_272_136.sub_cat_136 a 0 n 1) // (_ : 0 + n = n) 1:/#.
+by rewrite catA sreject_cat sub1E_136 sreject1E.
+qed.
+
+lemma error_4x__rejection_sample_one_blockP (S : W8.t list) (blk : W8.t Array136.t) :
+  hoare[ M.error_4x__rejection_sample_one_block :
+      randombytes = blk
+   /\ to_uint filled < 256
+   /\ agree error 0 (sreject S)
+   /\ to_uint filled = min 256 (size (sreject S))
+   ==>
+      agree res.`1 0 (sreject (S ++ Array136.to_list blk))
+   /\ to_uint res.`2 = min 256 (size (sreject (S ++ Array136.to_list blk))) ].
+proof.
+proc.
+seq < ^while : (
+     randombytes = blk
+  /\ to_uint xof_offset <= 136
+  /\ agree error 0 (sreject (S ++ Array136.sub randombytes 0 (to_uint xof_offset)))
+  /\ to_uint filled = min 256 (size (sreject (S ++ Array136.sub randombytes 0 (to_uint xof_offset))))
+  /\ stop_sampling = W64.of_int (b2i (!(
+        to_uint xof_offset < 136 /\ to_uint filled < 256)))
+).
+- by auto=> &hr |> hf256 hag hf; rewrite cats0 /#.
+while (
+     randombytes = blk
+  /\ to_uint xof_offset <= 136
+  /\ agree error 0 (sreject (S ++ Array136.sub randombytes 0 (to_uint xof_offset)))
+  /\ to_uint filled = min 256 (size (sreject (S ++ Array136.sub randombytes 0 (to_uint xof_offset))))
+  /\ stop_sampling = W64.of_int (b2i (!(
+        to_uint xof_offset < 136 /\ to_uint filled < 256)))
+); last first.
+- skip=> &hr |> hoff0 hag0 hf0 e0 f0 off0x hoffle hag hf hstop.
+  have hb : !(to_uint off0x < 136 /\ to_uint f0 < 256).
+  - by apply of_int_b2i_eq1P; rewrite -hstop.
+  case: (136 <= to_uint off0x) => hoff.
+  - move: hag hf; have -> : to_uint off0x = 136 by smt().
+    by rewrite PA_272_136.sub_full_136 => hag hf; split => //.
+  have hf256 : to_uint f0 = 256 by smt().
+  have -> : Array136.to_list randombytes{hr}
+    = Array136.sub randombytes{hr} 0 (to_uint off0x)
+      ++ Array136.sub randombytes{hr} (to_uint off0x) (136 - to_uint off0x).
+  - rewrite -(PA_272_136.sub_cat_136 randombytes{hr} 0 (to_uint off0x)
+                (136 - to_uint off0x)) ~-1:#smt:(W64.to_uint_cmp).
+    rewrite (_ : to_uint off0x + (136 - to_uint off0x) = 136) 1:/#.
+    by rewrite PA_272_136.sub_full_136.
+  rewrite catA sreject_cat size_cat.
+  split; 1: by apply agree_full; [smt(size_ge0) | exact hag].
+  by smt(size_ge0).
+seq 2 : (
+     randombytes = blk
+  /\ agree error 0 (sreject (S ++ Array136.sub randombytes 0 (to_uint xof_offset)))
+  /\ to_uint filled = min 256 (size (sreject (S ++ Array136.sub randombytes 0 (to_uint xof_offset))))
+  /\ to_uint filled < 256
+  /\ to_uint xof_offset < 136
+  /\ stop_sampling = W64.of_int 0
+  /\ coefficient = zeroextu32 (randombytes.[to_uint xof_offset] `&` W8.of_int 15)
+).
+- auto=> &hr |> hoffle hag hf hne.
+  have [hf256 hoff136] : to_uint filled{hr} < 256 /\ to_uint xof_offset{hr} < 136
+    by smt(of_int_b2i_eq1P).
+  by rewrite zext_and15E /=; smt(of_int_b2i_eq1P).
+seq > ^if : (
+     randombytes = blk
+  /\ to_uint xof_offset < 136
+  /\ stop_sampling = W64.of_int 0
+  /\ to_uint filled <= 256
+  /\ to_uint filled
+       = min 256 (size (sreject (S ++ Array136.sub randombytes 0 (to_uint xof_offset))
+           ++ (if saccept (randombytes{hr}.[to_uint xof_offset{hr}] `&` W8.of_int 15) then [scoeff (randombytes{hr}.[to_uint xof_offset{hr}] `&` W8.of_int 15)] else [])))
+  /\ agree error 0 (sreject (S ++ Array136.sub randombytes 0 (to_uint xof_offset))
+           ++ (if saccept (randombytes{hr}.[to_uint xof_offset{hr}] `&` W8.of_int 15) then [scoeff (randombytes{hr}.[to_uint xof_offset{hr}] `&` W8.of_int 15)] else []))
+).
+- if.
+  - auto=> &hr |> hag hf hf256 hoff136.
+    move=> hacc; move: hacc; rewrite ultE of_uintK /= pmod_small.
+    - by have /= := W8.to_uint_cmp (randombytes{hr}.[to_uint xof_offset{hr}] `&` W8.of_int 15); smt().
+    move=> hacc.
+    have hsacc : saccept (randombytes{hr}.[to_uint xof_offset{hr}] `&` W8.of_int 15) by exact hacc.
+    have hszeq : to_uint filled{hr} = size (sreject (S ++ Array136.sub randombytes{hr} 0 (to_uint xof_offset{hr}))) by smt().
+    have -> : - (zeroextu32 (randombytes{hr}.[to_uint xof_offset{hr}] `&` W8.of_int 15) - W32.of_int 4) = scoeff (randombytes{hr}.[to_uint xof_offset{hr}] `&` W8.of_int 15).
+    - by rewrite /scoeff; ring.
+    rewrite hsacc /=.
+    rewrite !to_uintD_small ?of_uintK /=; 1: smt().
+    do ! split; 1,2: smt(size_cat).
+    rewrite hszeq; apply agree_set; 1: smt().
+    exact hag.
+  auto=> &hr |> hag hf hf256 hoff136.
+  move=> hrej; move: hrej; rewrite ultE of_uintK /= pmod_small.
+  - by have /= := W8.to_uint_cmp (randombytes{hr}.[to_uint xof_offset{hr}] `&` W8.of_int 15); smt().
+  move=> hrej.
+  rewrite ifF; 1: by rewrite /saccept /#.
+  rewrite cats0.
+  do ! split; 1,2: smt().
+  exact hag.
+seq > ^if : (
+     randombytes = blk
+  /\ to_uint xof_offset < 136
+  /\ stop_sampling = W64.of_int 0
+  /\ agree error 0 (sreject (S ++ Array136.sub randombytes 0 (to_uint xof_offset + 1)))
+  /\ to_uint filled
+       = min 256 (size (sreject (S ++ Array136.sub randombytes 0 (to_uint xof_offset + 1))))
+  /\ to_uint filled <= 256
+).
+- if.
+  - sp 2; if.
+    - auto=> &hr |> hoff136 hle256 hmin.
+      move=> hag hfu hacc.
+      move: hfu; rewrite ultE of_uintK /= => hf256.
+      move: hacc; rewrite zext_shr4E ultE of_uintK /= pmod_small.
+      + by have /= := W8.to_uint_cmp (randombytes{hr}.[to_uint xof_offset{hr}] `>>>` 4); smt().
+      move=> hacc.
+      have hsacc : saccept (randombytes{hr}.[to_uint xof_offset{hr}] `>>>` 4) by exact hacc.
+      have -> : - (zeroextu32 (randombytes{hr}.[to_uint xof_offset{hr}] `>>>` 4) - W32.of_int 4) = scoeff (randombytes{hr}.[to_uint xof_offset{hr}] `>>>` 4).
+      + by rewrite /scoeff; ring.
+      rewrite sreject_stepS136; 1: smt(W64.to_uint_cmp).
+      rewrite hsacc /= catA.
+      have hszeq : to_uint filled{hr}
+        = size (sreject (S ++ Array136.sub randombytes{hr} 0 (to_uint xof_offset{hr})) ++ (if saccept (randombytes{hr}.[to_uint xof_offset{hr}] `&` W8.of_int 15) then [scoeff (randombytes{hr}.[to_uint xof_offset{hr}] `&` W8.of_int 15)] else [])) by smt().
+      rewrite !to_uintD_small ?of_uintK /=; 1: smt().
+      do ! split.
+      - rewrite hszeq; apply agree_set; 1: smt(size_cat).
+        exact hag.
+      - by smt(size_cat size_ge0).
+      by smt(size_cat size_ge0).
+    auto=> &hr |> hoff136 hle256 hmin.
+    move=> hag hfu hrej.
+    move: hfu; rewrite ultE of_uintK /= => hf256.
+    move: hrej; rewrite zext_shr4E ultE of_uintK /= pmod_small.
+    + by have /= := W8.to_uint_cmp (randombytes{hr}.[to_uint xof_offset{hr}] `>>>` 4); smt().
+    move=> hrej.
+    have hsrej : saccept (randombytes{hr}.[to_uint xof_offset{hr}] `>>>` 4) = false by smt().
+    rewrite sreject_stepS136; 1: smt(W64.to_uint_cmp).
+    rewrite hsrej /= cats0.
+    do ! split.
+    - exact hag.
+    by smt(size_cat size_ge0).
+  auto=> &hr |> hoff136 hle256 hmin.
+  move=> hag hnf.
+  move: hnf; rewrite ultE of_uintK /= => hnf.
+  have hf256 : to_uint filled{hr} = 256 by smt().
+  rewrite sreject_stepS136; 1: smt(W64.to_uint_cmp).
+  rewrite catA.
+  do ! split.
+  - by apply agree_full; [smt(size_ge0) | exact hag].
+  by smt(size_cat size_ge0).
+auto=> &hr |> hoff136.
+move=> hag hmin hle.
+rewrite !uleE !of_uintK /= !to_uintD_small ?of_uintK /=; 1: smt().
+by smt().
+qed.
