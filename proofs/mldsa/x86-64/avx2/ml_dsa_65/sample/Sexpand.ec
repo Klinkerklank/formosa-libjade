@@ -302,3 +302,38 @@ have heq : take (count idfun (map saccept zs))
 rewrite -heq -hVto.
 by apply agree_fill8 => //; smt(count_ge0).
 qed.
+
+(* -------------------------------------------------------------------- *)
+section.
+
+hint simplify b2i0, b2i1.
+
+(* --- acceptance bit of each nibble comparison byte --- *)
+lemma msb_lo9E (b : W8.t) :
+  W8.msb ((b `&` W8.of_int 15) - W8.of_int 9) = saccept (b `&` W8.of_int 15).
+proof.
+by rewrite msb_sub9E 1:to_uint_lonib_lt16 /saccept.
+qed.
+
+lemma msb_hi9E (b : W8.t) :
+  W8.msb ((b `>>>` 4) - W8.of_int 9) = saccept (b `>>>` 4).
+proof.
+by rewrite msb_sub9E 1:to_uint_hinib_lt16 /saccept.
+qed.
+
+(* --- the 32-candidate acceptance mask of a 16-byte window --- *)
+lemma movemask_scands16E (b00 b01 b02 b03 b04 b05 b06 b07 b08 b09 b10 b11 b12 b13 b14 b15 : W8.t) :
+  to_uint (zeroextu64 (MOVEMASK_32u8 (VPSUB_32u8
+    (W32u8.pack32 (scands [b00; b01; b02; b03; b04; b05; b06; b07; b08; b09; b10; b11; b12; b13; b14; b15]))
+    (VPBROADCAST_32u8 (W8.of_int 9)))))
+  = bs2int (map saccept (scands [b00; b01; b02; b03; b04; b05; b06; b07; b08; b09; b10; b11; b12; b13; b14; b15])).
+proof.
+rewrite scands16E.
+rewrite VPBROADCAST_32u8_pack32E VPSUB_32u8E /=.
+rewrite /MOVEMASK_32u8 /=.
+rewrite ?W32u8.pack32bE // ?W32u8.Pack.get_of_list //=.
+rewrite !msb_lo9E !msb_hi9E.
+by rewrite to_uint_zeroextu64 W32.to_uintE bits2wK //=.
+qed.
+
+end section.

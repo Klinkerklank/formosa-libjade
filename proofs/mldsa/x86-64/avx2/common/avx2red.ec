@@ -1089,3 +1089,67 @@ have hbnd : 0 <= bs2int bs < 256.
 - by rewrite bs2int_ge0 /=; have := bs2int_le2Xs bs; rewrite szbs.
 by rewrite /(`<<`) of_uintK /= W64.to_uint_shl // hh pmod_small /#.
 qed.
+
+(* ==================================================================== *)
+(* Phase-3 leaf adapters for the error-vector rejection loops           *)
+section.
+
+hint simplify b2i0, b2i1.
+
+lemma to_uint_lonib_lt16 (b : W8.t) : to_uint (b `&` W8.of_int 15) < 16.
+proof. by rewrite (_ : 15 = 2 ^ 4 - 1) // W8.to_uint_and_mod // ltz_pmod. qed.
+
+lemma to_uint_hinib_lt16 (b : W8.t) : to_uint (b `>>>` 4) < 16.
+proof.
+rewrite W8.to_uint_shr // ltz_divLR //=.
+by have := W8.to_uint_cmp b => /#.
+qed.
+
+lemma and255_bs2int (h : W64.t) (bs : bool list) :
+  to_uint h = bs2int bs =>
+  to_uint (h `&` W64.of_int 255) = bs2int (take 8 bs).
+proof.
+by move=> hh; rewrite (_ : 255 = 2 ^ 8 - 1) // W64.to_uint_and_mod // hh bs2int_mod.
+qed.
+
+lemma shr8_bs2int (h : W64.t) (bs : bool list) :
+  to_uint h = bs2int bs =>
+  to_uint (h `>>` W8.of_int 8) = bs2int (drop 8 bs).
+proof.
+by move=> hh; rewrite W64.shr_div of_uintK /= hh (_ : 256 = 2 ^ 8) 1:// bs2int_div.
+qed.
+
+lemma VPBROADCAST_32u8_pack32E (w : W8.t) :
+  VPBROADCAST_32u8 w = W32u8.pack32 [w; w; w; w; w; w; w; w; w; w; w; w; w; w; w; w; w; w; w; w; w; w; w; w; w; w; w; w; w; w; w; w].
+proof. by rewrite /VPBROADCAST_32u8 -iotaredE. qed.
+
+lemma VEXTRACTI128_0_pack32E (b00 b01 b02 b03 b04 b05 b06 b07 b08 b09 b10 b11 b12 b13 b14 b15 b16 b17 b18 b19 b20 b21 b22 b23 b24 b25 b26 b27 b28 b29 b30 b31 : W8.t) :
+  VEXTRACTI128 (W32u8.pack32 [b00; b01; b02; b03; b04; b05; b06; b07; b08; b09; b10; b11; b12; b13; b14; b15; b16; b17; b18; b19; b20; b21; b22; b23; b24; b25; b26; b27; b28; b29; b30; b31]) W8.zero
+  = W16u8.pack16 [b00; b01; b02; b03; b04; b05; b06; b07; b08; b09; b10; b11; b12; b13; b14; b15].
+proof. by rewrite /VEXTRACTI128 /=. qed.
+
+lemma VEXTRACTI128_1_pack32E (b00 b01 b02 b03 b04 b05 b06 b07 b08 b09 b10 b11 b12 b13 b14 b15 b16 b17 b18 b19 b20 b21 b22 b23 b24 b25 b26 b27 b28 b29 b30 b31 : W8.t) :
+  VEXTRACTI128 (W32u8.pack32 [b00; b01; b02; b03; b04; b05; b06; b07; b08; b09; b10; b11; b12; b13; b14; b15; b16; b17; b18; b19; b20; b21; b22; b23; b24; b25; b26; b27; b28; b29; b30; b31]) W8.one
+  = W16u8.pack16 [b16; b17; b18; b19; b20; b21; b22; b23; b24; b25; b26; b27; b28; b29; b30; b31].
+proof.
+rewrite /VEXTRACTI128.
+by have -> : b2i W8.one.[0] = 1 by rewrite W8.get_to_uint.
+qed.
+
+lemma VPSRLDQ8_pack16E (b00 b01 b02 b03 b04 b05 b06 b07 b08 b09 b10 b11 b12 b13 b14 b15 : W8.t) :
+  VPSRLDQ_128 (W16u8.pack16 [b00; b01; b02; b03; b04; b05; b06; b07; b08; b09; b10; b11; b12; b13; b14; b15]) (W8.of_int 8)
+  = W16u8.pack16 [b08; b09; b10; b11; b12; b13; b14; b15; W8.zero; W8.zero; W8.zero; W8.zero; W8.zero; W8.zero; W8.zero; W8.zero].
+proof.
+rewrite /VPSRLDQ_128 /= /min /=.
+apply W128.wordP; apply/allP_range.
+rewrite /range -iotaredE /=.
+by rewrite ?W128.get_out //=.
+qed.
+
+lemma VPSUB_bcast4_pack32E (b00 b01 b02 b03 b04 b05 b06 b07 b08 b09 b10 b11 b12 b13 b14 b15 b16 b17 b18 b19 b20 b21 b22 b23 b24 b25 b26 b27 b28 b29 b30 b31 : W8.t) :
+  VPSUB_32u8 (VPBROADCAST_32u8 (W8.of_int 4)) (W32u8.pack32 [b00; b01; b02; b03; b04; b05; b06; b07; b08; b09; b10; b11; b12; b13; b14; b15; b16; b17; b18; b19; b20; b21; b22; b23; b24; b25; b26; b27; b28; b29; b30; b31])
+  = W32u8.pack32 [W8.of_int 4 - b00; W8.of_int 4 - b01; W8.of_int 4 - b02; W8.of_int 4 - b03; W8.of_int 4 - b04; W8.of_int 4 - b05; W8.of_int 4 - b06; W8.of_int 4 - b07; W8.of_int 4 - b08; W8.of_int 4 - b09; W8.of_int 4 - b10; W8.of_int 4 - b11; W8.of_int 4 - b12; W8.of_int 4 - b13; W8.of_int 4 - b14; W8.of_int 4 - b15; W8.of_int 4 - b16; W8.of_int 4 - b17; W8.of_int 4 - b18; W8.of_int 4 - b19; W8.of_int 4 - b20; W8.of_int 4 - b21; W8.of_int 4 - b22; W8.of_int 4 - b23; W8.of_int 4 - b24; W8.of_int 4 - b25; W8.of_int 4 - b26; W8.of_int 4 - b27; W8.of_int 4 - b28; W8.of_int 4 - b29; W8.of_int 4 - b30; W8.of_int 4 - b31].
+proof. by rewrite VPBROADCAST_32u8_pack32E VPSUB_32u8E /=. qed.
+
+
+end section.
