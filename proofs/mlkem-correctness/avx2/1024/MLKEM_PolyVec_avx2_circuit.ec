@@ -279,6 +279,7 @@ conseq (: a = _aw /\
    BSWA_1408u8.init (fun i =>
      W8.init (fun j =>
        (out.[(i*8+j) %/ 11]).[(i*8+j) %% 11]))); last by circuit.
+
       
 (* BDEP pre conseq *)
 + move => &hr />; rewrite /pos_bound1024_cxq qE /= /(\sle) /(\slt) allP /=  => Hb i ib /=.
@@ -387,9 +388,7 @@ lemma polyvec_frombytes_corr_h (_aw : W8.t Array1536.t):
               ==>
              lift_array1024 res = nttunpackv (map incoeff (Array1024.of_list 0 (ByteDecode 12 (to_list _aw))))  /\
              pos_bound1024_cxq res 0 1024  2].
-proof.
-proc; inline*.
-
+proc; inline *.
 proc change ^while.1: { rp <- BSWA_256u16.init (fun (i_0 : int) => r.[256 * i + i_0]); }; 1: by auto.
 proc change ^while.2: { ap <- BSWA_384u8.init (fun (i_0 : int) => a.[384 * i + i_0]); }; 1: by auto.
 proc change ^while.3: { mask <- BSWAS_16u16_256.sliceget maskx16 0; }; 1: by auto; move => &1 &2 ?; rewrite BSWAS_16u16_256_slicegetE /#.
@@ -436,7 +435,7 @@ conseq (: _ ==> r = nttunpackv_16 (BSWA_1024u16.init (fun i =>
          let bidx = idx %% 8 in
          _aw.[aidx].[bidx]
        )
-     )))); last by circuit.
+     )))); last by circuit. (* FIXME: TAKES TOO LONG circuit. *)
 
 move => &hr <- rr ->.
 rewrite nttunpackv_16E;split.
