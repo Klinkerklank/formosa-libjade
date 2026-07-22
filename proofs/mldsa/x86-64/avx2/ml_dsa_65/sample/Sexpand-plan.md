@@ -1,5 +1,13 @@
 # Plan: expandS (error-vector sampler) correctness — `Sexpand.ec`
 
+**STATUS (2026-07-22): phases 0–5 are complete** — `Sexpand.ec` proves
+`sample____error_vectorsP` against the `Spoly`/`SpolyP` isolation axiom.
+Remaining: the phase-6 spec link below; `shuffle_compact8`
+(`common/errshuffle.ec`, admitted pending a cheaper proof route — the
+25-minute brute force is documented in that file's header); and the five
+SHAKE256 Keccak primitive specs in `common/sha3x4.ec` (trust boundary,
+same footing as the SHAKE128 ones).
+
 Strategy: same as the matrix expansion (Aexpand.ec). Work **in isolation**
 against an abstract characterization (`Spoly` + axiom, mirroring
 `Apoly`/`ApolyP`); the link to the crypto-spec (`expandS`/RejBoundedPoly,
