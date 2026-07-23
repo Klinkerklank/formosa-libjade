@@ -463,6 +463,50 @@ split*.
 exact hag.
 qed.
 
+(* the batch offsets stay below 256, so their bumps do not wrap         *)
+lemma to_uintD_small16 (w : W64.t) (n : int) :
+  0 <= n <= 16 => to_uint w < 256 =>
+  to_uint (w + W64.of_int n) = to_uint w + n.
+proof.
+by move=> hn hw; rewrite to_uintD_small of_uintK pmod_small /#.
+qed.
+
+(* -------------------------------------------------------------------- *)
+(* The write-out spec in the vectorized loop's own vocabulary: writing  *)
+(* out the 4-byte window at [off] of a buffer whose remaining chunk     *)
+(* covers [rest] more bytes advances the sampling state to off + 4.     *)
+lemma write_out_windowP (p_ : wpoly) (b : W8.t Array272.t) (off rest : int)
+                        (bf_ go_ : W64.t) (cb_ : W128.t) :
+hoare[ M.error_4x____write_out_8_coefficients :
+     error = p_ /\ bytes_filled = bf_ /\ good_overall = go_
+  /\ coefficient_block = cb_
+  /\ 0 <= off /\ 4 %| off /\ 0 <= rest
+  /\ off + 4 + rest <= 272 /\ off + 4 <= 256
+  /\ take 8 (W16u8.to_list cb_) = map cbyte (scands (Array272.sub b off 4))
+  /\ to_uint go_ = bs2int (map saccept (scands (Array272.sub b off (4 + rest))))
+  /\ to_uint bf_ < 992
+  /\ to_uint bf_ = 4 * size (sreject (Array272.sub b 0 off))
+  /\ agree p_ 0 (sreject (Array272.sub b 0 off))
+  ==>
+     svsampled b res.`1 (to_uint res.`2) (off + 4)
+  /\ to_uint res.`3 = bs2int (map saccept (scands (Array272.sub b (off + 4) rest))) ].
+proof.
+proc*.
+ecall (error_4x____write_out_8_coefficientsP p_
+        (sreject (Array272.sub b 0 off))
+        (scands (Array272.sub b off 4))
+        (scands (Array272.sub b (off + 4) rest))
+        bf_ go_ cb_).
+auto=> &hr |> ge0_off hdvd ge0_rest hle hle256 hcb hgo hlt hbf hag.
+do ! split.
+- by rewrite size_scands size_sub.
+- by move=> z /scands_nib.
+- by move: hgo; rewrite PA_272_136.sub_cat_272 // scands_cat.
+- by smt(size_ge0).
+move=> _ _ _ _ result hragree hrsz hrgo.
+by apply (svsampled_advance4 _ _ _ off) => //; smt().
+qed.
+
 
 (* -------------------------------------------------------------------- *)
 (* the candidate stream contributed by one nibble                       *)
@@ -609,31 +653,15 @@ seq 1 : (
          = W32u8.pack32 (map cbyte (scands (Array272.sub buf (to_uint off0) 16)))
     /\ coefficient_block = VEXTRACTI128 coefficients W8.zero
   ).
-  - wp; ecall (error_4x____write_out_8_coefficientsP p0
-        (sreject (Array272.sub buf 0 (to_uint off0)))
-        (scands (Array272.sub buf (to_uint off0) 4))
-        (scands (Array272.sub buf (to_uint off0 + 4) 12))
-        bf0 go0 cb0).
+  - wp; ecall (write_out_windowP p0 buf (to_uint off0) 12 bf0 go0 cb0).
     auto=> &hr |> hsv h992 h256 h16 hgo.
     move: hsv => @/svsampled [#] hoffle hdvd4 hbfle hsz hag.
-    do ! split.
+    do ! split; 1,2,3,4,6: smt(W64.to_uint_cmp).
     - rewrite !sub4E_272 !sub16E_272 scands16E.
       by rewrite /scands /= /nibbles /= /cbyte /=.
-    - by rewrite size_scands size_sub.
-    - by move=> z /scands_nib.
-    - move: hgo; rewrite (_ : 16 = 4 + 12) 1:// PA_272_136.sub_cat_272 // scands_cat => hgo.
-      exact hgo.
-    - by smt(size_ge0).
-    - by smt().
     - exact hag.
-    move=> _ _ _ _ _ _ _ result [# hragree hrsz hrgo].
-    have hoff4 : to_uint (xof_offset{hr} + W64.of_int 4) = to_uint xof_offset{hr} + 4.
-    - rewrite to_uintD_small of_uintK /=.
-      + by move: h256 => /#.
-      by [].
-    rewrite hoff4.
-    by apply (svsampled_advance4 _ _ _ (to_uint xof_offset{hr})) => //;
-      smt(W64.to_uint_cmp).
+    move=> *.
+    by rewrite (to_uintD_small16 xof_offset{hr} 4) //.
   if; last first.
   - auto=> &hr |> hsv hlt h16 hgo hnl.
     rewrite !uleE ?ultE !of_uintK /= !to_uintD_small ?of_uintK /=.
@@ -659,38 +687,20 @@ seq 1 : (
     /\ coefficients
          = W32u8.pack32 (map cbyte (scands (Array272.sub buf (to_uint off0) 16)))
   ).
-  - wp; ecall (error_4x____write_out_8_coefficientsP p1
-        (sreject (Array272.sub buf 0 (to_uint off0 + 4)))
-        (scands (Array272.sub buf (to_uint off0 + 4) 4))
-        (scands (Array272.sub buf (to_uint off0 + 8) 8))
-        bf1 go1 cb1).
+  - wp; ecall (write_out_windowP p1 buf (to_uint off0 + 4) 8 bf1 go1 cb1).
     auto=> &hr |> hsv h256o h16 hgo hlt992.
-    have hoff4 : to_uint (off0 + W64.of_int 4) = to_uint off0 + 4.
-    - rewrite to_uintD_small of_uintK /=.
-      + by move: h256o => /#.
-      by [].
-    move: hsv; rewrite hoff4 => hsv.
+    have hoff4 : to_uint (off0 + W64.of_int 4) = to_uint off0 + 4
+      by rewrite (to_uintD_small16 off0 4).
+    move: hsv; rewrite hoff4 => @/svsampled [#] hoffle hdvd4 hbfle hsz hag.
     move: hlt992; rewrite ultE of_uintK /= => hlt992.
-    move: hsv => @/svsampled [#] hoffle hdvd4 hbfle hsz hag.
-    do ! split.
+    do ! split; 1,2,3,4,6: smt(W64.to_uint_cmp).
     - rewrite !sub4E_272 !sub16E_272 scands16E.
       rewrite /scands /= /nibbles /= /cbyte /=.
       by rewrite VEXTRACTI128_0_pack32E VPSRLDQ8_pack16E /=.
-    - by rewrite size_scands size_sub.
-    - by move=> z /scands_nib.
-    - by move: hgo; rewrite (_ : 12 = 4 + 8) 1:// PA_272_136.sub_cat_272 //
-                    scands_cat -!addzA /=.
-    - by smt(size_ge0).
     - by smt().
     - exact hag.
-    move=> _ _ _ _ _ _ _ result [# hragree hrsz hrgo].
-    have hoff8 : to_uint (off0 + W64.of_int 8) = to_uint off0 + 8.
-    - rewrite to_uintD_small of_uintK /=.
-      + by move: h256o => /#.
-      by [].
-    rewrite hoff8.
-    by apply (svsampled_advance4 _ _ _ (to_uint off0 + 4)) => //;
-      smt(W64.to_uint_cmp).
+    move=> *.
+    by smt(to_uintD_small16).
   if; last first.
   - auto=> &hr |> hsv h256o h16 hgo hnl.
     rewrite !uleE ?ultE !of_uintK /= !to_uintD_small ?of_uintK /=.
@@ -717,38 +727,20 @@ seq 1 : (
          = W32u8.pack32 (map cbyte (scands (Array272.sub buf (to_uint off0) 16)))
     /\ coefficient_block = VEXTRACTI128 coefficients W8.one
   ).
-  - wp; ecall (error_4x____write_out_8_coefficientsP p2
-        (sreject (Array272.sub buf 0 (to_uint off0 + 8)))
-        (scands (Array272.sub buf (to_uint off0 + 8) 4))
-        (scands (Array272.sub buf (to_uint off0 + 12) 4))
-        bf2 go2 cb2).
+  - wp; ecall (write_out_windowP p2 buf (to_uint off0 + 8) 4 bf2 go2 cb2).
     auto=> &hr |> hsv h256o h16 hgo hlt992.
-    have hoff8 : to_uint (off0 + W64.of_int 8) = to_uint off0 + 8.
-    - rewrite to_uintD_small of_uintK /=.
-      + by move: h256o => /#.
-      by [].
-    move: hsv; rewrite hoff8 => hsv.
+    have hoff8 : to_uint (off0 + W64.of_int 8) = to_uint off0 + 8
+      by rewrite (to_uintD_small16 off0 8).
+    move: hsv; rewrite hoff8 => @/svsampled [#] hoffle hdvd4 hbfle hsz hag.
     move: hlt992; rewrite ultE of_uintK /= => hlt992.
-    move: hsv => @/svsampled [#] hoffle hdvd4 hbfle hsz hag.
-    do ! split.
+    do ! split; 1,2,3,4,6: smt(W64.to_uint_cmp).
     - rewrite !sub4E_272 !sub16E_272 scands16E.
       rewrite /scands /= /nibbles /= /cbyte /=.
       by rewrite VEXTRACTI128_1_pack32E /=.
-    - by rewrite size_scands size_sub.
-    - by move=> z /scands_nib.
-    - by move: hgo; rewrite (_ : 8 = 4 + 4) 1:// PA_272_136.sub_cat_272 //
-                    scands_cat -!addzA /=.
-    - by smt(size_ge0).
     - by smt().
     - exact hag.
-    move=> _ _ _ _ _ _ _ result [# hragree hrsz hrgo].
-    have hoff12 : to_uint (off0 + W64.of_int 12) = to_uint off0 + 12.
-    - rewrite to_uintD_small of_uintK /=.
-      + by move: h256o => /#.
-      by [].
-    rewrite hoff12.
-    by apply (svsampled_advance4 _ _ _ (to_uint off0 + 8)) => //;
-      smt(W64.to_uint_cmp).
+    move=> *.
+    by smt(to_uintD_small16).
   if; last first.
   - auto=> &hr |> hsv h256o h16 hgo hnl.
     rewrite !uleE ?ultE !of_uintK /= !to_uintD_small ?of_uintK /=.
@@ -770,37 +762,20 @@ seq 1 : (
     /\ to_uint off0 < 256
     /\ 16 %| to_uint off0
   ).
-  - wp; ecall (error_4x____write_out_8_coefficientsP p3
-        (sreject (Array272.sub buf 0 (to_uint off0 + 12)))
-        (scands (Array272.sub buf (to_uint off0 + 12) 4))
-        (scands (Array272.sub buf (to_uint off0 + 16) 0))
-        bf3 go3 cb3).
+  - wp; ecall (write_out_windowP p3 buf (to_uint off0 + 12) 0 bf3 go3 cb3).
     auto=> &hr |> hsv h256o h16 hgo hlt992.
-    have hoff12 : to_uint (off0 + W64.of_int 12) = to_uint off0 + 12.
-    - rewrite to_uintD_small of_uintK /=.
-      + by move: h256o => /#.
-      by [].
-    move: hsv; rewrite hoff12 => hsv.
+    have hoff12 : to_uint (off0 + W64.of_int 12) = to_uint off0 + 12
+      by rewrite (to_uintD_small16 off0 12).
+    move: hsv; rewrite hoff12 => @/svsampled [#] hoffle hdvd4 hbfle hsz hag.
     move: hlt992; rewrite ultE of_uintK /= => hlt992.
-    move: hsv => @/svsampled [#] hoffle hdvd4 hbfle hsz hag.
-    do ! split.
+    do ! split; 1,2,3,4,6: smt(W64.to_uint_cmp).
     - rewrite !sub4E_272 !sub16E_272 scands16E.
       rewrite /scands /= /nibbles /= /cbyte /=.
       by rewrite VEXTRACTI128_1_pack32E VPSRLDQ8_pack16E /=.
-    - by rewrite size_scands size_sub.
-    - by move=> z /scands_nib.
-    - by move: hgo; rewrite /= ?cats0.
-    - by smt(size_ge0).
     - by smt().
     - exact hag.
-    move=> _ _ _ _ _ _ _ result [# hragree hrsz hrgo].
-    have hoff16 : to_uint (off0 + W64.of_int 16) = to_uint off0 + 16.
-    - rewrite to_uintD_small of_uintK /=.
-      + by move: h256o => /#.
-      by [].
-    rewrite hoff16.
-    by apply (svsampled_advance4 _ _ _ (to_uint off0 + 12)) => //;
-      smt(W64.to_uint_cmp).
+    move=> *.
+    by smt(to_uintD_small16).
   auto=> &hr |> hsv h256o h16.
   rewrite !uleE ?ultE !of_uintK /= !to_uintD_small ?of_uintK /=.
   - by move: h256o => /#.
