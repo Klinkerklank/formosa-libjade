@@ -1153,3 +1153,65 @@ proof. by rewrite VPBROADCAST_32u8_pack32E VPSUB_32u8E /=. qed.
 
 
 end section.
+
+(* -------------------------------------------------------------------- *)
+lemma VPSRLV_8u32E (u w : W256.t) :
+    VPSRLV_8u32 u w
+  = W8u32.pack8 [
+      (u \bits32 0) `>>>` to_uint (w \bits32 0);
+      (u \bits32 1) `>>>` to_uint (w \bits32 1);
+      (u \bits32 2) `>>>` to_uint (w \bits32 2);
+      (u \bits32 3) `>>>` to_uint (w \bits32 3);
+      (u \bits32 4) `>>>` to_uint (w \bits32 4);
+      (u \bits32 5) `>>>` to_uint (w \bits32 5);
+      (u \bits32 6) `>>>` to_uint (w \bits32 6);
+      (u \bits32 7) `>>>` to_uint (w \bits32 7)
+    ].
+proof. by cbv delta. qed.
+
+hint simplify VPSRLV_8u32E.
+
+(* -------------------------------------------------------------------- *)
+lemma VPSHUFB_256_pack2E (a b m0 m1 : W128.t) :
+  VPSHUFB_256 (W2u128.pack2 [a; b]) (W2u128.pack2 [m0; m1])
+  = W2u128.pack2 [VPSHUFB_128 a m0; VPSHUFB_128 b m1].
+proof. by cbv delta. qed.
+
+hint simplify VPSHUFB_256_pack2E.
+
+(* -------------------------------------------------------------------- *)
+(* regroup a byte-level 256-bit value into its eight 32-bit slots       *)
+lemma pack2_pack16_8u32E
+  (c00 c01 c02 c03 c04 c05 c06 c07 c08 c09 c10 c11 c12 c13 c14 c15 : W8.t)
+  (d00 d01 d02 d03 d04 d05 d06 d07 d08 d09 d10 d11 d12 d13 d14 d15 : W8.t) :
+  W2u128.pack2
+    [W16u8.pack16 [c00; c01; c02; c03; c04; c05; c06; c07;
+                   c08; c09; c10; c11; c12; c13; c14; c15];
+     W16u8.pack16 [d00; d01; d02; d03; d04; d05; d06; d07;
+                   d08; d09; d10; d11; d12; d13; d14; d15]]
+  = W8u32.pack8
+      [W4u8.pack4 [c00; c01; c02; c03]; W4u8.pack4 [c04; c05; c06; c07];
+       W4u8.pack4 [c08; c09; c10; c11]; W4u8.pack4 [c12; c13; c14; c15];
+       W4u8.pack4 [d00; d01; d02; d03]; W4u8.pack4 [d04; d05; d06; d07];
+       W4u8.pack4 [d08; d09; d10; d11]; W4u8.pack4 [d12; d13; d14; d15]].
+proof. by cbv delta. qed.
+
+
+(* -------------------------------------------------------------------- *)
+lemma zeroextu128E (w : W64.t) : zeroextu128 w = pack2 [w; W64.zero].
+proof.
+rewrite zeroextu128E &(W128.wordP) => i rgi /=.
+rewrite !pack2wE ~-1:// initiE 1:/# get_of_list 1:/#.
+by have [->|->] /= : i %/ 64 = 0 \/ i %/ 64 = 1 by smt().
+qed.
+
+lemma truncateu32_VMOV_64 (w : W64.t) :
+  truncateu32 (VMOV_64 w) = truncateu32 w.
+proof.
+rewrite /VMOV_64 -zeroextu128E.
+rewrite -(W32.to_uintK (truncateu32 (zeroextu128 w))).
+rewrite W4u32.to_uint_truncateu32 W2u64.to_uint_zeroextu128.
+by rewrite -(W32.to_uintK (truncateu32 w)) W2u32.to_uint_truncateu32.
+qed.
+
+hint simplify truncateu32_VMOV_64.

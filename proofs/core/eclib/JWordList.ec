@@ -464,9 +464,10 @@ lemma sizechunkifyE n bslen:
  = (bslen - 1) %/ n + 1.
 proof.
 move=> Hn Hsz.
-case: (n %| bslen) => [/dvdzE C|C].
- by rewrite b2i0 /= /#.
-by rewrite divz_minus1 //.
+case: (n %| bslen) => C; last by rewrite divz_minus1.
+rewrite b2i0 /= -(divzK _ _ C) mulzK 1:/#.
+rewrite (: bslen %/ n * n - 1 = (bslen %/ n - 1) * n + (n - 1)) 1:#ring.
+by rewrite divzMDl 1:/# (divz_small (n - 1) n) 1:/#; ring.
 qed.
 
 lemma chunkpad_drop ['a] d r n (l: 'a list):

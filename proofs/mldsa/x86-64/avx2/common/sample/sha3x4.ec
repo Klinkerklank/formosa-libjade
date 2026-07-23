@@ -21,7 +21,7 @@ require Xof.
 from Jasmin require import JWord JUtils JArray.
 from JazzEC require import Ml_dsa_65_avx2.
 
-require import Array4 Array25 Array32 Array64 Array136 Array168.
+require import Array4 Array7 Array25 Array32 Array64 Array136 Array168.
 require import Array2 WArray2.
 require import Avx2red.
 
@@ -288,4 +288,95 @@ seq 8 : (Shake256x4.(\sha3for) state
 call (absorb_2_final_avx2x4_256P (to_list rho_)
         (Array4.init (fun i => ds0 + W16.of_int i))).
 by skip => &hr |> hst h0 h1 h2 h3; rewrite Array64.size_to_list.
+qed.
+
+(* ==================================================================== *)
+(* Single-lane SHAKE256 (the tail lane of the mask sampler): the same   *)
+(* [shake256_xof] oracle as the four-lane instance, so the single lane  *)
+(* reads exactly the streams the staged lanes read.  [read] counts the  *)
+(* bytes made available by the permutations run so far: a state at      *)
+(* [mk_read (136 * (k + 1))] dumps block [k].                           *)
+
+op (\sha3one) : W256.t Array7.t -> sha3_state -> bool.
+
+(* -------------------------------------------------------------------- *)
+(* Keccak-level trust boundary (single-lane SHAKE256 flavor)            *)
+
+lemma state_init_avx2_256P :
+  hoare[ M.__state_init_avx2 : true ==> res \sha3one mk_absorbing [] ].
+proof. admitted. (* Keccak trust boundary *)
+
+lemma absorb_64_avx2_256P (rho_ : W8.t Array64.t) :
+  hoare[ M.a64____absorb_avx2 :
+       st \sha3one mk_absorbing []
+    /\ buf = rho_ /\ aT = 0 /\ _TRAILB = 0 /\ _RATE8 = 136
+    ==> res.`1 \sha3one mk_absorbing (to_list rho_) ].
+proof. admitted. (* Keccak trust boundary *)
+
+lemma absorb_2_final_avx2_256P (pre_ bs_ : W8.t list) :
+  hoare[ M.a2____absorb_avx2 :
+       st \sha3one mk_absorbing pre_
+    /\ to_list buf = bs_
+    /\ aT = size pre_ /\ _TRAILB = 31 /\ _RATE8 = 136
+    ==> res.`1 \sha3one mk_absorbed (pre_ ++ bs_) ].
+proof. admitted. (* Keccak trust boundary *)
+
+lemma keccakf1600_avx2_256P (n : W8.t list) (k : int) :
+  hoare[ M._keccakf1600_avx2 :
+       0 <= k /\ state \sha3one mk_read (136 * k) n
+    ==> res \sha3one mk_read (136 * (k + 1)) n ].
+proof. admitted. (* Keccak trust boundary *)
+
+lemma dumpstate_avx2_256P (n : W8.t list) (k : int) :
+  hoare[ M.a136____dumpstate_avx2 :
+       0 <= k /\ st \sha3one mk_read (136 * (k + 1)) n
+    /\ offset = 0 /\ _LEN = 136
+    ==> Array136.to_list res.`1 = Shake256x4.shake256_slice n (136 * k) 136 ].
+proof. admitted. (* Keccak trust boundary *)
+
+(* -------------------------------------------------------------------- *)
+(* proved wrappers over the trust boundary                              *)
+
+lemma shake256_init_stateP :
+  hoare[ M.shake256_init_state : true ==> res \sha3one mk_absorbing [] ].
+proof. by proc; call state_init_avx2_256P; auto. qed.
+
+lemma shake256_permuteP (n : W8.t list) (k : int) :
+  hoare[ M.shake256_permute :
+      0 <= k /\ state \sha3one mk_read (136 * k) n
+    ==> res \sha3one mk_read (136 * (k + 1)) n ].
+proof. by proc; call (keccakf1600_avx2_256P n k); auto. qed.
+
+lemma shake256_squeeze_blockP (n : W8.t list) (k : int) :
+  hoare[ M.shake256_squeeze_block :
+      0 <= k /\ state \sha3one mk_read (136 * (k + 1)) n
+    ==> Array136.to_list res = Shake256x4.shake256_slice n (136 * k) 136 ].
+proof. by proc; sp; call (dumpstate_avx2_256P n k); auto. qed.
+
+(* -------------------------------------------------------------------- *)
+(* the 66-byte absorb: rho' followed by one domain separator            *)
+lemma shake256_absorb_66P (rho_ : W8.t Array64.t) (ds_ : W16.t) :
+hoare[ M.shake256_absorb_66 :
+    rho_prime = rho_ /\ domain_separator = ds_
+  ==> res \sha3one mk_read 136 (to_list rho_ ++ W2u8.to_list ds_) ].
+proof.
+proc.
+(* fresh sponge *)
+seq 3 : (rho_prime = rho_ /\ domain_separator = ds_
+      /\ state \sha3one mk_absorbing []).
+- by wp; call shake256_init_stateP; auto.
+(* rho' is absorbed *)
+seq 1 : (domain_separator = ds_
+      /\ state \sha3one mk_absorbing (to_list rho_)).
+- by call (absorb_64_avx2_256P rho_); auto.
+(* the domain separator is marshaled to its byte pair *)
+seq 1 : (state \sha3one mk_absorbing (to_list rho_)
+      /\ to_list ds = W2u8.to_list ds_).
+- by auto=> &hr |> hst; rewrite pack2_set16_to_listE.
+(* the final absorb completes the lane's stream *)
+seq 1 : (state \sha3one mk_absorbed (to_list rho_ ++ W2u8.to_list ds_)).
+- call (absorb_2_final_avx2_256P (to_list rho_) (W2u8.to_list ds_)).
+  by skip => &hr |> hst hds; rewrite Array64.size_to_list.
+(* the first permutation makes block 0 available *)
+by call (shake256_permuteP (to_list rho_ ++ W2u8.to_list ds_) 0); auto.
 qed.
