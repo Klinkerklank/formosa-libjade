@@ -1153,3 +1153,28 @@ proof. by rewrite VPBROADCAST_32u8_pack32E VPSUB_32u8E /=. qed.
 
 
 end section.
+
+(* -------------------------------------------------------------------- *)
+lemma VPSRLV_8u32E (u w : W256.t) :
+    VPSRLV_8u32 u w
+  = W8u32.pack8 [
+      (u \bits32 0) `>>>` to_uint (w \bits32 0);
+      (u \bits32 1) `>>>` to_uint (w \bits32 1);
+      (u \bits32 2) `>>>` to_uint (w \bits32 2);
+      (u \bits32 3) `>>>` to_uint (w \bits32 3);
+      (u \bits32 4) `>>>` to_uint (w \bits32 4);
+      (u \bits32 5) `>>>` to_uint (w \bits32 5);
+      (u \bits32 6) `>>>` to_uint (w \bits32 6);
+      (u \bits32 7) `>>>` to_uint (w \bits32 7)
+    ].
+proof. by cbv delta. qed.
+
+hint simplify VPSRLV_8u32E.
+
+(* -------------------------------------------------------------------- *)
+lemma VPSHUFB_256_pack2E (a b m0 m1 : W128.t) :
+  VPSHUFB_256 (W2u128.pack2 [a; b]) (W2u128.pack2 [m0; m1])
+  = W2u128.pack2 [VPSHUFB_128 a m0; VPSHUFB_128 b m1].
+proof. by cbv delta. qed.
+
+hint simplify VPSHUFB_256_pack2E.
