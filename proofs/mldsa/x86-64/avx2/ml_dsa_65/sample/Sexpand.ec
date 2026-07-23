@@ -1425,18 +1425,7 @@ seq 5 : (rho_prime = rho_
 - wp; ecall (error_4x____sample_polynomialsP rho_ (W16.of_int 0)).
   auto=> &hr |> result hres r rgr rgr2.
   do 4! (rewrite PW_1280_256.winof_write ~-1:/#).
-  case: (r = 0) => [->/=|n0].
-  - have /= := hres 0 _; 1: done.
-    by done.
-  case: (r = 1) => [->/=|n1].
-  - have /= := hres 1 _; 1: done.
-    by done.
-  case: (r = 2) => [->/=|n2].
-  - have /= := hres 2 _; 1: done.
-    by done.
-  have ->/=: r = 3 by smt().
-  have /= := hres 3 _; 1: done.
-    by done.
+  by move: (hres 0 _) (hres 1 _) (hres 2 _) (hres 3 _) => //#.
 seq 5 : (rho_prime = rho_
   /\ (forall r, 0 <= r < 5 => poly_of_s1 s1 r = Spoly rho_ (W16.of_int r))
   /\ (forall r, 0 <= r < 3 => poly_of_s2 s2 r = Spoly rho_ (W16.of_int (5 + r)))).
@@ -1445,33 +1434,13 @@ seq 5 : (rho_prime = rho_
   split.
   - move=> r rgr rgr2.
     rewrite PW_1280_256.winof_write ~-1:/#.
-    case: (r = 4) => [->/=|n4].
-    - have /= := hres 0 _; 1: done.
-      by done.
-    by rewrite ifF 1:/# h1s /#.
+    by move: (hres 0 _) => //; smt().
   move=> r rgr rgr2.
   do 3! (rewrite PW_1536_256.winof_write ~-1:/#).
-  case: (r = 0) => [->/=|n0].
-  - have /= := hres 1 _; 1: done.
-    by done.
-  case: (r = 1) => [->/=|n1].
-  - have /= := hres 2 _; 1: done.
-    by done.
-  have ->/=: r = 2 by smt().
-  have /= := hres 3 _; 1: done.
-  by done.
+  by move: (hres 1 _) (hres 2 _) (hres 3 _) => //#.
 wp; ecall (error_4x____sample_polynomialsP rho_ (W16.of_int 8)).
 auto=> &hr |> h1s h2s result hres.
 move=> r rgr rgr2.
 do 3! (rewrite PW_1536_256.winof_write ~-1:/#).
-case: (r = 3) => [->/=|n3].
-- have /= := hres 0 _; 1: done.
-  by done.
-case: (r = 4) => [->/=|n4].
-- have /= := hres 1 _; 1: done.
-  by done.
-case: (r = 5) => [->/=|n5].
-- have /= := hres 2 _; 1: done.
-  by done.
-by rewrite ?ifF ~-1:/# h2s /#.
+by move: (hres 0 _) (hres 1 _) (hres 2 _) => //#.
 qed.
