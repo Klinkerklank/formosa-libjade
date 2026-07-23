@@ -309,7 +309,7 @@ have {1}<- := cat_take_drop i (to_list (liftu_wpolykvec (kvec_unflatten256 v))).
 rewrite big_cat.
 have {1}<- := cat_take_drop 1 (drop i (to_list (liftu_wpolykvec (kvec_unflatten256 v)))).
 rewrite (drop_take1_nth witness);1: by rewrite size_to_list 1:/#.
-rewrite big_cat /= drop_drop 1,2:/# /= big_cons big_nil /= ifT 1:/#.
+rewrite big_cat /= drop_drop 1,2:/# /= big_cons big_nil /=.
 have :  count (fun (c : coeff) => c = Zq.one) (take j (to_list (liftu_wpolykvec (kvec_unflatten256 v)).[i])) <
   count_nonzero_coeffs (liftu_wpolykvec (kvec_unflatten256 v)).[i]; last by smt(count_ge0 sumr_ge0_seq).
 rewrite /count_nonzero_coeffs.
