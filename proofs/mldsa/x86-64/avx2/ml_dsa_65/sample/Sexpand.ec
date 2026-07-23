@@ -1559,19 +1559,6 @@ by rewrite ifF 1:/#.
 qed.
 
 (* -------------------------------------------------------------------- *)
-lemma w16_of_intD (a b : int) :
-  0 <= a => 0 <= b => a + b < W16.modulus =>
-  W16.of_int a + W16.of_int b = W16.of_int (a + b).
-proof.
-move=> ha hb hab.
-have hm : W16.modulus = 65536 by done.
-move: hab; rewrite hm => hab.
-rewrite W16.to_uint_eq to_uintD_small !of_uintK hm.
-- by rewrite !pmod_small /#.
-by rewrite !pmod_small /#.
-qed.
-
-(* -------------------------------------------------------------------- *)
 lemma sample____error_vectorsP (rho_ : W8.t Array64.t) :
 hoare[ M.sample____error_vectors :
     rho_prime = rho_
