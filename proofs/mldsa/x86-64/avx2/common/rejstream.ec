@@ -15,21 +15,6 @@ require import Agree.
 require import Array4 Array256.
 
 (* -------------------------------------------------------------------- *)
-(* helpers for relating instance decoders to the chunked form           *)
-lemma chunk1E ['a] (l : 'a list) : chunk 1 l = map (fun x => [x]) l.
-proof.
-apply (eq_from_nth witness).
-- by rewrite size_chunk // size_map divz1.
-move=> i; rewrite size_chunk // divz1 => rgi.
-rewrite /chunk divz1 nth_mkseq //= (nth_map witness) //.
-by rewrite (drop_nth witness) //= take0.
-qed.
-
-lemma flatten1 ['a 'b] (f : 'a -> 'b) (l : 'a list) :
-  flatten (map (fun x => [f x]) l) = map f l.
-proof. by elim: l => //= x l ih; rewrite flatten_cons ih. qed.
-
-(* -------------------------------------------------------------------- *)
 abstract theory RejStream.
 
 type cand.
