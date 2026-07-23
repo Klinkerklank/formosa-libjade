@@ -1,5 +1,5 @@
-require import AllCore StdOrder List Ring IntDiv.
-(*---*) import IntOrder.
+require import AllCore StdOrder List Ring IntDiv BitEncoding.
+(*---*) import IntOrder BitChunking.
 
 (*-----------------------------------------------------------------------------*)
 (* All in range. *)
@@ -171,3 +171,19 @@ proof. by elim: s => //= x s <-; case: (p x). qed.
 lemma count_idfun_map ['a] (p : 'a -> bool) (s : 'a list) :
   count idfun (map p s) = count p s.
 proof. by rewrite count_map; apply eq_count => x @/preim @/idfun. qed.
+
+(*-----------------------------------------------------------------------------*)
+(* Chunking and flattening. *)
+
+lemma chunk1E ['a] (l : 'a list) : chunk 1 l = map (fun x => [x]) l.
+proof.
+apply (eq_from_nth witness).
+- by rewrite size_chunk // size_map divz1.
+move=> i; rewrite size_chunk // divz1 => rgi.
+rewrite /chunk divz1 nth_mkseq //= (nth_map witness) //.
+by rewrite (drop_nth witness) //= take0.
+qed.
+
+lemma flatten1 ['a 'b] (f : 'a -> 'b) (l : 'a list) :
+  flatten (map (fun x => [f x]) l) = map f l.
+proof. by elim: l => //= x l ih; rewrite flatten_cons ih. qed.
