@@ -148,6 +148,8 @@ clone Rejstream.RejStream as SRS with
          "blocks_ok" as "sblocks_ok"
 
   proof gt0_align  by done,
+        ge0_rate   by done,
+        align_rate by apply dvd1z,
         size_slice by exact size_shake256_slice,
         slice_cat  by exact shake256_slice_cat.
 
@@ -1295,20 +1297,8 @@ seq > ^buf3<- : (
       by move: (hln 0 _) (hln 1 _) (hln 2 _) (hln 3 _) => //#.
     auto=> &hr |> hk2 hln hxf hblk hge.
     move: hge; rewrite ultE of_uintK /= => hge.
-    rewrite /slanes_ok => i rgi.
-    move: (hln 0 _) (hln 1 _) (hln 2 _) (hln 3 _) => // h0 h1 h2 h3.
-    have hf0 : to_uint filled0{hr} = 256.
-    - by move: h0 => @/sreject_ok /= [_ h]; smt().
-    case: (i = 0) => [->/=|n0].
-    - rewrite (_ : 136 * (k + b2i (0 < 1)) = 136 * k + 136) 1:/#.
-      move: h0; rewrite /= hf0 => h0.
-      by apply sreject_ok_full => //; smt().
-    case: (i = 1) => [->/=|n1].
-    - by move: h1 => /=.
-    case: (i = 2) => [->/=|n2].
-    - by move: h2 => /=.
-    have ->/=: i = 3 by smt().
-    by move: h3 => /=.
+    apply (slanes_ok_advance_full data k 0) => //=; 1:smt().
+    by move: (hln 0 _) => // @/sreject_ok /=; smt().
 
   (* lane 1 *)
   exlim buf1 => b1_.
@@ -1333,20 +1323,8 @@ seq > ^buf3<- : (
       by move: (hln 0 _) (hln 1 _) (hln 2 _) (hln 3 _) => //#.
     auto=> &hr |> hk2 hln hxf hblk hge.
     move: hge; rewrite ultE of_uintK /= => hge.
-    rewrite /slanes_ok => i rgi.
-    move: (hln 0 _) (hln 1 _) (hln 2 _) (hln 3 _) => // h0 h1 h2 h3.
-    have hf1 : to_uint filled1{hr} = 256.
-    - by move: h1 => @/sreject_ok /= [_ h]; smt().
-    case: (i = 0) => [->/=|n0].
-    - by move: h0 => /=.
-    case: (i = 1) => [->/=|n1].
-    - rewrite (_ : 136 * (k + b2i (1 < 2)) = 136 * k + 136) 1:/#.
-      move: h1; rewrite /= hf1 => h1.
-      by apply sreject_ok_full => //; smt().
-    case: (i = 2) => [->/=|n2].
-    - by move: h2 => /=.
-    have ->/=: i = 3 by smt().
-    by move: h3 => /=.
+    apply (slanes_ok_advance_full data k 1) => //=; 1:smt().
+    by move: (hln 1 _) => // @/sreject_ok /=; smt().
 
   (* lane 2 *)
   exlim buf2 => b2_.
@@ -1371,20 +1349,8 @@ seq > ^buf3<- : (
       by move: (hln 0 _) (hln 1 _) (hln 2 _) (hln 3 _) => //#.
     auto=> &hr |> hk2 hln hxf hblk hge.
     move: hge; rewrite ultE of_uintK /= => hge.
-    rewrite /slanes_ok => i rgi.
-    move: (hln 0 _) (hln 1 _) (hln 2 _) (hln 3 _) => // h0 h1 h2 h3.
-    have hf2 : to_uint filled2{hr} = 256.
-    - by move: h2 => @/sreject_ok /= [_ h]; smt().
-    case: (i = 0) => [->/=|n0].
-    - by move: h0 => /=.
-    case: (i = 1) => [->/=|n1].
-    - by move: h1 => /=.
-    case: (i = 2) => [->/=|n2].
-    - rewrite (_ : 136 * (k + b2i (2 < 3)) = 136 * k + 136) 1:/#.
-      move: h2; rewrite /= hf2 => h2.
-      by apply sreject_ok_full => //; smt().
-    have ->/=: i = 3 by smt().
-    by move: h3 => /=.
+    apply (slanes_ok_advance_full data k 2) => //=; 1:smt().
+    by move: (hln 2 _) => // @/sreject_ok /=; smt().
 
   (* lane 3 *)
   exlim buf3 => b3_.
@@ -1409,26 +1375,13 @@ seq > ^buf3<- : (
       by move: (hln 0 _) (hln 1 _) (hln 2 _) (hln 3 _) => //#.
     auto=> &hr |> hk2 hln hxf hblk hge.
     move: hge; rewrite ultE of_uintK /= => hge.
-    rewrite /slanes_ok => i rgi.
-    move: (hln 0 _) (hln 1 _) (hln 2 _) (hln 3 _) => // h0 h1 h2 h3.
-    have hf3 : to_uint filled3{hr} = 256.
-    - by move: h3 => @/sreject_ok /= [_ h]; smt().
-    case: (i = 0) => [->/=|n0].
-    - by move: h0 => /=.
-    case: (i = 1) => [->/=|n1].
-    - by move: h1 => /=.
-    case: (i = 2) => [->/=|n2].
-    - by move: h2 => /=.
-    have ->/=: i = 3 by smt().
-    rewrite (_ : 136 * (k + b2i (3 < 4)) = 136 * k + 136) 1:/#.
-      move: h3; rewrite /= hf3 => h3.
-      by apply sreject_ok_full => //; smt().
+    apply (slanes_ok_advance_full data k 3) => //=; 1:smt().
+    by move: (hln 3 _) => // @/sreject_ok /=; smt().
 
 (* the flag re-encodes; the invariant advances to k + 1 *)
 auto=> &hr |> hk2 hln hxf hblk.
 exists (k + 1); do ! split => //; 1: smt().
-move=> i rgi.
-by move: (hln 0 _) (hln 1 _) (hln 2 _) (hln 3 _) => //#.
+by move=> i rgi; move: (slanes_ok_wrap data k _ _ hln i rgi) => /#.
 qed.
 
 (* ==================================================================== *)

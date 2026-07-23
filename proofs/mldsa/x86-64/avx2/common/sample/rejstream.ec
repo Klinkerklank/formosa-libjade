@@ -64,6 +64,9 @@ proof. by move=> h; rewrite !rejectE decode_cat // filter_cat map_cat. qed.
 op rate  : int.
 op slice : W8.t list -> int -> int -> W8.t list.
 
+axiom ge0_rate   : 0 <= rate.
+axiom align_rate : align %| rate.
+
 axiom size_slice (n : W8.t list) (i m : int) :
   0 <= m => size (slice n i m) = m.
 axiom slice_cat (n : W8.t list) (i m l : int) :
@@ -104,6 +107,53 @@ op lanes_ok (data : W8.t list Array4.t) (k j : int)
   forall i, 0 <= i < 4 =>
     reject_ok data.[i] (rate * (k + b2i (i < j)))
       (nth witness ps i) (to_uint (nth witness fs i)).
+
+(* the intro rule: one goal per lane, no case analysis at use sites     *)
+lemma lanes_okP (data : W8.t list Array4.t) (k j : int) p0 p1 p2 p3 f0 f1 f2 f3 :
+  reject_ok data.[0] (rate * (k + b2i (0 < j))) p0 (to_uint f0) =>
+  reject_ok data.[1] (rate * (k + b2i (1 < j))) p1 (to_uint f1) =>
+  reject_ok data.[2] (rate * (k + b2i (2 < j))) p2 (to_uint f2) =>
+  reject_ok data.[3] (rate * (k + b2i (3 < j))) p3 (to_uint f3) =>
+  lanes_ok data k j [p0; p1; p2; p3] [f0; f1; f2; f3].
+proof.
+move=> h0 h1 h2 h3 i rgi.
+by have [->|[->|[->|->]]] /=: i = 0 \/ i = 1 \/ i = 2 \/ i = 3 by smt().
+qed.
+
+(* staging advances one lane at a time: only lane j's prefix grows      *)
+lemma lanes_ok_advance (data : W8.t list Array4.t) (k j : int) ps fs :
+  0 <= j < 4 =>
+  lanes_ok data k j ps fs =>
+  reject_ok data.[j] (rate * (k + 1))
+    (nth witness ps j) (to_uint (nth witness fs j)) =>
+  lanes_ok data k (j + 1) ps fs.
+proof.
+move=> rgj hln hj i rgi; case: (i = j) => [->|ne_ij].
+- by rewrite (_ : b2i (j < j + 1) = 1) 1:/#.
+by rewrite (_ : b2i (i < j + 1) = b2i (i < j)) 1:/#; apply hln.
+qed.
+
+(* a full lane advances for free                                        *)
+lemma lanes_ok_advance_full (data : W8.t list Array4.t) (k j : int) ps fs :
+  0 <= k => 0 <= j < 4 =>
+  lanes_ok data k j ps fs =>
+  to_uint (nth witness fs j) = 256 =>
+  lanes_ok data k (j + 1) ps fs.
+proof.
+move=> hk rgj hln hfull; apply lanes_ok_advance => //.
+move: (hln j rgj); rewrite hfull (_ : b2i (j < j) = 0) 1:/# /= => hok.
+rewrite (_ : rate * (k + 1) = rate * k + rate) 1:#ring.
+apply reject_ok_full => //; 1,2:smt(ge0_rate).
+by apply dvdz_mulr; apply align_rate.
+qed.
+
+(* all four lanes staged means the next block index starts unstaged     *)
+lemma lanes_ok_wrap (data : W8.t list Array4.t) (k : int) ps fs :
+  lanes_ok data k 4 ps fs => lanes_ok data (k + 1) 0 ps fs.
+proof.
+move=> hln i rgi; move: (hln i rgi).
+by rewrite (_ : b2i (i < 4) = 1) 1:/# (_ : b2i (i < 0) = 0) 1:/# /#.
+qed.
 
 (* -------------------------------------------------------------------- *)
 (* each lane buffer starts with the block squeezed at offset rate * k   *)

@@ -228,6 +228,8 @@ clone Rejstream.RejStream as ARS with
                     Array168.to_list (PA_848_168.truncatea_168 a))
 
   proof gt0_align  by done,
+        ge0_rate   by done,
+        align_rate by smt(),
         size_slice by exact size_shake128_slice,
         slice_cat  by exact shake128_slice_cat.
 
@@ -1268,13 +1270,13 @@ by with hint +listred (rewrite /= /reject_ok -!h /=).
     auto=> &hr |> hk h hxf hblk.
     move: (h 2) (hblk 2) => @/reject_ok /= [hag hf] hb2.
     split; first by rewrite !size_shake128_slice /= /#.
-    move=> _ _ _ _ r hr1 hr2 i rgi.
+    move=> _ _ _ _ r hr1 hr2.
     have hcat := shake128_slice_cat_block data.[2] k _ hk hb2.
-    move: (h 0 _) (h 1 _) (h 2 _) (h 3 _) => // h0 h1 h2 h3.
-    case: (i = 0) => [->/=|n0]; first by smt().
-    case: (i = 1) => [->/=|n1]; first by smt().
-    case: (i = 2) => [->/=|n2]; first by smt().
-    by have -> /=: i = 3 by smt(); smt().
+    apply lanes_okP => /=.
+    - by move: (h 0 _) => //#.
+    - by move: (h 1 _) => //#.
+    - by smt().
+    by move: (h 3 _) => //#.
 
   exlim buf3 => b3_.
   seq > ^filled3<- : (
@@ -1289,13 +1291,12 @@ by with hint +listred (rewrite /= /reject_ok -!h /=).
     auto=> &hr |> hk h hxf hblk.
     move: (h 3) (hblk 3) => @/reject_ok /= [hag hf] hb3.
     split; first by rewrite !size_shake128_slice /= /#.
-    move=> _ _ _ _ r hr1 hr2 i rgi.
+    move=> _ _ _ _ r hr1 hr2.
     have hcat := shake128_slice_cat_block data.[3] k _ hk hb3.
-    move: (h 0 _) (h 1 _) (h 2 _) (h 3 _) => // h0 h1 h2 h3.
-    case: (i = 0) => [->/=|n0]; first by smt().
-    case: (i = 1) => [->/=|n1]; first by smt().
-    case: (i = 2) => [->/=|n2]; first by smt().
-    have -> /=: i = 3 by smt().
+    apply lanes_okP => /=.
+    - by move: (h 0 _) => //#.
+    - by move: (h 1 _) => //#.
+    - by move: (h 2 _) => //#.
     by rewrite /reject_ok /= -hcat /=.
 
   (* the invariant advances to k + 1 *)
