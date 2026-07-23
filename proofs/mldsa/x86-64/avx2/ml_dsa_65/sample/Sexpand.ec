@@ -994,6 +994,31 @@ rewrite !uleE !of_uintK /= !to_uintD_small ?of_uintK /=; 1: smt().
 by smt().
 qed.
 
+(* -------------------------------------------------------------------- *)
+(* The one-block spec in the staged-lane vocabulary: consuming the      *)
+(* block squeezed at index k of a lane's stream advances that lane's    *)
+(* sampling state to k + 1.                                             *)
+lemma one_block_laneP (nonce : W8.t list) (k : int) (blk : W8.t Array136.t) :
+hoare[ M.error_4x__rejection_sample_one_block :
+     randombytes = blk
+  /\ Array136.to_list blk = shake256_slice nonce (136 * k) 136
+  /\ 0 <= k
+  /\ to_uint filled < 256
+  /\ sreject_ok nonce (136 * k) error (to_uint filled)
+  ==>
+     sreject_ok nonce (136 * (k + 1)) res.`1 (to_uint res.`2) ].
+proof.
+proc*.
+ecall (error_4x__rejection_sample_one_blockP
+        (shake256_slice nonce 0 (136 * k)) blk).
+auto=> &hr |> hblk hk hlt hok.
+move: hok => @/sreject_ok /= [hag hf].
+do ! split => //.
+move=> _ _ result hr1 hr2.
+have hcat := shake256_slice_cat_block nonce k _ hk hblk.
+by rewrite /sreject_ok -hcat.
+qed.
+
 (* ==================================================================== *)
 (* The staged four-lane sampler and the Spoly isolation axiom           *)
 (* ==================================================================== *)
@@ -1088,11 +1113,11 @@ while (exists (k : int), (
 - auto=> &hr |> *; split.
   - by exists 2 => /=.
   move=> f0 f1 f2 f3 p0 p1 p2 p3 xf k hk hxf h hstop.
-  have {hstop} [#] hb0 hb1 hb2 hb3 : 256 <= to_uint f0 /\ 256 <= to_uint f1
-                                  /\ 256 <= to_uint f2 /\ 256 <= to_uint f3.
-  - move: hstop => @/stop /eq_sym; case _: (has _ _) => /=.
-    - by move=> _ /(congr1 W64.to_uint); rewrite !of_uintK.
-    by rewrite !negb_or !ultE /= -!lezNgt.
+  have {hstop} hfull : forall f, f \in [f0; f1; f2; f3] => 256 <= to_uint f.
+  - move=> f hf; rewrite lezNgt; apply/negP => hlt.
+    have hhas : has (fun (w : W64.t) => w \ult W64.of_int 256) [f0; f1; f2; f3].
+    - by apply/hasP; exists f; rewrite hf /= ultE of_uintK /=.
+    by move: hstop => @/stop; rewrite hhas /=.
   have hbridge : forall (p : wpoly) (f : W64.t) (i : int),
     0 <= i < 4 =>
     agree p 0 (sreject (shake256_slice data.[i] 0 (136 * k))) =>
@@ -1107,21 +1132,11 @@ while (exists (k : int), (
     rewrite (SpolyP rho_ (ds0 + W16.of_int i) (136 * k) j) //; 1: by move: hsz; rewrite hdata.
     rewrite -hdata.
     by move: hag => @/agree hag; smt().
-  move=> i ile ilt; have: 0 <= i < 4 by smt().
-  move=> {ile ilt}; with hint +listred (apply: allP_range i => /=).
-  do 3? split.
-  - have /= := h 0 _; 1: done.
-    rewrite /sreject_ok => -[hag hf].
-    by apply (hbridge p0 f0 0).
-  - have /= := h 1 _; 1: done.
-    rewrite /sreject_ok => -[hag hf].
-    by apply (hbridge p1 f1 1).
-  - have /= := h 2 _; 1: done.
-    rewrite /sreject_ok => -[hag hf].
-    by apply (hbridge p2 f2 2).
-  have /= := h 3 _; 1: done.
+  move=> i ile ilt.
+  have /= := h i _; 1: smt().
   rewrite /sreject_ok => -[hag hf].
-  by apply (hbridge p3 f3 3).
+  by apply (hbridge (nth witness [p0; p1; p2; p3] i)
+                    (nth witness [f0; f1; f2; f3] i) i) => //; 1: smt().
 elim* => k.
 proc rewrite 3 PA_272_136.injecta_272E.
 proc rewrite 4 PA_272_136.injecta_272E.
@@ -1175,17 +1190,18 @@ seq > ^buf3<- : (
   ).
   - if.
     - sp 1; wp.
-      ecall (error_4x__rejection_sample_one_blockP
-               (shake256_slice data.[0] 0 (136 * k)) (PA_272_136.truncatea_136 b0_)).
+      ecall (one_block_laneP data.[0] k (PA_272_136.truncatea_136 b0_)).
       auto=> &hr |> hk2 hln hxf hblk hlt.
-      move: (hln 0) (hblk 0) => @/sreject_ok /= [hag hf] hb0.
       move: hlt; rewrite ultE of_uintK /= => hlt.
-      split; first by do ! split => //.
-      move=> _ _ _ _ result hr1 hr2.
-      have hk0 : 0 <= k by smt().
-      have hcat := shake256_slice_cat_block data.[0] k _ hk0 hb0.
-      rewrite /slanes_ok => i rgi.
-      by move: (hln 0 _) (hln 1 _) (hln 2 _) (hln 3 _) => //#.
+      move: (hblk 0 _) (hln 0 _) => // /= hb0 h0.
+      move: h0 => @/sreject_ok /= [hag hf].
+      do ! split => //; 1: smt().
+      move=> _ _ _ _ _ result hok.
+      apply slanes_okP => /=.
+      - by move: hok => //#.
+      - by move: (hln 1 _) => //#.
+      - by move: (hln 2 _) => //#.
+      by move: (hln 3 _) => //#.
     auto=> &hr |> hk2 hln hxf hblk hge.
     move: hge; rewrite ultE of_uintK /= => hge.
     apply (slanes_ok_advance_full data k 0) => //=; 1:smt().
@@ -1201,17 +1217,18 @@ seq > ^buf3<- : (
   ).
   - if.
     - sp 1; wp.
-      ecall (error_4x__rejection_sample_one_blockP
-               (shake256_slice data.[1] 0 (136 * k)) (PA_272_136.truncatea_136 b1_)).
+      ecall (one_block_laneP data.[1] k (PA_272_136.truncatea_136 b1_)).
       auto=> &hr |> hk2 hln hxf hblk hlt.
-      move: (hln 1) (hblk 1) => @/sreject_ok /= [hag hf] hb1.
       move: hlt; rewrite ultE of_uintK /= => hlt.
-      split; first by do ! split => //.
-      move=> _ _ _ _ result hr1 hr2.
-      have hk0 : 0 <= k by smt().
-      have hcat := shake256_slice_cat_block data.[1] k _ hk0 hb1.
-      rewrite /slanes_ok => i rgi.
-      by move: (hln 0 _) (hln 1 _) (hln 2 _) (hln 3 _) => //#.
+      move: (hblk 1 _) (hln 1 _) => // /= hb1 h1.
+      move: h1 => @/sreject_ok /= [hag hf].
+      do ! split => //; 1: smt().
+      move=> _ _ _ _ _ result hok.
+      apply slanes_okP => /=.
+      - by move: (hln 0 _) => //#.
+      - by move: hok => //#.
+      - by move: (hln 2 _) => //#.
+      by move: (hln 3 _) => //#.
     auto=> &hr |> hk2 hln hxf hblk hge.
     move: hge; rewrite ultE of_uintK /= => hge.
     apply (slanes_ok_advance_full data k 1) => //=; 1:smt().
@@ -1227,17 +1244,18 @@ seq > ^buf3<- : (
   ).
   - if.
     - sp 1; wp.
-      ecall (error_4x__rejection_sample_one_blockP
-               (shake256_slice data.[2] 0 (136 * k)) (PA_272_136.truncatea_136 b2_)).
+      ecall (one_block_laneP data.[2] k (PA_272_136.truncatea_136 b2_)).
       auto=> &hr |> hk2 hln hxf hblk hlt.
-      move: (hln 2) (hblk 2) => @/sreject_ok /= [hag hf] hb2.
       move: hlt; rewrite ultE of_uintK /= => hlt.
-      split; first by do ! split => //.
-      move=> _ _ _ _ result hr1 hr2.
-      have hk0 : 0 <= k by smt().
-      have hcat := shake256_slice_cat_block data.[2] k _ hk0 hb2.
-      rewrite /slanes_ok => i rgi.
-      by move: (hln 0 _) (hln 1 _) (hln 2 _) (hln 3 _) => //#.
+      move: (hblk 2 _) (hln 2 _) => // /= hb2 h2.
+      move: h2 => @/sreject_ok /= [hag hf].
+      do ! split => //; 1: smt().
+      move=> _ _ _ _ _ result hok.
+      apply slanes_okP => /=.
+      - by move: (hln 0 _) => //#.
+      - by move: (hln 1 _) => //#.
+      - by move: hok => //#.
+      by move: (hln 3 _) => //#.
     auto=> &hr |> hk2 hln hxf hblk hge.
     move: hge; rewrite ultE of_uintK /= => hge.
     apply (slanes_ok_advance_full data k 2) => //=; 1:smt().
@@ -1253,17 +1271,18 @@ seq > ^buf3<- : (
   ).
   - if.
     - sp 1; wp.
-      ecall (error_4x__rejection_sample_one_blockP
-               (shake256_slice data.[3] 0 (136 * k)) (PA_272_136.truncatea_136 b3_)).
+      ecall (one_block_laneP data.[3] k (PA_272_136.truncatea_136 b3_)).
       auto=> &hr |> hk2 hln hxf hblk hlt.
-      move: (hln 3) (hblk 3) => @/sreject_ok /= [hag hf] hb3.
       move: hlt; rewrite ultE of_uintK /= => hlt.
-      split; first by do ! split => //.
-      move=> _ _ _ _ result hr1 hr2.
-      have hk0 : 0 <= k by smt().
-      have hcat := shake256_slice_cat_block data.[3] k _ hk0 hb3.
-      rewrite /slanes_ok => i rgi.
-      by move: (hln 0 _) (hln 1 _) (hln 2 _) (hln 3 _) => //#.
+      move: (hblk 3 _) (hln 3 _) => // /= hb3 h3.
+      move: h3 => @/sreject_ok /= [hag hf].
+      do ! split => //; 1: smt().
+      move=> _ _ _ _ _ result hok.
+      apply slanes_okP => /=.
+      - by move: (hln 0 _) => //#.
+      - by move: (hln 1 _) => //#.
+      - by move: (hln 2 _) => //#.
+      by move: hok => //#.
     auto=> &hr |> hk2 hln hxf hblk hge.
     move: hge; rewrite ultE of_uintK /= => hge.
     apply (slanes_ok_advance_full data k 3) => //=; 1:smt().
