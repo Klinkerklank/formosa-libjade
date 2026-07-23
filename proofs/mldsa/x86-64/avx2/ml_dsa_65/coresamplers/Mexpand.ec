@@ -17,7 +17,7 @@ require import Prefixarray.
 require import Warraypack.
 require import Avx2red.
 require import Sha3x4. import Shake256x4.
-require import Array4 Array7 Array25 Array64 Array136 Array256 Array640 Array680 Array1280.
+require import Array2 Array4 Array7 Array25 Array64 Array136 Array256 Array640 Array680 Array1280.
 require import WArray640 WArray1024.
 
 (* -------------------------------------------------------------------- *)
@@ -261,4 +261,140 @@ proof.
 move=> hc hsz hjs hs.
 rewrite W32.and_mod // W32.to_uint_shr 1:/#.
 by rewrite /mcoeff (mbits_at3 bs j c s).
+qed.
+
+(* ==================================================================== *)
+(* The SIMD gamma1 decoder                                              *)
+
+clone Warraypack.WArrayPack as WP640 with
+      op size <- 640,
+  theory A    <- Array640,
+  theory WA   <- WArray640
+  rename "get" as "WArray640_get".
+
+import WP640.
+
+lemma sub16E_640 (a : W8.t Array640.t) (k : int) :
+  Array640.sub a k 16
+  = [a.[k]; a.[k + 1]; a.[k + 2]; a.[k + 3]; a.[k + 4]; a.[k + 5];
+     a.[k + 6]; a.[k + 7]; a.[k + 8]; a.[k + 9]; a.[k + 10]; a.[k + 11];
+     a.[k + 12]; a.[k + 13]; a.[k + 14]; a.[k + 15]].
+proof. by rewrite /sub /mkseq -iotaredE /=. qed.
+
+(* -------------------------------------------------------------------- *)
+(* the decoding tables, in the shapes the symbolic execution exposes:   *)
+(* per-lane byte gathers (three source bytes + a forced zero per slot)  *)
+(* and the alternating in-slot shifts                                   *)
+lemma shuffle_loE :
+  (W256.of_int
+     115366376096492768164844321449898653011859597303583218241719758451187166347520)
+    \bits128 0
+  = W16u8.pack16
+      [W8.of_int 0; W8.of_int 1; W8.of_int 2; W8.of_int 255;
+       W8.of_int 2; W8.of_int 3; W8.of_int 4; W8.of_int 255;
+       W8.of_int 5; W8.of_int 6; W8.of_int 7; W8.of_int 255;
+       W8.of_int 7; W8.of_int 8; W8.of_int 9; W8.of_int 255].
+proof.
+by rewrite W2u128.of_int_bits128_div_red ~-1:// /= W16u8.of_uint_pack16 -iotaredE /=.
+qed.
+
+lemma shuffle_hiE :
+  (W256.of_int
+     115366376096492768164844321449898653011859597303583218241719758451187166347520)
+    \bits128 1
+  = W16u8.pack16
+      [W8.of_int 6; W8.of_int 7; W8.of_int 8; W8.of_int 255;
+       W8.of_int 8; W8.of_int 9; W8.of_int 10; W8.of_int 255;
+       W8.of_int 11; W8.of_int 12; W8.of_int 13; W8.of_int 255;
+       W8.of_int 13; W8.of_int 14; W8.of_int 15; W8.of_int 255].
+proof.
+by rewrite W2u128.of_int_bits128_div_red ~-1:// /= W16u8.of_uint_pack16 -iotaredE /=.
+qed.
+
+lemma eshiftsE :
+  error_polynomial__SHIFTS
+  = W8u32.pack8 [W32.of_int 0; W32.of_int 4; W32.of_int 0; W32.of_int 4;
+                 W32.of_int 0; W32.of_int 4; W32.of_int 0; W32.of_int 4].
+proof. by rewrite W8u32.of_uint_pack8 -iotaredE /=. qed.
+
+(* -------------------------------------------------------------------- *)
+(* the SIMD decoder: 32 iterations, each turning a 20-byte input group  *)
+(* into eight coefficients                                              *)
+lemma gamma1____decode_to_polynomialP (bytes_ : W8.t Array640.t) :
+hoare[ M.gamma1____decode_to_polynomial :
+    bytes = bytes_
+  ==> res = mdecode (Array640.to_list bytes_) ].
+proof.
+proc.
+(* the broadcast constants gamma1 and 2 * gamma1 - 1, the zeroed        *)
+(* accumulator and both running offsets                                 *)
+seq 9 : (bytes = bytes_
+      /\ gamma1 = VPBROADCAST_8u32 (W32.of_int 524288)
+      /\ gamma1_times_2_mask = VPBROADCAST_8u32 (W32.of_int 1048575)
+      /\ input_offset = 0 /\ output_offset = 0).
+- by auto.
+(* each iteration decodes the 20-byte group at input_offset into the    *)
+(* eight coefficients at output_offset                                  *)
+while (bytes = bytes_
+    /\ gamma1 = VPBROADCAST_8u32 (W32.of_int 524288)
+    /\ gamma1_times_2_mask = VPBROADCAST_8u32 (W32.of_int 1048575)
+    /\ 0 <= output_offset <= 1024
+    /\ 32 %| output_offset
+    /\ input_offset = 5 * output_offset %/ 8
+    /\ (forall j, 0 <= j < output_offset %/ 4 =>
+          polynomial.[j] = mcoeff (Array640.to_list bytes_) j)); last first.
+(* entry: nothing is decoded yet; exit: all 256 coefficients are *)
+- skip=> &hr |> ; split; 1: by do! split => //; smt().
+  move=> oo0 poly0 hge hoo1 hoo2 hdvd hcov.
+  apply Array256.ext_eq => j rgj.
+  rewrite /mdecode initiE //=.
+  by apply hcov => /#.
+auto=> &hr |> hoo1 hoo2 hdvd hcov hlt.
+(* the group index: this iteration decodes 20-byte group k of 32 *)
+have [k [hk rgk]] : exists k, output_offset{hr} = 32 * k /\ 0 <= k < 32.
+- by exists (output_offset{hr} %/ 32) => /#.
+(* normalize the tables, the two 16-byte loads, and the slot pipeline *)
+rewrite !eshiftsE !shuffle_loE !shuffle_hiE /=.
+rewrite WArray640_get128E 1:/# WArray640_get128E 1:/# !sub16E_640 /=.
+rewrite hk (: 5 * (32 * k) %/ 8 = 20 * k) 1:/#.
+split; first by smt().
+split; first by smt().
+split; first by smt().
+(* the store covers coefficients 8k .. 8k+7 *)
+move=> j hj0 hjlt.
+rewrite (: 32 * k = 4 * (8 * k)) 1:#ring (wpoly_set256_aligned (8 * k)) 1:/#.
+rewrite filliE 1:/#.
+case: (8 * k <= j < 8 * k + 8) => hcase; last first.
+- by apply hcov => /#.
+(* the eight freshly decoded slots, one per in-group coefficient *)
+have [t [-> rgt]] : exists t, j = 8 * k + t /\ 0 <= t < 8.
+- by exists (j - 8 * k) => /#.
+rewrite (: 8 * k + t - 8 * k = t) 1:#ring.
+have [->|[->|[->|[->|[->|[->|[->|->]]]]]]] :
+  t = 0 \/ t = 1 \/ t = 2 \/ t = 3 \/ t = 4 \/ t = 5 \/ t = 6 \/ t = 7
+  by smt().
+- by rewrite W8u32.pack8bE // -!Array640.get_to_list
+     (mcoeff_slotE (to_list bytes{hr}) (8 * k + 0) (20 * k) 0)
+     ~-1:#smt:(Array640.size_to_list).
+- by rewrite W8u32.pack8bE // -!Array640.get_to_list
+     (mcoeff_slotE (to_list bytes{hr}) (8 * k + 1) (20 * k + 2) 4)
+     ~-1:#smt:(Array640.size_to_list).
+- by rewrite W8u32.pack8bE // -!Array640.get_to_list
+     (mcoeff_slotE (to_list bytes{hr}) (8 * k + 2) (20 * k + 5) 0)
+     ~-1:#smt:(Array640.size_to_list).
+- by rewrite W8u32.pack8bE // -!Array640.get_to_list
+     (mcoeff_slotE (to_list bytes{hr}) (8 * k + 3) (20 * k + 7) 4)
+     ~-1:#smt:(Array640.size_to_list).
+- by rewrite W8u32.pack8bE // -!Array640.get_to_list
+     (mcoeff_slotE (to_list bytes{hr}) (8 * k + 4) (20 * k + 10) 0)
+     ~-1:#smt:(Array640.size_to_list).
+- by rewrite W8u32.pack8bE // -!Array640.get_to_list
+     (mcoeff_slotE (to_list bytes{hr}) (8 * k + 5) (20 * k + 12) 4)
+     ~-1:#smt:(Array640.size_to_list).
+- by rewrite W8u32.pack8bE // -!Array640.get_to_list
+     (mcoeff_slotE (to_list bytes{hr}) (8 * k + 6) (20 * k + 15) 0)
+     ~-1:#smt:(Array640.size_to_list).
+by rewrite W8u32.pack8bE // -!Array640.get_to_list
+   (mcoeff_slotE (to_list bytes{hr}) (8 * k + 7) (20 * k + 17) 4)
+   ~-1:#smt:(Array640.size_to_list).
 qed.
