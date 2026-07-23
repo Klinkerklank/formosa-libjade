@@ -217,28 +217,28 @@ op cands (bs : W8.t list) : W32.t list =
 
 clone Rejstream.RejStream as ARS with
   type cand   <- W32.t,
-    op cands  <- cands,
+    op dec1   <- (fun (g : W8.t list) => [W4u8.pack4 g `&` mask23]),
+    op align  <- 3,
     op accept <- accept,
     op coeff  <- idfun<:W32.t>,
-    op align  <- 3,
     op rate   <- 168,
     op slice  <- shake128_slice,
   type buf    <- W8.t Array848.t,
     op headb  <- (fun (a : W8.t Array848.t) =>
                     Array168.to_list (PA_848_168.truncatea_168 a))
 
-  rename "rejectE" as "rejectE_raw"
-
   proof gt0_align  by done,
-        cands_nil  by (rewrite /cands chunk_nil /=),
-        cands_cat  by (move=> xs ys h; rewrite /cands chunk_cat // map_cat),
         size_slice by exact size_shake128_slice,
         slice_cat  by exact shake128_slice_cat.
 
 import ARS.
 
+(* the chunked decoder is the 3-byte candidate stream *)
+lemma decodeE (bs : W8.t list) : ARS.decode bs = cands bs.
+proof. by rewrite /decode /cands flatten1. qed.
+
 lemma rejectE (bs : W8.t list) : reject bs = filter accept (cands bs).
-proof. by rewrite rejectE_raw map_id. qed.
+proof. by rewrite ARS.rejectE decodeE map_id. qed.
 
 lemma size_cands (bs : W8.t list) : size (cands bs) = size bs %/ 3.
 proof. by rewrite /cands size_map size_chunk. qed.

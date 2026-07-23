@@ -133,10 +133,10 @@ qed.
 (* -------------------------------------------------------------------- *)
 clone Rejstream.RejStream as SRS with
   type cand   <- W8.t,
-    op cands  <- scands,
+    op dec1   <- (fun (g : W8.t list) => nibbles (head witness g)),
+    op align  <- 1,
     op accept <- saccept,
     op coeff  <- scoeff,
-    op align  <- 1,
     op rate   <- 136,
     op slice  <- shake256_slice,
   type buf    <- W8.t Array272.t,
@@ -148,12 +148,21 @@ clone Rejstream.RejStream as SRS with
          "blocks_ok" as "sblocks_ok"
 
   proof gt0_align  by done,
-        cands_nil  by exact scands_nil,
-        cands_cat  by (move=> xs ys _; exact scands_cat),
         size_slice by exact size_shake256_slice,
         slice_cat  by exact shake256_slice_cat.
 
 import SRS.
+
+(* the chunked decoder is the nibble stream *)
+lemma sdecodeE (bs : W8.t list) : SRS.decode bs = scands bs.
+proof.
+rewrite /decode chunk1E -map_comp /scands; congr.
+by apply eq_map => b @/(\o) /=.
+qed.
+
+lemma srejectE (bs : W8.t list) :
+  sreject bs = map scoeff (filter saccept (scands bs)).
+proof. by rewrite SRS.srejectE sdecodeE. qed.
 
 
 (* one byte = two candidates, low nibble first *)

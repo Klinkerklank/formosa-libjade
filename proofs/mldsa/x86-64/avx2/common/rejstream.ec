@@ -6,7 +6,8 @@
 (* Instances: Aexpand (3-byte candidates, align 3, coeff = idfun) and   *)
 (* Sexpand (nibbles, align 1, coeff = 4 - z).                           *)
 (* -------------------------------------------------------------------- *)
-require import AllCore List IntDiv.
+require import AllCore List IntDiv BitEncoding.
+import BitChunking.
 
 from Jasmin require import JWord JUtils.
 
@@ -14,37 +15,64 @@ require import Agree.
 require import Array4 Array256.
 
 (* -------------------------------------------------------------------- *)
+(* helpers for relating instance decoders to the chunked form           *)
+lemma chunk1E ['a] (l : 'a list) : chunk 1 l = map (fun x => [x]) l.
+proof.
+apply (eq_from_nth witness).
+- by rewrite size_chunk // size_map divz1.
+move=> i; rewrite size_chunk // divz1 => rgi.
+rewrite /chunk divz1 nth_mkseq //= (nth_map witness) //.
+by rewrite (drop_nth witness) //= take0.
+qed.
+
+lemma flatten1 ['a 'b] (f : 'a -> 'b) (l : 'a list) :
+  flatten (map (fun x => [f x]) l) = map f l.
+proof. by elim: l => //= x l ih; rewrite flatten_cons ih. qed.
+
+(* -------------------------------------------------------------------- *)
 abstract theory RejStream.
 
 type cand.
 
-op cands  : W8.t list -> cand list.
-op accept : cand -> bool.
-op coeff  : cand -> W32.t.
-op align  : int.
+(* the primitive decoder of one align-sized group of bytes             *)
+op dec1  : W8.t list -> cand list.
+op align : int.
 
 axiom gt0_align : 0 < align.
-axiom cands_nil : cands [] = [].
-axiom cands_cat (xs ys : W8.t list) :
-  align %| size xs => cands (xs ++ ys) = cands xs ++ cands ys.
+
+op accept : cand -> bool.
+op coeff  : cand -> W32.t.
+
+(* decoding is group-local: the candidate stream of a byte stream      *)
+op decode (bs : W8.t list) : cand list =
+  flatten (map dec1 (chunk align bs)).
+
+lemma decode_nil : decode [] = [].
+proof. by rewrite /decode chunk_nil. qed.
+
+lemma decode_cat (xs ys : W8.t list) :
+  align %| size xs => decode (xs ++ ys) = decode xs ++ decode ys.
+proof.
+by move=> h; rewrite /decode chunk_cat // map_cat flatten_cat.
+qed.
 
 (* -------------------------------------------------------------------- *)
 op [opaque] reject (bs : W8.t list) : W32.t list =
-  map coeff (filter accept (cands bs)).
+  map coeff (filter accept (decode bs)).
 
 lemma rejectE (bs : W8.t list) :
-  reject bs = map coeff (filter accept (cands bs)).
+  reject bs = map coeff (filter accept (decode bs)).
 proof. by rewrite /reject. qed.
 
 lemma reject_nil : reject [] = [].
-proof. by rewrite rejectE cands_nil. qed.
+proof. by rewrite rejectE decode_nil. qed.
 
 hint simplify reject_nil.
 
 lemma reject_cat (xs ys : W8.t list) :
   align %| size xs =>
   reject (xs ++ ys) = reject xs ++ reject ys.
-proof. by move=> h; rewrite !rejectE cands_cat // filter_cat map_cat. qed.
+proof. by move=> h; rewrite !rejectE decode_cat // filter_cat map_cat. qed.
 
 (* -------------------------------------------------------------------- *)
 (* the XOF byte-stream layer                                            *)
