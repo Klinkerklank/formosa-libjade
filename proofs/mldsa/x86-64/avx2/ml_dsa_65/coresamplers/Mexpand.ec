@@ -1,0 +1,202 @@
+(* -------------------------------------------------------------------- *)
+(* Correctness of the AVX2 mask sampler (ExpandMask, gamma1 = 2^19):    *)
+(* each mask polynomial is the 20-bit gamma1-decode of the first 640    *)
+(* bytes of its lane's SHAKE256 stream -- no rejection.  Four lanes are *)
+(* sampled SIMD-interleaved, the fifth by the single-lane sponge.       *)
+(* Worked in isolation against the [Mpoly]/[MpolyP] axiom, mirroring   *)
+(* Aexpand/Sexpand.                                                     *)
+(* -------------------------------------------------------------------- *)
+require import AllCore CoreUtils List List_extra IntDiv StdOrder BitEncoding.
+import BS2Int.
+
+(* -------------------------------------------------------------------- *)
+from Jasmin require import JWord JModel_x86.
+from JazzEC require import Ml_dsa_65_avx2.
+
+require import Prefixarray.
+require import Warraypack.
+require import Avx2red.
+require import Sha3x4. import Shake256x4.
+require import Array4 Array7 Array25 Array64 Array136 Array256 Array640 Array680 Array1280.
+require import WArray640 WArray1024.
+
+(* -------------------------------------------------------------------- *)
+clone import Prefixarray.PrefixArray as PA_680_136 with
+      op sizeB <- 136,
+      op sizeS <- 680,
+  theory AB    <- Array136,
+  theory AS    <- Array680
+
+  rename "'S" as "_680"
+         "'B" as "_136"
+
+  proof le_size by done.
+
+(* -------------------------------------------------------------------- *)
+type rho'  = W8.t Array64.t.
+type wpoly = W32.t Array256.t.
+
+(* -------------------------------------------------------------------- *)
+(* the 5-block squeeze wrapper: each iteration squeezes one 136-byte    *)
+(* block into every lane's next window of the 680-byte buffers          *)
+lemma shake256_squeeze_multiple_blocks_4xP (data : W8.t list Array4.t)
+: hoare[
+  M.shake256_squeeze_multiple_blocks_4x :
+      state \sha3for Array4.map (mk_absorbed) data
+    ==>
+         res.`1 \sha3for Array4.map (mk_read (136 * 5)) data
+      /\ (forall i, 0 <= i < 4 =>
+            let b = nth witness [res.`2; res.`3; res.`4; res.`5] i in
+            Array680.sub b 0 680 = shake256_slice data.[i] 0 680)
+  ].
+proof.
+proc.
+sp.
+while (inc = 5
+    /\ 0 <= i <= 5
+    /\ state \sha3for Array4.map (mk_read (136 * i)) data
+    /\ Array680.sub b0 0 (136 * i) = shake256_slice data.[0] 0 (136 * i)
+    /\ Array680.sub b1 0 (136 * i) = shake256_slice data.[1] 0 (136 * i)
+    /\ Array680.sub b2 0 (136 * i) = shake256_slice data.[2] 0 (136 * i)
+    /\ Array680.sub b3 0 (136 * i) = shake256_slice data.[3] 0 (136 * i)).
+- exlim i => i_.
+  wp; ecall (shake256_squeezeblock4xP data i_).
+  skip => &hr |> hi0 _ hst hs0 hs1 hs2 hs3 hlt r hres hblk /=.
+  move: (hblk 0 _) (hblk 1 _) (hblk 2 _) (hblk 3 _) => //= hb0 hb1 hb2 hb3.
+  do! split; 1,2: smt().
+  - by rewrite sub_window_catE 1:/# hs0
+       (shake256_slice_cat_block data.[0] i{hr} r.`2 hi0 hb0).
+  - by rewrite sub_window_catE 1:/# hs1
+       (shake256_slice_cat_block data.[1] i{hr} r.`3 hi0 hb1).
+  - by rewrite sub_window_catE 1:/# hs2
+       (shake256_slice_cat_block data.[2] i{hr} r.`4 hi0 hb2).
+  by rewrite sub_window_catE 1:/# hs3
+     (shake256_slice_cat_block data.[3] i{hr} r.`5 hi0 hb3).
+(* entry: nothing is read yet; exit: the five windows cover 680 bytes *)
+skip => &hr |> hst; split.
+- by do! split; smt(size_shake256_slice size_eq0).
+move=> b00 b10 b20 b30 i0 state0 hge5 hi0 hi5 hrel h0 h1 h2 h3.
+have ->>: i0 = 5 by smt().
+split; first by exact hrel.
+move=> j hj0 hj4.
+by have [->|[->|[->|->]]] /=: j = 0 \/ j = 1 \/ j = 2 \/ j = 3 by smt().
+qed.
+
+(* ==================================================================== *)
+(* The gamma1 bit-decode: coefficient i is gamma1 minus the i-th        *)
+(* 20-bit little-endian field of the byte stream                        *)
+
+op gamma1 : int = 2 ^ 19.
+
+op mbits (bs : W8.t list) (i : int) : int =
+  bs2int (take 20 (drop (20 * i) (flatten (map W8.w2bits bs)))).
+
+op mcoeff (bs : W8.t list) (i : int) : W32.t =
+  W32.of_int gamma1 - W32.of_int (mbits bs i).
+
+op mdecode (bs : W8.t list) : wpoly =
+  Array256.init (mcoeff bs).
+
+lemma mbits_ge0 (bs : W8.t list) (i : int) : 0 <= mbits bs i.
+proof. by rewrite /mbits bs2int_ge0. qed.
+
+lemma mbits_lt (bs : W8.t list) (i : int) : mbits bs i < 2 ^ 20.
+proof.
+rewrite /mbits.
+have := bs2int_le2Xs (take 20 (drop (20 * i) (flatten (map W8.w2bits bs)))).
+move=> h; apply (IntOrder.ltr_le_trans _ _ _ h).
+by apply IntOrder.ler_weexpn2l => //; smt(size_take_le size_ge0).
+qed.
+
+(* -------------------------------------------------------------------- *)
+(* dropping n bytes drops 8n bits                                       *)
+lemma drop_bits8 (bs : W8.t list) (n : int) : 0 <= n =>
+  drop (8 * n) (flatten (map W8.w2bits bs)) = flatten (map W8.w2bits (drop n bs)).
+proof.
+elim: bs n => [|b bs ih] n hn; 1: by rewrite /= flatten_nil /=.
+case: (n = 0) => [->|nz]; 1: by rewrite drop0.
+rewrite /= flatten_cons drop_cat W8.size_w2bits.
+rewrite (_ : (8 * n < 8) = false) 1:/# /=.
+rewrite (_ : 8 * n - 8 = 8 * (n - 1)) 1:#ring ih 1:/#.
+by rewrite ifF 1:/#.
+qed.
+
+lemma take_bits8 (bs : W8.t list) (n : int) : 0 <= n =>
+  take (8 * n) (flatten (map W8.w2bits bs)) = flatten (map W8.w2bits (take n bs)).
+proof.
+elim: bs n => [|b bs ih] n hn; 1: by rewrite /= flatten_nil /=.
+case: (n = 0) => [->|nz]; 1: by rewrite /= take0 flatten_nil.
+rewrite /= flatten_cons take_cat W8.size_w2bits.
+rewrite (_ : (8 * n < 8) = false) 1:/# /=.
+rewrite (_ : 8 * n - 8 = 8 * (n - 1)) 1:#ring ih 1:/#.
+by rewrite ifF 1:/# /= flatten_cons.
+qed.
+
+(* -------------------------------------------------------------------- *)
+(* a packed 4-byte window, as 32 consecutive bits of the byte stream    *)
+lemma w2bits_pack4 (b0 b1 b2 b3 : W8.t) :
+  W32.w2bits (W4u8.pack4 [b0; b1; b2; b3])
+  = W8.w2bits b0 ++ W8.w2bits b1 ++ W8.w2bits b2 ++ W8.w2bits b3.
+proof.
+apply (eq_from_nth false).
+- by rewrite W32.size_w2bits !size_cat !W8.size_w2bits.
+rewrite W32.size_w2bits => i rgi.
+rewrite W32.get_w2bits.
+rewrite (_ : i = i %/ 8 * 8 + i %% 8) 1:/#.
+rewrite -W4u8.bits8iE 1:/# W4u8.pack4bE 1:/#.
+by (have [->|[->|[->|->]]] /= :
+      i %/ 8 = 0 \/ i %/ 8 = 1 \/ i %/ 8 = 2 \/ i %/ 8 = 3 by smt());
+   smt(nth_cat size_cat W8.size_w2bits W8.get_w2bits).
+qed.
+
+lemma to_uint_pack4 (b0 b1 b2 b3 : W8.t) :
+  to_uint (W4u8.pack4 [b0; b1; b2; b3])
+  = bs2int (W8.w2bits b0 ++ W8.w2bits b1 ++ W8.w2bits b2 ++ W8.w2bits b3).
+proof. by rewrite W32.to_uintE w2bits_pack4. qed.
+
+lemma pack4_window (bs : W8.t list) (c : int) :
+  0 <= c => c + 4 <= size bs =>
+  to_uint (W4u8.pack4 [nth witness bs c; nth witness bs (c + 1);
+                       nth witness bs (c + 2); nth witness bs (c + 3)])
+  = bs2int (take 32 (drop (8 * c) (flatten (map W8.w2bits bs)))).
+proof.
+move=> hc hsz.
+rewrite to_uint_pack4 drop_bits8 // (_ : 32 = 8 * 4) 1:// take_bits8 //.
+have -> : take 4 (drop c bs)
+        = [nth witness bs c; nth witness bs (c + 1);
+           nth witness bs (c + 2); nth witness bs (c + 3)].
+- have hsz4 : size (take 4 (drop c bs)) = 4
+    by smt(size_take size_drop size_ge0).
+  apply (eq_from_nth witness); 1: by rewrite hsz4.
+  rewrite hsz4 => j rgj.
+  rewrite nth_take ~-1:/# nth_drop ~-1:/#.
+  by have [->|[->|[->|->]]] /= : j = 0 \/ j = 1 \/ j = 2 \/ j = 3 by smt().
+by rewrite /= !flatten_cons flatten_nil cats0 !catA.
+qed.
+
+(* -------------------------------------------------------------------- *)
+(* the j-th 20-bit field, read from the 4-byte window at byte offset c  *)
+(* with an in-window bit shift s (s = 0 for even j, 4 for odd j)        *)
+lemma mbits_at (bs : W8.t list) (j c s : int) :
+  0 <= c => c + 4 <= size bs => 20 * j = 8 * c + s => 0 <= s <= 12 =>
+  mbits bs j
+  = to_uint (W4u8.pack4 [nth witness bs c; nth witness bs (c + 1);
+                         nth witness bs (c + 2); nth witness bs (c + 3)])
+    %/ 2 ^ s %% 2 ^ 20.
+proof.
+move=> hc hsz hjs hs.
+rewrite pack4_window // /mbits hjs.
+rewrite bs2int_div 1:/# bs2int_mod //.
+congr.
+rewrite drop_take ~-1:/# take_take ifT 1:/#.
+by rewrite drop_drop ~-1:/# (_ : 8 * c + s = s + 8 * c) 1:#ring.
+qed.
+
+(* ==================================================================== *)
+(* The mask polynomial oracle: the isolation axiom, to be realized      *)
+(* against the crypto-spec in the linking phase                         *)
+op Mpoly : rho' -> W16.t -> wpoly.
+
+axiom MpolyP (rho_ : rho') (sep : W16.t) :
+  Mpoly rho_ sep
+  = mdecode (shake256_slice (to_list rho_ ++ W2u8.to_list sep) 0 640).
