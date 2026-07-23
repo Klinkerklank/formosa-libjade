@@ -420,6 +420,49 @@ op svsampled (b : W8.t Array272.t) (p : wpoly) (bf off : int) =
   /\ bf = 4 * size (sreject (Array272.sub b 0 off))
   /\ agree p 0 (sreject (Array272.sub b 0 off)).
 
+(* -------------------------------------------------------------------- *)
+(* a 4-byte window carries 8 candidates, hence at most 8 coefficients   *)
+lemma size_window4_le8 (b : W8.t Array272.t) (off : int) :
+  size (map scoeff (filter saccept (scands (Array272.sub b off 4)))) <= 8.
+proof.
+rewrite size_map size_filter.
+have := count_size saccept (scands (Array272.sub b off 4)).
+by rewrite size_scands Array272.size_sub /#.
+qed.
+
+(* consuming one 4-byte window appends its accepted coefficients        *)
+lemma sreject_window4 (b : W8.t Array272.t) (off : int) :
+  0 <= off => off + 4 <= 272 =>
+  sreject (Array272.sub b 0 (off + 4))
+  = sreject (Array272.sub b 0 off)
+    ++ map scoeff (filter saccept (scands (Array272.sub b off 4))).
+proof.
+by move=> h1 h2; rewrite sreject_block ~-1:/# -srejectE.
+qed.
+
+(* the vectorized advance: writing out one 4-byte window re-establishes *)
+(* the loop invariant at the next offset                                *)
+lemma svsampled_advance4 (b : W8.t Array272.t) (p : wpoly) (bf off off' : int) :
+  off' = off + 4 =>
+  0 <= off => off' <= 256 => 4 %| off =>
+  4 * size (sreject (Array272.sub b 0 off)) < 992 =>
+  bf = 4 * size (sreject (Array272.sub b 0 off)
+         ++ map scoeff (filter saccept (scands (Array272.sub b off 4)))) =>
+  agree p 0 (sreject (Array272.sub b 0 off)
+         ++ map scoeff (filter saccept (scands (Array272.sub b off 4)))) =>
+  svsampled b p bf off'.
+proof.
+move=> -> ge0_off hle hdvd hlt hbf hag.
+have hle8 := size_window4_le8 b off.
+rewrite /svsampled sreject_window4 ~-1:/#.
+split*.
+- by smt().
+- by smt().
+- by smt(size_cat size_ge0).
+- exact hbf.
+exact hag.
+qed.
+
 
 (* -------------------------------------------------------------------- *)
 (* the candidate stream contributed by one nibble                       *)
@@ -584,26 +627,13 @@ seq 1 : (
     - by smt().
     - exact hag.
     move=> _ _ _ _ _ _ _ result [# hragree hrsz hrgo].
-    have hle8 : size (map scoeff (filter saccept
-                  (scands (Array272.sub randombytes{hr} (to_uint xof_offset{hr}) 4)))) <= 8.
-    - rewrite size_map size_filter.
-      have := count_size saccept (scands (Array272.sub randombytes{hr} (to_uint xof_offset{hr}) 4)).
-      by rewrite size_scands Array272.size_sub /#.
     have hoff4 : to_uint (xof_offset{hr} + W64.of_int 4) = to_uint xof_offset{hr} + 4.
     - rewrite to_uintD_small of_uintK /=.
       + by move: h256 => /#.
       by [].
-    have hsplit : sreject (Array272.sub randombytes{hr} 0 (to_uint xof_offset{hr} + 4))
-      = sreject (Array272.sub randombytes{hr} 0 (to_uint xof_offset{hr}))
-        ++ map scoeff (filter saccept (scands (Array272.sub randombytes{hr} (to_uint xof_offset{hr}) 4))).
-    - by rewrite sreject_block ~-1:#smt:(W64.to_uint_cmp) -srejectE.
-    rewrite hoff4 hsplit.
-    do ! split.
-    - by smt().
-    - by smt().
-    - by smt(size_ge0 size_cat).
-    - exact hrsz.
-    - exact hragree.
+    rewrite hoff4.
+    by apply (svsampled_advance4 _ _ _ (to_uint xof_offset{hr})) => //;
+      smt(W64.to_uint_cmp).
   if; last first.
   - auto=> &hr |> hsv hlt h16 hgo hnl.
     rewrite !uleE ?ultE !of_uintK /= !to_uintD_small ?of_uintK /=.
@@ -654,27 +684,13 @@ seq 1 : (
     - by smt().
     - exact hag.
     move=> _ _ _ _ _ _ _ result [# hragree hrsz hrgo].
-    have hle8 : size (map scoeff (filter saccept
-                  (scands (Array272.sub randombytes{hr} (to_uint off0 + 4) 4)))) <= 8.
-    - rewrite size_map size_filter.
-      have := count_size saccept (scands (Array272.sub randombytes{hr} (to_uint off0 + 4) 4)).
-      by rewrite size_scands Array272.size_sub /#.
     have hoff8 : to_uint (off0 + W64.of_int 8) = to_uint off0 + 8.
     - rewrite to_uintD_small of_uintK /=.
       + by move: h256o => /#.
       by [].
-    have hsplit : sreject (Array272.sub randombytes{hr} 0 (to_uint off0 + 8))
-      = sreject (Array272.sub randombytes{hr} 0 (to_uint off0 + 4))
-        ++ map scoeff (filter saccept (scands (Array272.sub randombytes{hr} (to_uint off0 + 4) 4))).
-    - rewrite (_ : to_uint off0 + 8 = to_uint off0 + 4 + 4) 1:/#.
-      by rewrite sreject_block ~-1:#smt:(W64.to_uint_cmp) -srejectE.
-    rewrite hoff8 hsplit.
-    do ! split.
-    - by smt().
-    - by smt().
-    - by smt(size_ge0 size_cat).
-    - exact hrsz.
-    - exact hragree.
+    rewrite hoff8.
+    by apply (svsampled_advance4 _ _ _ (to_uint off0 + 4)) => //;
+      smt(W64.to_uint_cmp).
   if; last first.
   - auto=> &hr |> hsv h256o h16 hgo hnl.
     rewrite !uleE ?ultE !of_uintK /= !to_uintD_small ?of_uintK /=.
@@ -726,27 +742,13 @@ seq 1 : (
     - by smt().
     - exact hag.
     move=> _ _ _ _ _ _ _ result [# hragree hrsz hrgo].
-    have hle8 : size (map scoeff (filter saccept
-                  (scands (Array272.sub randombytes{hr} (to_uint off0 + 8) 4)))) <= 8.
-    - rewrite size_map size_filter.
-      have := count_size saccept (scands (Array272.sub randombytes{hr} (to_uint off0 + 8) 4)).
-      by rewrite size_scands Array272.size_sub /#.
     have hoff12 : to_uint (off0 + W64.of_int 12) = to_uint off0 + 12.
     - rewrite to_uintD_small of_uintK /=.
       + by move: h256o => /#.
       by [].
-    have hsplit : sreject (Array272.sub randombytes{hr} 0 (to_uint off0 + 12))
-      = sreject (Array272.sub randombytes{hr} 0 (to_uint off0 + 8))
-        ++ map scoeff (filter saccept (scands (Array272.sub randombytes{hr} (to_uint off0 + 8) 4))).
-    - rewrite (_ : to_uint off0 + 12 = to_uint off0 + 8 + 4) 1:/#.
-      by rewrite sreject_block ~-1:#smt:(W64.to_uint_cmp) -srejectE.
-    rewrite hoff12 hsplit.
-    do ! split.
-    - by smt().
-    - by smt().
-    - by smt(size_ge0 size_cat).
-    - exact hrsz.
-    - exact hragree.
+    rewrite hoff12.
+    by apply (svsampled_advance4 _ _ _ (to_uint off0 + 8)) => //;
+      smt(W64.to_uint_cmp).
   if; last first.
   - auto=> &hr |> hsv h256o h16 hgo hnl.
     rewrite !uleE ?ultE !of_uintK /= !to_uintD_small ?of_uintK /=.
@@ -792,27 +794,13 @@ seq 1 : (
     - by smt().
     - exact hag.
     move=> _ _ _ _ _ _ _ result [# hragree hrsz hrgo].
-    have hle8 : size (map scoeff (filter saccept
-                  (scands (Array272.sub randombytes{hr} (to_uint off0 + 12) 4)))) <= 8.
-    - rewrite size_map size_filter.
-      have := count_size saccept (scands (Array272.sub randombytes{hr} (to_uint off0 + 12) 4)).
-      by rewrite size_scands Array272.size_sub /#.
     have hoff16 : to_uint (off0 + W64.of_int 16) = to_uint off0 + 16.
     - rewrite to_uintD_small of_uintK /=.
       + by move: h256o => /#.
       by [].
-    have hsplit : sreject (Array272.sub randombytes{hr} 0 (to_uint off0 + 16))
-      = sreject (Array272.sub randombytes{hr} 0 (to_uint off0 + 12))
-        ++ map scoeff (filter saccept (scands (Array272.sub randombytes{hr} (to_uint off0 + 12) 4))).
-    - rewrite (_ : to_uint off0 + 16 = to_uint off0 + 12 + 4) 1:/#.
-      by rewrite sreject_block ~-1:#smt:(W64.to_uint_cmp) -srejectE.
-    rewrite hoff16 hsplit.
-    do ! split.
-    - by smt().
-    - by smt().
-    - by smt(size_ge0 size_cat).
-    - exact hrsz.
-    - exact hragree.
+    rewrite hoff16.
+    by apply (svsampled_advance4 _ _ _ (to_uint off0 + 12)) => //;
+      smt(W64.to_uint_cmp).
   auto=> &hr |> hsv h256o h16.
   rewrite !uleE ?ultE !of_uintK /= !to_uintD_small ?of_uintK /=.
   - by move: h256o => /#.
