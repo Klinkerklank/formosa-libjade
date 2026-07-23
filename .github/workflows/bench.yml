@@ -1,29 +1,22 @@
 name: bench
 
 # Runs the cycle benchmark on a self-hosted runner (label "bench") and publishes
-# the report to the workflow run's Job Summary. See bench/RUNNER.md for runner
+# the report to the workflow run's Job Summary. See .github/runner/README.md for runner
 # provisioning and the public-repo security model.
 
 on:
   workflow_dispatch:
   push:
-    branches: [main]
+    branches: [main, 'ci-*']
   pull_request_target:
     types: [labeled, synchronize]
 
-# Least privilege: the job only reads the tree and writes the run summary.
 permissions:
   contents: read
 
-# One self-hosted runner: serialize bench runs, and never cancel one in flight
-# (a half-run leaves no useful numbers).
 concurrency:
   group: bench
   cancel-in-progress: false
-
-# Toolchain provided by the runner (one-time opam switch with jasmin 2026.03.1).
-env:
-  CI_OPAM_SWITCH: jasmin-bench
 
 jobs:
   bench:
@@ -39,40 +32,30 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v7
         with:
-          submodules: false
-          # No credentials to persist: later steps only clone public submodules
-          # and never push. Avoids the post-job submodule auth cleanup, which
-          # trips over the mldsa/submodules/* gitlinks (mapped in mldsa/.gitmodules,
-          # which top-level git never reads, not the root .gitmodules).
+          submodules: true
           persist-credentials: false
           ref: >-
             ${{ github.event_name == 'pull_request_target'
                 && github.event.pull_request.head.sha
                 || github.sha }}
 
-      # A stale .gitmodules entry (mldsa/submodules/dilithium) makes a blanket
-      # submodule update abort, so init exactly the paths the build needs.
-      - name: Init submodules
-        run: >-
-          git submodule update --init
-          bench/third_party/mlkem-native
-          bench/third_party/mldsa-native
-          bench/third_party/kyber
-          bench/third_party/dilithium
+      - name: Opam cache
+        uses: actions/cache@v6
+        with:
+          path: ~/.opam
+          key: opam-${{ runner.environment }}-${{ runner.os }}-${{ hashFiles('.ocaml-version', 'jasmin-nist.opam') }}-${{ github.run_id }}
+          restore-keys: |
+            opam-${{ runner.environment }}-${{ runner.os }}-${{ hashFiles('.ocaml-version', 'jasmin-nist.opam') }}-
 
-      # Install jasmin + EasyCrypt from the repo's opam file, so a version bump
-      # in the tree takes effect here without rebuilding the runner image.
-      # (Build caching is handled separately, not via a persistent opam root.)
       - name: Toolchain
         run: |
           opam init --bare --disable-sandboxing -y >/dev/null 2>&1 || true
-          opam switch "$CI_OPAM_SWITCH" >/dev/null 2>&1 \
-            || opam switch create "$CI_OPAM_SWITCH" 5.3.0
+          opam switch jasmin-bench >/dev/null 2>&1 \
+            || opam switch create jasmin-bench "$(cat .ocaml-version)"
           opam update -y                         # advance the easycrypt git pin
           opam install . --deps-only -y          # jasmin + easycrypt
-          # hand the switch to later steps
-          echo "$(opam var --switch="$CI_OPAM_SWITCH" bin)" >> "$GITHUB_PATH"
-          opam env --switch="$CI_OPAM_SWITCH" \
+          echo "$(opam var --switch=jasmin-bench bin)" >> "$GITHUB_PATH"
+          opam env --switch=jasmin-bench \
             | sed -nE "s/^([A-Za-z_]+)='(.*)'; export.*/\1=\2/p" \
             | grep -v '^PATH=' >> "$GITHUB_ENV"
 

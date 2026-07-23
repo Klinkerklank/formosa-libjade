@@ -1,4 +1,5 @@
-# Custom self-hosted runner labels used by workflows (see bench/RUNNER.md).
+# Custom self-hosted runner labels used by workflows (see .github/runner/README.md).
 self-hosted-runner:
   labels:
     - bench
+    - proofs

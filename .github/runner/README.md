@@ -1,4 +1,4 @@
-# Self-hosted bench runner
+# Self-hosted runners (bench + proofs)
 
 One-time setup for the machine that runs [`.github/workflows/bench.yml`](../.github/workflows/bench.yml).
 The workflow benchmarks the backends and writes the report to the run's Job
@@ -31,7 +31,7 @@ Operational rules:
 
 ## Option A — containerized runner (recommended)
 
-[`runner/`](runner/) builds a small image with the runner agent + a C/opam
+This directory builds a small image with the runner agent + a C/opam
 toolchain. `run-runner.sh` then supervises a loop that starts **one fresh
 container per job**: each iteration is `docker run --rm` with the in-container
 agent registered `--ephemeral`, so it serves a single job and exits, the
@@ -44,8 +44,8 @@ contain jasmin/EasyCrypt — the workflow installs those from `jasmin-nist.opam`
 For a quick manual test you can run the loop in the foreground:
 
 ```
-cd bench/runner
-REPO=strub/jasmin-nist ACCESS_TOKEN=<PAT> ./run-runner.sh   # Ctrl-C to stop
+cd .github/runner
+REPO=strub/jasmin-nist ACCESS_TOKEN=<PAT> LABELS=bench NAME=bench-runner ./run-runner.sh   # Ctrl-C to stop
 ```
 
 For a persistent runner, supervise it with the provided systemd **user** unit
@@ -56,7 +56,7 @@ so it starts on boot and restarts if the loop dies (this replaces docker's
 loginctl enable-linger "$USER"
 mkdir -p ~/.config/systemd/user ~/.config/bench-runner
 cp bench-runner.service ~/.config/systemd/user/
-printf 'REPO=strub/jasmin-nist\nACCESS_TOKEN=<PAT>\nCPUSET=7\n' > ~/.config/bench-runner/env
+printf 'REPO=strub/jasmin-nist\nACCESS_TOKEN=<PAT>\nLABELS=bench\nNAME=bench-runner\nCPUSET=7\n' > ~/.config/bench-runner/env
 chmod 600 ~/.config/bench-runner/env
 # edit ExecStart in the unit to point at this checkout, then:
 systemctl --user daemon-reload

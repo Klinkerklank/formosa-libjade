@@ -8,8 +8,8 @@ set -euo pipefail
 
 : "${REPO:?set REPO=owner/name (e.g. strub/jasmin-nist)}"
 : "${ACCESS_TOKEN:?set ACCESS_TOKEN to a PAT that can create runner registration tokens}"
-LABELS="${LABELS:-bench}"
-NAME="${RUNNER_NAME:-bench-$(hostname)-$$}"
+LABELS="${LABELS:?set LABELS=<runner label(s), e.g. bench or proofs>}"
+NAME="${RUNNER_NAME:?set RUNNER_NAME=<unique runner name>}"
 
 reg_token() {
   curl -fsSL -X POST \

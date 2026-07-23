@@ -8,8 +8,9 @@
 #   loginctl enable-linger "$USER"
 #   mkdir -p ~/.config/systemd/user ~/.config/bench-runner
 #   cp bench-runner.service ~/.config/systemd/user/
-#   # secrets + config, kept out of git and the process list:
-#   printf 'REPO=strub/jasmin-nist\nACCESS_TOKEN=<PAT>\nCPUSET=7\n' \
+#   # secrets + config, kept out of git and the process list; LABELS and NAME
+#   # are mandatory and must be unique per instance on a host:
+#   printf 'REPO=strub/jasmin-nist\nACCESS_TOKEN=<PAT>\nLABELS=bench\nNAME=bench-runner\nCPUSET=7\n' \
 #       > ~/.config/bench-runner/env
 #   chmod 600 ~/.config/bench-runner/env
 #   # point ExecStart at your checkout, then:
@@ -25,10 +26,13 @@ After=default.target
 Type=simple
 EnvironmentFile=%h/.config/bench-runner/env
 # Absolute path to run-runner.sh in your checkout (edit to match).
-ExecStart=%h/jasmin-nist/bench/runner/run-runner.sh
+ExecStart=%h/runner/run-runner.sh
 # run-runner.sh already loops; this restarts the loop itself if it ever dies.
 Restart=always
 RestartSec=5
+# The TERM trap tears down the container promptly; if anything wedges, do not
+# make `systemctl stop` wait the default 90s.
+TimeoutStopSec=30
 
 [Install]
 WantedBy=default.target

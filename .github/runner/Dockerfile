@@ -15,7 +15,7 @@ ENV DEBIAN_FRONTEND=noninteractive
 # libgmp-dev are the usual system deps of the OCaml stack (zarith etc.) so opam
 # does not need to shell out for depexts (it has no sudo in the container).
 RUN apt-get update && apt-get install -y --no-install-recommends \
-        build-essential python3 git make opam curl jq util-linux \
+        build-essential python3 git make opam curl jq util-linux unzip \
         ca-certificates m4 pkg-config autoconf \
         libgmp-dev libmpfr-dev libpcre2-dev libppl-dev zlib1g-dev \
     && rm -rf /var/lib/apt/lists/*
