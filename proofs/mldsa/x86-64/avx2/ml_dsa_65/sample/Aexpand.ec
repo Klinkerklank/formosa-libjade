@@ -10,6 +10,7 @@ from JazzEC require import Ml_dsa_65_avx2.
 require import Agree.
 require import Avx2red.
 require import Prefixarray.
+require import Rejstream.
 require import Warraypack.
 require import Sha3x4. import Shake128x4.
 require import Array2 Array4 Array25 Array32 Array168 Array256 Array848 Array7680.
@@ -59,15 +60,6 @@ type wpoly = W32.t Array256.t.
 type A     = W32.t Array7680.t.
 
 (* -------------------------------------------------------------------- *)
-op [opaque] reject (data : W8.t list) : W32.t list =
-  filter (fun w => to_uint w < modulus)
-    (map (fun ws => W4u8.pack4 ws `&` W32.of_int (2^23 - 1)) (chunk 3 data)).
-
-(* -------------------------------------------------------------------- *)
-lemma reject_nil : reject [] = [].
-proof. by rewrite /reject chunk_nil /=. qed.
-
-hint simplify reject_nil.
 
 (* -------------------------------------------------------------------- *)
 
@@ -212,9 +204,6 @@ qed.
 (* -------------------------------------------------------------------- *)
 (* -------------------------------------------------------------------- *)
 (* -------------------------------------------------------------------- *)
-lemma reject_cat (xs ys : W8.t list) : 3 %| size xs =>
-  reject (xs ++ ys) = reject xs ++ reject ys.
-proof. by move=> h; rewrite /reject chunk_cat // map_cat filter_cat. qed.
 
 (* -------------------------------------------------------------------- *)
 import BS2Int.
@@ -226,8 +215,30 @@ op accept (w : W32.t) : bool = to_uint w < modulus.
 op cands (bs : W8.t list) : W32.t list =
   map (fun ws => W4u8.pack4 ws `&` mask23) (chunk 3 bs).
 
+clone Rejstream.RejStream as ARS with
+  type cand   <- W32.t,
+    op cands  <- cands,
+    op accept <- accept,
+    op coeff  <- idfun<:W32.t>,
+    op align  <- 3,
+    op rate   <- 168,
+    op slice  <- shake128_slice,
+  type buf    <- W8.t Array848.t,
+    op headb  <- (fun (a : W8.t Array848.t) =>
+                    Array168.to_list (PA_848_168.truncatea_168 a))
+
+  rename "rejectE" as "rejectE_raw"
+
+  proof gt0_align  by done,
+        cands_nil  by (rewrite /cands chunk_nil /=),
+        cands_cat  by (move=> xs ys h; rewrite /cands chunk_cat // map_cat),
+        size_slice by exact size_shake128_slice,
+        slice_cat  by exact shake128_slice_cat.
+
+import ARS.
+
 lemma rejectE (bs : W8.t list) : reject bs = filter accept (cands bs).
-proof. by rewrite /reject /cands /accept. qed.
+proof. by rewrite rejectE_raw map_id. qed.
 
 lemma size_cands (bs : W8.t list) : size (cands bs) = size bs %/ 3.
 proof. by rewrite /cands size_map size_chunk. qed.
@@ -1035,25 +1046,6 @@ by smt().
 qed.
 
 (* -------------------------------------------------------------------- *)
-op reject_ok (nonce : W8.t list) (sz : int) (p : wpoly) (filled : int) =
-     agree p 0 (reject (shake128_slice nonce 0 sz))
-  /\ filled = min 256 (size (reject (shake128_slice nonce 0 sz))).
-
-(* -------------------------------------------------------------------- *)
-(* the four sampling lanes, staged: lanes below j are one block ahead   *)
-op lanes_ok (data : W8.t list Array4.t) (k j : int)
-            (ps : wpoly list) (fs : W64.t list) =
-  forall i, 0 <= i < 4 =>
-    reject_ok data.[i] (168 * (k + b2i (i < j)))
-      (nth witness ps i) (to_uint (nth witness fs i)).
-
-(* -------------------------------------------------------------------- *)
-(* each lane buffer starts with the block squeezed at offset 168 * k    *)
-op blocks_ok (data : W8.t list Array4.t) (k : int)
-             (bs : W8.t Array848.t list) =
-  forall i, 0 <= i < 4 =>
-    Array168.to_list (truncatea_168 (nth witness bs i))
-    = shake128_slice data.[i] (168 * k) 168.
 
 (* -------------------------------------------------------------------- *)
 

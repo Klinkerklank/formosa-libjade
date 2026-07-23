@@ -10,6 +10,7 @@ require import Agree.
 require import Avx2red.
 require import Errshuffle.
 require import Prefixarray.
+require import Rejstream.
 require import Warraypack.
 require import Sha3x4. import Shake256x4.
 require import Array4 Array25 Array64 Array136 Array256 Array272 Array1280 Array1536 Array2048.
@@ -130,22 +131,30 @@ by rewrite scands_cons size_cat size_nibbles ih /#.
 qed.
 
 (* -------------------------------------------------------------------- *)
-op [opaque] sreject (bs : W8.t list) : W32.t list =
-  map scoeff (filter saccept (scands bs)).
+clone Rejstream.RejStream as SRS with
+  type cand   <- W8.t,
+    op cands  <- scands,
+    op accept <- saccept,
+    op coeff  <- scoeff,
+    op align  <- 1,
+    op rate   <- 136,
+    op slice  <- shake256_slice,
+  type buf    <- W8.t Array272.t,
+    op headb  <- (fun (a : W8.t Array272.t) =>
+                    Array136.to_list (PA_272_136.truncatea_136 a))
 
-lemma srejectE (bs : W8.t list) :
-  sreject bs = map scoeff (filter saccept (scands bs)).
-proof. by rewrite /sreject. qed.
+  rename "reject"    as "sreject"
+         "lanes_ok"  as "slanes_ok"
+         "blocks_ok" as "sblocks_ok"
 
-lemma sreject_nil : sreject [] = [].
-proof. by rewrite srejectE /=. qed.
+  proof gt0_align  by done,
+        cands_nil  by exact scands_nil,
+        cands_cat  by (move=> xs ys _; exact scands_cat),
+        size_slice by exact size_shake256_slice,
+        slice_cat  by exact shake256_slice_cat.
 
-hint simplify sreject_nil.
+import SRS.
 
-(* no alignment premise: candidates never straddle a byte boundary *)
-lemma sreject_cat (xs ys : W8.t list) :
-  sreject (xs ++ ys) = sreject xs ++ sreject ys.
-proof. by rewrite !srejectE scands_cat filter_cat map_cat. qed.
 
 (* one byte = two candidates, low nibble first *)
 lemma sreject1E (b : W8.t) :
@@ -162,7 +171,7 @@ qed.
 
 lemma sreject_cons (b : W8.t) (bs : W8.t list) :
   sreject (b :: bs) = sreject [b] ++ sreject bs.
-proof. by rewrite -cat1s sreject_cat. qed.
+proof. by rewrite -cat1s sreject_cat 1:dvd1z. qed.
 
 lemma size_sreject_le (bs : W8.t list) :
   size (sreject bs) <= 2 * size bs.
@@ -179,7 +188,7 @@ lemma sreject_block (a : W8.t Array272.t) (n m : int) :
   = sreject (Array272.sub a 0 n) ++ sreject (Array272.sub a n m).
 proof.
 move=> hn hm; rewrite sub_cat_272 // (_ : 0 + n = n) 1:/#.
-by rewrite sreject_cat.
+by rewrite sreject_cat 1:dvd1z.
 qed.
 
 (* -------------------------------------------------------------------- *)
@@ -932,7 +941,7 @@ lemma sreject_stepS136 (S : W8.t list) (a : W8.t Array136.t) (n : int) : 0 <= n 
 proof.
 move=> hn.
 rewrite (PA_272_136.sub_cat_136 a 0 n 1) // (_ : 0 + n = n) 1:/#.
-by rewrite catA sreject_cat sub1E_136 sreject1E.
+by rewrite catA sreject_cat 1:dvd1z sub1E_136 sreject1E.
 qed.
 
 lemma error_4x__rejection_sample_one_blockP (S : W8.t list) (blk : W8.t Array136.t) :
@@ -977,7 +986,7 @@ while (
                 (136 - to_uint off0x)) ~-1:#smt:(W64.to_uint_cmp).
     rewrite (_ : to_uint off0x + (136 - to_uint off0x) = 136) 1:/#.
     by rewrite PA_272_136.sub_full_136.
-  rewrite catA sreject_cat size_cat.
+  rewrite catA sreject_cat 1:dvd1z size_cat.
   split; 1: by apply agree_full; [smt(size_ge0) | exact hag].
   by smt(size_ge0).
 seq 2 : (
@@ -1103,53 +1112,6 @@ axiom SpolyP (rho' : W8.t Array64.t) (sep : W16.t) (m j : int) :
       (sreject (shake256_slice (to_list rho' ++ W2u8.to_list sep) 0 m)) j.
 
 (* -------------------------------------------------------------------- *)
-op sreject_ok (nonce : W8.t list) (sz : int) (p : wpoly) (filled : int) =
-     agree p 0 (sreject (shake256_slice nonce 0 sz))
-  /\ filled = min 256 (size (sreject (shake256_slice nonce 0 sz))).
-
-(* -------------------------------------------------------------------- *)
-(* the four sampling lanes, staged: lanes below j are one block ahead   *)
-op slanes_ok (data : W8.t list Array4.t) (k j : int)
-             (ps : wpoly list) (fs : W64.t list) =
-  forall i, 0 <= i < 4 =>
-    sreject_ok data.[i] (136 * (k + b2i (i < j)))
-      (nth witness ps i) (to_uint (nth witness fs i)).
-
-(* -------------------------------------------------------------------- *)
-(* each lane buffer starts with the block squeezed at offset 136 * k    *)
-op sblocks_ok (data : W8.t list Array4.t) (k : int)
-              (bs : W8.t Array272.t list) =
-  forall i, 0 <= i < 4 =>
-    Array136.to_list (PA_272_136.truncatea_136 (nth witness bs i))
-    = shake256_slice data.[i] (136 * k) 136.
-
-(* -------------------------------------------------------------------- *)
-
-(* -------------------------------------------------------------------- *)
-
-(* -------------------------------------------------------------------- *)
-(* splitting the accepted stream of a slice prefix                      *)
-lemma sreject_slice_block (n : W8.t list) (m l : int) :
-  0 <= m => 0 <= l =>
-  sreject (shake256_slice n 0 (m + l))
-  = sreject (shake256_slice n 0 m) ++ sreject (shake256_slice n m l).
-proof.
-move=> hm hl.
-by rewrite shake256_slice_cat // sreject_cat.
-qed.
-
-(* -------------------------------------------------------------------- *)
-(* a finished lane satisfies the invariant at any longer prefix         *)
-lemma sreject_ok_full (nonce : W8.t list) (m l : int) (p : wpoly) :
-  0 <= m => 0 <= l =>
-  sreject_ok nonce m p 256 =>
-  sreject_ok nonce (m + l) p 256.
-proof.
-move=> hm hl @/sreject_ok [hag hf].
-rewrite sreject_slice_block //; split.
-- by apply agree_full; [smt(size_ge0) | exact hag].
-by smt(size_cat size_ge0).
-qed.
 
 (* -------------------------------------------------------------------- *)
 lemma error_4x____sample_polynomialsP (rho_ : W8.t Array64.t) (ds0 : W16.t) :
