@@ -538,3 +538,45 @@ ecall (gamma1____decode_to_polynomialP
 skip => &hr |> hsub.
 by rewrite (mdecode_lane _ n rho_ ds_) 1:hsub.
 qed.
+
+(* ==================================================================== *)
+(* The mask-vector assembly: one 4x batch plus one single lane          *)
+(* ==================================================================== *)
+
+(* -------------------------------------------------------------------- *)
+clone Prefixarray.PrefixArray as PW_1280_256 with
+      op sizeB <- 256,
+      op sizeS <- 1280,
+  theory AB    <- Array256,
+  theory AS    <- Array1280
+  proof le_size by done.
+
+abbrev poly_of_mask (s : W32.t Array1280.t) (r : int) : wpoly =
+  PW_1280_256.winof s r.
+
+(* -------------------------------------------------------------------- *)
+lemma sample____maskP (rho_ : rho') (ds0 : W16.t) :
+hoare[ M.sample____mask :
+    rho_prime = rho_ /\ domain_separator = ds0
+  ==>
+     (forall r, 0 <= r < 5 =>
+        poly_of_mask res.`1 r = Mpoly rho_ (ds0 + W16.of_int r))
+  /\ res.`2 = ds0 + W16.of_int 5 ].
+proof.
+proc.
+(* the 4x batch fills windows 0-3 and advances the separator to ds0+4 *)
+seq 7 : (rho_prime = rho_ /\ domain_separator = ds0 + W16.of_int 4
+  /\ forall r, 0 <= r < 4 =>
+       poly_of_mask mask r = Mpoly rho_ (ds0 + W16.of_int r)).
+- wp; ecall (sample_mask_polynomial_4xP rho_ ds0).
+  auto=> &hr |> result hres r rgr rgr2.
+  do 4! (rewrite PW_1280_256.winof_write ~-1:/#).
+  by move: (hres 0 _) (hres 1 _) (hres 2 _) (hres 3 _) => //#.
+(* the single lane fills window 4 and advances the separator to ds0+5 *)
+wp; ecall (sample_mask_polynomial_1xP rho_ (ds0 + W16.of_int 4)).
+auto=> &hr |> hmask r rgr rgr2.
+rewrite PW_1280_256.winof_write ~-1:/#.
+case: (256 * r = 1024) => [heq|hne].
+- by have -> : r = 4 by smt().
+by move: (hmask r) => /#.
+qed.
