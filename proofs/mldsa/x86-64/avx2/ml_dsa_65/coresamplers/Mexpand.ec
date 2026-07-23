@@ -491,3 +491,50 @@ rewrite (mdecode_lane _ data.[3] rho_ (ds0 + W16.of_int 3)) 1:hb3 //.
 move=> i rgi rgi2.
 by have [->|[->|[->|->]]] /= : i = 0 \/ i = 1 \/ i = 2 \/ i = 3 by smt().
 qed.
+
+(* -------------------------------------------------------------------- *)
+(* the single-lane sponge setup: absorb rho' and the domain separator   *)
+lemma setup_state_to_generate_maskP (rho_ : rho') (ds_ : W16.t) :
+hoare[ M.__setup_state_to_generate_mask :
+    rho_prime = rho_ /\ domain_separator = ds_
+  ==> res \sha3one mk_read 136 (to_list rho_ ++ W2u8.to_list ds_) ].
+proof. by proc; wp; call (shake256_absorb_66P rho_ ds_); auto. qed.
+
+(* -------------------------------------------------------------------- *)
+(* the fifth lane: the single-lane sponge squeezes five blocks and the  *)
+(* decoder reads the first 640 bytes                                    *)
+lemma sample_mask_polynomial_1xP (rho_ : rho') (ds_ : W16.t) :
+hoare[ M.__sample_mask_polynomial_1x :
+    rho_prime = rho_ /\ domain_separator = ds_
+  ==> res = Mpoly rho_ ds_ ].
+proof.
+proc.
+pose n := to_list rho_ ++ W2u8.to_list ds_.
+(* absorb, and set up the block counter *)
+seq 5 : (state \sha3one mk_read 136 n /\ inc = 5 /\ i = 0).
+- by wp; call (setup_state_to_generate_maskP rho_ ds_); auto.
+(* the loop squeezes block i into its 136-byte window, then permutes *)
+seq 1 : (Array680.sub mask_encoded 0 680 = shake256_slice n 0 680).
+- while (inc = 5 /\ 0 <= i <= 5
+      /\ state \sha3one mk_read (136 * (i + 1)) n
+      /\ Array680.sub mask_encoded 0 (136 * i)
+         = shake256_slice n 0 (136 * i)).
+  + exlim i => i_.
+    wp; ecall (shake256_permuteP n (i_ + 1)).
+    wp; ecall (shake256_squeeze_blockP n i_).
+    skip => &hr |> hi0 _ hst hsub hlt aux haux.
+    do! split; ~-1: smt().
+    move=> _ result0 hres0.
+    split; 1: smt().
+    by rewrite sub_window_catE 1:/# hsub
+       (shake256_slice_cat_block n i{hr} aux hi0 haux).
+  (* entry: nothing squeezed yet; exit: five windows cover 680 bytes *)
+  skip => &hr |> hst; split; 1: by smt(size_shake256_slice size_eq0).
+  move=> i0 me0 st0 hge5 hi0 hi5 hst0 hsub.
+  by rewrite (: 680 = 136 * i0) 1:/# hsub.
+(* the decoder reads the first 640 bytes of the stream *)
+ecall (gamma1____decode_to_polynomialP
+         (Array640.init (fun j => mask_encoded.[0 + j]))).
+skip => &hr |> hsub.
+by rewrite (mdecode_lane _ n rho_ ds_) 1:hsub.
+qed.
