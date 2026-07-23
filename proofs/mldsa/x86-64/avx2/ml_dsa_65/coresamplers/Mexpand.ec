@@ -398,3 +398,96 @@ by rewrite W8u32.pack8bE // -!Array640.get_to_list
    (mcoeff_slotE (to_list bytes{hr}) (8 * k + 7) (20 * k + 17) 4)
    ~-1:#smt:(Array640.size_to_list).
 qed.
+
+(* ==================================================================== *)
+(* The lane samplers against the Mpoly oracle                           *)
+
+(* the decoder consumes the first 640 of a lane's 680 squeezed bytes    *)
+lemma to_list_init640 (b : W8.t Array680.t) :
+  Array640.to_list (Array640.init ("_.[_]" b))
+  = Array680.sub b 0 640.
+proof.
+rewrite /to_list /sub; apply eq_in_mkseq => i rgi /=.
+by rewrite initiE.
+qed.
+
+lemma slice640_of_680 (n : W8.t list) :
+  take 640 (shake256_slice n 0 680) = shake256_slice n 0 640.
+proof.
+rewrite (: 680 = 640 + 40) 1:// shake256_slice_cat //.
+by rewrite take_size_cat // size_shake256_slice.
+qed.
+
+(* a fully squeezed lane buffer decodes to the lane's Mpoly             *)
+lemma mdecode_lane (b : W8.t Array680.t) (n : W8.t list)
+                   (rho_ : rho') (sep : W16.t) :
+  Array680.sub b 0 680 = shake256_slice n 0 680 =>
+  n = to_list rho_ ++ W2u8.to_list sep =>
+  mdecode (Array640.to_list (Array640.init ("_.[_]" b)))
+  = Mpoly rho_ sep.
+proof.
+move=> hsub hn.
+rewrite to_list_init640 -(take_sub_680 b 0 640 680) 1://.
+by rewrite hsub slice640_of_680 MpolyP hn.
+qed.
+
+(* -------------------------------------------------------------------- *)
+(* the four SIMD-interleaved lanes: absorb rho' with consecutive        *)
+(* domain separators, squeeze five blocks each, decode each lane        *)
+lemma sample_mask_polynomial_4xP (rho_ : rho') (ds0 : W16.t) :
+hoare[ M.__sample_mask_polynomial_4x :
+    rho_prime = rho_ /\ starting_domain_separator = ds0
+  ==> forall i, 0 <= i < 4 =>
+        nth witness [res.`1; res.`2; res.`3; res.`4] i
+        = Mpoly rho_ (ds0 + W16.of_int i) ].
+proof.
+proc.
+pose nonce (i : int) := to_list rho_ ++ W2u8.to_list (ds0 + W16.of_int i).
+pose data := Array4.init nonce.
+sp.
+(* the four lanes absorb rho' and their consecutive domain separators *)
+seq 1 : (xof_state \sha3for Array4.map mk_absorbed data).
+- ecall (shake256_absorb_66_4xP rho_ ds0) => /=.
+  auto=> &hr |> rst; apply/sha3for_eqR/Array4.ext_eq=> i ?.
+  by rewrite !Array4.mapiE ~-1:// !Array4.initiE ~-1:// /=.
+(* five squeezed blocks fill every lane's 680-byte buffer *)
+seq 1 : (forall i, 0 <= i < 4 =>
+           let b = nth witness
+                     [mask_encoded0; mask_encoded1;
+                      mask_encoded2; mask_encoded3] i in
+           Array680.sub b 0 680 = shake256_slice data.[i] 0 680).
+- ecall (shake256_squeeze_multiple_blocks_4xP data).
+  by auto=> &hr |> hst.
+(* lane 0 decodes to its Mpoly *)
+seq 1 : (#pre /\ mask0 = Mpoly rho_ (ds0 + W16.of_int 0)).
+- ecall (gamma1____decode_to_polynomialP
+           (Array640.init (fun i => mask_encoded0.[0 + i]))).
+  auto=> &hr |> hblk.
+  move: (hblk 0 _) => //= hb0.
+  by rewrite (mdecode_lane _ data.[0] rho_ ds0) 1:hb0;
+     first by rewrite /data initiE.
+(* lane 1 *)
+seq 1 : (#pre /\ mask1 = Mpoly rho_ (ds0 + W16.of_int 1)).
+- ecall (gamma1____decode_to_polynomialP
+           (Array640.init (fun i => mask_encoded1.[0 + i]))).
+  auto=> &hr |> hblk.
+  move: (hblk 1 _) => //= hb1.
+  by rewrite (mdecode_lane _ data.[1] rho_ (ds0 + W16.of_int 1)) 1:hb1;
+     first by rewrite /data initiE.
+(* lane 2 *)
+seq 1 : (#pre /\ mask2 = Mpoly rho_ (ds0 + W16.of_int 2)).
+- ecall (gamma1____decode_to_polynomialP
+           (Array640.init (fun i => mask_encoded2.[0 + i]))).
+  auto=> &hr |> hblk.
+  move: (hblk 2 _) => //= hb2.
+  by rewrite (mdecode_lane _ data.[2] rho_ (ds0 + W16.of_int 2)) 1:hb2;
+     first by rewrite /data initiE.
+(* lane 3, and the four lanes assemble *)
+ecall (gamma1____decode_to_polynomialP
+         (Array640.init (fun i => mask_encoded3.[0 + i]))).
+auto=> &hr |> hblk.
+move: (hblk 3 _) => //= hb3.
+rewrite (mdecode_lane _ data.[3] rho_ (ds0 + W16.of_int 3)) 1:hb3 //.
+move=> i rgi rgi2.
+by have [->|[->|[->|->]]] /= : i = 0 \/ i = 1 \/ i = 2 \/ i = 3 by smt().
+qed.
