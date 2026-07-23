@@ -11,9 +11,17 @@ idirs = Jasmin:/Users/strub/Projects/jasmin-nist/_opam/lib/easycrypt/jasmin
 
 idirs = JazzEC:../arrays
 rdirs = ../arrays
-idirs = JazzEC:x86-64/avx2/ml_dsa_65
+rdirs = JazzEC:x86-64/avx2/ml_dsa_65
 rdirs = x86-64/avx2/common
 rdirs = ../core
+
+idirs = Spec:spec
+idirs = Spec:spec/properties
+rdirs = spec
+
+rdirs = eclib
+idirs = JazzEC:x86-64/avx2/ml_dsa_65/common/arithmetic
+rdirs = x86-64/avx2/ml_dsa_65
 
 rdirs = CryptoSpecs:../../submodules/formosa-keccak/submodules/crypto-specs/common
 rdirs = CryptoSpecs:../../submodules/formosa-keccak/submodules/crypto-specs/fips202

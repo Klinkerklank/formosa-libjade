@@ -12,7 +12,7 @@ from Spec require import GFq Rq Serialization Conversion Parameters VecMat
                          Symmetric Sampling MLDSA_W32_Rep MLDSA.
 
 import PolyLVec PolyKVec PolyMat.
-import CDR Round Zq PolyReduceZq BigZMod.
+import Round ZModQ Zq.
 
 require import Array2 Array32 Array48 Array64 Array128 Array256
                Array416 Array640 Array768 Array1280 Array1536 Array2496
@@ -313,7 +313,7 @@ seq 0 1 : (#pre /\
               randomness{2}
               message_representative{2}
               seed_for_mask{2}).
-  wp; skip => |> &1 &2 <- *; rewrite /H_rhopp /Hmu.
+  wp; skip => |> &1 &2 <- *; rewrite /H_rhopp.
   rewrite !Bytes64.of_listK ?Keccak1600_Spec.size_SHAKE256 //;1,2: by rewrite size_take // size_drop // BytesSK.size_to_list /#.
   rewrite Bytes32.of_listK; 1: by rewrite size_take // size_drop // BytesSK.size_to_list /#.
   rewrite BytesSK.of_listK; 1: by rewrite size_to_list /#.

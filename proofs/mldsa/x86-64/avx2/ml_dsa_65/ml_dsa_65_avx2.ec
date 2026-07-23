@@ -5,16 +5,16 @@ from Jasmin require import JModel_x86.
 import SLH64.
 
 require import
-Array2 Array3 Array4 Array5 Array6 Array7 Array8 Array16 Array24 Array25
-Array26 Array32 Array48 Array61 Array64 Array66 Array128 Array136 Array168
-Array256 Array272 Array320 Array416 Array640 Array680 Array768 Array848
-Array1280 Array1536 Array1920 Array1952 Array2048 Array2496 Array3200
-Array3309 Array4032 Array7680 WArray2 WArray8 WArray16 WArray32 WArray48
-WArray61 WArray64 WArray66 WArray96 WArray128 WArray136 WArray160 WArray168
-WArray192 WArray200 WArray208 WArray224 WArray256 WArray272 WArray320
-WArray416 WArray512 WArray640 WArray680 WArray768 WArray800 WArray848
-WArray1024 WArray1920 WArray1952 WArray2048 WArray2496 WArray3200 WArray3309
-WArray4032 WArray5120 WArray6144 WArray30720.
+Array1 Array2 Array3 Array4 Array5 Array6 Array7 Array8 Array16 Array24
+Array25 Array26 Array32 Array48 Array61 Array64 Array66 Array128 Array136
+Array168 Array256 Array272 Array320 Array416 Array640 Array680 Array768
+Array848 Array1280 Array1536 Array1920 Array1952 Array2048 Array2496
+Array3200 Array3309 Array4032 Array7680 WArray2 WArray8 WArray16 WArray32
+WArray48 WArray61 WArray64 WArray66 WArray96 WArray128 WArray136 WArray160
+WArray168 WArray192 WArray200 WArray208 WArray224 WArray256 WArray272
+WArray320 WArray416 WArray512 WArray640 WArray680 WArray768 WArray800
+WArray848 WArray1024 WArray1920 WArray1952 WArray2048 WArray2496 WArray3200
+WArray3309 WArray4032 WArray5120 WArray6144 WArray30720.
 
 abbrev commitment__ENCODING_SHUFFLES =
 (W256.of_int
@@ -545,13 +545,17 @@ abbrev matrix_A__SHUFFLE_TABLE =
 (W8.of_int 15)]).
 
 abbrev rOL8 =
-(W256.of_int
-13620818001941277694121380808605999856886653716761013959207994299728839901191
+((Array1.of_list witness)
+[(W256.of_int
+ 13620818001941277694121380808605999856886653716761013959207994299728839901191
+ )]
 ).
 
 abbrev rOL56 =
-(W256.of_int
-10910488462195273559651782724632284871561478246514020268633800075540923875841
+((Array1.of_list witness)
+[(W256.of_int
+ 10910488462195273559651782724632284871561478246514020268633800075540923875841
+ )]
 ).
 
 abbrev kECCAK_RHOTATES_RIGHT =
@@ -2340,6 +2344,39 @@ module M = {
     }
     return polynomial;
   }
+  proc __SHLQ (x:W64.t, shbytes:int) : W64.t = {
+    
+    if ((shbytes <> 0)) {
+      x <- (x `<<` (W8.of_int (8 * shbytes)));
+    } else {
+      
+    }
+    return x;
+  }
+  proc __SHLDQ (x:W128.t, shbytes:int) : W128.t = {
+    
+    if ((shbytes <> 0)) {
+      x <- (VPSLLDQ_128 x (W8.of_int shbytes));
+    } else {
+      
+    }
+    return x;
+  }
+  proc __SHLQ_256 (x:W256.t, shbytes:int) : W256.t = {
+    
+    if ((shbytes <> 0)) {
+      x <- (VPSLL_4u64 x (W128.of_int (8 * shbytes)));
+    } else {
+      
+    }
+    return x;
+  }
+  proc __KECCAK_Fx4 (pERMUTATION:int) : int = {
+    var perm:int;
+    perm <-
+    (W256.to_uint ((W256.of_int pERMUTATION) `&` (W256.of_int 65280)));
+    return perm;
+  }
   proc __keccakf1600_pround_avx2 (state:W256.t Array7.t) : W256.t Array7.t = {
     var c00:W256.t;
     var c14:W256.t;
@@ -3360,33 +3397,6 @@ module M = {
     st25 <@ __stavx2_unpack (st25, state);
     return st25;
   }
-  proc __SHLQ (x:W64.t, shbytes:int) : W64.t = {
-    
-    if ((shbytes <> 0)) {
-      x <- (x `<<` (W8.of_int (8 * shbytes)));
-    } else {
-      
-    }
-    return x;
-  }
-  proc __SHLDQ (x:W128.t, shbytes:int) : W128.t = {
-    
-    if ((shbytes <> 0)) {
-      x <- (VPSLLDQ_128 x (W8.of_int shbytes));
-    } else {
-      
-    }
-    return x;
-  }
-  proc __SHLQ_256 (x:W256.t, shbytes:int) : W256.t = {
-    
-    if ((shbytes <> 0)) {
-      x <- (VPSLL_4u64 x (W128.of_int (8 * shbytes)));
-    } else {
-      
-    }
-    return x;
-  }
   proc __m_rlen_read_upto8 (buf:int, len:int) : int * W64.t = {
     var w:W64.t;
     var zf:bool;
@@ -3444,7 +3454,7 @@ module M = {
     var t256:W256.t;
     var t128:W128.t;
     if (((l %% 2) = 0)) {
-      t128 <- (zeroextu128 x);
+      t128 <- (VMOV_64 x);
     } else {
       t128 <- (set0_128);
       t128 <- (VPINSR_2u64 t128 x (W8.of_int 1));
@@ -3741,6 +3751,22 @@ module M = {
     }
     st.[r] <- (st.[r] `^` t256);
     return st;
+  }
+  proc __4u64x4_u256x4 (y0:W256.t, y1:W256.t, y2:W256.t, y3:W256.t) : 
+  W256.t * W256.t * W256.t * W256.t = {
+    var x0:W256.t;
+    var x1:W256.t;
+    var x2:W256.t;
+    var x3:W256.t;
+    x0 <- (VPERM2I128 y0 y2 (W8.of_int 32));
+    x1 <- (VPERM2I128 y1 y3 (W8.of_int 32));
+    x2 <- (VPERM2I128 y0 y2 (W8.of_int 49));
+    x3 <- (VPERM2I128 y1 y3 (W8.of_int 49));
+    y0 <- (VPUNPCKL_4u64 x0 x1);
+    y1 <- (VPUNPCKH_4u64 x0 x1);
+    y2 <- (VPUNPCKL_4u64 x2 x3);
+    y3 <- (VPUNPCKH_4u64 x2 x3);
+    return (y0, y1, y2, y3);
   }
   proc _keccakf1600_4x_pround (e:W256.t Array25.t, a:W256.t Array25.t,
                                r8:W256.t, r56:W256.t) : W256.t Array25.t = {
@@ -4080,7 +4106,7 @@ module M = {
     e.[24] <- t_746;
     return e;
   }
-  proc __keccakf1600_avx2x4 (a:W256.t Array25.t) : W256.t Array25.t = {
+  proc __keccakf1600_avx2x4_ref (a:W256.t Array25.t) : W256.t Array25.t = {
     var rC:W64.t Array24.t;
     var s_e:W256.t Array25.t;
     var e:W256.t Array25.t;
@@ -4094,8 +4120,8 @@ module M = {
     s_e <- witness;
     rC <- kECCAK1600_RC;
     e <- s_e;
-    r8 <- rOL8;
-    r56 <- rOL56;
+    r8 <- rOL8.[0];
+    r56 <- rOL56.[0];
     c <- 0;
     while ((c < 24)) {
       rc <- (VPBROADCAST_4u64 rC.[c]);
@@ -4112,26 +4138,1403 @@ module M = {
     }
     return a;
   }
-  proc _keccakf1600_avx2x4 (a:W256.t Array25.t) : W256.t Array25.t = {
+  proc _keccakf1600_avx2x4_ref (a:W256.t Array25.t) : W256.t Array25.t = {
     
-    a <@ __keccakf1600_avx2x4 (a);
+    a <@ __keccakf1600_avx2x4_ref (a);
     return a;
   }
-  proc __4u64x4_u256x4 (y0:W256.t, y1:W256.t, y2:W256.t, y3:W256.t) : 
-  W256.t * W256.t * W256.t * W256.t = {
-    var x0:W256.t;
-    var x1:W256.t;
-    var x2:W256.t;
-    var x3:W256.t;
-    x0 <- (VPERM2I128 y0 y2 (W8.of_int 32));
-    x1 <- (VPERM2I128 y1 y3 (W8.of_int 32));
-    x2 <- (VPERM2I128 y0 y2 (W8.of_int 49));
-    x3 <- (VPERM2I128 y1 y3 (W8.of_int 49));
-    y0 <- (VPUNPCKL_4u64 x0 x1);
-    y1 <- (VPUNPCKH_4u64 x0 x1);
-    y2 <- (VPUNPCKL_4u64 x2 x3);
-    y3 <- (VPUNPCKH_4u64 x2 x3);
-    return (y0, y1, y2, y3);
+  proc __rol_4u64_rho56 (a:W256.t) : W256.t = {
+    var r:W256.t;
+    r <- (VPSHUFB_256 a rOL56.[0]);
+    return r;
+  }
+  proc __rol_4u64_rho8 (a:W256.t) : W256.t = {
+    var r:W256.t;
+    r <- (VPSHUFB_256 a rOL8.[0]);
+    return r;
+  }
+  proc __rol_4u64 (a:W256.t, o:int) : W256.t = {
+    var r:W256.t;
+    var t256:W256.t;
+    r <- (VPSLL_4u64 a (W128.of_int o));
+    t256 <- (VPSRL_4u64 a (W128.of_int (64 - o)));
+    r <- (r `|` t256);
+    return r;
+  }
+  proc __prepare_theta (a_4x:W256.t Array25.t) : W256.t * W256.t * W256.t *
+                                                 W256.t * W256.t = {
+    var ca:W256.t;
+    var ce:W256.t;
+    var ci:W256.t;
+    var co:W256.t;
+    var cu:W256.t;
+    ca <- a_4x.[20];
+    ca <- (ca `^` a_4x.[15]);
+    ca <- (ca `^` a_4x.[10]);
+    ca <- (ca `^` a_4x.[5]);
+    ca <- (ca `^` a_4x.[0]);
+    ce <- a_4x.[21];
+    ce <- (ce `^` a_4x.[16]);
+    ce <- (ce `^` a_4x.[11]);
+    ce <- (ce `^` a_4x.[6]);
+    ce <- (ce `^` a_4x.[1]);
+    ci <- a_4x.[22];
+    ci <- (ci `^` a_4x.[17]);
+    ci <- (ci `^` a_4x.[12]);
+    ci <- (ci `^` a_4x.[7]);
+    ci <- (ci `^` a_4x.[2]);
+    co <- a_4x.[23];
+    co <- (co `^` a_4x.[18]);
+    co <- (co `^` a_4x.[13]);
+    co <- (co `^` a_4x.[8]);
+    co <- (co `^` a_4x.[3]);
+    cu <- a_4x.[24];
+    cu <- (cu `^` a_4x.[19]);
+    cu <- (cu `^` a_4x.[14]);
+    cu <- (cu `^` a_4x.[9]);
+    cu <- (cu `^` a_4x.[4]);
+    return (ca, ce, ci, co, cu);
+  }
+  proc __first (ca:W256.t, ce:W256.t, ci:W256.t, co:W256.t, cu:W256.t) : 
+  W256.t * W256.t * W256.t * W256.t * W256.t = {
+    var da:W256.t;
+    var de:W256.t;
+    var di:W256.t;
+    var do_0:W256.t;
+    var du:W256.t;
+    var ce1:W256.t;
+    var ci1:W256.t;
+    var co1:W256.t;
+    var cu1:W256.t;
+    var ca1:W256.t;
+    ce1 <@ __rol_4u64 (ce, 1);
+    da <- (cu `^` ce1);
+    ci1 <@ __rol_4u64 (ci, 1);
+    de <- (ca `^` ci1);
+    co1 <@ __rol_4u64 (co, 1);
+    di <- (ce `^` co1);
+    cu1 <@ __rol_4u64 (cu, 1);
+    do_0 <- (ci `^` cu1);
+    ca1 <@ __rol_4u64 (ca, 1);
+    du <- (co `^` ca1);
+    return (da, de, di, do_0, du);
+  }
+  proc __second_even (a_4x:W256.t Array25.t, e_4x:W256.t Array25.t,
+                      rc_index:W256.t, ca:W256.t, ce:W256.t, ci:W256.t,
+                      co:W256.t, cu:W256.t, da:W256.t, de:W256.t, di:W256.t,
+                      do_0:W256.t, du:W256.t) : W256.t Array25.t *
+                                                W256.t Array25.t * W256.t *
+                                                W256.t * W256.t * W256.t *
+                                                W256.t = {
+    var t256:W256.t;
+    var bba:W256.t;
+    var bbe:W256.t;
+    var bbi:W256.t;
+    var bbo:W256.t;
+    var bbu:W256.t;
+    t256 <- a_4x.[0];
+    t256 <- (t256 `^` da);
+    a_4x.[0] <- t256;
+    bba <- t256;
+    t256 <- a_4x.[6];
+    t256 <- (t256 `^` de);
+    a_4x.[6] <- t256;
+    bbe <@ __rol_4u64 (t256, 44);
+    t256 <- a_4x.[12];
+    t256 <- (t256 `^` di);
+    a_4x.[12] <- t256;
+    bbi <@ __rol_4u64 (t256, 43);
+    t256 <- (VPANDN_256 bbe bbi);
+    t256 <- (t256 `^` bba);
+    t256 <- (t256 `^` rc_index);
+    e_4x.[0] <- t256;
+    ca <- t256;
+    t256 <- a_4x.[18];
+    t256 <- (t256 `^` do_0);
+    a_4x.[18] <- t256;
+    bbo <@ __rol_4u64 (t256, 21);
+    t256 <- (VPANDN_256 bbi bbo);
+    t256 <- (t256 `^` bbe);
+    e_4x.[1] <- t256;
+    ce <- t256;
+    t256 <- a_4x.[24];
+    t256 <- (t256 `^` du);
+    a_4x.[24] <- t256;
+    bbu <@ __rol_4u64 (t256, 14);
+    t256 <- (VPANDN_256 bbo bbu);
+    t256 <- (t256 `^` bbi);
+    e_4x.[2] <- t256;
+    ci <- t256;
+    t256 <- (VPANDN_256 bbu bba);
+    t256 <- (t256 `^` bbo);
+    e_4x.[3] <- t256;
+    co <- t256;
+    t256 <- (VPANDN_256 bba bbe);
+    t256 <- (t256 `^` bbu);
+    e_4x.[4] <- t256;
+    cu <- t256;
+    return (a_4x, e_4x, ca, ce, ci, co, cu);
+  }
+  proc __third_even (a_4x:W256.t Array25.t, e_4x:W256.t Array25.t, ca:W256.t,
+                     ce:W256.t, ci:W256.t, co:W256.t, cu:W256.t, da:W256.t,
+                     de:W256.t, di:W256.t, do_0:W256.t, du:W256.t) : 
+  W256.t Array25.t * W256.t Array25.t * W256.t * W256.t * W256.t * W256.t *
+  W256.t = {
+    var t256:W256.t;
+    var bga:W256.t;
+    var bge:W256.t;
+    var bgi:W256.t;
+    var bgo:W256.t;
+    var bgu:W256.t;
+    t256 <- a_4x.[3];
+    t256 <- (t256 `^` do_0);
+    a_4x.[3] <- t256;
+    bga <@ __rol_4u64 (t256, 28);
+    t256 <- a_4x.[9];
+    t256 <- (t256 `^` du);
+    a_4x.[9] <- t256;
+    bge <@ __rol_4u64 (t256, 20);
+    t256 <- a_4x.[10];
+    t256 <- (t256 `^` da);
+    a_4x.[10] <- t256;
+    bgi <@ __rol_4u64 (t256, 3);
+    t256 <- (VPANDN_256 bge bgi);
+    t256 <- (t256 `^` bga);
+    e_4x.[5] <- t256;
+    ca <- (ca `^` t256);
+    t256 <- a_4x.[16];
+    t256 <- (t256 `^` de);
+    a_4x.[16] <- t256;
+    bgo <@ __rol_4u64 (t256, 45);
+    t256 <- (VPANDN_256 bgi bgo);
+    t256 <- (t256 `^` bge);
+    e_4x.[6] <- t256;
+    ce <- (ce `^` t256);
+    t256 <- a_4x.[22];
+    t256 <- (t256 `^` di);
+    a_4x.[22] <- t256;
+    bgu <@ __rol_4u64 (t256, 61);
+    t256 <- (VPANDN_256 bgo bgu);
+    t256 <- (t256 `^` bgi);
+    e_4x.[7] <- t256;
+    ci <- (ci `^` t256);
+    t256 <- (VPANDN_256 bgu bga);
+    t256 <- (t256 `^` bgo);
+    e_4x.[8] <- t256;
+    co <- (co `^` t256);
+    t256 <- (VPANDN_256 bga bge);
+    t256 <- (t256 `^` bgu);
+    e_4x.[9] <- t256;
+    cu <- (cu `^` t256);
+    return (a_4x, e_4x, ca, ce, ci, co, cu);
+  }
+  proc __fourth_even (a_4x:W256.t Array25.t, e_4x:W256.t Array25.t,
+                      ca:W256.t, ce:W256.t, ci:W256.t, co:W256.t, cu:W256.t,
+                      da:W256.t, de:W256.t, di:W256.t, do_0:W256.t, du:W256.t) : 
+  W256.t Array25.t * W256.t Array25.t * W256.t * W256.t * W256.t * W256.t *
+  W256.t = {
+    var t256:W256.t;
+    var bka:W256.t;
+    var bke:W256.t;
+    var bki:W256.t;
+    var bko:W256.t;
+    var bku:W256.t;
+    t256 <- a_4x.[1];
+    t256 <- (t256 `^` de);
+    a_4x.[1] <- t256;
+    bka <@ __rol_4u64 (t256, 1);
+    t256 <- a_4x.[7];
+    t256 <- (t256 `^` di);
+    a_4x.[7] <- t256;
+    bke <@ __rol_4u64 (t256, 6);
+    t256 <- a_4x.[13];
+    t256 <- (t256 `^` do_0);
+    a_4x.[13] <- t256;
+    bki <@ __rol_4u64 (t256, 25);
+    t256 <- (VPANDN_256 bke bki);
+    t256 <- (t256 `^` bka);
+    e_4x.[10] <- t256;
+    ca <- (ca `^` t256);
+    t256 <- a_4x.[19];
+    t256 <- (t256 `^` du);
+    a_4x.[19] <- t256;
+    bko <@ __rol_4u64_rho8 (t256);
+    t256 <- (VPANDN_256 bki bko);
+    t256 <- (t256 `^` bke);
+    e_4x.[11] <- t256;
+    ce <- (ce `^` t256);
+    t256 <- a_4x.[20];
+    t256 <- (t256 `^` da);
+    a_4x.[20] <- t256;
+    bku <@ __rol_4u64 (t256, 18);
+    t256 <- (VPANDN_256 bko bku);
+    t256 <- (t256 `^` bki);
+    e_4x.[12] <- t256;
+    ci <- (ci `^` t256);
+    t256 <- (VPANDN_256 bku bka);
+    t256 <- (t256 `^` bko);
+    e_4x.[13] <- t256;
+    co <- (co `^` t256);
+    t256 <- (VPANDN_256 bka bke);
+    t256 <- (t256 `^` bku);
+    e_4x.[14] <- t256;
+    cu <- (cu `^` t256);
+    return (a_4x, e_4x, ca, ce, ci, co, cu);
+  }
+  proc __fifth_even (a_4x:W256.t Array25.t, e_4x:W256.t Array25.t, ca:W256.t,
+                     ce:W256.t, ci:W256.t, co:W256.t, cu:W256.t, da:W256.t,
+                     de:W256.t, di:W256.t, do_0:W256.t, du:W256.t) : 
+  W256.t Array25.t * W256.t Array25.t * W256.t * W256.t * W256.t * W256.t *
+  W256.t = {
+    var t256:W256.t;
+    var bma:W256.t;
+    var bme:W256.t;
+    var bmi:W256.t;
+    var bmo:W256.t;
+    var bmu:W256.t;
+    t256 <- a_4x.[4];
+    t256 <- (t256 `^` du);
+    a_4x.[4] <- t256;
+    bma <@ __rol_4u64 (t256, 27);
+    t256 <- a_4x.[5];
+    t256 <- (t256 `^` da);
+    a_4x.[5] <- t256;
+    bme <@ __rol_4u64 (t256, 36);
+    t256 <- a_4x.[11];
+    t256 <- (t256 `^` de);
+    a_4x.[11] <- t256;
+    bmi <@ __rol_4u64 (t256, 10);
+    t256 <- (VPANDN_256 bme bmi);
+    t256 <- (t256 `^` bma);
+    e_4x.[15] <- t256;
+    ca <- (ca `^` t256);
+    t256 <- a_4x.[17];
+    t256 <- (t256 `^` di);
+    a_4x.[17] <- t256;
+    bmo <@ __rol_4u64 (t256, 15);
+    t256 <- (VPANDN_256 bmi bmo);
+    t256 <- (t256 `^` bme);
+    e_4x.[16] <- t256;
+    ce <- (ce `^` t256);
+    t256 <- a_4x.[23];
+    t256 <- (t256 `^` do_0);
+    a_4x.[23] <- t256;
+    bmu <@ __rol_4u64_rho56 (t256);
+    t256 <- (VPANDN_256 bmo bmu);
+    t256 <- (t256 `^` bmi);
+    e_4x.[17] <- t256;
+    ci <- (ci `^` t256);
+    t256 <- (VPANDN_256 bmu bma);
+    t256 <- (t256 `^` bmo);
+    e_4x.[18] <- t256;
+    co <- (co `^` t256);
+    t256 <- (VPANDN_256 bma bme);
+    t256 <- (t256 `^` bmu);
+    e_4x.[19] <- t256;
+    cu <- (cu `^` t256);
+    return (a_4x, e_4x, ca, ce, ci, co, cu);
+  }
+  proc __sixth_even (a_4x:W256.t Array25.t, e_4x:W256.t Array25.t, ca:W256.t,
+                     ce:W256.t, ci:W256.t, co:W256.t, cu:W256.t, da:W256.t,
+                     de:W256.t, di:W256.t, do_0:W256.t, du:W256.t) : 
+  W256.t Array25.t * W256.t Array25.t * W256.t * W256.t * W256.t * W256.t *
+  W256.t = {
+    var t256:W256.t;
+    var bsa:W256.t;
+    var bse:W256.t;
+    var bsi:W256.t;
+    var bso:W256.t;
+    var bsu:W256.t;
+    t256 <- a_4x.[2];
+    t256 <- (t256 `^` di);
+    a_4x.[2] <- t256;
+    bsa <@ __rol_4u64 (t256, 62);
+    t256 <- a_4x.[8];
+    t256 <- (t256 `^` do_0);
+    a_4x.[8] <- t256;
+    bse <@ __rol_4u64 (t256, 55);
+    t256 <- a_4x.[14];
+    t256 <- (t256 `^` du);
+    a_4x.[14] <- t256;
+    bsi <@ __rol_4u64 (t256, 39);
+    t256 <- (VPANDN_256 bse bsi);
+    t256 <- (t256 `^` bsa);
+    e_4x.[20] <- t256;
+    ca <- (ca `^` t256);
+    t256 <- a_4x.[15];
+    t256 <- (t256 `^` da);
+    a_4x.[15] <- t256;
+    bso <@ __rol_4u64 (t256, 41);
+    t256 <- (VPANDN_256 bsi bso);
+    t256 <- (t256 `^` bse);
+    e_4x.[21] <- t256;
+    ce <- (ce `^` t256);
+    t256 <- a_4x.[21];
+    t256 <- (t256 `^` de);
+    a_4x.[21] <- t256;
+    bsu <@ __rol_4u64 (t256, 2);
+    t256 <- (VPANDN_256 bso bsu);
+    t256 <- (t256 `^` bsi);
+    e_4x.[22] <- t256;
+    ci <- (ci `^` t256);
+    t256 <- (VPANDN_256 bsu bsa);
+    t256 <- (t256 `^` bso);
+    e_4x.[23] <- t256;
+    co <- (co `^` t256);
+    t256 <- (VPANDN_256 bsa bse);
+    t256 <- (t256 `^` bsu);
+    e_4x.[24] <- t256;
+    cu <- (cu `^` t256);
+    return (a_4x, e_4x, ca, ce, ci, co, cu);
+  }
+  proc __second_odd (a_4x:W256.t Array25.t, e_4x:W256.t Array25.t,
+                     rc_index:W256.t, ca:W256.t, ce:W256.t, ci:W256.t,
+                     co:W256.t, cu:W256.t, da:W256.t, de:W256.t, di:W256.t,
+                     do_0:W256.t, du:W256.t) : W256.t Array25.t *
+                                               W256.t Array25.t * W256.t *
+                                               W256.t * W256.t * W256.t *
+                                               W256.t = {
+    var t256:W256.t;
+    var bba:W256.t;
+    var bbe:W256.t;
+    var bbi:W256.t;
+    var bbo:W256.t;
+    var bbu:W256.t;
+    t256 <- a_4x.[0];
+    t256 <- (t256 `^` da);
+    a_4x.[0] <- t256;
+    bba <- t256;
+    t256 <- a_4x.[6];
+    t256 <- (t256 `^` de);
+    a_4x.[6] <- t256;
+    bbe <@ __rol_4u64 (t256, 44);
+    t256 <- a_4x.[12];
+    t256 <- (t256 `^` di);
+    a_4x.[12] <- t256;
+    bbi <@ __rol_4u64 (t256, 43);
+    t256 <- (VPANDN_256 bbe bbi);
+    t256 <- (t256 `^` bba);
+    t256 <- (t256 `^` rc_index);
+    e_4x.[0] <- t256;
+    ca <- t256;
+    t256 <- a_4x.[18];
+    t256 <- (t256 `^` do_0);
+    a_4x.[18] <- t256;
+    bbo <@ __rol_4u64 (t256, 21);
+    t256 <- (VPANDN_256 bbi bbo);
+    t256 <- (t256 `^` bbe);
+    e_4x.[1] <- t256;
+    ce <- t256;
+    t256 <- a_4x.[24];
+    t256 <- (t256 `^` du);
+    a_4x.[24] <- t256;
+    bbu <@ __rol_4u64 (t256, 14);
+    t256 <- (VPANDN_256 bbo bbu);
+    t256 <- (t256 `^` bbi);
+    e_4x.[2] <- t256;
+    ci <- t256;
+    t256 <- (VPANDN_256 bbu bba);
+    t256 <- (t256 `^` bbo);
+    e_4x.[3] <- t256;
+    co <- t256;
+    t256 <- (VPANDN_256 bba bbe);
+    t256 <- (t256 `^` bbu);
+    e_4x.[4] <- t256;
+    cu <- t256;
+    return (a_4x, e_4x, ca, ce, ci, co, cu);
+  }
+  proc __third_odd (a_4x:W256.t Array25.t, e_4x:W256.t Array25.t, ca:W256.t,
+                    ce:W256.t, ci:W256.t, co:W256.t, cu:W256.t, da:W256.t,
+                    de:W256.t, di:W256.t, do_0:W256.t, du:W256.t) : W256.t Array25.t *
+                                                                    W256.t Array25.t *
+                                                                    W256.t *
+                                                                    W256.t *
+                                                                    W256.t *
+                                                                    W256.t *
+                                                                    W256.t = {
+    var t256:W256.t;
+    var bga:W256.t;
+    var bge:W256.t;
+    var bgi:W256.t;
+    var bgo:W256.t;
+    var bgu:W256.t;
+    t256 <- a_4x.[3];
+    t256 <- (t256 `^` do_0);
+    a_4x.[3] <- t256;
+    bga <@ __rol_4u64 (t256, 28);
+    t256 <- a_4x.[9];
+    t256 <- (t256 `^` du);
+    a_4x.[9] <- t256;
+    bge <@ __rol_4u64 (t256, 20);
+    t256 <- a_4x.[10];
+    t256 <- (t256 `^` da);
+    a_4x.[10] <- t256;
+    bgi <@ __rol_4u64 (t256, 3);
+    t256 <- (VPANDN_256 bge bgi);
+    t256 <- (t256 `^` bga);
+    e_4x.[5] <- t256;
+    ca <- (ca `^` t256);
+    t256 <- a_4x.[16];
+    t256 <- (t256 `^` de);
+    a_4x.[16] <- t256;
+    bgo <@ __rol_4u64 (t256, 45);
+    t256 <- (VPANDN_256 bgi bgo);
+    t256 <- (t256 `^` bge);
+    e_4x.[6] <- t256;
+    ce <- (ce `^` t256);
+    t256 <- a_4x.[22];
+    t256 <- (t256 `^` di);
+    a_4x.[22] <- t256;
+    bgu <@ __rol_4u64 (t256, 61);
+    t256 <- (VPANDN_256 bgo bgu);
+    t256 <- (t256 `^` bgi);
+    e_4x.[7] <- t256;
+    ci <- (ci `^` t256);
+    t256 <- (VPANDN_256 bgu bga);
+    t256 <- (t256 `^` bgo);
+    e_4x.[8] <- t256;
+    co <- (co `^` t256);
+    t256 <- (VPANDN_256 bga bge);
+    t256 <- (t256 `^` bgu);
+    e_4x.[9] <- t256;
+    cu <- (cu `^` t256);
+    return (a_4x, e_4x, ca, ce, ci, co, cu);
+  }
+  proc __fourth_odd (a_4x:W256.t Array25.t, e_4x:W256.t Array25.t, ca:W256.t,
+                     ce:W256.t, ci:W256.t, co:W256.t, cu:W256.t, da:W256.t,
+                     de:W256.t, di:W256.t, do_0:W256.t, du:W256.t) : 
+  W256.t Array25.t * W256.t Array25.t * W256.t * W256.t * W256.t * W256.t *
+  W256.t = {
+    var t256:W256.t;
+    var bka:W256.t;
+    var bke:W256.t;
+    var bki:W256.t;
+    var bko:W256.t;
+    var bku:W256.t;
+    t256 <- a_4x.[1];
+    t256 <- (t256 `^` de);
+    a_4x.[1] <- t256;
+    bka <@ __rol_4u64 (t256, 1);
+    t256 <- a_4x.[7];
+    t256 <- (t256 `^` di);
+    a_4x.[7] <- t256;
+    bke <@ __rol_4u64 (t256, 6);
+    t256 <- a_4x.[13];
+    t256 <- (t256 `^` do_0);
+    a_4x.[13] <- t256;
+    bki <@ __rol_4u64 (t256, 25);
+    t256 <- (VPANDN_256 bke bki);
+    t256 <- (t256 `^` bka);
+    e_4x.[10] <- t256;
+    ca <- (ca `^` t256);
+    t256 <- a_4x.[19];
+    t256 <- (t256 `^` du);
+    a_4x.[19] <- t256;
+    bko <@ __rol_4u64_rho8 (t256);
+    t256 <- (VPANDN_256 bki bko);
+    t256 <- (t256 `^` bke);
+    e_4x.[11] <- t256;
+    ce <- (ce `^` t256);
+    t256 <- a_4x.[20];
+    t256 <- (t256 `^` da);
+    a_4x.[20] <- t256;
+    bku <@ __rol_4u64 (t256, 18);
+    t256 <- (VPANDN_256 bko bku);
+    t256 <- (t256 `^` bki);
+    e_4x.[12] <- t256;
+    ci <- (ci `^` t256);
+    t256 <- (VPANDN_256 bku bka);
+    t256 <- (t256 `^` bko);
+    e_4x.[13] <- t256;
+    co <- (co `^` t256);
+    t256 <- (VPANDN_256 bka bke);
+    t256 <- (t256 `^` bku);
+    e_4x.[14] <- t256;
+    cu <- (cu `^` t256);
+    return (a_4x, e_4x, ca, ce, ci, co, cu);
+  }
+  proc __fifth_odd (a_4x:W256.t Array25.t, e_4x:W256.t Array25.t, ca:W256.t,
+                    ce:W256.t, ci:W256.t, co:W256.t, cu:W256.t, da:W256.t,
+                    de:W256.t, di:W256.t, do_0:W256.t, du:W256.t) : W256.t Array25.t *
+                                                                    W256.t Array25.t *
+                                                                    W256.t *
+                                                                    W256.t *
+                                                                    W256.t *
+                                                                    W256.t *
+                                                                    W256.t = {
+    var t256:W256.t;
+    var bma:W256.t;
+    var bme:W256.t;
+    var bmi:W256.t;
+    var bmo:W256.t;
+    var bmu:W256.t;
+    t256 <- a_4x.[4];
+    t256 <- (t256 `^` du);
+    a_4x.[4] <- t256;
+    bma <@ __rol_4u64 (t256, 27);
+    t256 <- a_4x.[5];
+    t256 <- (t256 `^` da);
+    a_4x.[5] <- t256;
+    bme <@ __rol_4u64 (t256, 36);
+    t256 <- a_4x.[11];
+    t256 <- (t256 `^` de);
+    a_4x.[11] <- t256;
+    bmi <@ __rol_4u64 (t256, 10);
+    t256 <- (VPANDN_256 bme bmi);
+    t256 <- (t256 `^` bma);
+    e_4x.[15] <- t256;
+    ca <- (ca `^` t256);
+    t256 <- a_4x.[17];
+    t256 <- (t256 `^` di);
+    a_4x.[17] <- t256;
+    bmo <@ __rol_4u64 (t256, 15);
+    t256 <- (VPANDN_256 bmi bmo);
+    t256 <- (t256 `^` bme);
+    e_4x.[16] <- t256;
+    ce <- (ce `^` t256);
+    t256 <- a_4x.[23];
+    t256 <- (t256 `^` do_0);
+    a_4x.[23] <- t256;
+    bmu <@ __rol_4u64_rho56 (t256);
+    t256 <- (VPANDN_256 bmo bmu);
+    t256 <- (t256 `^` bmi);
+    e_4x.[17] <- t256;
+    ci <- (ci `^` t256);
+    t256 <- (VPANDN_256 bmu bma);
+    t256 <- (t256 `^` bmo);
+    e_4x.[18] <- t256;
+    co <- (co `^` t256);
+    t256 <- (VPANDN_256 bma bme);
+    t256 <- (t256 `^` bmu);
+    e_4x.[19] <- t256;
+    cu <- (cu `^` t256);
+    return (a_4x, e_4x, ca, ce, ci, co, cu);
+  }
+  proc __sixth_odd (a_4x:W256.t Array25.t, e_4x:W256.t Array25.t, ca:W256.t,
+                    ce:W256.t, ci:W256.t, co:W256.t, cu:W256.t, da:W256.t,
+                    de:W256.t, di:W256.t, do_0:W256.t, du:W256.t) : W256.t Array25.t *
+                                                                    W256.t Array25.t *
+                                                                    W256.t *
+                                                                    W256.t *
+                                                                    W256.t *
+                                                                    W256.t *
+                                                                    W256.t = {
+    var t256:W256.t;
+    var bsa:W256.t;
+    var bse:W256.t;
+    var bsi:W256.t;
+    var bso:W256.t;
+    var bsu:W256.t;
+    t256 <- a_4x.[2];
+    t256 <- (t256 `^` di);
+    a_4x.[2] <- t256;
+    bsa <@ __rol_4u64 (t256, 62);
+    t256 <- a_4x.[8];
+    t256 <- (t256 `^` do_0);
+    a_4x.[8] <- t256;
+    bse <@ __rol_4u64 (t256, 55);
+    t256 <- a_4x.[14];
+    t256 <- (t256 `^` du);
+    a_4x.[14] <- t256;
+    bsi <@ __rol_4u64 (t256, 39);
+    t256 <- (VPANDN_256 bse bsi);
+    t256 <- (t256 `^` bsa);
+    e_4x.[20] <- t256;
+    ca <- (ca `^` t256);
+    t256 <- a_4x.[15];
+    t256 <- (t256 `^` da);
+    a_4x.[15] <- t256;
+    bso <@ __rol_4u64 (t256, 41);
+    t256 <- (VPANDN_256 bsi bso);
+    t256 <- (t256 `^` bse);
+    e_4x.[21] <- t256;
+    ce <- (ce `^` t256);
+    t256 <- a_4x.[21];
+    t256 <- (t256 `^` de);
+    a_4x.[21] <- t256;
+    bsu <@ __rol_4u64 (t256, 2);
+    t256 <- (VPANDN_256 bso bsu);
+    t256 <- (t256 `^` bsi);
+    e_4x.[22] <- t256;
+    ci <- (ci `^` t256);
+    t256 <- (VPANDN_256 bsu bsa);
+    t256 <- (t256 `^` bso);
+    e_4x.[23] <- t256;
+    co <- (co `^` t256);
+    t256 <- (VPANDN_256 bsa bse);
+    t256 <- (t256 `^` bsu);
+    e_4x.[24] <- t256;
+    cu <- (cu `^` t256);
+    return (a_4x, e_4x, ca, ce, ci, co, cu);
+  }
+  proc __second_last (a_4x:W256.t Array25.t, e_4x:W256.t Array25.t,
+                      rc_index:W256.t, da:W256.t, de:W256.t, di:W256.t,
+                      do_0:W256.t, du:W256.t) : W256.t Array25.t *
+                                                W256.t Array25.t = {
+    var t256:W256.t;
+    var bba:W256.t;
+    var bbe:W256.t;
+    var bbi:W256.t;
+    var bbo:W256.t;
+    var bbu:W256.t;
+    t256 <- a_4x.[0];
+    t256 <- (t256 `^` da);
+    a_4x.[0] <- t256;
+    bba <- t256;
+    t256 <- a_4x.[6];
+    t256 <- (t256 `^` de);
+    a_4x.[6] <- t256;
+    bbe <@ __rol_4u64 (t256, 44);
+    t256 <- a_4x.[12];
+    t256 <- (t256 `^` di);
+    a_4x.[12] <- t256;
+    bbi <@ __rol_4u64 (t256, 43);
+    t256 <- (VPANDN_256 bbe bbi);
+    t256 <- (t256 `^` bba);
+    t256 <- (t256 `^` rc_index);
+    e_4x.[0] <- t256;
+    t256 <- a_4x.[18];
+    t256 <- (t256 `^` do_0);
+    a_4x.[18] <- t256;
+    bbo <@ __rol_4u64 (t256, 21);
+    t256 <- (VPANDN_256 bbi bbo);
+    t256 <- (t256 `^` bbe);
+    e_4x.[1] <- t256;
+    t256 <- a_4x.[24];
+    t256 <- (t256 `^` du);
+    a_4x.[24] <- t256;
+    bbu <@ __rol_4u64 (t256, 14);
+    t256 <- (VPANDN_256 bbo bbu);
+    t256 <- (t256 `^` bbi);
+    e_4x.[2] <- t256;
+    t256 <- (VPANDN_256 bbu bba);
+    t256 <- (t256 `^` bbo);
+    e_4x.[3] <- t256;
+    t256 <- (VPANDN_256 bba bbe);
+    t256 <- (t256 `^` bbu);
+    e_4x.[4] <- t256;
+    return (a_4x, e_4x);
+  }
+  proc __third_last (a_4x:W256.t Array25.t, e_4x:W256.t Array25.t, da:W256.t,
+                     de:W256.t, di:W256.t, do_0:W256.t, du:W256.t) : 
+  W256.t Array25.t * W256.t Array25.t = {
+    var t256:W256.t;
+    var bga:W256.t;
+    var bge:W256.t;
+    var bgi:W256.t;
+    var bgo:W256.t;
+    var bgu:W256.t;
+    t256 <- a_4x.[3];
+    t256 <- (t256 `^` do_0);
+    a_4x.[3] <- t256;
+    bga <@ __rol_4u64 (t256, 28);
+    t256 <- a_4x.[9];
+    t256 <- (t256 `^` du);
+    a_4x.[9] <- t256;
+    bge <@ __rol_4u64 (t256, 20);
+    t256 <- a_4x.[10];
+    t256 <- (t256 `^` da);
+    a_4x.[10] <- t256;
+    bgi <@ __rol_4u64 (t256, 3);
+    t256 <- (VPANDN_256 bge bgi);
+    t256 <- (t256 `^` bga);
+    e_4x.[5] <- t256;
+    t256 <- a_4x.[16];
+    t256 <- (t256 `^` de);
+    a_4x.[16] <- t256;
+    bgo <@ __rol_4u64 (t256, 45);
+    t256 <- (VPANDN_256 bgi bgo);
+    t256 <- (t256 `^` bge);
+    e_4x.[6] <- t256;
+    t256 <- a_4x.[22];
+    t256 <- (t256 `^` di);
+    a_4x.[22] <- t256;
+    bgu <@ __rol_4u64 (t256, 61);
+    t256 <- (VPANDN_256 bgo bgu);
+    t256 <- (t256 `^` bgi);
+    e_4x.[7] <- t256;
+    t256 <- (VPANDN_256 bgu bga);
+    t256 <- (t256 `^` bgo);
+    e_4x.[8] <- t256;
+    t256 <- (VPANDN_256 bga bge);
+    t256 <- (t256 `^` bgu);
+    e_4x.[9] <- t256;
+    return (a_4x, e_4x);
+  }
+  proc __fourth_last (a_4x:W256.t Array25.t, e_4x:W256.t Array25.t,
+                      da:W256.t, de:W256.t, di:W256.t, do_0:W256.t, du:W256.t) : 
+  W256.t Array25.t * W256.t Array25.t = {
+    var t256:W256.t;
+    var bka:W256.t;
+    var bke:W256.t;
+    var bki:W256.t;
+    var bko:W256.t;
+    var bku:W256.t;
+    t256 <- a_4x.[1];
+    t256 <- (t256 `^` de);
+    a_4x.[1] <- t256;
+    bka <@ __rol_4u64 (t256, 1);
+    t256 <- a_4x.[7];
+    t256 <- (t256 `^` di);
+    a_4x.[7] <- t256;
+    bke <@ __rol_4u64 (t256, 6);
+    t256 <- a_4x.[13];
+    t256 <- (t256 `^` do_0);
+    a_4x.[13] <- t256;
+    bki <@ __rol_4u64 (t256, 25);
+    t256 <- (VPANDN_256 bke bki);
+    t256 <- (t256 `^` bka);
+    e_4x.[10] <- t256;
+    t256 <- a_4x.[19];
+    t256 <- (t256 `^` du);
+    a_4x.[19] <- t256;
+    bko <@ __rol_4u64_rho8 (t256);
+    t256 <- (VPANDN_256 bki bko);
+    t256 <- (t256 `^` bke);
+    e_4x.[11] <- t256;
+    t256 <- a_4x.[20];
+    t256 <- (t256 `^` da);
+    a_4x.[20] <- t256;
+    bku <@ __rol_4u64 (t256, 18);
+    t256 <- (VPANDN_256 bko bku);
+    t256 <- (t256 `^` bki);
+    e_4x.[12] <- t256;
+    t256 <- (VPANDN_256 bku bka);
+    t256 <- (t256 `^` bko);
+    e_4x.[13] <- t256;
+    t256 <- (VPANDN_256 bka bke);
+    t256 <- (t256 `^` bku);
+    e_4x.[14] <- t256;
+    return (a_4x, e_4x);
+  }
+  proc __fifth_last (a_4x:W256.t Array25.t, e_4x:W256.t Array25.t, da:W256.t,
+                     de:W256.t, di:W256.t, do_0:W256.t, du:W256.t) : 
+  W256.t Array25.t * W256.t Array25.t = {
+    var t256:W256.t;
+    var bma:W256.t;
+    var bme:W256.t;
+    var bmi:W256.t;
+    var bmo:W256.t;
+    var bmu:W256.t;
+    t256 <- a_4x.[4];
+    t256 <- (t256 `^` du);
+    a_4x.[4] <- t256;
+    bma <@ __rol_4u64 (t256, 27);
+    t256 <- a_4x.[5];
+    t256 <- (t256 `^` da);
+    a_4x.[5] <- t256;
+    bme <@ __rol_4u64 (t256, 36);
+    t256 <- a_4x.[11];
+    t256 <- (t256 `^` de);
+    a_4x.[11] <- t256;
+    bmi <@ __rol_4u64 (t256, 10);
+    t256 <- (VPANDN_256 bme bmi);
+    t256 <- (t256 `^` bma);
+    e_4x.[15] <- t256;
+    t256 <- a_4x.[17];
+    t256 <- (t256 `^` di);
+    a_4x.[17] <- t256;
+    bmo <@ __rol_4u64 (t256, 15);
+    t256 <- (VPANDN_256 bmi bmo);
+    t256 <- (t256 `^` bme);
+    e_4x.[16] <- t256;
+    t256 <- a_4x.[23];
+    t256 <- (t256 `^` do_0);
+    a_4x.[23] <- t256;
+    bmu <@ __rol_4u64_rho56 (t256);
+    t256 <- (VPANDN_256 bmo bmu);
+    t256 <- (t256 `^` bmi);
+    e_4x.[17] <- t256;
+    t256 <- (VPANDN_256 bmu bma);
+    t256 <- (t256 `^` bmo);
+    e_4x.[18] <- t256;
+    t256 <- (VPANDN_256 bma bme);
+    t256 <- (t256 `^` bmu);
+    e_4x.[19] <- t256;
+    return (a_4x, e_4x);
+  }
+  proc __sixth_last (a_4x:W256.t Array25.t, e_4x:W256.t Array25.t, da:W256.t,
+                     de:W256.t, di:W256.t, do_0:W256.t, du:W256.t) : 
+  W256.t Array25.t * W256.t Array25.t = {
+    var t256:W256.t;
+    var bsa:W256.t;
+    var bse:W256.t;
+    var bsi:W256.t;
+    var bso:W256.t;
+    var bsu:W256.t;
+    t256 <- a_4x.[2];
+    t256 <- (t256 `^` di);
+    a_4x.[2] <- t256;
+    bsa <@ __rol_4u64 (t256, 62);
+    t256 <- a_4x.[8];
+    t256 <- (t256 `^` do_0);
+    a_4x.[8] <- t256;
+    bse <@ __rol_4u64 (t256, 55);
+    t256 <- a_4x.[14];
+    t256 <- (t256 `^` du);
+    a_4x.[14] <- t256;
+    bsi <@ __rol_4u64 (t256, 39);
+    t256 <- (VPANDN_256 bse bsi);
+    t256 <- (t256 `^` bsa);
+    e_4x.[20] <- t256;
+    t256 <- a_4x.[15];
+    t256 <- (t256 `^` da);
+    a_4x.[15] <- t256;
+    bso <@ __rol_4u64 (t256, 41);
+    t256 <- (VPANDN_256 bsi bso);
+    t256 <- (t256 `^` bse);
+    e_4x.[21] <- t256;
+    t256 <- a_4x.[21];
+    t256 <- (t256 `^` de);
+    a_4x.[21] <- t256;
+    bsu <@ __rol_4u64 (t256, 2);
+    t256 <- (VPANDN_256 bso bsu);
+    t256 <- (t256 `^` bsi);
+    e_4x.[22] <- t256;
+    t256 <- (VPANDN_256 bsu bsa);
+    t256 <- (t256 `^` bso);
+    e_4x.[23] <- t256;
+    t256 <- (VPANDN_256 bsa bse);
+    t256 <- (t256 `^` bsu);
+    e_4x.[24] <- t256;
+    return (a_4x, e_4x);
+  }
+  proc _theta_rho_pi_chi_iota_prepare_theta_even (a_4x:W256.t Array25.t,
+                                                  e_4x:W256.t Array25.t,
+                                                  rc_index:W256.t, ca:W256.t,
+                                                  ce:W256.t, ci:W256.t,
+                                                  co:W256.t, cu:W256.t) : 
+  W256.t Array25.t * W256.t Array25.t * W256.t * W256.t * W256.t * W256.t *
+  W256.t = {
+    var da:W256.t;
+    var de:W256.t;
+    var di:W256.t;
+    var do_0:W256.t;
+    var du:W256.t;
+    (da, de, di, do_0, du) <@ __first (ca, ce, ci, co, cu);
+    (a_4x, e_4x, ca, ce, ci, co, cu) <@ __second_even (a_4x, e_4x, rc_index,
+    ca, ce, ci, co, cu, da, de, di, do_0, du);
+    (a_4x, e_4x, ca, ce, ci, co, cu) <@ __third_even (a_4x, e_4x, ca, 
+    ce, ci, co, cu, da, de, di, do_0, du);
+    (a_4x, e_4x, ca, ce, ci, co, cu) <@ __fourth_even (a_4x, e_4x, ca, 
+    ce, ci, co, cu, da, de, di, do_0, du);
+    (a_4x, e_4x, ca, ce, ci, co, cu) <@ __fifth_even (a_4x, e_4x, ca, 
+    ce, ci, co, cu, da, de, di, do_0, du);
+    (a_4x, e_4x, ca, ce, ci, co, cu) <@ __sixth_even (a_4x, e_4x, ca, 
+    ce, ci, co, cu, da, de, di, do_0, du);
+    return (a_4x, e_4x, ca, ce, ci, co, cu);
+  }
+  proc _theta_rho_pi_chi_iota_prepare_theta_odd (a_4x:W256.t Array25.t,
+                                                 e_4x:W256.t Array25.t,
+                                                 rc_index:W256.t, ca:W256.t,
+                                                 ce:W256.t, ci:W256.t,
+                                                 co:W256.t, cu:W256.t) : 
+  W256.t Array25.t * W256.t Array25.t * W256.t * W256.t * W256.t * W256.t *
+  W256.t = {
+    var da:W256.t;
+    var de:W256.t;
+    var di:W256.t;
+    var do_0:W256.t;
+    var du:W256.t;
+    (da, de, di, do_0, du) <@ __first (ca, ce, ci, co, cu);
+    (a_4x, e_4x, ca, ce, ci, co, cu) <@ __second_odd (a_4x, e_4x, rc_index,
+    ca, ce, ci, co, cu, da, de, di, do_0, du);
+    (a_4x, e_4x, ca, ce, ci, co, cu) <@ __third_odd (a_4x, e_4x, ca, 
+    ce, ci, co, cu, da, de, di, do_0, du);
+    (a_4x, e_4x, ca, ce, ci, co, cu) <@ __fourth_odd (a_4x, e_4x, ca, 
+    ce, ci, co, cu, da, de, di, do_0, du);
+    (a_4x, e_4x, ca, ce, ci, co, cu) <@ __fifth_odd (a_4x, e_4x, ca, 
+    ce, ci, co, cu, da, de, di, do_0, du);
+    (a_4x, e_4x, ca, ce, ci, co, cu) <@ __sixth_odd (a_4x, e_4x, ca, 
+    ce, ci, co, cu, da, de, di, do_0, du);
+    return (a_4x, e_4x, ca, ce, ci, co, cu);
+  }
+  proc __theta_rho_pi_chi_iota (a_4x:W256.t Array25.t, e_4x:W256.t Array25.t,
+                                rc_index:W256.t, ca:W256.t, ce:W256.t,
+                                ci:W256.t, co:W256.t, cu:W256.t) : W256.t Array25.t *
+                                                                   W256.t Array25.t = {
+    var da:W256.t;
+    var de:W256.t;
+    var di:W256.t;
+    var do_0:W256.t;
+    var du:W256.t;
+    (da, de, di, do_0, du) <@ __first (ca, ce, ci, co, cu);
+    (a_4x, e_4x) <@ __second_last (a_4x, e_4x, rc_index, da, de, di, 
+    do_0, du);
+    (a_4x, e_4x) <@ __third_last (a_4x, e_4x, da, de, di, do_0, du);
+    (a_4x, e_4x) <@ __fourth_last (a_4x, e_4x, da, de, di, do_0, du);
+    (a_4x, e_4x) <@ __fifth_last (a_4x, e_4x, da, de, di, do_0, du);
+    (a_4x, e_4x) <@ __sixth_last (a_4x, e_4x, da, de, di, do_0, du);
+    return (a_4x, e_4x);
+  }
+  proc __keccakf1600_avx2x4_alt (a_4x:W256.t Array25.t) : W256.t Array25.t = {
+    var rC:W64.t Array24.t;
+    var ca:W256.t;
+    var ce:W256.t;
+    var ci:W256.t;
+    var co:W256.t;
+    var cu:W256.t;
+    var rc_index:W256.t;
+    var e_4x:W256.t Array25.t;
+    e_4x <- witness;
+    rC <- witness;
+    rC <- kECCAK1600_RC;
+    (ca, ce, ci, co, cu) <@ __prepare_theta (a_4x);
+    rc_index <- (VPBROADCAST_4u64 rC.[0]);
+    (a_4x, e_4x, ca, ce, ci, co, cu) <@ _theta_rho_pi_chi_iota_prepare_theta_even (
+    a_4x, e_4x, rc_index, ca, ce, ci, co, cu);
+    rc_index <- (VPBROADCAST_4u64 rC.[1]);
+    (e_4x, a_4x, ca, ce, ci, co, cu) <@ _theta_rho_pi_chi_iota_prepare_theta_odd (
+    e_4x, a_4x, rc_index, ca, ce, ci, co, cu);
+    rc_index <- (VPBROADCAST_4u64 rC.[2]);
+    (a_4x, e_4x, ca, ce, ci, co, cu) <@ _theta_rho_pi_chi_iota_prepare_theta_even (
+    a_4x, e_4x, rc_index, ca, ce, ci, co, cu);
+    rc_index <- (VPBROADCAST_4u64 rC.[3]);
+    (e_4x, a_4x, ca, ce, ci, co, cu) <@ _theta_rho_pi_chi_iota_prepare_theta_odd (
+    e_4x, a_4x, rc_index, ca, ce, ci, co, cu);
+    rc_index <- (VPBROADCAST_4u64 rC.[4]);
+    (a_4x, e_4x, ca, ce, ci, co, cu) <@ _theta_rho_pi_chi_iota_prepare_theta_even (
+    a_4x, e_4x, rc_index, ca, ce, ci, co, cu);
+    rc_index <- (VPBROADCAST_4u64 rC.[5]);
+    (e_4x, a_4x, ca, ce, ci, co, cu) <@ _theta_rho_pi_chi_iota_prepare_theta_odd (
+    e_4x, a_4x, rc_index, ca, ce, ci, co, cu);
+    rc_index <- (VPBROADCAST_4u64 rC.[6]);
+    (a_4x, e_4x, ca, ce, ci, co, cu) <@ _theta_rho_pi_chi_iota_prepare_theta_even (
+    a_4x, e_4x, rc_index, ca, ce, ci, co, cu);
+    rc_index <- (VPBROADCAST_4u64 rC.[7]);
+    (e_4x, a_4x, ca, ce, ci, co, cu) <@ _theta_rho_pi_chi_iota_prepare_theta_odd (
+    e_4x, a_4x, rc_index, ca, ce, ci, co, cu);
+    rc_index <- (VPBROADCAST_4u64 rC.[8]);
+    (a_4x, e_4x, ca, ce, ci, co, cu) <@ _theta_rho_pi_chi_iota_prepare_theta_even (
+    a_4x, e_4x, rc_index, ca, ce, ci, co, cu);
+    rc_index <- (VPBROADCAST_4u64 rC.[9]);
+    (e_4x, a_4x, ca, ce, ci, co, cu) <@ _theta_rho_pi_chi_iota_prepare_theta_odd (
+    e_4x, a_4x, rc_index, ca, ce, ci, co, cu);
+    rc_index <- (VPBROADCAST_4u64 rC.[10]);
+    (a_4x, e_4x, ca, ce, ci, co, cu) <@ _theta_rho_pi_chi_iota_prepare_theta_even (
+    a_4x, e_4x, rc_index, ca, ce, ci, co, cu);
+    rc_index <- (VPBROADCAST_4u64 rC.[11]);
+    (e_4x, a_4x, ca, ce, ci, co, cu) <@ _theta_rho_pi_chi_iota_prepare_theta_odd (
+    e_4x, a_4x, rc_index, ca, ce, ci, co, cu);
+    rc_index <- (VPBROADCAST_4u64 rC.[12]);
+    (a_4x, e_4x, ca, ce, ci, co, cu) <@ _theta_rho_pi_chi_iota_prepare_theta_even (
+    a_4x, e_4x, rc_index, ca, ce, ci, co, cu);
+    rc_index <- (VPBROADCAST_4u64 rC.[13]);
+    (e_4x, a_4x, ca, ce, ci, co, cu) <@ _theta_rho_pi_chi_iota_prepare_theta_odd (
+    e_4x, a_4x, rc_index, ca, ce, ci, co, cu);
+    rc_index <- (VPBROADCAST_4u64 rC.[14]);
+    (a_4x, e_4x, ca, ce, ci, co, cu) <@ _theta_rho_pi_chi_iota_prepare_theta_even (
+    a_4x, e_4x, rc_index, ca, ce, ci, co, cu);
+    rc_index <- (VPBROADCAST_4u64 rC.[15]);
+    (e_4x, a_4x, ca, ce, ci, co, cu) <@ _theta_rho_pi_chi_iota_prepare_theta_odd (
+    e_4x, a_4x, rc_index, ca, ce, ci, co, cu);
+    rc_index <- (VPBROADCAST_4u64 rC.[16]);
+    (a_4x, e_4x, ca, ce, ci, co, cu) <@ _theta_rho_pi_chi_iota_prepare_theta_even (
+    a_4x, e_4x, rc_index, ca, ce, ci, co, cu);
+    rc_index <- (VPBROADCAST_4u64 rC.[17]);
+    (e_4x, a_4x, ca, ce, ci, co, cu) <@ _theta_rho_pi_chi_iota_prepare_theta_odd (
+    e_4x, a_4x, rc_index, ca, ce, ci, co, cu);
+    rc_index <- (VPBROADCAST_4u64 rC.[18]);
+    (a_4x, e_4x, ca, ce, ci, co, cu) <@ _theta_rho_pi_chi_iota_prepare_theta_even (
+    a_4x, e_4x, rc_index, ca, ce, ci, co, cu);
+    rc_index <- (VPBROADCAST_4u64 rC.[19]);
+    (e_4x, a_4x, ca, ce, ci, co, cu) <@ _theta_rho_pi_chi_iota_prepare_theta_odd (
+    e_4x, a_4x, rc_index, ca, ce, ci, co, cu);
+    rc_index <- (VPBROADCAST_4u64 rC.[20]);
+    (a_4x, e_4x, ca, ce, ci, co, cu) <@ _theta_rho_pi_chi_iota_prepare_theta_even (
+    a_4x, e_4x, rc_index, ca, ce, ci, co, cu);
+    rc_index <- (VPBROADCAST_4u64 rC.[21]);
+    (e_4x, a_4x, ca, ce, ci, co, cu) <@ _theta_rho_pi_chi_iota_prepare_theta_odd (
+    e_4x, a_4x, rc_index, ca, ce, ci, co, cu);
+    rc_index <- (VPBROADCAST_4u64 rC.[22]);
+    (a_4x, e_4x, ca, ce, ci, co, cu) <@ _theta_rho_pi_chi_iota_prepare_theta_even (
+    a_4x, e_4x, rc_index, ca, ce, ci, co, cu);
+    rc_index <- (VPBROADCAST_4u64 rC.[23]);
+    (e_4x, a_4x) <@ __theta_rho_pi_chi_iota (e_4x, a_4x, rc_index, ca, 
+    ce, ci, co, cu);
+    return a_4x;
+  }
+  proc _keccakf1600_avx2x4_alt (a:W256.t Array25.t) : W256.t Array25.t = {
+    
+    a <@ __keccakf1600_avx2x4_alt (a);
+    return a;
+  }
+  proc __f1600_loopbody_native (st:W256.t Array25.t, rol8:W256.t Array1.t,
+                                rol56:W256.t Array1.t, rC:W64.t Array24.t,
+                                i:int, y10:W256.t, y14:W256.t, y8:W256.t,
+                                y15:W256.t, y9:W256.t, y13:W256.t, y3:W256.t,
+                                y7:W256.t, y2:W256.t) : W256.t Array25.t *
+                                                        W256.t * W256.t *
+                                                        W256.t * W256.t *
+                                                        W256.t * W256.t *
+                                                        W256.t * W256.t *
+                                                        W256.t = {
+    var i0:int;
+    var i1:int;
+    var i2:int;
+    var i3:int;
+    var i4:int;
+    var i5:int;
+    var i6:int;
+    var i7:int;
+    var i8:int;
+    var i9:int;
+    var i10:int;
+    var i11:int;
+    var i12:int;
+    var i13:int;
+    var i14:int;
+    var i15:int;
+    var i16:int;
+    var i17:int;
+    var i18:int;
+    var i19:int;
+    var i20:int;
+    var i21:int;
+    var i22:int;
+    var i23:int;
+    var y4:W256.t;
+    var y0:W256.t;
+    var y11:W256.t;
+    var y12:W256.t;
+    var y1:W256.t;
+    var y6:W256.t;
+    var y5:W256.t;
+    i0 <- 0;
+    i1 <- 1;
+    i2 <- 2;
+    i3 <- 3;
+    i4 <- 4;
+    i5 <- 5;
+    i6 <- 6;
+    i7 <- 9;
+    i8 <- 10;
+    i9 <- 13;
+    i10 <- 14;
+    i11 <- 16;
+    i12 <- 17;
+    i13 <- 19;
+    i14 <- 20;
+    i15 <- 23;
+    i16 <- 7;
+    i17 <- 8;
+    i18 <- 11;
+    i19 <- 12;
+    i20 <- 15;
+    i21 <- 18;
+    i22 <- 21;
+    i23 <- 22;
+    y4 <- st.[i5];
+    y0 <- (y9 `^` st.[i14]);
+    st.[i16] <- y9;
+    y9 <- y10;
+    y11 <- st.[i6];
+    y12 <- st.[i11];
+    st.[i18] <- y3;
+    y1 <- (y4 `^` st.[i8]);
+    y10 <- st.[i2];
+    st.[i17] <- y4;
+    y12 <- (y12 `^` y3);
+    y6 <- st.[i1];
+    y4 <- st.[i10];
+    st.[i21] <- y14;
+    y0 <- (y0 `^` y1);
+    y1 <- (y11 `^` y8);
+    y11 <- (y7 `^` st.[i12]);
+    st.[i20] <- y10;
+    y12 <- (y12 `^` y1);
+    y1 <- (y9 `^` y15);
+    y3 <- st.[i7];
+    st.[i19] <- y8;
+    y11 <- (y11 `^` y1);
+    y1 <- (y14 `^` st.[i9]);
+    y12 <- (y12 `^` y6);
+    y8 <- st.[i3];
+    y11 <- (y11 `^` y10);
+    y10 <- (y13 `^` st.[i15]);
+    y3 <- (y3 `^` y4);
+    st.[i22] <- y4;
+    y4 <- (VPSRL_4u64 y12 (W128.of_int 63));
+    y5 <- (VPSRL_4u64 y11 (W128.of_int 63));
+    y0 <- (y0 `^` st.[i0]);
+    y10 <- (y10 `^` y1);
+    y1 <- st.[i4];
+    y10 <- (y10 `^` y8);
+    y14 <- y1;
+    y1 <- (y2 `^` st.[i13]);
+    st.[i23] <- y14;
+    y1 <- (y1 `^` y3);
+    y3 <- (VPSLL_4u64 y12 (W128.of_int 1));
+    y3 <- (y3 `|` y4);
+    y4 <- (VPSLL_4u64 y11 (W128.of_int 1));
+    y1 <- (y1 `^` y14);
+    y4 <- (y4 `|` y5);
+    y14 <- (VPSRL_4u64 y10 (W128.of_int 63));
+    y3 <- (y3 `^` y1);
+    y5 <- (VPSLL_4u64 y10 (W128.of_int 1));
+    y4 <- (y4 `^` y0);
+    y5 <- (y5 `|` y14);
+    y6 <- (y4 `^` y6);
+    y5 <- (y5 `^` y12);
+    y12 <- (VPSRL_4u64 y1 (W128.of_int 63));
+    y1 <- (VPSLL_4u64 y1 (W128.of_int 1));
+    y7 <- (y5 `^` y7);
+    y9 <- (y5 `^` y9);
+    y1 <- (y1 `|` y12);
+    y12 <- (y3 `^` st.[i0]);
+    y1 <- (y1 `^` y11);
+    y11 <- (VPSRL_4u64 y0 (W128.of_int 63));
+    y0 <- (VPSLL_4u64 y0 (W128.of_int 1));
+    y13 <- (y1 `^` y13);
+    y8 <- (y1 `^` y8);
+    y0 <- (y0 `|` y11);
+    y0 <- (y0 `^` y10);
+    y10 <- (y4 `^` st.[i6]);
+    y2 <- (y0 `^` y2);
+    y11 <- (VPSRL_4u64 y10 (W128.of_int 20));
+    y10 <- (VPSLL_4u64 y10 (W128.of_int 44));
+    y10 <- (y10 `|` y11);
+    y11 <- (y5 `^` y15);
+    y15 <- (VPBROADCAST_4u64 rC.[(W64.to_uint (W64.of_int i))]);
+    y14 <- (VPSRL_4u64 y11 (W128.of_int 21));
+    y11 <- (VPSLL_4u64 y11 (W128.of_int 43));
+    y11 <- (y11 `|` y14);
+    y14 <- ((invw y10) `&` y11);
+    y14 <- (y14 `^` y15);
+    y15 <- (y14 `^` y12);
+    y14 <- (VPSRL_4u64 y13 (W128.of_int 43));
+    y13 <- (VPSLL_4u64 y13 (W128.of_int 21));
+    st.[i0] <- y15;
+    y13 <- (y13 `|` y14);
+    y14 <- ((invw y11) `&` y13);
+    y15 <- (y14 `^` y10);
+    y14 <- (VPSRL_4u64 y2 (W128.of_int 50));
+    y2 <- (VPSLL_4u64 y2 (W128.of_int 14));
+    st.[i1] <- y15;
+    y2 <- (y2 `|` y14);
+    y14 <- ((invw y13) `&` y2);
+    y11 <- (y14 `^` y11);
+    st.[i2] <- y11;
+    y11 <- ((invw y2) `&` y12);
+    y12 <- ((invw y12) `&` y10);
+    y11 <- (y11 `^` y13);
+    st.[i3] <- y11;
+    y11 <- (y12 `^` y2);
+    y2 <- (VPSRL_4u64 y8 (W128.of_int 36));
+    y8 <- (VPSLL_4u64 y8 (W128.of_int 28));
+    st.[i4] <- y11;
+    y8 <- (y8 `|` y2);
+    y2 <- (y0 `^` st.[i7]);
+    y10 <- (VPSRL_4u64 y2 (W128.of_int 44));
+    y2 <- (VPSLL_4u64 y2 (W128.of_int 20));
+    y2 <- (y2 `|` y10);
+    y10 <- (y3 `^` st.[i8]);
+    y11 <- (VPSRL_4u64 y10 (W128.of_int 61));
+    y10 <- (VPSLL_4u64 y10 (W128.of_int 3));
+    y10 <- (y10 `|` y11);
+    y11 <- ((invw y2) `&` y10);
+    y11 <- (y11 `^` y8);
+    st.[i5] <- y11;
+    y11 <- (y4 `^` st.[i11]);
+    y12 <- (VPSRL_4u64 y11 (W128.of_int 19));
+    y11 <- (VPSLL_4u64 y11 (W128.of_int 45));
+    y11 <- (y11 `|` y12);
+    y12 <- ((invw y10) `&` y11);
+    y12 <- (y12 `^` y2);
+    st.[i6] <- y12;
+    y12 <- (VPSRL_4u64 y7 (W128.of_int 3));
+    y7 <- (VPSLL_4u64 y7 (W128.of_int 61));
+    y7 <- (y7 `|` y12);
+    y12 <- ((invw y11) `&` y7);
+    y10 <- (y12 `^` y10);
+    y12 <- ((invw y7) `&` y8);
+    y8 <- ((invw y8) `&` y2);
+    y2 <- (VPSRL_4u64 y6 (W128.of_int 63));
+    y6 <- (VPSLL_4u64 y6 (W128.of_int 1));
+    y14 <- (y12 `^` y11);
+    y6 <- (y6 `|` y2);
+    y2 <- (VPSRL_4u64 y9 (W128.of_int 58));
+    y12 <- (y8 `^` y7);
+    y9 <- (VPSLL_4u64 y9 (W128.of_int 6));
+    st.[i7] <- y12;
+    y7 <- (y0 `^` st.[i13]);
+    y9 <- (y9 `|` y2);
+    y2 <- (y1 `^` st.[i9]);
+    y7 <- (VPSHUFB_256 y7 rol8.[0]);
+    y11 <- (VPSRL_4u64 y2 (W128.of_int 39));
+    y2 <- (VPSLL_4u64 y2 (W128.of_int 25));
+    y11 <- (y11 `|` y2);
+    y2 <- ((invw y9) `&` y11);
+    y8 <- ((invw y11) `&` y7);
+    y12 <- (y2 `^` y6);
+    y2 <- (y3 `^` st.[i14]);
+    y8 <- (y8 `^` y9);
+    st.[i8] <- y12;
+    y12 <- (VPSRL_4u64 y2 (W128.of_int 46));
+    y2 <- (VPSLL_4u64 y2 (W128.of_int 18));
+    y2 <- (y12 `|` y2);
+    y12 <- ((invw y7) `&` y2);
+    y15 <- (y12 `^` y11);
+    y11 <- ((invw y2) `&` y6);
+    y6 <- ((invw y6) `&` y9);
+    y12 <- (y11 `^` y7);
+    st.[i9] <- y12;
+    y12 <- (y6 `^` y2);
+    y6 <- (y0 `^` st.[i23]);
+    y0 <- (y0 `^` st.[i22]);
+    st.[i10] <- y12;
+    y2 <- (VPSRL_4u64 y6 (W128.of_int 37));
+    y6 <- (VPSLL_4u64 y6 (W128.of_int 27));
+    y2 <- (y2 `|` y6);
+    y6 <- (y3 `^` st.[i17]);
+    y3 <- (y3 `^` st.[i16]);
+    y7 <- (VPSRL_4u64 y6 (W128.of_int 28));
+    y6 <- (VPSLL_4u64 y6 (W128.of_int 36));
+    y7 <- (y7 `|` y6);
+    y6 <- (y4 `^` st.[i19]);
+    y4 <- (y4 `^` st.[i18]);
+    y12 <- (VPSRL_4u64 y6 (W128.of_int 54));
+    y6 <- (VPSLL_4u64 y6 (W128.of_int 10));
+    y12 <- (y12 `|` y6);
+    y6 <- (y5 `^` st.[i12]);
+    y5 <- (y5 `^` st.[i20]);
+    y9 <- ((invw y7) `&` y12);
+    y11 <- (VPSRL_4u64 y6 (W128.of_int 49));
+    y6 <- (VPSLL_4u64 y6 (W128.of_int 15));
+    y9 <- (y9 `^` y2);
+    y11 <- (y11 `|` y6);
+    y6 <- ((invw y12) `&` y11);
+    y6 <- (y6 `^` y7);
+    st.[i11] <- y6;
+    y6 <- (y1 `^` st.[i15]);
+    y1 <- (y1 `^` st.[i21]);
+    y6 <- (VPSHUFB_256 y6 rol56.[0]);
+    y13 <- ((invw y11) `&` y6);
+    y13 <- (y13 `^` y12);
+    st.[i12] <- y13;
+    y13 <- ((invw y6) `&` y2);
+    y2 <- ((invw y2) `&` y7);
+    y2 <- (y2 `^` y6);
+    y6 <- (VPSRL_4u64 y4 (W128.of_int 62));
+    y13 <- (y13 `^` y11);
+    st.[i13] <- y2;
+    y2 <- (VPSRL_4u64 y5 (W128.of_int 2));
+    y5 <- (VPSLL_4u64 y5 (W128.of_int 62));
+    y2 <- (y2 `|` y5);
+    y5 <- (VPSRL_4u64 y1 (W128.of_int 9));
+    y1 <- (VPSLL_4u64 y1 (W128.of_int 55));
+    y4 <- (VPSLL_4u64 y4 (W128.of_int 2));
+    y1 <- (y5 `|` y1);
+    y5 <- (VPSRL_4u64 y0 (W128.of_int 25));
+    y4 <- (y6 `|` y4);
+    y0 <- (VPSLL_4u64 y0 (W128.of_int 39));
+    y5 <- (y5 `|` y0);
+    y0 <- ((invw y1) `&` y5);
+    y0 <- (y0 `^` y2);
+    st.[i14] <- y0;
+    y0 <- (VPSRL_4u64 y3 (W128.of_int 23));
+    y3 <- (VPSLL_4u64 y3 (W128.of_int 41));
+    y0 <- (y0 `|` y3);
+    y7 <- ((invw y0) `&` y4);
+    y3 <- ((invw y5) `&` y0);
+    y7 <- (y7 `^` y5);
+    y5 <- ((invw y4) `&` y2);
+    y2 <- ((invw y2) `&` y1);
+    y5 <- (y5 `^` y0);
+    y3 <- (y3 `^` y1);
+    y2 <- (y2 `^` y4);
+    st.[i15] <- y5;
+    return (st, y10, y14, y8, y15, y9, y13, y3, y7, y2);
+  }
+  proc __regs_fetch (st:W256.t Array25.t) : W256.t * W256.t * W256.t *
+                                            W256.t * W256.t * W256.t *
+                                            W256.t * W256.t * W256.t = {
+    var y10:W256.t;
+    var y14:W256.t;
+    var y8:W256.t;
+    var y15:W256.t;
+    var y9:W256.t;
+    var y13:W256.t;
+    var y3:W256.t;
+    var y7:W256.t;
+    var y2:W256.t;
+    y10 <- st.[7];
+    y14 <- st.[8];
+    y8 <- st.[11];
+    y15 <- st.[12];
+    y9 <- st.[15];
+    y13 <- st.[18];
+    y3 <- st.[21];
+    y7 <- st.[22];
+    y2 <- st.[24];
+    return (y10, y14, y8, y15, y9, y13, y3, y7, y2);
+  }
+  proc __regs_unfetch (st:W256.t Array25.t, y10:W256.t, y14:W256.t,
+                       y8:W256.t, y15:W256.t, y9:W256.t, y13:W256.t,
+                       y3:W256.t, y7:W256.t, y2:W256.t) : W256.t Array25.t = {
+    
+    st.[7] <- y10;
+    st.[8] <- y14;
+    st.[11] <- y8;
+    st.[12] <- y15;
+    st.[15] <- y9;
+    st.[18] <- y13;
+    st.[21] <- y3;
+    st.[22] <- y7;
+    st.[24] <- y2;
+    return st;
+  }
+  proc __keccakf1600_avx2x4_nat (st:W256.t Array25.t) : W256.t Array25.t = {
+    var y10:W256.t;
+    var y14:W256.t;
+    var y8:W256.t;
+    var y15:W256.t;
+    var y9:W256.t;
+    var y13:W256.t;
+    var y3:W256.t;
+    var y7:W256.t;
+    var y2:W256.t;
+    var rol8:W256.t Array1.t;
+    var rol56:W256.t Array1.t;
+    var rc:W64.t Array24.t;
+    var i:int;
+    rc <- witness;
+    rol56 <- witness;
+    rol8 <- witness;
+    (y10, y14, y8, y15, y9, y13, y3, y7, y2) <@ __regs_fetch (st);
+    rol8 <- rOL8;
+    rol56 <- rOL56;
+    rc <- kECCAK1600_RC;
+    i <- 0;
+    (st, y10, y14, y8, y15, y9, y13, y3, y7, y2) <@ __f1600_loopbody_native (
+    st, rol8, rol56, rc, i, y10, y14, y8, y15, y9, y13, y3, y7, y2);
+    i <- (i + 1);
+    while ((i < 24)) {
+      (st, y10, y14, y8, y15, y9, y13, y3, y7, y2) <@ __f1600_loopbody_native (
+      st, rol8, rol56, rc, i, y10, y14, y8, y15, y9, y13, y3, y7, y2);
+      i <- (i + 1);
+    }
+    st <@ __regs_unfetch (st, y10, y14, y8, y15, y9, y13, y3, y7, y2);
+    return st;
+  }
+  proc _keccakf1600_avx2x4_nat (st:W256.t Array25.t) : W256.t Array25.t = {
+    
+    st <@ __keccakf1600_avx2x4_nat (st);
+    return st;
+  }
+  proc _keccakf1600_avx2x4 (a:W256.t Array25.t) : W256.t Array25.t = {
+    var kECCAK_F:int;
+    kECCAK_F <@ __KECCAK_Fx4 ((2 + 512));
+    if ((kECCAK_F = 256)) {
+      a <@ _keccakf1600_avx2x4_alt (a);
+    } else {
+      if ((kECCAK_F = 512)) {
+        a <@ _keccakf1600_avx2x4_nat (a);
+      } else {
+        a <@ _keccakf1600_avx2x4_ref (a);
+      }
+    }
+    return a;
   }
   proc __state_init_avx2x4 (st:W256.t Array25.t) : W256.t Array25.t = {
     var z256:W256.t;
@@ -4150,12 +5553,9 @@ module M = {
   }
   proc __addratebit_avx2x4 (st:W256.t Array25.t, rATE8:int) : W256.t Array25.t = {
     var t64:W64.t;
-    var t128:W128.t;
     var t256:W256.t;
-    t64 <- (W64.of_int 1);
-    t64 <- (t64 `<<` (W8.of_int (((8 * rATE8) - 1) %% 64)));
-    t128 <- (zeroextu128 t64);
-    t256 <- (VPBROADCAST_4u64 (truncateu64 t128));
+    t64 <- (W64.of_int (1 `<<` (((8 * rATE8) - 1) %% 64)));
+    t256 <- (VPBROADCAST_4u64 t64);
     t256 <- (t256 `^` st.[((rATE8 - 1) %/ 8)]);
     st.[((rATE8 - 1) %/ 8)] <- t256;
     return st;
@@ -4338,78 +5738,67 @@ module M = {
                                    lEN:int, tRAIL:int, cUR:int, aT:int) : 
   int * int * int * int * W64.t = {
     var w:W64.t;
-    var aT8:int;
     var t16:W64.t;
     var t8:W64.t;
-    if ((((aT < cUR) \/ ((cUR + 8) <= aT)) \/ ((lEN = 0) /\ (tRAIL = 0)))) {
+    if (((((lEN < 0) \/ (aT < cUR)) \/ ((cUR + 8) <= aT)) \/
+        ((lEN = 0) /\ (tRAIL = 0)))) {
       w <- (W64.of_int 0);
     } else {
-      aT8 <- (aT - cUR);
       if ((8 <= lEN)) {
         w <-
         (get64_direct (WArray2.init8 (fun i => buf.[i])) (offset + dELTA));
-        w <@ __SHLQ (w, aT8);
-        dELTA <- (dELTA + (8 - aT8));
-        lEN <- (lEN - (8 - aT8));
-        aT8 <- 8;
+        w <@ __SHLQ (w, (aT - cUR));
+        dELTA <- (dELTA + ((cUR + 8) - aT));
+        lEN <- (lEN - ((cUR + 8) - aT));
+        aT <- (cUR + 8);
       } else {
         if ((4 <= lEN)) {
           w <-
           (zeroextu64
           (get32_direct (WArray2.init8 (fun i => buf.[i])) (offset + dELTA)));
-          w <@ __SHLQ (w, aT8);
-          dELTA <- (dELTA + ((8 <= (4 + aT8)) ? (8 - aT8) : 4));
-          lEN <- (lEN - ((8 <= (4 + aT8)) ? (8 - aT8) : 4));
-          aT8 <- ((8 <= (4 + aT8)) ? 8 : (4 + aT8));
+          w <@ __SHLQ (w, (aT - cUR));
+          dELTA <-
+          (dELTA + (((cUR + 8) <= (aT + 4)) ? ((cUR + 8) - aT) : 4));
+          lEN <- (lEN - (((cUR + 8) <= (aT + 4)) ? ((cUR + 8) - aT) : 4));
+          aT <- (((cUR + 8) <= (aT + 4)) ? (cUR + 8) : (aT + 4));
         } else {
           w <- (W64.of_int 0);
         }
-        if (((aT8 < 8) /\ (2 <= lEN))) {
+        if (((aT < (cUR + 8)) /\ (2 <= lEN))) {
           t16 <-
           (zeroextu64
           (get16_direct (WArray2.init8 (fun i => buf.[i])) (offset + dELTA)));
-          dELTA <- (dELTA + ((8 <= (2 + aT8)) ? (8 - aT8) : 2));
-          lEN <- (lEN - ((8 <= (2 + aT8)) ? (8 - aT8) : 2));
-          t16 <@ __SHLQ (t16, aT8);
+          dELTA <-
+          (dELTA + (((cUR + 8) <= (aT + 2)) ? ((cUR + 8) - aT) : 2));
+          lEN <- (lEN - (((cUR + 8) <= (aT + 2)) ? ((cUR + 8) - aT) : 2));
+          t16 <@ __SHLQ (t16, (aT - cUR));
           w <- (w `|` t16);
-          aT8 <- ((8 <= (2 + aT8)) ? 8 : (2 + aT8));
+          aT <- (((cUR + 8) <= (aT + 2)) ? (cUR + 8) : (aT + 2));
         } else {
           
         }
-        if ((aT8 < 8)) {
-          if ((1 <= lEN)) {
-            t8 <-
-            (zeroextu64
-            (get8_direct (WArray2.init8 (fun i => buf.[i])) (offset + dELTA))
-            );
-            t8 <- (t8 `|` (W64.of_int (256 * (tRAIL %% 256))));
-            dELTA <- (dELTA + 1);
-            lEN <- (lEN - 1);
-            t8 <@ __SHLQ (t8, aT8);
-            w <- (w `|` t8);
-            aT8 <- (aT8 + 1);
-            if (((aT8 < 8) /\ ((tRAIL %% 256) <> 0))) {
-              aT8 <- (aT8 + 1);
-              tRAIL <- 0;
-            } else {
-              
-            }
-          } else {
-            if (((tRAIL %% 256) <> 0)) {
-              t8 <- (W64.of_int (tRAIL %% 256));
-              t8 <@ __SHLQ (t8, aT8);
-              w <- (w `|` t8);
-              tRAIL <- 0;
-              aT8 <- (aT8 + 1);
-            } else {
-              
-            }
-          }
+        if (((aT < (cUR + 8)) /\ (1 <= lEN))) {
+          t8 <-
+          (zeroextu64
+          (get8_direct (WArray2.init8 (fun i => buf.[i])) (offset + dELTA)));
+          dELTA <- (dELTA + 1);
+          lEN <- (lEN - 1);
+          t8 <@ __SHLQ (t8, (aT - cUR));
+          w <- (w `|` t8);
+          aT <- (aT + 1);
+        } else {
+          
+        }
+        if (((aT < (cUR + 8)) /\ (tRAIL <> 0))) {
+          t8 <- (W64.of_int (tRAIL %% 256));
+          t8 <- (t8 `<<` (W8.of_int (8 * (aT - cUR))));
+          w <- (w `|` t8);
+          aT <- (aT + 1);
+          tRAIL <- 0;
         } else {
           
         }
       }
-      aT <- (cUR + aT8);
     }
     return (dELTA, lEN, tRAIL, aT, w);
   }
@@ -4417,36 +5806,34 @@ module M = {
                                     lEN:int, tRAIL:int, cUR:int, aT:int) : 
   int * int * int * int * W128.t = {
     var w:W128.t;
-    var aT16:int;
     var t64_0:W64.t;
     var t64_1:W64.t;
-    if ((((aT < cUR) \/ ((cUR + 16) <= aT)) \/ ((lEN = 0) /\ (tRAIL = 0)))) {
+    if (((((lEN < 0) \/ (aT < cUR)) \/ ((cUR + 16) <= aT)) \/
+        ((lEN = 0) /\ (tRAIL = 0)))) {
       w <- (set0_128);
     } else {
-      aT16 <- (aT - cUR);
       if ((16 <= lEN)) {
         w <-
         (get128_direct (WArray2.init8 (fun i => buf.[i])) (offset + dELTA));
-        w <@ __SHLDQ (w, aT16);
-        dELTA <- (dELTA + (16 - aT16));
-        lEN <- (lEN - (16 - aT16));
-        aT16 <- 16;
+        w <@ __SHLDQ (w, (aT - cUR));
+        dELTA <- (dELTA + (16 - (aT - cUR)));
+        lEN <- (lEN - (16 - (aT - cUR)));
+        aT <- (cUR + 16);
       } else {
-        if ((8 <= aT16)) {
+        if (((cUR + 8) <= aT)) {
           w <- (set0_128);
-          (dELTA, lEN, tRAIL, aT16, t64_1) <@ a2____a_ilen_read_upto8_at (
-          buf, offset, dELTA, lEN, tRAIL, 8, aT16);
+          (dELTA, lEN, tRAIL, aT, t64_1) <@ a2____a_ilen_read_upto8_at (
+          buf, offset, dELTA, lEN, tRAIL, (cUR + 8), aT);
           w <- (VPINSR_2u64 w t64_1 (W8.of_int 1));
         } else {
-          (dELTA, lEN, tRAIL, aT16, t64_0) <@ a2____a_ilen_read_upto8_at (
-          buf, offset, dELTA, lEN, tRAIL, 0, aT16);
-          w <- (zeroextu128 t64_0);
-          (dELTA, lEN, tRAIL, aT16, t64_1) <@ a2____a_ilen_read_upto8_at (
-          buf, offset, dELTA, lEN, tRAIL, 8, aT16);
+          (dELTA, lEN, tRAIL, aT, t64_0) <@ a2____a_ilen_read_upto8_at (
+          buf, offset, dELTA, lEN, tRAIL, cUR, aT);
+          w <- (VMOV_64 t64_0);
+          (dELTA, lEN, tRAIL, aT, t64_1) <@ a2____a_ilen_read_upto8_at (
+          buf, offset, dELTA, lEN, tRAIL, (cUR + 8), aT);
           w <- (VPINSR_2u64 w t64_1 (W8.of_int 1));
         }
       }
-      aT <- (cUR + aT16);
     }
     return (dELTA, lEN, tRAIL, aT, w);
   }
@@ -4454,37 +5841,33 @@ module M = {
                                     lEN:int, tRAIL:int, cUR:int, aT:int) : 
   int * int * int * int * W256.t = {
     var w:W256.t;
-    var aT32:int;
     var t128_0:W128.t;
     var t128_1:W128.t;
-    if ((((aT < cUR) \/ ((cUR + 32) <= aT)) \/ ((lEN = 0) /\ (tRAIL = 0)))) {
+    if (((((lEN < 0) \/ (aT < cUR)) \/ ((cUR + 32) <= aT)) \/
+        ((lEN = 0) /\ (tRAIL = 0)))) {
       w <- (set0_256);
     } else {
-      aT32 <- (aT - cUR);
-      if (((aT32 = 0) /\ (32 <= lEN))) {
+      if (((aT = cUR) /\ (32 <= lEN))) {
         w <-
         (get256_direct (WArray2.init8 (fun i => buf.[i])) (offset + dELTA));
-        aT32 <- (aT32 + 32);
         dELTA <- (dELTA + 32);
         lEN <- (lEN - 32);
+        aT <- (aT + 32);
       } else {
-        if ((16 <= aT32)) {
+        if (((cUR + 16) <= aT)) {
           w <- (set0_256);
-          (dELTA, lEN, tRAIL, aT32, t128_1) <@ a2____a_ilen_read_upto16_at (
-          buf, offset, dELTA, lEN, tRAIL, 16, aT32);
+          (dELTA, lEN, tRAIL, aT, t128_1) <@ a2____a_ilen_read_upto16_at (
+          buf, offset, dELTA, lEN, tRAIL, (cUR + 16), aT);
           w <- (VINSERTI128 w t128_1 (W8.of_int 1));
         } else {
-          (dELTA, lEN, tRAIL, aT32, t128_0) <@ a2____a_ilen_read_upto16_at (
-          buf, offset, dELTA, lEN, tRAIL, 0, aT32);
-          (dELTA, lEN, tRAIL, aT32, t128_1) <@ a2____a_ilen_read_upto16_at (
-          buf, offset, dELTA, lEN, tRAIL, 16, aT32);
-          w <-
-          (W256.of_int
-          (((W128.to_uint t128_0) %% (2 ^ 128)) +
-          ((2 ^ 128) * (W128.to_uint t128_1))));
+          (dELTA, lEN, tRAIL, aT, t128_0) <@ a2____a_ilen_read_upto16_at (
+          buf, offset, dELTA, lEN, tRAIL, cUR, aT);
+          w <- (zeroextu256 t128_0);
+          (dELTA, lEN, tRAIL, aT, t128_1) <@ a2____a_ilen_read_upto16_at (
+          buf, offset, dELTA, lEN, tRAIL, (cUR + 16), aT);
+          w <- (VINSERTI128 w t128_1 (W8.of_int 1));
         }
       }
-      aT <- (cUR + aT32);
     }
     return (dELTA, lEN, tRAIL, aT, w);
   }
@@ -4493,28 +5876,25 @@ module M = {
                                          cUR:int, aT:int) : int * int * int *
                                                             int * W256.t = {
     var w256:W256.t;
-    var aT8:int;
     var w:W64.t;
     var t128:W128.t;
-    if ((((aT < cUR) \/ ((cUR + 8) <= aT)) \/ ((lEN = 0) /\ (tRAIL = 0)))) {
+    if (((((lEN < 0) \/ (aT < cUR)) \/ ((cUR + 8) <= aT)) \/
+        ((lEN = 0) /\ (tRAIL = 0)))) {
       w256 <- (set0_256);
     } else {
       if ((8 <= lEN)) {
-        aT8 <- (aT - cUR);
         w256 <-
         (VPBROADCAST_4u64
         (get64_direct (WArray2.init8 (fun i => buf.[i])) (offset + dELTA)));
-        w256 <@ __SHLQ_256 (w256, aT8);
-        dELTA <- (dELTA + (8 - aT8));
-        lEN <- (lEN - (8 - aT8));
+        w256 <@ __SHLQ_256 (w256, (aT - cUR));
+        dELTA <- (dELTA + ((cUR + 8) - aT));
+        lEN <- (lEN - ((cUR + 8) - aT));
         aT <- (cUR + 8);
       } else {
-        aT8 <- (aT - cUR);
         (dELTA, lEN, tRAIL, aT, w) <@ a2____a_ilen_read_upto8_at (buf,
         offset, dELTA, lEN, tRAIL, cUR, aT);
-        t128 <- (zeroextu128 w);
+        t128 <- (VMOV_64 w);
         w256 <- (VPBROADCAST_4u64 (truncateu64 t128));
-        w256 <@ __SHLQ_256 (w256, aT8);
       }
     }
     return (dELTA, lEN, tRAIL, aT, w256);
@@ -4554,14 +5934,14 @@ module M = {
     if (((0 < _LEN) \/ (_TRAILB <> 0))) {
       (dELTA, _LEN, _TRAILB, aT, t64_2) <@ a2____a_ilen_read_upto8_at (
       buf, offset, dELTA, _LEN, _TRAILB, 40, aT);
-      t128_1 <- (zeroextu128 t64_2);
+      t128_1 <- (VMOV_64 t64_2);
       t128_2 <- (set0_128);
       if (((0 < _LEN) \/ (_TRAILB <> 0))) {
         (dELTA, _LEN, _TRAILB, aT, r3) <@ a2____a_ilen_read_upto32_at (
         buf, offset, dELTA, _LEN, _TRAILB, 48, aT);
         (dELTA, _LEN, _TRAILB, aT, t64_3) <@ a2____a_ilen_read_upto8_at (
         buf, offset, dELTA, _LEN, _TRAILB, 80, aT);
-        t128_2 <- (zeroextu128 t64_3);
+        t128_2 <- (VMOV_64 t64_3);
         (dELTA, _LEN, _TRAILB, aT, r4) <@ a2____a_ilen_read_upto32_at (
         buf, offset, dELTA, _LEN, _TRAILB, 88, aT);
         (dELTA, _LEN, _TRAILB, aT, t64_4) <@ a2____a_ilen_read_upto8_at (
@@ -4816,80 +6196,69 @@ module M = {
                                     dELTA:int, lEN:int, tRAIL:int, cUR:int,
                                     aT:int) : int * int * int * int * W64.t = {
     var w:W64.t;
-    var aT8:int;
     var t16:W64.t;
     var t8:W64.t;
-    if ((((aT < cUR) \/ ((cUR + 8) <= aT)) \/ ((lEN = 0) /\ (tRAIL = 0)))) {
+    if (((((lEN < 0) \/ (aT < cUR)) \/ ((cUR + 8) <= aT)) \/
+        ((lEN = 0) /\ (tRAIL = 0)))) {
       w <- (W64.of_int 0);
     } else {
-      aT8 <- (aT - cUR);
       if ((8 <= lEN)) {
         w <-
         (get64_direct (WArray32.init8 (fun i => buf.[i])) (offset + dELTA));
-        w <@ __SHLQ (w, aT8);
-        dELTA <- (dELTA + (8 - aT8));
-        lEN <- (lEN - (8 - aT8));
-        aT8 <- 8;
+        w <@ __SHLQ (w, (aT - cUR));
+        dELTA <- (dELTA + ((cUR + 8) - aT));
+        lEN <- (lEN - ((cUR + 8) - aT));
+        aT <- (cUR + 8);
       } else {
         if ((4 <= lEN)) {
           w <-
           (zeroextu64
           (get32_direct (WArray32.init8 (fun i => buf.[i])) (offset + dELTA))
           );
-          w <@ __SHLQ (w, aT8);
-          dELTA <- (dELTA + ((8 <= (4 + aT8)) ? (8 - aT8) : 4));
-          lEN <- (lEN - ((8 <= (4 + aT8)) ? (8 - aT8) : 4));
-          aT8 <- ((8 <= (4 + aT8)) ? 8 : (4 + aT8));
+          w <@ __SHLQ (w, (aT - cUR));
+          dELTA <-
+          (dELTA + (((cUR + 8) <= (aT + 4)) ? ((cUR + 8) - aT) : 4));
+          lEN <- (lEN - (((cUR + 8) <= (aT + 4)) ? ((cUR + 8) - aT) : 4));
+          aT <- (((cUR + 8) <= (aT + 4)) ? (cUR + 8) : (aT + 4));
         } else {
           w <- (W64.of_int 0);
         }
-        if (((aT8 < 8) /\ (2 <= lEN))) {
+        if (((aT < (cUR + 8)) /\ (2 <= lEN))) {
           t16 <-
           (zeroextu64
           (get16_direct (WArray32.init8 (fun i => buf.[i])) (offset + dELTA))
           );
-          dELTA <- (dELTA + ((8 <= (2 + aT8)) ? (8 - aT8) : 2));
-          lEN <- (lEN - ((8 <= (2 + aT8)) ? (8 - aT8) : 2));
-          t16 <@ __SHLQ (t16, aT8);
+          dELTA <-
+          (dELTA + (((cUR + 8) <= (aT + 2)) ? ((cUR + 8) - aT) : 2));
+          lEN <- (lEN - (((cUR + 8) <= (aT + 2)) ? ((cUR + 8) - aT) : 2));
+          t16 <@ __SHLQ (t16, (aT - cUR));
           w <- (w `|` t16);
-          aT8 <- ((8 <= (2 + aT8)) ? 8 : (2 + aT8));
+          aT <- (((cUR + 8) <= (aT + 2)) ? (cUR + 8) : (aT + 2));
         } else {
           
         }
-        if ((aT8 < 8)) {
-          if ((1 <= lEN)) {
-            t8 <-
-            (zeroextu64
-            (get8_direct (WArray32.init8 (fun i => buf.[i])) (offset + dELTA)
-            ));
-            t8 <- (t8 `|` (W64.of_int (256 * (tRAIL %% 256))));
-            dELTA <- (dELTA + 1);
-            lEN <- (lEN - 1);
-            t8 <@ __SHLQ (t8, aT8);
-            w <- (w `|` t8);
-            aT8 <- (aT8 + 1);
-            if (((aT8 < 8) /\ ((tRAIL %% 256) <> 0))) {
-              aT8 <- (aT8 + 1);
-              tRAIL <- 0;
-            } else {
-              
-            }
-          } else {
-            if (((tRAIL %% 256) <> 0)) {
-              t8 <- (W64.of_int (tRAIL %% 256));
-              t8 <@ __SHLQ (t8, aT8);
-              w <- (w `|` t8);
-              tRAIL <- 0;
-              aT8 <- (aT8 + 1);
-            } else {
-              
-            }
-          }
+        if (((aT < (cUR + 8)) /\ (1 <= lEN))) {
+          t8 <-
+          (zeroextu64
+          (get8_direct (WArray32.init8 (fun i => buf.[i])) (offset + dELTA)));
+          dELTA <- (dELTA + 1);
+          lEN <- (lEN - 1);
+          t8 <@ __SHLQ (t8, (aT - cUR));
+          w <- (w `|` t8);
+          aT <- (aT + 1);
+        } else {
+          
+        }
+        if (((aT < (cUR + 8)) /\ (tRAIL <> 0))) {
+          t8 <- (W64.of_int (tRAIL %% 256));
+          t8 <- (t8 `<<` (W8.of_int (8 * (aT - cUR))));
+          w <- (w `|` t8);
+          aT <- (aT + 1);
+          tRAIL <- 0;
         } else {
           
         }
       }
-      aT <- (cUR + aT8);
     }
     return (dELTA, lEN, tRAIL, aT, w);
   }
@@ -4897,36 +6266,34 @@ module M = {
                                      dELTA:int, lEN:int, tRAIL:int, cUR:int,
                                      aT:int) : int * int * int * int * W128.t = {
     var w:W128.t;
-    var aT16:int;
     var t64_0:W64.t;
     var t64_1:W64.t;
-    if ((((aT < cUR) \/ ((cUR + 16) <= aT)) \/ ((lEN = 0) /\ (tRAIL = 0)))) {
+    if (((((lEN < 0) \/ (aT < cUR)) \/ ((cUR + 16) <= aT)) \/
+        ((lEN = 0) /\ (tRAIL = 0)))) {
       w <- (set0_128);
     } else {
-      aT16 <- (aT - cUR);
       if ((16 <= lEN)) {
         w <-
         (get128_direct (WArray32.init8 (fun i => buf.[i])) (offset + dELTA));
-        w <@ __SHLDQ (w, aT16);
-        dELTA <- (dELTA + (16 - aT16));
-        lEN <- (lEN - (16 - aT16));
-        aT16 <- 16;
+        w <@ __SHLDQ (w, (aT - cUR));
+        dELTA <- (dELTA + (16 - (aT - cUR)));
+        lEN <- (lEN - (16 - (aT - cUR)));
+        aT <- (cUR + 16);
       } else {
-        if ((8 <= aT16)) {
+        if (((cUR + 8) <= aT)) {
           w <- (set0_128);
-          (dELTA, lEN, tRAIL, aT16, t64_1) <@ a32____a_ilen_read_upto8_at (
-          buf, offset, dELTA, lEN, tRAIL, 8, aT16);
+          (dELTA, lEN, tRAIL, aT, t64_1) <@ a32____a_ilen_read_upto8_at (
+          buf, offset, dELTA, lEN, tRAIL, (cUR + 8), aT);
           w <- (VPINSR_2u64 w t64_1 (W8.of_int 1));
         } else {
-          (dELTA, lEN, tRAIL, aT16, t64_0) <@ a32____a_ilen_read_upto8_at (
-          buf, offset, dELTA, lEN, tRAIL, 0, aT16);
-          w <- (zeroextu128 t64_0);
-          (dELTA, lEN, tRAIL, aT16, t64_1) <@ a32____a_ilen_read_upto8_at (
-          buf, offset, dELTA, lEN, tRAIL, 8, aT16);
+          (dELTA, lEN, tRAIL, aT, t64_0) <@ a32____a_ilen_read_upto8_at (
+          buf, offset, dELTA, lEN, tRAIL, cUR, aT);
+          w <- (VMOV_64 t64_0);
+          (dELTA, lEN, tRAIL, aT, t64_1) <@ a32____a_ilen_read_upto8_at (
+          buf, offset, dELTA, lEN, tRAIL, (cUR + 8), aT);
           w <- (VPINSR_2u64 w t64_1 (W8.of_int 1));
         }
       }
-      aT <- (cUR + aT16);
     }
     return (dELTA, lEN, tRAIL, aT, w);
   }
@@ -4934,37 +6301,33 @@ module M = {
                                      dELTA:int, lEN:int, tRAIL:int, cUR:int,
                                      aT:int) : int * int * int * int * W256.t = {
     var w:W256.t;
-    var aT32:int;
     var t128_0:W128.t;
     var t128_1:W128.t;
-    if ((((aT < cUR) \/ ((cUR + 32) <= aT)) \/ ((lEN = 0) /\ (tRAIL = 0)))) {
+    if (((((lEN < 0) \/ (aT < cUR)) \/ ((cUR + 32) <= aT)) \/
+        ((lEN = 0) /\ (tRAIL = 0)))) {
       w <- (set0_256);
     } else {
-      aT32 <- (aT - cUR);
-      if (((aT32 = 0) /\ (32 <= lEN))) {
+      if (((aT = cUR) /\ (32 <= lEN))) {
         w <-
         (get256_direct (WArray32.init8 (fun i => buf.[i])) (offset + dELTA));
-        aT32 <- (aT32 + 32);
         dELTA <- (dELTA + 32);
         lEN <- (lEN - 32);
+        aT <- (aT + 32);
       } else {
-        if ((16 <= aT32)) {
+        if (((cUR + 16) <= aT)) {
           w <- (set0_256);
-          (dELTA, lEN, tRAIL, aT32, t128_1) <@ a32____a_ilen_read_upto16_at (
-          buf, offset, dELTA, lEN, tRAIL, 16, aT32);
+          (dELTA, lEN, tRAIL, aT, t128_1) <@ a32____a_ilen_read_upto16_at (
+          buf, offset, dELTA, lEN, tRAIL, (cUR + 16), aT);
           w <- (VINSERTI128 w t128_1 (W8.of_int 1));
         } else {
-          (dELTA, lEN, tRAIL, aT32, t128_0) <@ a32____a_ilen_read_upto16_at (
-          buf, offset, dELTA, lEN, tRAIL, 0, aT32);
-          (dELTA, lEN, tRAIL, aT32, t128_1) <@ a32____a_ilen_read_upto16_at (
-          buf, offset, dELTA, lEN, tRAIL, 16, aT32);
-          w <-
-          (W256.of_int
-          (((W128.to_uint t128_0) %% (2 ^ 128)) +
-          ((2 ^ 128) * (W128.to_uint t128_1))));
+          (dELTA, lEN, tRAIL, aT, t128_0) <@ a32____a_ilen_read_upto16_at (
+          buf, offset, dELTA, lEN, tRAIL, cUR, aT);
+          w <- (zeroextu256 t128_0);
+          (dELTA, lEN, tRAIL, aT, t128_1) <@ a32____a_ilen_read_upto16_at (
+          buf, offset, dELTA, lEN, tRAIL, (cUR + 16), aT);
+          w <- (VINSERTI128 w t128_1 (W8.of_int 1));
         }
       }
-      aT <- (cUR + aT32);
     }
     return (dELTA, lEN, tRAIL, aT, w);
   }
@@ -4974,28 +6337,25 @@ module M = {
                                                              int * int *
                                                              W256.t = {
     var w256:W256.t;
-    var aT8:int;
     var w:W64.t;
     var t128:W128.t;
-    if ((((aT < cUR) \/ ((cUR + 8) <= aT)) \/ ((lEN = 0) /\ (tRAIL = 0)))) {
+    if (((((lEN < 0) \/ (aT < cUR)) \/ ((cUR + 8) <= aT)) \/
+        ((lEN = 0) /\ (tRAIL = 0)))) {
       w256 <- (set0_256);
     } else {
       if ((8 <= lEN)) {
-        aT8 <- (aT - cUR);
         w256 <-
         (VPBROADCAST_4u64
         (get64_direct (WArray32.init8 (fun i => buf.[i])) (offset + dELTA)));
-        w256 <@ __SHLQ_256 (w256, aT8);
-        dELTA <- (dELTA + (8 - aT8));
-        lEN <- (lEN - (8 - aT8));
+        w256 <@ __SHLQ_256 (w256, (aT - cUR));
+        dELTA <- (dELTA + ((cUR + 8) - aT));
+        lEN <- (lEN - ((cUR + 8) - aT));
         aT <- (cUR + 8);
       } else {
-        aT8 <- (aT - cUR);
         (dELTA, lEN, tRAIL, aT, w) <@ a32____a_ilen_read_upto8_at (buf,
         offset, dELTA, lEN, tRAIL, cUR, aT);
-        t128 <- (zeroextu128 w);
+        t128 <- (VMOV_64 w);
         w256 <- (VPBROADCAST_4u64 (truncateu64 t128));
-        w256 <@ __SHLQ_256 (w256, aT8);
       }
     }
     return (dELTA, lEN, tRAIL, aT, w256);
@@ -5035,14 +6395,14 @@ module M = {
     if (((0 < _LEN) \/ (_TRAILB <> 0))) {
       (dELTA, _LEN, _TRAILB, aT, t64_2) <@ a32____a_ilen_read_upto8_at (
       buf, offset, dELTA, _LEN, _TRAILB, 40, aT);
-      t128_1 <- (zeroextu128 t64_2);
+      t128_1 <- (VMOV_64 t64_2);
       t128_2 <- (set0_128);
       if (((0 < _LEN) \/ (_TRAILB <> 0))) {
         (dELTA, _LEN, _TRAILB, aT, r3) <@ a32____a_ilen_read_upto32_at (
         buf, offset, dELTA, _LEN, _TRAILB, 48, aT);
         (dELTA, _LEN, _TRAILB, aT, t64_3) <@ a32____a_ilen_read_upto8_at (
         buf, offset, dELTA, _LEN, _TRAILB, 80, aT);
-        t128_2 <- (zeroextu128 t64_3);
+        t128_2 <- (VMOV_64 t64_3);
         (dELTA, _LEN, _TRAILB, aT, r4) <@ a32____a_ilen_read_upto32_at (
         buf, offset, dELTA, _LEN, _TRAILB, 88, aT);
         (dELTA, _LEN, _TRAILB, aT, t64_4) <@ a32____a_ilen_read_upto8_at (
@@ -5199,80 +6559,69 @@ module M = {
                                     dELTA:int, lEN:int, tRAIL:int, cUR:int,
                                     aT:int) : int * int * int * int * W64.t = {
     var w:W64.t;
-    var aT8:int;
     var t16:W64.t;
     var t8:W64.t;
-    if ((((aT < cUR) \/ ((cUR + 8) <= aT)) \/ ((lEN = 0) /\ (tRAIL = 0)))) {
+    if (((((lEN < 0) \/ (aT < cUR)) \/ ((cUR + 8) <= aT)) \/
+        ((lEN = 0) /\ (tRAIL = 0)))) {
       w <- (W64.of_int 0);
     } else {
-      aT8 <- (aT - cUR);
       if ((8 <= lEN)) {
         w <-
         (get64_direct (WArray64.init8 (fun i => buf.[i])) (offset + dELTA));
-        w <@ __SHLQ (w, aT8);
-        dELTA <- (dELTA + (8 - aT8));
-        lEN <- (lEN - (8 - aT8));
-        aT8 <- 8;
+        w <@ __SHLQ (w, (aT - cUR));
+        dELTA <- (dELTA + ((cUR + 8) - aT));
+        lEN <- (lEN - ((cUR + 8) - aT));
+        aT <- (cUR + 8);
       } else {
         if ((4 <= lEN)) {
           w <-
           (zeroextu64
           (get32_direct (WArray64.init8 (fun i => buf.[i])) (offset + dELTA))
           );
-          w <@ __SHLQ (w, aT8);
-          dELTA <- (dELTA + ((8 <= (4 + aT8)) ? (8 - aT8) : 4));
-          lEN <- (lEN - ((8 <= (4 + aT8)) ? (8 - aT8) : 4));
-          aT8 <- ((8 <= (4 + aT8)) ? 8 : (4 + aT8));
+          w <@ __SHLQ (w, (aT - cUR));
+          dELTA <-
+          (dELTA + (((cUR + 8) <= (aT + 4)) ? ((cUR + 8) - aT) : 4));
+          lEN <- (lEN - (((cUR + 8) <= (aT + 4)) ? ((cUR + 8) - aT) : 4));
+          aT <- (((cUR + 8) <= (aT + 4)) ? (cUR + 8) : (aT + 4));
         } else {
           w <- (W64.of_int 0);
         }
-        if (((aT8 < 8) /\ (2 <= lEN))) {
+        if (((aT < (cUR + 8)) /\ (2 <= lEN))) {
           t16 <-
           (zeroextu64
           (get16_direct (WArray64.init8 (fun i => buf.[i])) (offset + dELTA))
           );
-          dELTA <- (dELTA + ((8 <= (2 + aT8)) ? (8 - aT8) : 2));
-          lEN <- (lEN - ((8 <= (2 + aT8)) ? (8 - aT8) : 2));
-          t16 <@ __SHLQ (t16, aT8);
+          dELTA <-
+          (dELTA + (((cUR + 8) <= (aT + 2)) ? ((cUR + 8) - aT) : 2));
+          lEN <- (lEN - (((cUR + 8) <= (aT + 2)) ? ((cUR + 8) - aT) : 2));
+          t16 <@ __SHLQ (t16, (aT - cUR));
           w <- (w `|` t16);
-          aT8 <- ((8 <= (2 + aT8)) ? 8 : (2 + aT8));
+          aT <- (((cUR + 8) <= (aT + 2)) ? (cUR + 8) : (aT + 2));
         } else {
           
         }
-        if ((aT8 < 8)) {
-          if ((1 <= lEN)) {
-            t8 <-
-            (zeroextu64
-            (get8_direct (WArray64.init8 (fun i => buf.[i])) (offset + dELTA)
-            ));
-            t8 <- (t8 `|` (W64.of_int (256 * (tRAIL %% 256))));
-            dELTA <- (dELTA + 1);
-            lEN <- (lEN - 1);
-            t8 <@ __SHLQ (t8, aT8);
-            w <- (w `|` t8);
-            aT8 <- (aT8 + 1);
-            if (((aT8 < 8) /\ ((tRAIL %% 256) <> 0))) {
-              aT8 <- (aT8 + 1);
-              tRAIL <- 0;
-            } else {
-              
-            }
-          } else {
-            if (((tRAIL %% 256) <> 0)) {
-              t8 <- (W64.of_int (tRAIL %% 256));
-              t8 <@ __SHLQ (t8, aT8);
-              w <- (w `|` t8);
-              tRAIL <- 0;
-              aT8 <- (aT8 + 1);
-            } else {
-              
-            }
-          }
+        if (((aT < (cUR + 8)) /\ (1 <= lEN))) {
+          t8 <-
+          (zeroextu64
+          (get8_direct (WArray64.init8 (fun i => buf.[i])) (offset + dELTA)));
+          dELTA <- (dELTA + 1);
+          lEN <- (lEN - 1);
+          t8 <@ __SHLQ (t8, (aT - cUR));
+          w <- (w `|` t8);
+          aT <- (aT + 1);
+        } else {
+          
+        }
+        if (((aT < (cUR + 8)) /\ (tRAIL <> 0))) {
+          t8 <- (W64.of_int (tRAIL %% 256));
+          t8 <- (t8 `<<` (W8.of_int (8 * (aT - cUR))));
+          w <- (w `|` t8);
+          aT <- (aT + 1);
+          tRAIL <- 0;
         } else {
           
         }
       }
-      aT <- (cUR + aT8);
     }
     return (dELTA, lEN, tRAIL, aT, w);
   }
@@ -5280,36 +6629,34 @@ module M = {
                                      dELTA:int, lEN:int, tRAIL:int, cUR:int,
                                      aT:int) : int * int * int * int * W128.t = {
     var w:W128.t;
-    var aT16:int;
     var t64_0:W64.t;
     var t64_1:W64.t;
-    if ((((aT < cUR) \/ ((cUR + 16) <= aT)) \/ ((lEN = 0) /\ (tRAIL = 0)))) {
+    if (((((lEN < 0) \/ (aT < cUR)) \/ ((cUR + 16) <= aT)) \/
+        ((lEN = 0) /\ (tRAIL = 0)))) {
       w <- (set0_128);
     } else {
-      aT16 <- (aT - cUR);
       if ((16 <= lEN)) {
         w <-
         (get128_direct (WArray64.init8 (fun i => buf.[i])) (offset + dELTA));
-        w <@ __SHLDQ (w, aT16);
-        dELTA <- (dELTA + (16 - aT16));
-        lEN <- (lEN - (16 - aT16));
-        aT16 <- 16;
+        w <@ __SHLDQ (w, (aT - cUR));
+        dELTA <- (dELTA + (16 - (aT - cUR)));
+        lEN <- (lEN - (16 - (aT - cUR)));
+        aT <- (cUR + 16);
       } else {
-        if ((8 <= aT16)) {
+        if (((cUR + 8) <= aT)) {
           w <- (set0_128);
-          (dELTA, lEN, tRAIL, aT16, t64_1) <@ a64____a_ilen_read_upto8_at (
-          buf, offset, dELTA, lEN, tRAIL, 8, aT16);
+          (dELTA, lEN, tRAIL, aT, t64_1) <@ a64____a_ilen_read_upto8_at (
+          buf, offset, dELTA, lEN, tRAIL, (cUR + 8), aT);
           w <- (VPINSR_2u64 w t64_1 (W8.of_int 1));
         } else {
-          (dELTA, lEN, tRAIL, aT16, t64_0) <@ a64____a_ilen_read_upto8_at (
-          buf, offset, dELTA, lEN, tRAIL, 0, aT16);
-          w <- (zeroextu128 t64_0);
-          (dELTA, lEN, tRAIL, aT16, t64_1) <@ a64____a_ilen_read_upto8_at (
-          buf, offset, dELTA, lEN, tRAIL, 8, aT16);
+          (dELTA, lEN, tRAIL, aT, t64_0) <@ a64____a_ilen_read_upto8_at (
+          buf, offset, dELTA, lEN, tRAIL, cUR, aT);
+          w <- (VMOV_64 t64_0);
+          (dELTA, lEN, tRAIL, aT, t64_1) <@ a64____a_ilen_read_upto8_at (
+          buf, offset, dELTA, lEN, tRAIL, (cUR + 8), aT);
           w <- (VPINSR_2u64 w t64_1 (W8.of_int 1));
         }
       }
-      aT <- (cUR + aT16);
     }
     return (dELTA, lEN, tRAIL, aT, w);
   }
@@ -5317,37 +6664,33 @@ module M = {
                                      dELTA:int, lEN:int, tRAIL:int, cUR:int,
                                      aT:int) : int * int * int * int * W256.t = {
     var w:W256.t;
-    var aT32:int;
     var t128_0:W128.t;
     var t128_1:W128.t;
-    if ((((aT < cUR) \/ ((cUR + 32) <= aT)) \/ ((lEN = 0) /\ (tRAIL = 0)))) {
+    if (((((lEN < 0) \/ (aT < cUR)) \/ ((cUR + 32) <= aT)) \/
+        ((lEN = 0) /\ (tRAIL = 0)))) {
       w <- (set0_256);
     } else {
-      aT32 <- (aT - cUR);
-      if (((aT32 = 0) /\ (32 <= lEN))) {
+      if (((aT = cUR) /\ (32 <= lEN))) {
         w <-
         (get256_direct (WArray64.init8 (fun i => buf.[i])) (offset + dELTA));
-        aT32 <- (aT32 + 32);
         dELTA <- (dELTA + 32);
         lEN <- (lEN - 32);
+        aT <- (aT + 32);
       } else {
-        if ((16 <= aT32)) {
+        if (((cUR + 16) <= aT)) {
           w <- (set0_256);
-          (dELTA, lEN, tRAIL, aT32, t128_1) <@ a64____a_ilen_read_upto16_at (
-          buf, offset, dELTA, lEN, tRAIL, 16, aT32);
+          (dELTA, lEN, tRAIL, aT, t128_1) <@ a64____a_ilen_read_upto16_at (
+          buf, offset, dELTA, lEN, tRAIL, (cUR + 16), aT);
           w <- (VINSERTI128 w t128_1 (W8.of_int 1));
         } else {
-          (dELTA, lEN, tRAIL, aT32, t128_0) <@ a64____a_ilen_read_upto16_at (
-          buf, offset, dELTA, lEN, tRAIL, 0, aT32);
-          (dELTA, lEN, tRAIL, aT32, t128_1) <@ a64____a_ilen_read_upto16_at (
-          buf, offset, dELTA, lEN, tRAIL, 16, aT32);
-          w <-
-          (W256.of_int
-          (((W128.to_uint t128_0) %% (2 ^ 128)) +
-          ((2 ^ 128) * (W128.to_uint t128_1))));
+          (dELTA, lEN, tRAIL, aT, t128_0) <@ a64____a_ilen_read_upto16_at (
+          buf, offset, dELTA, lEN, tRAIL, cUR, aT);
+          w <- (zeroextu256 t128_0);
+          (dELTA, lEN, tRAIL, aT, t128_1) <@ a64____a_ilen_read_upto16_at (
+          buf, offset, dELTA, lEN, tRAIL, (cUR + 16), aT);
+          w <- (VINSERTI128 w t128_1 (W8.of_int 1));
         }
       }
-      aT <- (cUR + aT32);
     }
     return (dELTA, lEN, tRAIL, aT, w);
   }
@@ -5357,28 +6700,25 @@ module M = {
                                                              int * int *
                                                              W256.t = {
     var w256:W256.t;
-    var aT8:int;
     var w:W64.t;
     var t128:W128.t;
-    if ((((aT < cUR) \/ ((cUR + 8) <= aT)) \/ ((lEN = 0) /\ (tRAIL = 0)))) {
+    if (((((lEN < 0) \/ (aT < cUR)) \/ ((cUR + 8) <= aT)) \/
+        ((lEN = 0) /\ (tRAIL = 0)))) {
       w256 <- (set0_256);
     } else {
       if ((8 <= lEN)) {
-        aT8 <- (aT - cUR);
         w256 <-
         (VPBROADCAST_4u64
         (get64_direct (WArray64.init8 (fun i => buf.[i])) (offset + dELTA)));
-        w256 <@ __SHLQ_256 (w256, aT8);
-        dELTA <- (dELTA + (8 - aT8));
-        lEN <- (lEN - (8 - aT8));
+        w256 <@ __SHLQ_256 (w256, (aT - cUR));
+        dELTA <- (dELTA + ((cUR + 8) - aT));
+        lEN <- (lEN - ((cUR + 8) - aT));
         aT <- (cUR + 8);
       } else {
-        aT8 <- (aT - cUR);
         (dELTA, lEN, tRAIL, aT, w) <@ a64____a_ilen_read_upto8_at (buf,
         offset, dELTA, lEN, tRAIL, cUR, aT);
-        t128 <- (zeroextu128 w);
+        t128 <- (VMOV_64 w);
         w256 <- (VPBROADCAST_4u64 (truncateu64 t128));
-        w256 <@ __SHLQ_256 (w256, aT8);
       }
     }
     return (dELTA, lEN, tRAIL, aT, w256);
@@ -5464,7 +6804,7 @@ module M = {
         } else {
           
         }
-        t64 <- (truncateu64 w);
+        t64 <- (MOVV_64 (truncateu64 w));
         (buf, dELTA, lEN) <@ a64____a_ilen_write_upto8 (buf, offset, 
         dELTA, lEN, t64);
       }
@@ -5604,14 +6944,14 @@ module M = {
     if (((0 < _LEN) \/ (_TRAILB <> 0))) {
       (dELTA, _LEN, _TRAILB, aT, t64_2) <@ a64____a_ilen_read_upto8_at (
       buf, offset, dELTA, _LEN, _TRAILB, 40, aT);
-      t128_1 <- (zeroextu128 t64_2);
+      t128_1 <- (VMOV_64 t64_2);
       t128_2 <- (set0_128);
       if (((0 < _LEN) \/ (_TRAILB <> 0))) {
         (dELTA, _LEN, _TRAILB, aT, r3) <@ a64____a_ilen_read_upto32_at (
         buf, offset, dELTA, _LEN, _TRAILB, 48, aT);
         (dELTA, _LEN, _TRAILB, aT, t64_3) <@ a64____a_ilen_read_upto8_at (
         buf, offset, dELTA, _LEN, _TRAILB, 80, aT);
-        t128_2 <- (zeroextu128 t64_3);
+        t128_2 <- (VMOV_64 t64_3);
         (dELTA, _LEN, _TRAILB, aT, r4) <@ a64____a_ilen_read_upto32_at (
         buf, offset, dELTA, _LEN, _TRAILB, 88, aT);
         (dELTA, _LEN, _TRAILB, aT, t64_4) <@ a64____a_ilen_read_upto8_at (
@@ -5678,8 +7018,8 @@ module M = {
   proc a64____dumpstate_avx2 (buf:W8.t Array64.t, offset:int, _LEN:int,
                               st:W256.t Array7.t) : W8.t Array64.t * int = {
     var dELTA:int;
-    var t128_0:W128.t;
     var t128_1:W128.t;
+    var t128_0:W128.t;
     var t:W64.t;
     var t256_0:W256.t;
     var t256_1:W256.t;
@@ -5699,9 +7039,9 @@ module M = {
     (buf, dELTA, _LEN) <@ a64____a_ilen_write_upto32 (buf, offset, dELTA,
     _LEN, st.[1]);
     if ((0 < _LEN)) {
-      t128_0 <- (truncateu128 st.[2]);
       t128_1 <- (VEXTRACTI128 st.[2] (W8.of_int 1));
-      t <- (truncateu64 t128_1);
+      t128_0 <- (truncateu128 st.[2]);
+      t <- (MOVV_64 (truncateu64 t128_1));
       (buf, dELTA, _LEN) <@ a64____a_ilen_write_upto8 (buf, offset, dELTA,
       _LEN, t);
       t128_1 <- (VPUNPCKH_2u64 t128_1 t128_1);
@@ -5784,7 +7124,7 @@ module M = {
         (buf, dELTA, _LEN) <@ a64____a_ilen_write_upto32 (buf, offset, 
         dELTA, _LEN, t256_4);
         if ((0 < _LEN)) {
-          t <- (truncateu64 t128_0);
+          t <- (MOVV_64 (truncateu64 t128_0));
           (buf, dELTA, _LEN) <@ a64____a_ilen_write_upto8 (buf, offset,
           dELTA, _LEN, t);
           t128_0 <- (VPUNPCKH_2u64 t128_0 t128_0);
@@ -5813,7 +7153,7 @@ module M = {
           
         }
         if ((0 < _LEN)) {
-          t <- (truncateu64 t128_1);
+          t <- (MOVV_64 (truncateu64 t128_1));
           (buf, dELTA, _LEN) <@ a64____a_ilen_write_upto8 (buf, offset,
           dELTA, _LEN, t);
         } else {
@@ -5841,7 +7181,7 @@ module M = {
           
         }
         if ((0 < _LEN)) {
-          t <- (truncateu64 t128_0);
+          t <- (MOVV_64 (truncateu64 t128_0));
           (buf, dELTA, _LEN) <@ a64____a_ilen_write_upto8 (buf, offset,
           dELTA, _LEN, t);
         } else {
@@ -6258,80 +7598,70 @@ module M = {
                                      dELTA:int, lEN:int, tRAIL:int, cUR:int,
                                      aT:int) : int * int * int * int * W64.t = {
     var w:W64.t;
-    var aT8:int;
     var t16:W64.t;
     var t8:W64.t;
-    if ((((aT < cUR) \/ ((cUR + 8) <= aT)) \/ ((lEN = 0) /\ (tRAIL = 0)))) {
+    if (((((lEN < 0) \/ (aT < cUR)) \/ ((cUR + 8) <= aT)) \/
+        ((lEN = 0) /\ (tRAIL = 0)))) {
       w <- (W64.of_int 0);
     } else {
-      aT8 <- (aT - cUR);
       if ((8 <= lEN)) {
         w <-
         (get64_direct (WArray128.init8 (fun i => buf.[i])) (offset + dELTA));
-        w <@ __SHLQ (w, aT8);
-        dELTA <- (dELTA + (8 - aT8));
-        lEN <- (lEN - (8 - aT8));
-        aT8 <- 8;
+        w <@ __SHLQ (w, (aT - cUR));
+        dELTA <- (dELTA + ((cUR + 8) - aT));
+        lEN <- (lEN - ((cUR + 8) - aT));
+        aT <- (cUR + 8);
       } else {
         if ((4 <= lEN)) {
           w <-
           (zeroextu64
           (get32_direct (WArray128.init8 (fun i => buf.[i])) (offset + dELTA)
           ));
-          w <@ __SHLQ (w, aT8);
-          dELTA <- (dELTA + ((8 <= (4 + aT8)) ? (8 - aT8) : 4));
-          lEN <- (lEN - ((8 <= (4 + aT8)) ? (8 - aT8) : 4));
-          aT8 <- ((8 <= (4 + aT8)) ? 8 : (4 + aT8));
+          w <@ __SHLQ (w, (aT - cUR));
+          dELTA <-
+          (dELTA + (((cUR + 8) <= (aT + 4)) ? ((cUR + 8) - aT) : 4));
+          lEN <- (lEN - (((cUR + 8) <= (aT + 4)) ? ((cUR + 8) - aT) : 4));
+          aT <- (((cUR + 8) <= (aT + 4)) ? (cUR + 8) : (aT + 4));
         } else {
           w <- (W64.of_int 0);
         }
-        if (((aT8 < 8) /\ (2 <= lEN))) {
+        if (((aT < (cUR + 8)) /\ (2 <= lEN))) {
           t16 <-
           (zeroextu64
           (get16_direct (WArray128.init8 (fun i => buf.[i])) (offset + dELTA)
           ));
-          dELTA <- (dELTA + ((8 <= (2 + aT8)) ? (8 - aT8) : 2));
-          lEN <- (lEN - ((8 <= (2 + aT8)) ? (8 - aT8) : 2));
-          t16 <@ __SHLQ (t16, aT8);
+          dELTA <-
+          (dELTA + (((cUR + 8) <= (aT + 2)) ? ((cUR + 8) - aT) : 2));
+          lEN <- (lEN - (((cUR + 8) <= (aT + 2)) ? ((cUR + 8) - aT) : 2));
+          t16 <@ __SHLQ (t16, (aT - cUR));
           w <- (w `|` t16);
-          aT8 <- ((8 <= (2 + aT8)) ? 8 : (2 + aT8));
+          aT <- (((cUR + 8) <= (aT + 2)) ? (cUR + 8) : (aT + 2));
         } else {
           
         }
-        if ((aT8 < 8)) {
-          if ((1 <= lEN)) {
-            t8 <-
-            (zeroextu64
-            (get8_direct (WArray128.init8 (fun i => buf.[i]))
-            (offset + dELTA)));
-            t8 <- (t8 `|` (W64.of_int (256 * (tRAIL %% 256))));
-            dELTA <- (dELTA + 1);
-            lEN <- (lEN - 1);
-            t8 <@ __SHLQ (t8, aT8);
-            w <- (w `|` t8);
-            aT8 <- (aT8 + 1);
-            if (((aT8 < 8) /\ ((tRAIL %% 256) <> 0))) {
-              aT8 <- (aT8 + 1);
-              tRAIL <- 0;
-            } else {
-              
-            }
-          } else {
-            if (((tRAIL %% 256) <> 0)) {
-              t8 <- (W64.of_int (tRAIL %% 256));
-              t8 <@ __SHLQ (t8, aT8);
-              w <- (w `|` t8);
-              tRAIL <- 0;
-              aT8 <- (aT8 + 1);
-            } else {
-              
-            }
-          }
+        if (((aT < (cUR + 8)) /\ (1 <= lEN))) {
+          t8 <-
+          (zeroextu64
+          (get8_direct (WArray128.init8 (fun i => buf.[i])) (offset + dELTA))
+          );
+          dELTA <- (dELTA + 1);
+          lEN <- (lEN - 1);
+          t8 <@ __SHLQ (t8, (aT - cUR));
+          w <- (w `|` t8);
+          aT <- (aT + 1);
+        } else {
+          
+        }
+        if (((aT < (cUR + 8)) /\ (tRAIL <> 0))) {
+          t8 <- (W64.of_int (tRAIL %% 256));
+          t8 <- (t8 `<<` (W8.of_int (8 * (aT - cUR))));
+          w <- (w `|` t8);
+          aT <- (aT + 1);
+          tRAIL <- 0;
         } else {
           
         }
       }
-      aT <- (cUR + aT8);
     }
     return (dELTA, lEN, tRAIL, aT, w);
   }
@@ -6340,36 +7670,34 @@ module M = {
                                       aT:int) : int * int * int * int *
                                                 W128.t = {
     var w:W128.t;
-    var aT16:int;
     var t64_0:W64.t;
     var t64_1:W64.t;
-    if ((((aT < cUR) \/ ((cUR + 16) <= aT)) \/ ((lEN = 0) /\ (tRAIL = 0)))) {
+    if (((((lEN < 0) \/ (aT < cUR)) \/ ((cUR + 16) <= aT)) \/
+        ((lEN = 0) /\ (tRAIL = 0)))) {
       w <- (set0_128);
     } else {
-      aT16 <- (aT - cUR);
       if ((16 <= lEN)) {
         w <-
         (get128_direct (WArray128.init8 (fun i => buf.[i])) (offset + dELTA));
-        w <@ __SHLDQ (w, aT16);
-        dELTA <- (dELTA + (16 - aT16));
-        lEN <- (lEN - (16 - aT16));
-        aT16 <- 16;
+        w <@ __SHLDQ (w, (aT - cUR));
+        dELTA <- (dELTA + (16 - (aT - cUR)));
+        lEN <- (lEN - (16 - (aT - cUR)));
+        aT <- (cUR + 16);
       } else {
-        if ((8 <= aT16)) {
+        if (((cUR + 8) <= aT)) {
           w <- (set0_128);
-          (dELTA, lEN, tRAIL, aT16, t64_1) <@ a128____a_ilen_read_upto8_at (
-          buf, offset, dELTA, lEN, tRAIL, 8, aT16);
+          (dELTA, lEN, tRAIL, aT, t64_1) <@ a128____a_ilen_read_upto8_at (
+          buf, offset, dELTA, lEN, tRAIL, (cUR + 8), aT);
           w <- (VPINSR_2u64 w t64_1 (W8.of_int 1));
         } else {
-          (dELTA, lEN, tRAIL, aT16, t64_0) <@ a128____a_ilen_read_upto8_at (
-          buf, offset, dELTA, lEN, tRAIL, 0, aT16);
-          w <- (zeroextu128 t64_0);
-          (dELTA, lEN, tRAIL, aT16, t64_1) <@ a128____a_ilen_read_upto8_at (
-          buf, offset, dELTA, lEN, tRAIL, 8, aT16);
+          (dELTA, lEN, tRAIL, aT, t64_0) <@ a128____a_ilen_read_upto8_at (
+          buf, offset, dELTA, lEN, tRAIL, cUR, aT);
+          w <- (VMOV_64 t64_0);
+          (dELTA, lEN, tRAIL, aT, t64_1) <@ a128____a_ilen_read_upto8_at (
+          buf, offset, dELTA, lEN, tRAIL, (cUR + 8), aT);
           w <- (VPINSR_2u64 w t64_1 (W8.of_int 1));
         }
       }
-      aT <- (cUR + aT16);
     }
     return (dELTA, lEN, tRAIL, aT, w);
   }
@@ -6378,37 +7706,33 @@ module M = {
                                       aT:int) : int * int * int * int *
                                                 W256.t = {
     var w:W256.t;
-    var aT32:int;
     var t128_0:W128.t;
     var t128_1:W128.t;
-    if ((((aT < cUR) \/ ((cUR + 32) <= aT)) \/ ((lEN = 0) /\ (tRAIL = 0)))) {
+    if (((((lEN < 0) \/ (aT < cUR)) \/ ((cUR + 32) <= aT)) \/
+        ((lEN = 0) /\ (tRAIL = 0)))) {
       w <- (set0_256);
     } else {
-      aT32 <- (aT - cUR);
-      if (((aT32 = 0) /\ (32 <= lEN))) {
+      if (((aT = cUR) /\ (32 <= lEN))) {
         w <-
         (get256_direct (WArray128.init8 (fun i => buf.[i])) (offset + dELTA));
-        aT32 <- (aT32 + 32);
         dELTA <- (dELTA + 32);
         lEN <- (lEN - 32);
+        aT <- (aT + 32);
       } else {
-        if ((16 <= aT32)) {
+        if (((cUR + 16) <= aT)) {
           w <- (set0_256);
-          (dELTA, lEN, tRAIL, aT32, t128_1) <@ a128____a_ilen_read_upto16_at (
-          buf, offset, dELTA, lEN, tRAIL, 16, aT32);
+          (dELTA, lEN, tRAIL, aT, t128_1) <@ a128____a_ilen_read_upto16_at (
+          buf, offset, dELTA, lEN, tRAIL, (cUR + 16), aT);
           w <- (VINSERTI128 w t128_1 (W8.of_int 1));
         } else {
-          (dELTA, lEN, tRAIL, aT32, t128_0) <@ a128____a_ilen_read_upto16_at (
-          buf, offset, dELTA, lEN, tRAIL, 0, aT32);
-          (dELTA, lEN, tRAIL, aT32, t128_1) <@ a128____a_ilen_read_upto16_at (
-          buf, offset, dELTA, lEN, tRAIL, 16, aT32);
-          w <-
-          (W256.of_int
-          (((W128.to_uint t128_0) %% (2 ^ 128)) +
-          ((2 ^ 128) * (W128.to_uint t128_1))));
+          (dELTA, lEN, tRAIL, aT, t128_0) <@ a128____a_ilen_read_upto16_at (
+          buf, offset, dELTA, lEN, tRAIL, cUR, aT);
+          w <- (zeroextu256 t128_0);
+          (dELTA, lEN, tRAIL, aT, t128_1) <@ a128____a_ilen_read_upto16_at (
+          buf, offset, dELTA, lEN, tRAIL, (cUR + 16), aT);
+          w <- (VINSERTI128 w t128_1 (W8.of_int 1));
         }
       }
-      aT <- (cUR + aT32);
     }
     return (dELTA, lEN, tRAIL, aT, w);
   }
@@ -6418,28 +7742,25 @@ module M = {
                                                               int * int *
                                                               W256.t = {
     var w256:W256.t;
-    var aT8:int;
     var w:W64.t;
     var t128:W128.t;
-    if ((((aT < cUR) \/ ((cUR + 8) <= aT)) \/ ((lEN = 0) /\ (tRAIL = 0)))) {
+    if (((((lEN < 0) \/ (aT < cUR)) \/ ((cUR + 8) <= aT)) \/
+        ((lEN = 0) /\ (tRAIL = 0)))) {
       w256 <- (set0_256);
     } else {
       if ((8 <= lEN)) {
-        aT8 <- (aT - cUR);
         w256 <-
         (VPBROADCAST_4u64
         (get64_direct (WArray128.init8 (fun i => buf.[i])) (offset + dELTA)));
-        w256 <@ __SHLQ_256 (w256, aT8);
-        dELTA <- (dELTA + (8 - aT8));
-        lEN <- (lEN - (8 - aT8));
+        w256 <@ __SHLQ_256 (w256, (aT - cUR));
+        dELTA <- (dELTA + ((cUR + 8) - aT));
+        lEN <- (lEN - ((cUR + 8) - aT));
         aT <- (cUR + 8);
       } else {
-        aT8 <- (aT - cUR);
         (dELTA, lEN, tRAIL, aT, w) <@ a128____a_ilen_read_upto8_at (buf,
         offset, dELTA, lEN, tRAIL, cUR, aT);
-        t128 <- (zeroextu128 w);
+        t128 <- (VMOV_64 w);
         w256 <- (VPBROADCAST_4u64 (truncateu64 t128));
-        w256 <@ __SHLQ_256 (w256, aT8);
       }
     }
     return (dELTA, lEN, tRAIL, aT, w256);
@@ -6525,7 +7846,7 @@ module M = {
         } else {
           
         }
-        t64 <- (truncateu64 w);
+        t64 <- (MOVV_64 (truncateu64 w));
         (buf, dELTA, lEN) <@ a128____a_ilen_write_upto8 (buf, offset, 
         dELTA, lEN, t64);
       }
@@ -6604,14 +7925,14 @@ module M = {
     if (((0 < _LEN) \/ (_TRAILB <> 0))) {
       (dELTA, _LEN, _TRAILB, aT, t64_2) <@ a128____a_ilen_read_upto8_at (
       buf, offset, dELTA, _LEN, _TRAILB, 40, aT);
-      t128_1 <- (zeroextu128 t64_2);
+      t128_1 <- (VMOV_64 t64_2);
       t128_2 <- (set0_128);
       if (((0 < _LEN) \/ (_TRAILB <> 0))) {
         (dELTA, _LEN, _TRAILB, aT, r3) <@ a128____a_ilen_read_upto32_at (
         buf, offset, dELTA, _LEN, _TRAILB, 48, aT);
         (dELTA, _LEN, _TRAILB, aT, t64_3) <@ a128____a_ilen_read_upto8_at (
         buf, offset, dELTA, _LEN, _TRAILB, 80, aT);
-        t128_2 <- (zeroextu128 t64_3);
+        t128_2 <- (VMOV_64 t64_3);
         (dELTA, _LEN, _TRAILB, aT, r4) <@ a128____a_ilen_read_upto32_at (
         buf, offset, dELTA, _LEN, _TRAILB, 88, aT);
         (dELTA, _LEN, _TRAILB, aT, t64_4) <@ a128____a_ilen_read_upto8_at (
@@ -6678,8 +7999,8 @@ module M = {
   proc a128____dumpstate_avx2 (buf:W8.t Array128.t, offset:int, _LEN:int,
                                st:W256.t Array7.t) : W8.t Array128.t * int = {
     var dELTA:int;
-    var t128_0:W128.t;
     var t128_1:W128.t;
+    var t128_0:W128.t;
     var t:W64.t;
     var t256_0:W256.t;
     var t256_1:W256.t;
@@ -6699,9 +8020,9 @@ module M = {
     (buf, dELTA, _LEN) <@ a128____a_ilen_write_upto32 (buf, offset, dELTA,
     _LEN, st.[1]);
     if ((0 < _LEN)) {
-      t128_0 <- (truncateu128 st.[2]);
       t128_1 <- (VEXTRACTI128 st.[2] (W8.of_int 1));
-      t <- (truncateu64 t128_1);
+      t128_0 <- (truncateu128 st.[2]);
+      t <- (MOVV_64 (truncateu64 t128_1));
       (buf, dELTA, _LEN) <@ a128____a_ilen_write_upto8 (buf, offset, 
       dELTA, _LEN, t);
       t128_1 <- (VPUNPCKH_2u64 t128_1 t128_1);
@@ -6784,7 +8105,7 @@ module M = {
         (buf, dELTA, _LEN) <@ a128____a_ilen_write_upto32 (buf, offset,
         dELTA, _LEN, t256_4);
         if ((0 < _LEN)) {
-          t <- (truncateu64 t128_0);
+          t <- (MOVV_64 (truncateu64 t128_0));
           (buf, dELTA, _LEN) <@ a128____a_ilen_write_upto8 (buf, offset,
           dELTA, _LEN, t);
           t128_0 <- (VPUNPCKH_2u64 t128_0 t128_0);
@@ -6813,7 +8134,7 @@ module M = {
           
         }
         if ((0 < _LEN)) {
-          t <- (truncateu64 t128_1);
+          t <- (MOVV_64 (truncateu64 t128_1));
           (buf, dELTA, _LEN) <@ a128____a_ilen_write_upto8 (buf, offset,
           dELTA, _LEN, t);
         } else {
@@ -6841,7 +8162,7 @@ module M = {
           
         }
         if ((0 < _LEN)) {
-          t <- (truncateu64 t128_0);
+          t <- (MOVV_64 (truncateu64 t128_0));
           (buf, dELTA, _LEN) <@ a128____a_ilen_write_upto8 (buf, offset,
           dELTA, _LEN, t);
         } else {
@@ -6958,7 +8279,7 @@ module M = {
         } else {
           
         }
-        t64 <- (truncateu64 w);
+        t64 <- (MOVV_64 (truncateu64 w));
         (buf, dELTA, lEN) <@ a136____a_ilen_write_upto8 (buf, offset, 
         dELTA, lEN, t64);
       }
@@ -7005,8 +8326,8 @@ module M = {
   proc a136____dumpstate_avx2 (buf:W8.t Array136.t, offset:int, _LEN:int,
                                st:W256.t Array7.t) : W8.t Array136.t * int = {
     var dELTA:int;
-    var t128_0:W128.t;
     var t128_1:W128.t;
+    var t128_0:W128.t;
     var t:W64.t;
     var t256_0:W256.t;
     var t256_1:W256.t;
@@ -7026,9 +8347,9 @@ module M = {
     (buf, dELTA, _LEN) <@ a136____a_ilen_write_upto32 (buf, offset, dELTA,
     _LEN, st.[1]);
     if ((0 < _LEN)) {
-      t128_0 <- (truncateu128 st.[2]);
       t128_1 <- (VEXTRACTI128 st.[2] (W8.of_int 1));
-      t <- (truncateu64 t128_1);
+      t128_0 <- (truncateu128 st.[2]);
+      t <- (MOVV_64 (truncateu64 t128_1));
       (buf, dELTA, _LEN) <@ a136____a_ilen_write_upto8 (buf, offset, 
       dELTA, _LEN, t);
       t128_1 <- (VPUNPCKH_2u64 t128_1 t128_1);
@@ -7111,7 +8432,7 @@ module M = {
         (buf, dELTA, _LEN) <@ a136____a_ilen_write_upto32 (buf, offset,
         dELTA, _LEN, t256_4);
         if ((0 < _LEN)) {
-          t <- (truncateu64 t128_0);
+          t <- (MOVV_64 (truncateu64 t128_0));
           (buf, dELTA, _LEN) <@ a136____a_ilen_write_upto8 (buf, offset,
           dELTA, _LEN, t);
           t128_0 <- (VPUNPCKH_2u64 t128_0 t128_0);
@@ -7140,7 +8461,7 @@ module M = {
           
         }
         if ((0 < _LEN)) {
-          t <- (truncateu64 t128_1);
+          t <- (MOVV_64 (truncateu64 t128_1));
           (buf, dELTA, _LEN) <@ a136____a_ilen_write_upto8 (buf, offset,
           dELTA, _LEN, t);
         } else {
@@ -7168,7 +8489,7 @@ module M = {
           
         }
         if ((0 < _LEN)) {
-          t <- (truncateu64 t128_0);
+          t <- (MOVV_64 (truncateu64 t128_0));
           (buf, dELTA, _LEN) <@ a136____a_ilen_write_upto8 (buf, offset,
           dELTA, _LEN, t);
         } else {
@@ -7509,80 +8830,69 @@ module M = {
                                                   cUR:int, aT:int) : 
   int * int * int * int * W64.t = {
     var w:W64.t;
-    var aT8:int;
     var t16:W64.t;
     var t8:W64.t;
-    if ((((aT < cUR) \/ ((cUR + 8) <= aT)) \/ ((lEN = 0) /\ (tRAIL = 0)))) {
+    if (((((lEN < 0) \/ (aT < cUR)) \/ ((cUR + 8) <= aT)) \/
+        ((lEN = 0) /\ (tRAIL = 0)))) {
       w <- (W64.of_int 0);
     } else {
-      aT8 <- (aT - cUR);
       if ((8 <= lEN)) {
         w <-
         (get64_direct (WArray48.init8 (fun i => buf.[i])) (offset + dELTA));
-        w <@ __SHLQ (w, aT8);
-        dELTA <- (dELTA + (8 - aT8));
-        lEN <- (lEN - (8 - aT8));
-        aT8 <- 8;
+        w <@ __SHLQ (w, (aT - cUR));
+        dELTA <- (dELTA + ((cUR + 8) - aT));
+        lEN <- (lEN - ((cUR + 8) - aT));
+        aT <- (cUR + 8);
       } else {
         if ((4 <= lEN)) {
           w <-
           (zeroextu64
           (get32_direct (WArray48.init8 (fun i => buf.[i])) (offset + dELTA))
           );
-          w <@ __SHLQ (w, aT8);
-          dELTA <- (dELTA + ((8 <= (4 + aT8)) ? (8 - aT8) : 4));
-          lEN <- (lEN - ((8 <= (4 + aT8)) ? (8 - aT8) : 4));
-          aT8 <- ((8 <= (4 + aT8)) ? 8 : (4 + aT8));
+          w <@ __SHLQ (w, (aT - cUR));
+          dELTA <-
+          (dELTA + (((cUR + 8) <= (aT + 4)) ? ((cUR + 8) - aT) : 4));
+          lEN <- (lEN - (((cUR + 8) <= (aT + 4)) ? ((cUR + 8) - aT) : 4));
+          aT <- (((cUR + 8) <= (aT + 4)) ? (cUR + 8) : (aT + 4));
         } else {
           w <- (W64.of_int 0);
         }
-        if (((aT8 < 8) /\ (2 <= lEN))) {
+        if (((aT < (cUR + 8)) /\ (2 <= lEN))) {
           t16 <-
           (zeroextu64
           (get16_direct (WArray48.init8 (fun i => buf.[i])) (offset + dELTA))
           );
-          dELTA <- (dELTA + ((8 <= (2 + aT8)) ? (8 - aT8) : 2));
-          lEN <- (lEN - ((8 <= (2 + aT8)) ? (8 - aT8) : 2));
-          t16 <@ __SHLQ (t16, aT8);
+          dELTA <-
+          (dELTA + (((cUR + 8) <= (aT + 2)) ? ((cUR + 8) - aT) : 2));
+          lEN <- (lEN - (((cUR + 8) <= (aT + 2)) ? ((cUR + 8) - aT) : 2));
+          t16 <@ __SHLQ (t16, (aT - cUR));
           w <- (w `|` t16);
-          aT8 <- ((8 <= (2 + aT8)) ? 8 : (2 + aT8));
+          aT <- (((cUR + 8) <= (aT + 2)) ? (cUR + 8) : (aT + 2));
         } else {
           
         }
-        if ((aT8 < 8)) {
-          if ((1 <= lEN)) {
-            t8 <-
-            (zeroextu64
-            (get8_direct (WArray48.init8 (fun i => buf.[i])) (offset + dELTA)
-            ));
-            t8 <- (t8 `|` (W64.of_int (256 * (tRAIL %% 256))));
-            dELTA <- (dELTA + 1);
-            lEN <- (lEN - 1);
-            t8 <@ __SHLQ (t8, aT8);
-            w <- (w `|` t8);
-            aT8 <- (aT8 + 1);
-            if (((aT8 < 8) /\ ((tRAIL %% 256) <> 0))) {
-              aT8 <- (aT8 + 1);
-              tRAIL <- 0;
-            } else {
-              
-            }
-          } else {
-            if (((tRAIL %% 256) <> 0)) {
-              t8 <- (W64.of_int (tRAIL %% 256));
-              t8 <@ __SHLQ (t8, aT8);
-              w <- (w `|` t8);
-              tRAIL <- 0;
-              aT8 <- (aT8 + 1);
-            } else {
-              
-            }
-          }
+        if (((aT < (cUR + 8)) /\ (1 <= lEN))) {
+          t8 <-
+          (zeroextu64
+          (get8_direct (WArray48.init8 (fun i => buf.[i])) (offset + dELTA)));
+          dELTA <- (dELTA + 1);
+          lEN <- (lEN - 1);
+          t8 <@ __SHLQ (t8, (aT - cUR));
+          w <- (w `|` t8);
+          aT <- (aT + 1);
+        } else {
+          
+        }
+        if (((aT < (cUR + 8)) /\ (tRAIL <> 0))) {
+          t8 <- (W64.of_int (tRAIL %% 256));
+          t8 <- (t8 `<<` (W8.of_int (8 * (aT - cUR))));
+          w <- (w `|` t8);
+          aT <- (aT + 1);
+          tRAIL <- 0;
         } else {
           
         }
       }
-      aT <- (cUR + aT8);
     }
     return (dELTA, lEN, tRAIL, aT, w);
   }
@@ -7592,36 +8902,34 @@ module M = {
                                                    cUR:int, aT:int) : 
   int * int * int * int * W128.t = {
     var w:W128.t;
-    var aT16:int;
     var t64_0:W64.t;
     var t64_1:W64.t;
-    if ((((aT < cUR) \/ ((cUR + 16) <= aT)) \/ ((lEN = 0) /\ (tRAIL = 0)))) {
+    if (((((lEN < 0) \/ (aT < cUR)) \/ ((cUR + 16) <= aT)) \/
+        ((lEN = 0) /\ (tRAIL = 0)))) {
       w <- (set0_128);
     } else {
-      aT16 <- (aT - cUR);
       if ((16 <= lEN)) {
         w <-
         (get128_direct (WArray48.init8 (fun i => buf.[i])) (offset + dELTA));
-        w <@ __SHLDQ (w, aT16);
-        dELTA <- (dELTA + (16 - aT16));
-        lEN <- (lEN - (16 - aT16));
-        aT16 <- 16;
+        w <@ __SHLDQ (w, (aT - cUR));
+        dELTA <- (dELTA + (16 - (aT - cUR)));
+        lEN <- (lEN - (16 - (aT - cUR)));
+        aT <- (cUR + 16);
       } else {
-        if ((8 <= aT16)) {
+        if (((cUR + 8) <= aT)) {
           w <- (set0_128);
-          (dELTA, lEN, tRAIL, aT16, t64_1) <@ a_COMMITMENT_HASH____a_ilen_read_upto8_at (
-          buf, offset, dELTA, lEN, tRAIL, 8, aT16);
+          (dELTA, lEN, tRAIL, aT, t64_1) <@ a_COMMITMENT_HASH____a_ilen_read_upto8_at (
+          buf, offset, dELTA, lEN, tRAIL, (cUR + 8), aT);
           w <- (VPINSR_2u64 w t64_1 (W8.of_int 1));
         } else {
-          (dELTA, lEN, tRAIL, aT16, t64_0) <@ a_COMMITMENT_HASH____a_ilen_read_upto8_at (
-          buf, offset, dELTA, lEN, tRAIL, 0, aT16);
-          w <- (zeroextu128 t64_0);
-          (dELTA, lEN, tRAIL, aT16, t64_1) <@ a_COMMITMENT_HASH____a_ilen_read_upto8_at (
-          buf, offset, dELTA, lEN, tRAIL, 8, aT16);
+          (dELTA, lEN, tRAIL, aT, t64_0) <@ a_COMMITMENT_HASH____a_ilen_read_upto8_at (
+          buf, offset, dELTA, lEN, tRAIL, cUR, aT);
+          w <- (VMOV_64 t64_0);
+          (dELTA, lEN, tRAIL, aT, t64_1) <@ a_COMMITMENT_HASH____a_ilen_read_upto8_at (
+          buf, offset, dELTA, lEN, tRAIL, (cUR + 8), aT);
           w <- (VPINSR_2u64 w t64_1 (W8.of_int 1));
         }
       }
-      aT <- (cUR + aT16);
     }
     return (dELTA, lEN, tRAIL, aT, w);
   }
@@ -7631,37 +8939,33 @@ module M = {
                                                    cUR:int, aT:int) : 
   int * int * int * int * W256.t = {
     var w:W256.t;
-    var aT32:int;
     var t128_0:W128.t;
     var t128_1:W128.t;
-    if ((((aT < cUR) \/ ((cUR + 32) <= aT)) \/ ((lEN = 0) /\ (tRAIL = 0)))) {
+    if (((((lEN < 0) \/ (aT < cUR)) \/ ((cUR + 32) <= aT)) \/
+        ((lEN = 0) /\ (tRAIL = 0)))) {
       w <- (set0_256);
     } else {
-      aT32 <- (aT - cUR);
-      if (((aT32 = 0) /\ (32 <= lEN))) {
+      if (((aT = cUR) /\ (32 <= lEN))) {
         w <-
         (get256_direct (WArray48.init8 (fun i => buf.[i])) (offset + dELTA));
-        aT32 <- (aT32 + 32);
         dELTA <- (dELTA + 32);
         lEN <- (lEN - 32);
+        aT <- (aT + 32);
       } else {
-        if ((16 <= aT32)) {
+        if (((cUR + 16) <= aT)) {
           w <- (set0_256);
-          (dELTA, lEN, tRAIL, aT32, t128_1) <@ a_COMMITMENT_HASH____a_ilen_read_upto16_at (
-          buf, offset, dELTA, lEN, tRAIL, 16, aT32);
+          (dELTA, lEN, tRAIL, aT, t128_1) <@ a_COMMITMENT_HASH____a_ilen_read_upto16_at (
+          buf, offset, dELTA, lEN, tRAIL, (cUR + 16), aT);
           w <- (VINSERTI128 w t128_1 (W8.of_int 1));
         } else {
-          (dELTA, lEN, tRAIL, aT32, t128_0) <@ a_COMMITMENT_HASH____a_ilen_read_upto16_at (
-          buf, offset, dELTA, lEN, tRAIL, 0, aT32);
-          (dELTA, lEN, tRAIL, aT32, t128_1) <@ a_COMMITMENT_HASH____a_ilen_read_upto16_at (
-          buf, offset, dELTA, lEN, tRAIL, 16, aT32);
-          w <-
-          (W256.of_int
-          (((W128.to_uint t128_0) %% (2 ^ 128)) +
-          ((2 ^ 128) * (W128.to_uint t128_1))));
+          (dELTA, lEN, tRAIL, aT, t128_0) <@ a_COMMITMENT_HASH____a_ilen_read_upto16_at (
+          buf, offset, dELTA, lEN, tRAIL, cUR, aT);
+          w <- (zeroextu256 t128_0);
+          (dELTA, lEN, tRAIL, aT, t128_1) <@ a_COMMITMENT_HASH____a_ilen_read_upto16_at (
+          buf, offset, dELTA, lEN, tRAIL, (cUR + 16), aT);
+          w <- (VINSERTI128 w t128_1 (W8.of_int 1));
         }
       }
-      aT <- (cUR + aT32);
     }
     return (dELTA, lEN, tRAIL, aT, w);
   }
@@ -7673,28 +8977,25 @@ module M = {
                                                                   int * int *
                                                                   W256.t = {
     var w256:W256.t;
-    var aT8:int;
     var w:W64.t;
     var t128:W128.t;
-    if ((((aT < cUR) \/ ((cUR + 8) <= aT)) \/ ((lEN = 0) /\ (tRAIL = 0)))) {
+    if (((((lEN < 0) \/ (aT < cUR)) \/ ((cUR + 8) <= aT)) \/
+        ((lEN = 0) /\ (tRAIL = 0)))) {
       w256 <- (set0_256);
     } else {
       if ((8 <= lEN)) {
-        aT8 <- (aT - cUR);
         w256 <-
         (VPBROADCAST_4u64
         (get64_direct (WArray48.init8 (fun i => buf.[i])) (offset + dELTA)));
-        w256 <@ __SHLQ_256 (w256, aT8);
-        dELTA <- (dELTA + (8 - aT8));
-        lEN <- (lEN - (8 - aT8));
+        w256 <@ __SHLQ_256 (w256, (aT - cUR));
+        dELTA <- (dELTA + ((cUR + 8) - aT));
+        lEN <- (lEN - ((cUR + 8) - aT));
         aT <- (cUR + 8);
       } else {
-        aT8 <- (aT - cUR);
         (dELTA, lEN, tRAIL, aT, w) <@ a_COMMITMENT_HASH____a_ilen_read_upto8_at (
         buf, offset, dELTA, lEN, tRAIL, cUR, aT);
-        t128 <- (zeroextu128 w);
+        t128 <- (VMOV_64 w);
         w256 <- (VPBROADCAST_4u64 (truncateu64 t128));
-        w256 <@ __SHLQ_256 (w256, aT8);
       }
     }
     return (dELTA, lEN, tRAIL, aT, w256);
@@ -7782,7 +9083,7 @@ module M = {
         } else {
           
         }
-        t64 <- (truncateu64 w);
+        t64 <- (MOVV_64 (truncateu64 w));
         (buf, dELTA, lEN) <@ a_COMMITMENT_HASH____a_ilen_write_upto8 (
         buf, offset, dELTA, lEN, t64);
       }
@@ -7863,14 +9164,14 @@ module M = {
     if (((0 < _LEN) \/ (_TRAILB <> 0))) {
       (dELTA, _LEN, _TRAILB, aT, t64_2) <@ a_COMMITMENT_HASH____a_ilen_read_upto8_at (
       buf, offset, dELTA, _LEN, _TRAILB, 40, aT);
-      t128_1 <- (zeroextu128 t64_2);
+      t128_1 <- (VMOV_64 t64_2);
       t128_2 <- (set0_128);
       if (((0 < _LEN) \/ (_TRAILB <> 0))) {
         (dELTA, _LEN, _TRAILB, aT, r3) <@ a_COMMITMENT_HASH____a_ilen_read_upto32_at (
         buf, offset, dELTA, _LEN, _TRAILB, 48, aT);
         (dELTA, _LEN, _TRAILB, aT, t64_3) <@ a_COMMITMENT_HASH____a_ilen_read_upto8_at (
         buf, offset, dELTA, _LEN, _TRAILB, 80, aT);
-        t128_2 <- (zeroextu128 t64_3);
+        t128_2 <- (VMOV_64 t64_3);
         (dELTA, _LEN, _TRAILB, aT, r4) <@ a_COMMITMENT_HASH____a_ilen_read_upto32_at (
         buf, offset, dELTA, _LEN, _TRAILB, 88, aT);
         (dELTA, _LEN, _TRAILB, aT, t64_4) <@ a_COMMITMENT_HASH____a_ilen_read_upto8_at (
@@ -7939,8 +9240,8 @@ module M = {
                                             _LEN:int, st:W256.t Array7.t) : 
   W8.t Array48.t * int = {
     var dELTA:int;
-    var t128_0:W128.t;
     var t128_1:W128.t;
+    var t128_0:W128.t;
     var t:W64.t;
     var t256_0:W256.t;
     var t256_1:W256.t;
@@ -7960,9 +9261,9 @@ module M = {
     (buf, dELTA, _LEN) <@ a_COMMITMENT_HASH____a_ilen_write_upto32 (buf,
     offset, dELTA, _LEN, st.[1]);
     if ((0 < _LEN)) {
-      t128_0 <- (truncateu128 st.[2]);
       t128_1 <- (VEXTRACTI128 st.[2] (W8.of_int 1));
-      t <- (truncateu64 t128_1);
+      t128_0 <- (truncateu128 st.[2]);
+      t <- (MOVV_64 (truncateu64 t128_1));
       (buf, dELTA, _LEN) <@ a_COMMITMENT_HASH____a_ilen_write_upto8 (
       buf, offset, dELTA, _LEN, t);
       t128_1 <- (VPUNPCKH_2u64 t128_1 t128_1);
@@ -8045,7 +9346,7 @@ module M = {
         (buf, dELTA, _LEN) <@ a_COMMITMENT_HASH____a_ilen_write_upto32 (
         buf, offset, dELTA, _LEN, t256_4);
         if ((0 < _LEN)) {
-          t <- (truncateu64 t128_0);
+          t <- (MOVV_64 (truncateu64 t128_0));
           (buf, dELTA, _LEN) <@ a_COMMITMENT_HASH____a_ilen_write_upto8 (
           buf, offset, dELTA, _LEN, t);
           t128_0 <- (VPUNPCKH_2u64 t128_0 t128_0);
@@ -8074,7 +9375,7 @@ module M = {
           
         }
         if ((0 < _LEN)) {
-          t <- (truncateu64 t128_1);
+          t <- (MOVV_64 (truncateu64 t128_1));
           (buf, dELTA, _LEN) <@ a_COMMITMENT_HASH____a_ilen_write_upto8 (
           buf, offset, dELTA, _LEN, t);
         } else {
@@ -8102,7 +9403,7 @@ module M = {
           
         }
         if ((0 < _LEN)) {
-          t <- (truncateu64 t128_0);
+          t <- (MOVV_64 (truncateu64 t128_0));
           (buf, dELTA, _LEN) <@ a_COMMITMENT_HASH____a_ilen_write_upto8 (
           buf, offset, dELTA, _LEN, t);
         } else {
@@ -8144,80 +9445,70 @@ module M = {
                                                    cUR:int, aT:int) : 
   int * int * int * int * W64.t = {
     var w:W64.t;
-    var aT8:int;
     var t16:W64.t;
     var t8:W64.t;
-    if ((((aT < cUR) \/ ((cUR + 8) <= aT)) \/ ((lEN = 0) /\ (tRAIL = 0)))) {
+    if (((((lEN < 0) \/ (aT < cUR)) \/ ((cUR + 8) <= aT)) \/
+        ((lEN = 0) /\ (tRAIL = 0)))) {
       w <- (W64.of_int 0);
     } else {
-      aT8 <- (aT - cUR);
       if ((8 <= lEN)) {
         w <-
         (get64_direct (WArray1952.init8 (fun i => buf.[i])) (offset + dELTA));
-        w <@ __SHLQ (w, aT8);
-        dELTA <- (dELTA + (8 - aT8));
-        lEN <- (lEN - (8 - aT8));
-        aT8 <- 8;
+        w <@ __SHLQ (w, (aT - cUR));
+        dELTA <- (dELTA + ((cUR + 8) - aT));
+        lEN <- (lEN - ((cUR + 8) - aT));
+        aT <- (cUR + 8);
       } else {
         if ((4 <= lEN)) {
           w <-
           (zeroextu64
           (get32_direct (WArray1952.init8 (fun i => buf.[i]))
           (offset + dELTA)));
-          w <@ __SHLQ (w, aT8);
-          dELTA <- (dELTA + ((8 <= (4 + aT8)) ? (8 - aT8) : 4));
-          lEN <- (lEN - ((8 <= (4 + aT8)) ? (8 - aT8) : 4));
-          aT8 <- ((8 <= (4 + aT8)) ? 8 : (4 + aT8));
+          w <@ __SHLQ (w, (aT - cUR));
+          dELTA <-
+          (dELTA + (((cUR + 8) <= (aT + 4)) ? ((cUR + 8) - aT) : 4));
+          lEN <- (lEN - (((cUR + 8) <= (aT + 4)) ? ((cUR + 8) - aT) : 4));
+          aT <- (((cUR + 8) <= (aT + 4)) ? (cUR + 8) : (aT + 4));
         } else {
           w <- (W64.of_int 0);
         }
-        if (((aT8 < 8) /\ (2 <= lEN))) {
+        if (((aT < (cUR + 8)) /\ (2 <= lEN))) {
           t16 <-
           (zeroextu64
           (get16_direct (WArray1952.init8 (fun i => buf.[i]))
           (offset + dELTA)));
-          dELTA <- (dELTA + ((8 <= (2 + aT8)) ? (8 - aT8) : 2));
-          lEN <- (lEN - ((8 <= (2 + aT8)) ? (8 - aT8) : 2));
-          t16 <@ __SHLQ (t16, aT8);
+          dELTA <-
+          (dELTA + (((cUR + 8) <= (aT + 2)) ? ((cUR + 8) - aT) : 2));
+          lEN <- (lEN - (((cUR + 8) <= (aT + 2)) ? ((cUR + 8) - aT) : 2));
+          t16 <@ __SHLQ (t16, (aT - cUR));
           w <- (w `|` t16);
-          aT8 <- ((8 <= (2 + aT8)) ? 8 : (2 + aT8));
+          aT <- (((cUR + 8) <= (aT + 2)) ? (cUR + 8) : (aT + 2));
         } else {
           
         }
-        if ((aT8 < 8)) {
-          if ((1 <= lEN)) {
-            t8 <-
-            (zeroextu64
-            (get8_direct (WArray1952.init8 (fun i => buf.[i]))
-            (offset + dELTA)));
-            t8 <- (t8 `|` (W64.of_int (256 * (tRAIL %% 256))));
-            dELTA <- (dELTA + 1);
-            lEN <- (lEN - 1);
-            t8 <@ __SHLQ (t8, aT8);
-            w <- (w `|` t8);
-            aT8 <- (aT8 + 1);
-            if (((aT8 < 8) /\ ((tRAIL %% 256) <> 0))) {
-              aT8 <- (aT8 + 1);
-              tRAIL <- 0;
-            } else {
-              
-            }
-          } else {
-            if (((tRAIL %% 256) <> 0)) {
-              t8 <- (W64.of_int (tRAIL %% 256));
-              t8 <@ __SHLQ (t8, aT8);
-              w <- (w `|` t8);
-              tRAIL <- 0;
-              aT8 <- (aT8 + 1);
-            } else {
-              
-            }
-          }
+        if (((aT < (cUR + 8)) /\ (1 <= lEN))) {
+          t8 <-
+          (zeroextu64
+          (get8_direct (WArray1952.init8 (fun i => buf.[i])) (offset + dELTA)
+          ));
+          dELTA <- (dELTA + 1);
+          lEN <- (lEN - 1);
+          t8 <@ __SHLQ (t8, (aT - cUR));
+          w <- (w `|` t8);
+          aT <- (aT + 1);
+        } else {
+          
+        }
+        if (((aT < (cUR + 8)) /\ (tRAIL <> 0))) {
+          t8 <- (W64.of_int (tRAIL %% 256));
+          t8 <- (t8 `<<` (W8.of_int (8 * (aT - cUR))));
+          w <- (w `|` t8);
+          aT <- (aT + 1);
+          tRAIL <- 0;
         } else {
           
         }
       }
-      aT <- (cUR + aT8);
     }
     return (dELTA, lEN, tRAIL, aT, w);
   }
@@ -8227,37 +9518,35 @@ module M = {
                                                     cUR:int, aT:int) : 
   int * int * int * int * W128.t = {
     var w:W128.t;
-    var aT16:int;
     var t64_0:W64.t;
     var t64_1:W64.t;
-    if ((((aT < cUR) \/ ((cUR + 16) <= aT)) \/ ((lEN = 0) /\ (tRAIL = 0)))) {
+    if (((((lEN < 0) \/ (aT < cUR)) \/ ((cUR + 16) <= aT)) \/
+        ((lEN = 0) /\ (tRAIL = 0)))) {
       w <- (set0_128);
     } else {
-      aT16 <- (aT - cUR);
       if ((16 <= lEN)) {
         w <-
         (get128_direct (WArray1952.init8 (fun i => buf.[i])) (offset + dELTA)
         );
-        w <@ __SHLDQ (w, aT16);
-        dELTA <- (dELTA + (16 - aT16));
-        lEN <- (lEN - (16 - aT16));
-        aT16 <- 16;
+        w <@ __SHLDQ (w, (aT - cUR));
+        dELTA <- (dELTA + (16 - (aT - cUR)));
+        lEN <- (lEN - (16 - (aT - cUR)));
+        aT <- (cUR + 16);
       } else {
-        if ((8 <= aT16)) {
+        if (((cUR + 8) <= aT)) {
           w <- (set0_128);
-          (dELTA, lEN, tRAIL, aT16, t64_1) <@ a_VERIFICATION_KEY____a_ilen_read_upto8_at (
-          buf, offset, dELTA, lEN, tRAIL, 8, aT16);
+          (dELTA, lEN, tRAIL, aT, t64_1) <@ a_VERIFICATION_KEY____a_ilen_read_upto8_at (
+          buf, offset, dELTA, lEN, tRAIL, (cUR + 8), aT);
           w <- (VPINSR_2u64 w t64_1 (W8.of_int 1));
         } else {
-          (dELTA, lEN, tRAIL, aT16, t64_0) <@ a_VERIFICATION_KEY____a_ilen_read_upto8_at (
-          buf, offset, dELTA, lEN, tRAIL, 0, aT16);
-          w <- (zeroextu128 t64_0);
-          (dELTA, lEN, tRAIL, aT16, t64_1) <@ a_VERIFICATION_KEY____a_ilen_read_upto8_at (
-          buf, offset, dELTA, lEN, tRAIL, 8, aT16);
+          (dELTA, lEN, tRAIL, aT, t64_0) <@ a_VERIFICATION_KEY____a_ilen_read_upto8_at (
+          buf, offset, dELTA, lEN, tRAIL, cUR, aT);
+          w <- (VMOV_64 t64_0);
+          (dELTA, lEN, tRAIL, aT, t64_1) <@ a_VERIFICATION_KEY____a_ilen_read_upto8_at (
+          buf, offset, dELTA, lEN, tRAIL, (cUR + 8), aT);
           w <- (VPINSR_2u64 w t64_1 (W8.of_int 1));
         }
       }
-      aT <- (cUR + aT16);
     }
     return (dELTA, lEN, tRAIL, aT, w);
   }
@@ -8267,38 +9556,34 @@ module M = {
                                                     cUR:int, aT:int) : 
   int * int * int * int * W256.t = {
     var w:W256.t;
-    var aT32:int;
     var t128_0:W128.t;
     var t128_1:W128.t;
-    if ((((aT < cUR) \/ ((cUR + 32) <= aT)) \/ ((lEN = 0) /\ (tRAIL = 0)))) {
+    if (((((lEN < 0) \/ (aT < cUR)) \/ ((cUR + 32) <= aT)) \/
+        ((lEN = 0) /\ (tRAIL = 0)))) {
       w <- (set0_256);
     } else {
-      aT32 <- (aT - cUR);
-      if (((aT32 = 0) /\ (32 <= lEN))) {
+      if (((aT = cUR) /\ (32 <= lEN))) {
         w <-
         (get256_direct (WArray1952.init8 (fun i => buf.[i])) (offset + dELTA)
         );
-        aT32 <- (aT32 + 32);
         dELTA <- (dELTA + 32);
         lEN <- (lEN - 32);
+        aT <- (aT + 32);
       } else {
-        if ((16 <= aT32)) {
+        if (((cUR + 16) <= aT)) {
           w <- (set0_256);
-          (dELTA, lEN, tRAIL, aT32, t128_1) <@ a_VERIFICATION_KEY____a_ilen_read_upto16_at (
-          buf, offset, dELTA, lEN, tRAIL, 16, aT32);
+          (dELTA, lEN, tRAIL, aT, t128_1) <@ a_VERIFICATION_KEY____a_ilen_read_upto16_at (
+          buf, offset, dELTA, lEN, tRAIL, (cUR + 16), aT);
           w <- (VINSERTI128 w t128_1 (W8.of_int 1));
         } else {
-          (dELTA, lEN, tRAIL, aT32, t128_0) <@ a_VERIFICATION_KEY____a_ilen_read_upto16_at (
-          buf, offset, dELTA, lEN, tRAIL, 0, aT32);
-          (dELTA, lEN, tRAIL, aT32, t128_1) <@ a_VERIFICATION_KEY____a_ilen_read_upto16_at (
-          buf, offset, dELTA, lEN, tRAIL, 16, aT32);
-          w <-
-          (W256.of_int
-          (((W128.to_uint t128_0) %% (2 ^ 128)) +
-          ((2 ^ 128) * (W128.to_uint t128_1))));
+          (dELTA, lEN, tRAIL, aT, t128_0) <@ a_VERIFICATION_KEY____a_ilen_read_upto16_at (
+          buf, offset, dELTA, lEN, tRAIL, cUR, aT);
+          w <- (zeroextu256 t128_0);
+          (dELTA, lEN, tRAIL, aT, t128_1) <@ a_VERIFICATION_KEY____a_ilen_read_upto16_at (
+          buf, offset, dELTA, lEN, tRAIL, (cUR + 16), aT);
+          w <- (VINSERTI128 w t128_1 (W8.of_int 1));
         }
       }
-      aT <- (cUR + aT32);
     }
     return (dELTA, lEN, tRAIL, aT, w);
   }
@@ -8312,29 +9597,26 @@ module M = {
                                                                    int *
                                                                    W256.t = {
     var w256:W256.t;
-    var aT8:int;
     var w:W64.t;
     var t128:W128.t;
-    if ((((aT < cUR) \/ ((cUR + 8) <= aT)) \/ ((lEN = 0) /\ (tRAIL = 0)))) {
+    if (((((lEN < 0) \/ (aT < cUR)) \/ ((cUR + 8) <= aT)) \/
+        ((lEN = 0) /\ (tRAIL = 0)))) {
       w256 <- (set0_256);
     } else {
       if ((8 <= lEN)) {
-        aT8 <- (aT - cUR);
         w256 <-
         (VPBROADCAST_4u64
         (get64_direct (WArray1952.init8 (fun i => buf.[i])) (offset + dELTA))
         );
-        w256 <@ __SHLQ_256 (w256, aT8);
-        dELTA <- (dELTA + (8 - aT8));
-        lEN <- (lEN - (8 - aT8));
+        w256 <@ __SHLQ_256 (w256, (aT - cUR));
+        dELTA <- (dELTA + ((cUR + 8) - aT));
+        lEN <- (lEN - ((cUR + 8) - aT));
         aT <- (cUR + 8);
       } else {
-        aT8 <- (aT - cUR);
         (dELTA, lEN, tRAIL, aT, w) <@ a_VERIFICATION_KEY____a_ilen_read_upto8_at (
         buf, offset, dELTA, lEN, tRAIL, cUR, aT);
-        t128 <- (zeroextu128 w);
+        t128 <- (VMOV_64 w);
         w256 <- (VPBROADCAST_4u64 (truncateu64 t128));
-        w256 <@ __SHLQ_256 (w256, aT8);
       }
     }
     return (dELTA, lEN, tRAIL, aT, w256);
@@ -8375,14 +9657,14 @@ module M = {
     if (((0 < _LEN) \/ (_TRAILB <> 0))) {
       (dELTA, _LEN, _TRAILB, aT, t64_2) <@ a_VERIFICATION_KEY____a_ilen_read_upto8_at (
       buf, offset, dELTA, _LEN, _TRAILB, 40, aT);
-      t128_1 <- (zeroextu128 t64_2);
+      t128_1 <- (VMOV_64 t64_2);
       t128_2 <- (set0_128);
       if (((0 < _LEN) \/ (_TRAILB <> 0))) {
         (dELTA, _LEN, _TRAILB, aT, r3) <@ a_VERIFICATION_KEY____a_ilen_read_upto32_at (
         buf, offset, dELTA, _LEN, _TRAILB, 48, aT);
         (dELTA, _LEN, _TRAILB, aT, t64_3) <@ a_VERIFICATION_KEY____a_ilen_read_upto8_at (
         buf, offset, dELTA, _LEN, _TRAILB, 80, aT);
-        t128_2 <- (zeroextu128 t64_3);
+        t128_2 <- (VMOV_64 t64_3);
         (dELTA, _LEN, _TRAILB, aT, r4) <@ a_VERIFICATION_KEY____a_ilen_read_upto32_at (
         buf, offset, dELTA, _LEN, _TRAILB, 88, aT);
         (dELTA, _LEN, _TRAILB, aT, t64_4) <@ a_VERIFICATION_KEY____a_ilen_read_upto8_at (
@@ -8453,80 +9735,70 @@ module M = {
                                                      cUR:int, aT:int) : 
   int * int * int * int * W64.t = {
     var w:W64.t;
-    var aT8:int;
     var t16:W64.t;
     var t8:W64.t;
-    if ((((aT < cUR) \/ ((cUR + 8) <= aT)) \/ ((lEN = 0) /\ (tRAIL = 0)))) {
+    if (((((lEN < 0) \/ (aT < cUR)) \/ ((cUR + 8) <= aT)) \/
+        ((lEN = 0) /\ (tRAIL = 0)))) {
       w <- (W64.of_int 0);
     } else {
-      aT8 <- (aT - cUR);
       if ((8 <= lEN)) {
         w <-
         (get64_direct (WArray768.init8 (fun i => buf.[i])) (offset + dELTA));
-        w <@ __SHLQ (w, aT8);
-        dELTA <- (dELTA + (8 - aT8));
-        lEN <- (lEN - (8 - aT8));
-        aT8 <- 8;
+        w <@ __SHLQ (w, (aT - cUR));
+        dELTA <- (dELTA + ((cUR + 8) - aT));
+        lEN <- (lEN - ((cUR + 8) - aT));
+        aT <- (cUR + 8);
       } else {
         if ((4 <= lEN)) {
           w <-
           (zeroextu64
           (get32_direct (WArray768.init8 (fun i => buf.[i])) (offset + dELTA)
           ));
-          w <@ __SHLQ (w, aT8);
-          dELTA <- (dELTA + ((8 <= (4 + aT8)) ? (8 - aT8) : 4));
-          lEN <- (lEN - ((8 <= (4 + aT8)) ? (8 - aT8) : 4));
-          aT8 <- ((8 <= (4 + aT8)) ? 8 : (4 + aT8));
+          w <@ __SHLQ (w, (aT - cUR));
+          dELTA <-
+          (dELTA + (((cUR + 8) <= (aT + 4)) ? ((cUR + 8) - aT) : 4));
+          lEN <- (lEN - (((cUR + 8) <= (aT + 4)) ? ((cUR + 8) - aT) : 4));
+          aT <- (((cUR + 8) <= (aT + 4)) ? (cUR + 8) : (aT + 4));
         } else {
           w <- (W64.of_int 0);
         }
-        if (((aT8 < 8) /\ (2 <= lEN))) {
+        if (((aT < (cUR + 8)) /\ (2 <= lEN))) {
           t16 <-
           (zeroextu64
           (get16_direct (WArray768.init8 (fun i => buf.[i])) (offset + dELTA)
           ));
-          dELTA <- (dELTA + ((8 <= (2 + aT8)) ? (8 - aT8) : 2));
-          lEN <- (lEN - ((8 <= (2 + aT8)) ? (8 - aT8) : 2));
-          t16 <@ __SHLQ (t16, aT8);
+          dELTA <-
+          (dELTA + (((cUR + 8) <= (aT + 2)) ? ((cUR + 8) - aT) : 2));
+          lEN <- (lEN - (((cUR + 8) <= (aT + 2)) ? ((cUR + 8) - aT) : 2));
+          t16 <@ __SHLQ (t16, (aT - cUR));
           w <- (w `|` t16);
-          aT8 <- ((8 <= (2 + aT8)) ? 8 : (2 + aT8));
+          aT <- (((cUR + 8) <= (aT + 2)) ? (cUR + 8) : (aT + 2));
         } else {
           
         }
-        if ((aT8 < 8)) {
-          if ((1 <= lEN)) {
-            t8 <-
-            (zeroextu64
-            (get8_direct (WArray768.init8 (fun i => buf.[i]))
-            (offset + dELTA)));
-            t8 <- (t8 `|` (W64.of_int (256 * (tRAIL %% 256))));
-            dELTA <- (dELTA + 1);
-            lEN <- (lEN - 1);
-            t8 <@ __SHLQ (t8, aT8);
-            w <- (w `|` t8);
-            aT8 <- (aT8 + 1);
-            if (((aT8 < 8) /\ ((tRAIL %% 256) <> 0))) {
-              aT8 <- (aT8 + 1);
-              tRAIL <- 0;
-            } else {
-              
-            }
-          } else {
-            if (((tRAIL %% 256) <> 0)) {
-              t8 <- (W64.of_int (tRAIL %% 256));
-              t8 <@ __SHLQ (t8, aT8);
-              w <- (w `|` t8);
-              tRAIL <- 0;
-              aT8 <- (aT8 + 1);
-            } else {
-              
-            }
-          }
+        if (((aT < (cUR + 8)) /\ (1 <= lEN))) {
+          t8 <-
+          (zeroextu64
+          (get8_direct (WArray768.init8 (fun i => buf.[i])) (offset + dELTA))
+          );
+          dELTA <- (dELTA + 1);
+          lEN <- (lEN - 1);
+          t8 <@ __SHLQ (t8, (aT - cUR));
+          w <- (w `|` t8);
+          aT <- (aT + 1);
+        } else {
+          
+        }
+        if (((aT < (cUR + 8)) /\ (tRAIL <> 0))) {
+          t8 <- (W64.of_int (tRAIL %% 256));
+          t8 <- (t8 `<<` (W8.of_int (8 * (aT - cUR))));
+          w <- (w `|` t8);
+          aT <- (aT + 1);
+          tRAIL <- 0;
         } else {
           
         }
       }
-      aT <- (cUR + aT8);
     }
     return (dELTA, lEN, tRAIL, aT, w);
   }
@@ -8536,36 +9808,34 @@ module M = {
                                                       cUR:int, aT:int) : 
   int * int * int * int * W128.t = {
     var w:W128.t;
-    var aT16:int;
     var t64_0:W64.t;
     var t64_1:W64.t;
-    if ((((aT < cUR) \/ ((cUR + 16) <= aT)) \/ ((lEN = 0) /\ (tRAIL = 0)))) {
+    if (((((lEN < 0) \/ (aT < cUR)) \/ ((cUR + 16) <= aT)) \/
+        ((lEN = 0) /\ (tRAIL = 0)))) {
       w <- (set0_128);
     } else {
-      aT16 <- (aT - cUR);
       if ((16 <= lEN)) {
         w <-
         (get128_direct (WArray768.init8 (fun i => buf.[i])) (offset + dELTA));
-        w <@ __SHLDQ (w, aT16);
-        dELTA <- (dELTA + (16 - aT16));
-        lEN <- (lEN - (16 - aT16));
-        aT16 <- 16;
+        w <@ __SHLDQ (w, (aT - cUR));
+        dELTA <- (dELTA + (16 - (aT - cUR)));
+        lEN <- (lEN - (16 - (aT - cUR)));
+        aT <- (cUR + 16);
       } else {
-        if ((8 <= aT16)) {
+        if (((cUR + 8) <= aT)) {
           w <- (set0_128);
-          (dELTA, lEN, tRAIL, aT16, t64_1) <@ a_ENCODED_COMMITMENT____a_ilen_read_upto8_at (
-          buf, offset, dELTA, lEN, tRAIL, 8, aT16);
+          (dELTA, lEN, tRAIL, aT, t64_1) <@ a_ENCODED_COMMITMENT____a_ilen_read_upto8_at (
+          buf, offset, dELTA, lEN, tRAIL, (cUR + 8), aT);
           w <- (VPINSR_2u64 w t64_1 (W8.of_int 1));
         } else {
-          (dELTA, lEN, tRAIL, aT16, t64_0) <@ a_ENCODED_COMMITMENT____a_ilen_read_upto8_at (
-          buf, offset, dELTA, lEN, tRAIL, 0, aT16);
-          w <- (zeroextu128 t64_0);
-          (dELTA, lEN, tRAIL, aT16, t64_1) <@ a_ENCODED_COMMITMENT____a_ilen_read_upto8_at (
-          buf, offset, dELTA, lEN, tRAIL, 8, aT16);
+          (dELTA, lEN, tRAIL, aT, t64_0) <@ a_ENCODED_COMMITMENT____a_ilen_read_upto8_at (
+          buf, offset, dELTA, lEN, tRAIL, cUR, aT);
+          w <- (VMOV_64 t64_0);
+          (dELTA, lEN, tRAIL, aT, t64_1) <@ a_ENCODED_COMMITMENT____a_ilen_read_upto8_at (
+          buf, offset, dELTA, lEN, tRAIL, (cUR + 8), aT);
           w <- (VPINSR_2u64 w t64_1 (W8.of_int 1));
         }
       }
-      aT <- (cUR + aT16);
     }
     return (dELTA, lEN, tRAIL, aT, w);
   }
@@ -8575,37 +9845,33 @@ module M = {
                                                       cUR:int, aT:int) : 
   int * int * int * int * W256.t = {
     var w:W256.t;
-    var aT32:int;
     var t128_0:W128.t;
     var t128_1:W128.t;
-    if ((((aT < cUR) \/ ((cUR + 32) <= aT)) \/ ((lEN = 0) /\ (tRAIL = 0)))) {
+    if (((((lEN < 0) \/ (aT < cUR)) \/ ((cUR + 32) <= aT)) \/
+        ((lEN = 0) /\ (tRAIL = 0)))) {
       w <- (set0_256);
     } else {
-      aT32 <- (aT - cUR);
-      if (((aT32 = 0) /\ (32 <= lEN))) {
+      if (((aT = cUR) /\ (32 <= lEN))) {
         w <-
         (get256_direct (WArray768.init8 (fun i => buf.[i])) (offset + dELTA));
-        aT32 <- (aT32 + 32);
         dELTA <- (dELTA + 32);
         lEN <- (lEN - 32);
+        aT <- (aT + 32);
       } else {
-        if ((16 <= aT32)) {
+        if (((cUR + 16) <= aT)) {
           w <- (set0_256);
-          (dELTA, lEN, tRAIL, aT32, t128_1) <@ a_ENCODED_COMMITMENT____a_ilen_read_upto16_at (
-          buf, offset, dELTA, lEN, tRAIL, 16, aT32);
+          (dELTA, lEN, tRAIL, aT, t128_1) <@ a_ENCODED_COMMITMENT____a_ilen_read_upto16_at (
+          buf, offset, dELTA, lEN, tRAIL, (cUR + 16), aT);
           w <- (VINSERTI128 w t128_1 (W8.of_int 1));
         } else {
-          (dELTA, lEN, tRAIL, aT32, t128_0) <@ a_ENCODED_COMMITMENT____a_ilen_read_upto16_at (
-          buf, offset, dELTA, lEN, tRAIL, 0, aT32);
-          (dELTA, lEN, tRAIL, aT32, t128_1) <@ a_ENCODED_COMMITMENT____a_ilen_read_upto16_at (
-          buf, offset, dELTA, lEN, tRAIL, 16, aT32);
-          w <-
-          (W256.of_int
-          (((W128.to_uint t128_0) %% (2 ^ 128)) +
-          ((2 ^ 128) * (W128.to_uint t128_1))));
+          (dELTA, lEN, tRAIL, aT, t128_0) <@ a_ENCODED_COMMITMENT____a_ilen_read_upto16_at (
+          buf, offset, dELTA, lEN, tRAIL, cUR, aT);
+          w <- (zeroextu256 t128_0);
+          (dELTA, lEN, tRAIL, aT, t128_1) <@ a_ENCODED_COMMITMENT____a_ilen_read_upto16_at (
+          buf, offset, dELTA, lEN, tRAIL, (cUR + 16), aT);
+          w <- (VINSERTI128 w t128_1 (W8.of_int 1));
         }
       }
-      aT <- (cUR + aT32);
     }
     return (dELTA, lEN, tRAIL, aT, w);
   }
@@ -8617,28 +9883,25 @@ module M = {
                                                            cUR:int, aT:int) : 
   int * int * int * int * W256.t = {
     var w256:W256.t;
-    var aT8:int;
     var w:W64.t;
     var t128:W128.t;
-    if ((((aT < cUR) \/ ((cUR + 8) <= aT)) \/ ((lEN = 0) /\ (tRAIL = 0)))) {
+    if (((((lEN < 0) \/ (aT < cUR)) \/ ((cUR + 8) <= aT)) \/
+        ((lEN = 0) /\ (tRAIL = 0)))) {
       w256 <- (set0_256);
     } else {
       if ((8 <= lEN)) {
-        aT8 <- (aT - cUR);
         w256 <-
         (VPBROADCAST_4u64
         (get64_direct (WArray768.init8 (fun i => buf.[i])) (offset + dELTA)));
-        w256 <@ __SHLQ_256 (w256, aT8);
-        dELTA <- (dELTA + (8 - aT8));
-        lEN <- (lEN - (8 - aT8));
+        w256 <@ __SHLQ_256 (w256, (aT - cUR));
+        dELTA <- (dELTA + ((cUR + 8) - aT));
+        lEN <- (lEN - ((cUR + 8) - aT));
         aT <- (cUR + 8);
       } else {
-        aT8 <- (aT - cUR);
         (dELTA, lEN, tRAIL, aT, w) <@ a_ENCODED_COMMITMENT____a_ilen_read_upto8_at (
         buf, offset, dELTA, lEN, tRAIL, cUR, aT);
-        t128 <- (zeroextu128 w);
+        t128 <- (VMOV_64 w);
         w256 <- (VPBROADCAST_4u64 (truncateu64 t128));
-        w256 <@ __SHLQ_256 (w256, aT8);
       }
     }
     return (dELTA, lEN, tRAIL, aT, w256);
@@ -8680,14 +9943,14 @@ module M = {
     if (((0 < _LEN) \/ (_TRAILB <> 0))) {
       (dELTA, _LEN, _TRAILB, aT, t64_2) <@ a_ENCODED_COMMITMENT____a_ilen_read_upto8_at (
       buf, offset, dELTA, _LEN, _TRAILB, 40, aT);
-      t128_1 <- (zeroextu128 t64_2);
+      t128_1 <- (VMOV_64 t64_2);
       t128_2 <- (set0_128);
       if (((0 < _LEN) \/ (_TRAILB <> 0))) {
         (dELTA, _LEN, _TRAILB, aT, r3) <@ a_ENCODED_COMMITMENT____a_ilen_read_upto32_at (
         buf, offset, dELTA, _LEN, _TRAILB, 48, aT);
         (dELTA, _LEN, _TRAILB, aT, t64_3) <@ a_ENCODED_COMMITMENT____a_ilen_read_upto8_at (
         buf, offset, dELTA, _LEN, _TRAILB, 80, aT);
-        t128_2 <- (zeroextu128 t64_3);
+        t128_2 <- (VMOV_64 t64_3);
         (dELTA, _LEN, _TRAILB, aT, r4) <@ a_ENCODED_COMMITMENT____a_ilen_read_upto32_at (
         buf, offset, dELTA, _LEN, _TRAILB, 88, aT);
         (dELTA, _LEN, _TRAILB, aT, t64_4) <@ a_ENCODED_COMMITMENT____a_ilen_read_upto8_at (
@@ -9350,6 +10613,7 @@ module M = {
       }
     }
     while ((stop_sampling <> (W32.of_int 1))) {
+      (* Erased call to spill *)
       (aux, aux_0, aux_1, aux_2, aux_3) <@ shake128_squeezeblock4x (xof_state,
       (Array168.init (fun i => buf0.[(0 + i)])),
       (Array168.init (fun i => buf1.[(0 + i)])),
@@ -9372,6 +10636,7 @@ module M = {
       (Array848.init
       (fun i => (if (0 <= i < (0 + 168)) then aux_3.[(i - 0)] else buf3.[i]))
       );
+      (* Erased call to unspill *)
       filled <- filled0;
       (polynomial0, filled) <@ matrix_A__rejection_sample_one_block (
       polynomial0, filled, (Array168.init (fun i => buf0.[(0 + i)])));

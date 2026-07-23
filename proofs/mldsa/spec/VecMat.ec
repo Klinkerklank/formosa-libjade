@@ -1,26 +1,12 @@
 require import AllCore List StdBigop.
 require import Parameters GFq Rq.
-require DVect Subtype.
 require import Array256.
 
-import CDR Round Zq BigZMod PolyReduceZq MLDSAParams.
+import Round ZModQ Zq MLDSAParams.
 
-clone import DVect as VecMat with 
-  theory DR <= DR,
-  op HL.alpha <- 2*gamma2,
-  op HL.d     <- d
-proof 
-  HL.ge2_alpha, 
-  HL.alpha_halfq_le, 
-  HL.even_alpha, 
-  HL.alpha_almost_divides_q.
-realize HL.ge2_alpha by smt(gamma2_bound).
-realize HL.even_alpha by smt().
-realize HL.alpha_halfq_le by smt(gamma2_bound).
-realize HL.alpha_almost_divides_q by apply gamma2_div.
-
-import VecMat.MatRq. (* Matrices and Vectors over Rq *)
-import VecMat.HL.    (* highBitsV and lowBitsV with HL.alpha = 2 * gamma2 and HL.d = d *)
+(* polyXnD1-typed vectors/matrices, from's DynMatrix clone.   *)
+(* (Previously these came from cloning [DVect] in the dilithium submodule.) *)
+import VM VM.Vectors VM.Matrices.
 
 from Jasmin require import JArray. 
 clone export PolyArray as LArray  with

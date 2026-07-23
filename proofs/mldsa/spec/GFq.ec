@@ -1,19 +1,19 @@
 require import AllCore IntDiv.
-require ConcreteDRing.
+require ZqRounding.
 
 require import Parameters.
 import MLDSAParams.
 
-clone import ConcreteDRing as CDR with 
-  op Round.q <- q,
-  op Round.n <- n
-  proof Round.prime_q by exact prime_q
-  proof Round.gt0_n by exact gt0_n
-  rename "zmod" as "coeff"
-  rename "ZModQ" as "Zq".
-  (* FIXME: three axioms left unproven from poly reduce in proof *. *)
+clone import ZqRounding as Round with
+  op q <- q,
+  op n <- n
+  proof prime_q by exact prime_q
+  proof gt0_n  by exact gt0_n
+  rename "zmod"   as "coeff"
+         "inzmod" as "incoeff"
+         "ZMF"    as "Zq".
 
-import Round Zq.
+import Round ZModQ Zq.
 
 (* Signed representation *)
 

@@ -1,14 +1,14 @@
 require import AllCore List IntDiv RealExp.
 
 from Jasmin require import JModel_x86.
-require import CircuitBindings Bindings.
+require import CircuitBindings Bindings JWordExtra.
 
 from JazzEC require import Ml_dsa_65_avx2 Mldsa_65_prelude.
 from JazzEC require import Array256 Array128.
 from Spec require import GFq Rq Serialization Conversion Parameters VecMat MLDSA_W32_Rep.
 import BitEncoding BitChunking.
 
-import CDR Round Zq.
+import Round ZModQ Zq.
 
 from CryptoSpecs require import JWord_extra EclibExtra JWordList.
 
@@ -76,7 +76,7 @@ have -> : p.[(8 * i + j) %/ (l + 1)] = v by smt().
 move: h => @/wpoly_srng /array256_allP /(_ v _) //= /=.
 + rewrite /to_list /mkseq mapP; exists ((i * 8 + j) %/ 4); smt(mem_iota).
 move => h.
-rewrite incoeffK_centered 1,2:/# /W32_sub truncateu_32_4E get_bits2w 1:/#.
+rewrite incoeffK_centered 1,2:/# truncateu_32_4E get_bits2w 1:/#.
 rewrite nth_take 1,2:/# w2bits_int2bsE.
 have  -> := BS2Int.int2bs_cat 4 32 (to_uint (W32.of_int 4 - v)) _;1:smt().
 rewrite /IntegerToBits nth_cat ifT;1: by rewrite BS2Int.size_int2bs /#.
@@ -224,7 +224,7 @@ rewrite (nth_map []) /=.
   rewrite /BytesToBits.
   rewrite (EclibExtra.size_flatten' 8);1: by smt(mapP W8.size_w2bits).
   by rewrite size_map size_to_list /= /#.
-congr; rewrite  /error_polynomial_decode_lane /W32_sub.
+congr; rewrite  /error_polynomial_decode_lane.
 rewrite ilog_Eta /= /zeroextu32.
 rewrite nth_chunk // 1:/#.
 + rewrite /BytesToBits.
@@ -235,7 +235,7 @@ have  := BS2Int.bs2int_le2Xs ((take 4 (drop (4 * i) (BytesToBits (to_list bytes)
   rewrite !size_map !size_iota /max /=.
   pose ll := if _ then _ else _.
   have -> /= : ll = 4;1: by smt().
-rewrite /BitsToInteger /zeroextu32 .
+rewrite /BitsToInteger .
 pose p := BS2Int.bs2int  (take 4 (drop (4 * i) (BytesToBits (to_list bytes)))) .
 move => ?.
 have ? : 0 <= p by smt(BS2Int.bs2int_ge0).

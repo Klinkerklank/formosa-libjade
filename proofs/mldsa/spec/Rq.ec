@@ -2,7 +2,7 @@ require import AllCore IntDiv List Ring BitEncoding.
 require import Array256.
 
 require import GFq Parameters.
-import CDR Round Zq BigZMod PolyReduceZq.
+import Round ZModQ Zq .
 
 
 (******************************************************)
@@ -15,7 +15,7 @@ type poly  = coeff Array256.t.
 type apoly = polyXnD1.
 
 op poly2prealg (p : poly) : prepoly =
-  fun i => if 0 <= i < n then p.[i] else zero.
+  fun i => if 0 <= i < n then p.[i] else Zq.zero.
 
 op poly2alg (p : poly) : apoly =
   pinject (to_polyd (poly2prealg p)).
@@ -56,7 +56,7 @@ qed.
 op (&*) (a b : poly) = alg2poly (( * ) (poly2alg a) (poly2alg b)).
 op (&+) (a b : poly) = alg2poly (( + ) (poly2alg a) (poly2alg b)).
 op (&-) (a   : poly) = alg2poly (PolyReduce.([-]) (poly2alg a)).
-op poly_zero = create zero.
+op poly_zero : poly = create Zq.zero.
 
 
 (**************************************************)
