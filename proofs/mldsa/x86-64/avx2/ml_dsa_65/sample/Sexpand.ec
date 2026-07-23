@@ -6,9 +6,11 @@ import BS2Int.
 from Jasmin require import JWord JModel_x86.
 from JazzEC require import Ml_dsa_65_avx2.
 
+require import Agree.
 require import Avx2red.
 require import Errshuffle.
 require import Prefixarray.
+require import Warraypack.
 require import Sha3x4. import Shake256x4.
 require import Array4 Array25 Array64 Array136 Array256 Array272 Array1280 Array1536 Array2048.
 require import WArray272 WArray1024 WArray2048.
@@ -24,6 +26,21 @@ clone import Prefixarray.PrefixArray as PA_272_136 with
          "'B" as "_136"
 
   proof le_size by done.
+
+(* -------------------------------------------------------------------- *)
+clone Warraypack.WArrayPack as WP272 with
+      op size <- 272,
+  theory A    <- Array272,
+  theory WA   <- WArray272
+  rename "get" as "WArray272_get".
+
+clone Warraypack.WArrayPack as WP2048 with
+      op size <- 2048,
+  theory A    <- Array2048,
+  theory WA   <- WArray2048
+  rename "get" as "WArray2048_get".
+
+import WP272 WP2048.
 
 (* -------------------------------------------------------------------- *)
 type rho'  = W8.t Array64.t.
@@ -204,39 +221,6 @@ qed.
 op cbyte (z : W8.t) : W8.t = W8.of_int 4 - z.
 
 (* -------------------------------------------------------------------- *)
-op [opaque] agree (p : wpoly) (base : int) (coeffs : W32.t list) =
-  forall i,
-       0 <= i < size coeffs
-    => 0 <= i + base < 256
-    => p.[base + i] = nth W32.zero coeffs i.
-
-(* -------------------------------------------------------------------- *)
-lemma agree_nil (p : wpoly) (base : int) : agree p base [].
-proof. by rewrite /agree /= /#. qed.
-
-hint simplify agree_nil.
-
-(* -------------------------------------------------------------------- *)
-lemma agree_set (p : wpoly) (l : W32.t list) (c : W32.t) :
-  size l < 256 => agree p 0 l =>
-  agree p.[size l <- c] 0 (l ++ [c]).
-proof.
-move=> hsz; rewrite /agree => hag i /=; rewrite size_cat /= => rgi rgb.
-rewrite Array256.get_setE 1:/# nth_cat.
-case: (i = size l) => [-> /=|ne] //.
-by rewrite ifT 1:/#; smt().
-qed.
-
-(* -------------------------------------------------------------------- *)
-lemma agree_full (p : wpoly) (l1 l2 : W32.t list) :
-  256 <= size l1 => agree p 0 l1 =>
-  agree p 0 (l1 ++ l2).
-proof.
-move=> hsz; rewrite /agree => hag i /=; rewrite size_cat => rgi rgb.
-by rewrite nth_cat ifT 1:/#; smt().
-qed.
-
-(* -------------------------------------------------------------------- *)
 (* writing eight dwords at the end of the agreed prefix extends the     *)
 (* agreement by the first k of them                                     *)
 lemma agree_fill8 (p : wpoly) (old : W32.t list) (w : W256.t) (k : int) :
@@ -342,16 +326,6 @@ end section.
 (* the write-out step as a proc spec: one 8-candidate group is          *)
 (* compacted, sign-extended and stored; the mask window advances        *)
 
-lemma WArray2048_get64E (a : W8.t Array2048.t) (base : int) :
-  0 <= base <= 2040 =>
-    WArray2048.get64_direct (WArray2048.init8 ("_.[_]" a)) base
-  = W8u8.pack8 (Array2048.sub a base 8).
-proof.
-move=> rgb; rewrite get64E; congr; apply W8u8.Pack.ext_eq => j hj.
-rewrite initiE //= get_of_list //.
-rewrite /init8 WArray2048.initiE 1:/# /=.
-by rewrite /sub nth_mkseq //=.
-qed.
 
 lemma error_4x____write_out_8_coefficientsP
   (p_ : wpoly) (old : W32.t list) (zs zs' : W8.t list)
@@ -409,16 +383,6 @@ lemma sub4E_272 (a : W8.t Array272.t) (k : int) :
   Array272.sub a k 4 = [a.[k]; a.[k + 1]; a.[k + 2]; a.[k + 3]].
 proof. by rewrite /sub /mkseq -iotaredE /=. qed.
 
-lemma WArray272_get128E (a : W8.t Array272.t) (base : int) :
-  0 <= base <= 256 =>
-    WArray272.get128_direct (WArray272.init8 ("_.[_]" a)) base
-  = W16u8.pack16 (Array272.sub a base 16).
-proof.
-move=> rgb; rewrite get128E; congr; apply W16u8.Pack.ext_eq => j hj.
-rewrite initiE //= get_of_list //.
-rewrite /init8 WArray272.initiE 1:/# /=.
-by rewrite /sub nth_mkseq //=.
-qed.
 
 lemma scands_nib (bs : W8.t list) (z : W8.t) :
   z \in scands bs => to_uint z < 16.
@@ -436,9 +400,6 @@ op svsampled (b : W8.t Array272.t) (p : wpoly) (bf off : int) =
   /\ bf = 4 * size (sreject (Array272.sub b 0 off))
   /\ agree p 0 (sreject (Array272.sub b 0 off)).
 
-lemma sub1E_272 (a : W8.t Array272.t) (k : int) :
-  Array272.sub a k 1 = [a.[k]].
-proof. by rewrite /sub /mkseq -iotaredE /=. qed.
 
 lemma sreject_step272 (a : W8.t Array272.t) (n : int) : 0 <= n =>
   sreject (Array272.sub a 0 (n + 1))
@@ -959,9 +920,6 @@ qed.
 (* The one-block scalar sampler: one 136-byte squeezed block extends    *)
 (* the accepted stream, with filled capped at 256                       *)
 
-lemma sub1E_136 (a : W8.t Array136.t) (k : int) :
-  Array136.sub a k 1 = [a.[k]].
-proof. by rewrite /sub /mkseq -iotaredE /=. qed.
 
 lemma sreject_stepS136 (S : W8.t list) (a : W8.t Array136.t) (n : int) : 0 <= n =>
   sreject (S ++ Array136.sub a 0 (n + 1))
@@ -1166,20 +1124,8 @@ op sblocks_ok (data : W8.t list Array4.t) (k : int)
     = shake256_slice data.[i] (136 * k) 136.
 
 (* -------------------------------------------------------------------- *)
-lemma trunca_0E (a : W8.t Array272.t) :
-  Array136.init (fun i => a.[0 + i]) = PA_272_136.truncatea_136 a.
-proof.
-by rewrite -PA_272_136.truncatea_136E; apply Array136.ext_eq => i rgi; rewrite !initiE.
-qed.
 
 (* -------------------------------------------------------------------- *)
-lemma trunc_inject (a : W8.t Array272.t) (b : W8.t Array136.t) :
-  PA_272_136.truncatea_136 (PA_272_136.injecta_272 a b) = b.
-proof.
-apply Array136.ext_eq => i rgi.
-rewrite /PA_272_136.truncatea_136 initiE //= /PA_272_136.injecta_272 initiE 1:/# /=.
-by rewrite rgi.
-qed.
 
 (* -------------------------------------------------------------------- *)
 (* splitting the accepted stream of a slice prefix                      *)
@@ -1519,44 +1465,24 @@ qed.
 (* ==================================================================== *)
 
 (* -------------------------------------------------------------------- *)
-op poly_of_s1 (s : W32.t Array1280.t) (r : int) : wpoly =
-  Array256.init (fun j => s.[256 * r + j]).
+clone Prefixarray.PrefixArray as PW_1280_256 with
+      op sizeB <- 256,
+      op sizeS <- 1280,
+  theory AB    <- Array256,
+  theory AS    <- Array1280
+  proof le_size by done.
 
-op poly_of_s2 (s : W32.t Array1536.t) (r : int) : wpoly =
-  Array256.init (fun j => s.[256 * r + j]).
+clone Prefixarray.PrefixArray as PW_1536_256 with
+      op sizeB <- 256,
+      op sizeS <- 1536,
+  theory AB    <- Array256,
+  theory AS    <- Array1536
+  proof le_size by done.
 
-(* -------------------------------------------------------------------- *)
-lemma poly_s1_write (s : W32.t Array1280.t) (p : wpoly) (lo hi j : int) :
-  0 <= j < 5 => hi = lo + 256 => 0 <= lo <= 1024 => 256 %| lo =>
-  poly_of_s1 (Array1280.init (fun i =>
-      if lo <= i < hi then p.[i - lo] else s.[i])) j
-  = if 256 * j = lo then p else poly_of_s1 s j.
-proof.
-move=> rgj -> rglo hdvd; case: (256 * j = lo) => [heq|ne].
-- apply Array256.ext_eq => i rgi.
-  rewrite /poly_of_s1 Array256.initiE //=.
-  have hb : 0 <= 256 * j + i < 1280 by smt().
-  rewrite Array1280.initiE 1:hb /=.
-  by smt().
-apply Array256.ext_eq => i rgi.
-rewrite /poly_of_s1 !initiE //= initiE 1:/# /=.
-by rewrite ifF 1:/#.
-qed.
-
-lemma poly_s2_write (s : W32.t Array1536.t) (p : wpoly) (lo hi j : int) :
-  0 <= j < 6 => hi = lo + 256 => 0 <= lo <= 1280 => 256 %| lo =>
-  poly_of_s2 (Array1536.init (fun i =>
-      if lo <= i < hi then p.[i - lo] else s.[i])) j
-  = if 256 * j = lo then p else poly_of_s2 s j.
-proof.
-move=> rgj -> rglo hdvd; case: (256 * j = lo) => [heq|ne].
-- apply Array256.ext_eq => i rgi.
-  rewrite /poly_of_s2 initiE //= initiE 1:/# /=.
-  by smt().
-apply Array256.ext_eq => i rgi.
-rewrite /poly_of_s2 !initiE //= initiE 1:/# /=.
-by rewrite ifF 1:/#.
-qed.
+abbrev poly_of_s1 (s : W32.t Array1280.t) (r : int) : wpoly =
+  PW_1280_256.winof s r.
+abbrev poly_of_s2 (s : W32.t Array1536.t) (r : int) : wpoly =
+  PW_1536_256.winof s r.
 
 (* -------------------------------------------------------------------- *)
 lemma sample____error_vectorsP (rho_ : W8.t Array64.t) :
@@ -1574,7 +1500,7 @@ seq 5 : (rho_prime = rho_
   /\ forall r, 0 <= r < 4 => poly_of_s1 s1 r = Spoly rho_ (W16.of_int r)).
 - wp; ecall (error_4x____sample_polynomialsP rho_ (W16.of_int 0)).
   auto=> &hr |> result hres r rgr rgr2.
-  do 4! (rewrite poly_s1_write ~-1:/#).
+  do 4! (rewrite PW_1280_256.winof_write ~-1:/#).
   case: (r = 0) => [->/=|n0].
   - have /= := hres 0 _; 1: done.
     by done.
@@ -1594,13 +1520,13 @@ seq 5 : (rho_prime = rho_
   auto=> &hr |> h1s result hres.
   split.
   - move=> r rgr rgr2.
-    rewrite poly_s1_write ~-1:/#.
+    rewrite PW_1280_256.winof_write ~-1:/#.
     case: (r = 4) => [->/=|n4].
     - have /= := hres 0 _; 1: done.
       by done.
     by rewrite ifF 1:/# h1s /#.
   move=> r rgr rgr2.
-  do 3! (rewrite poly_s2_write ~-1:/#).
+  do 3! (rewrite PW_1536_256.winof_write ~-1:/#).
   case: (r = 0) => [->/=|n0].
   - have /= := hres 1 _; 1: done.
     by done.
@@ -1613,7 +1539,7 @@ seq 5 : (rho_prime = rho_
 wp; ecall (error_4x____sample_polynomialsP rho_ (W16.of_int 8)).
 auto=> &hr |> h1s h2s result hres.
 move=> r rgr rgr2.
-do 3! (rewrite poly_s2_write ~-1:/#).
+do 3! (rewrite PW_1536_256.winof_write ~-1:/#).
 case: (r = 3) => [->/=|n3].
 - have /= := hres 0 _; 1: done.
   by done.

@@ -3,7 +3,7 @@
 (* (AB, of size sizeB): truncation/injection of the first block, and    *)
 (* the generic sub/window lemmas shared by the ML-DSA samplers.         *)
 
-require import AllCore List IntDiv.
+require import AllCore List IntDiv StdOrder.
 
 from Jasmin require import JUtils JArray.
 
@@ -109,4 +109,58 @@ theory PrefixArray.
   - by rewrite ifF 1:/# AS.nth_sub /#.
   by rewrite ifT 1:/# AB.get_to_list /#.
   qed.
+
+  (* ------------------------------------------------------------------ *)
+  lemma sub1E'B (a : 'a AB.t) (k : int) :
+    AB.sub a k 1 = [a.[k]].
+  proof. by rewrite /sub /mkseq -iotaredE /=. qed.
+
+  lemma sub1E'S (a : 'a AS.t) (k : int) :
+    AS.sub a k 1 = [a.[k]].
+  proof. by rewrite /sub /mkseq -iotaredE /=. qed.
+
+  (* ------------------------------------------------------------------ *)
+  (* reading back the head block                                        *)
+  lemma trunca_0E (a : 'a AS.t) :
+    AB.init (fun i => a.[0 + i]) = truncatea'B a.
+  proof.
+  by rewrite -truncatea'BE; apply AB.ext_eq => i rgi; rewrite !initiE.
+  qed.
+
+  lemma trunc_inject (a : 'a AS.t) (b : 'a AB.t) :
+    truncatea'B (injecta'S a b) = b.
+  proof.
+  apply AB.ext_eq => i rgi.
+  rewrite /truncatea'B initiE //= /injecta'S initiE 1:#smt:(le_size) /=.
+  by rewrite rgi.
+  qed.
+
+  (* ------------------------------------------------------------------ *)
+  (* extracting a block-aligned window, and how a window write reads    *)
+  (* back through it                                                    *)
+  op winof (a : 'a AS.t) (r : int) : 'a AB.t =
+    AB.init (fun j => a.[sizeB * r + j]).
+
+  lemma winof_write (s : 'a AS.t) (p : 'a AB.t) (lo hi j : int) :
+    0 < sizeB => 0 <= j => sizeB * j + sizeB <= sizeS =>
+    hi = lo + sizeB => 0 <= lo => lo + sizeB <= sizeS => sizeB %| lo =>
+    winof (AS.init (fun i => if lo <= i < hi then p.[i - lo] else s.[i])) j
+    = if sizeB * j = lo then p else winof s j.
+  proof.
+  move=> gt0B rgj hjS -> rglo hloS hdvd.
+  have [q hq] : exists q, lo = sizeB * q.
+  - by exists (lo %/ sizeB); rewrite mulzC divzK 1:hdvd.
+  case: (sizeB * j = lo) => [heq|ne].
+  - apply AB.ext_eq => i rgi.
+    rewrite /winof AB.initiE //=.
+    rewrite AS.initiE 1:/# /=.
+    by smt().
+  apply AB.ext_eq => i rgi.
+  rewrite /winof !AB.initiE //=.
+  rewrite AS.initiE 1:/# /=.
+  rewrite ifF //.
+  have hne : j <> q by smt().
+  case: (j < q) => hjq; smt(StdOrder.IntOrder.ler_pmul2l).
+  qed.
+
 end PrefixArray.

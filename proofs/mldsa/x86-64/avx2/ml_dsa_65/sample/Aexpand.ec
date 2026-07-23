@@ -7,8 +7,10 @@ import BitChunking.
 from Jasmin require import JWord JModel_x86.
 from JazzEC require import Ml_dsa_65_avx2.
 
+require import Agree.
 require import Avx2red.
 require import Prefixarray.
+require import Warraypack.
 require import Sha3x4. import Shake128x4.
 require import Array2 Array4 Array25 Array32 Array168 Array256 Array848 Array7680.
 require import WArray2 WArray256 WArray848 WArray1024.
@@ -37,6 +39,21 @@ clone import Prefixarray.PrefixArray as PA_848_168 with
   proof le_size by done.
 
 (* -------------------------------------------------------------------- *)
+clone Warraypack.WArrayPack as WP848 with
+      op size <- 848,
+  theory A    <- Array848,
+  theory WA   <- WArray848
+  rename "get" as "WArray848_get".
+
+clone Warraypack.WArrayPack as WP256 with
+      op size <- 256,
+  theory A    <- Array256,
+  theory WA   <- WArray256
+  rename "get" as "WArray256_get".
+
+import WP848 WP256.
+
+(* -------------------------------------------------------------------- *)
 type rho   = W8.t Array32.t.
 type wpoly = W32.t Array256.t.
 type A     = W32.t Array7680.t.
@@ -53,17 +70,6 @@ proof. by rewrite /reject chunk_nil /=. qed.
 hint simplify reject_nil.
 
 (* -------------------------------------------------------------------- *)
-op [opaque] agree (p : wpoly) (base : int) (coeffs : W32.t list) =
-  forall i,
-       0 <= i < size coeffs
-    => 0 <= i + base < 256
-    => p.[base + i] = nth W32.zero coeffs i.
-
-(* -------------------------------------------------------------------- *)
-lemma agree_nil (p : wpoly) (base : int) : agree p base [].
-proof. by rewrite /agree /= /#. qed.
-
-hint simplify agree_nil.
 
 (* -------------------------------------------------------------------- *)
 
@@ -159,32 +165,8 @@ by with hint +listred (move: i rgi; apply/allP_range => /=).
 qed.
 
 (* -------------------------------------------------------------------- *)
-lemma WArray848_get256E (a : W8.t Array848.t) (base : int)  :
-  0 <= base <= 816 =>
-    WArray848.get256_direct
-      (WArray848.init8 ("_.[_]" a))
-      base
-  = W32u8.pack32 (Array848.sub a base 32).
-proof.
-move=> rgb; rewrite get256E; congr; apply W32u8.Pack.ext_eq => j hj.
-rewrite initiE //= get_of_list //.
-rewrite /init8 WArray848.initiE 1:/# /=.
-by rewrite /sub nth_mkseq //=.
-qed.
 
 (* -------------------------------------------------------------------- *)
-lemma WArray256_get128E (a : W8.t Array256.t) (base : int) :
-  0 <= base <= 240 =>
-    WArray256.get128_direct
-      (WArray256.init8 ("_.[_]" a))
-      base
-  = W16u8.pack16 (Array256.sub a base 16).
-proof.
-move=> rgb; rewrite get128E; congr; apply W16u8.Pack.ext_eq => j hj.
-rewrite initiE //= get_of_list //.
-rewrite /init8 WArray256.initiE 1:/# /=.
-by rewrite /sub nth_mkseq //=.
-qed.
 
 (* -------------------------------------------------------------------- *)
 lemma W32Array256_set128E (a : W32.t Array256.t) (base : int) (w : W128.t) :
@@ -365,24 +347,8 @@ lemma reject3E (x y z : W8.t) :
 proof. by rewrite rejectE /cands /chunk /mkseq -iotaredE /=. qed.
 
 (* -------------------------------------------------------------------- *)
-lemma agree_set (p : wpoly) (l : W32.t list) (c : W32.t) :
-  size l < 256 => agree p 0 l =>
-  agree p.[size l <- c] 0 (l ++ [c]).
-proof.
-move=> hsz; rewrite /agree => hag i /=; rewrite size_cat /= => rgi rgb.
-rewrite Array256.get_setE 1:/# nth_cat.
-case: (i = size l) => [-> /=|ne] //.
-by rewrite ifT 1:/#; smt().
-qed.
 
 (* -------------------------------------------------------------------- *)
-lemma agree_full (p : wpoly) (l1 l2 : W32.t list) :
-  256 <= size l1 => agree p 0 l1 =>
-  agree p 0 (l1 ++ l2).
-proof.
-move=> hsz; rewrite /agree => hag i /=; rewrite size_cat => rgi rgb.
-by rewrite nth_cat ifT 1:/#; smt().
-qed.
 
 (* -------------------------------------------------------------------- *)
 (* the 3-byte candidate read at offset n of the byte stream             *)
@@ -1090,18 +1056,8 @@ op blocks_ok (data : W8.t list Array4.t) (k : int)
     = shake128_slice data.[i] (168 * k) 168.
 
 (* -------------------------------------------------------------------- *)
-lemma trunca_0E (a : W8.t Array848.t) :
-  Array168.init (fun i => a.[0 + i]) = truncatea_168 a.
-proof. by rewrite -truncatea_168E; apply Array168.ext_eq => i rgi; rewrite !initiE. qed.
 
 (* -------------------------------------------------------------------- *)
-lemma trunc_inject (a : W8.t Array848.t) (b : W8.t Array168.t) :
-  truncatea_168 (injecta_848 a b) = b.
-proof.
-apply Array168.ext_eq => i rgi.
-rewrite /truncatea_168 initiE //= /injecta_848 initiE 1:/# /=.
-by rewrite rgi.
-qed.
 
 (* -------------------------------------------------------------------- *)
 lemma matrix_A____sample_4_polynomialsP
