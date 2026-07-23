@@ -90,6 +90,23 @@ theory PrefixArray.
   proof. by rewrite /sub /to_list; apply eq_in_mkseq => i rgi /=. qed.
 
   (* ------------------------------------------------------------------ *)
+  lemma sub_split'B (a : 'a AB.t) (n : int) :
+    0 <= n <= sizeB =>
+    AB.to_list a = AB.sub a 0 n ++ AB.sub a n (sizeB - n).
+  proof.
+  move=> rgn; rewrite -sub_full'B -(sub_cat'B a 0 n (sizeB - n)) ~-1:/#.
+  by congr; ring.
+  qed.
+
+  lemma sub_split'S (a : 'a AS.t) (n : int) :
+    0 <= n <= sizeS =>
+    AS.to_list a = AS.sub a 0 n ++ AS.sub a n (sizeS - n).
+  proof.
+  move=> rgn; rewrite -sub_full'S -(sub_cat'S a 0 n (sizeS - n)) ~-1:/#.
+  by congr; ring.
+  qed.
+
+  (* ------------------------------------------------------------------ *)
   (* writing a block into its window extends the byte prefix            *)
   lemma sub_window_catE (b : 'a AS.t) (a : 'a AB.t) (i : int) :
     0 <= i /\ i * sizeB + sizeB <= sizeS =>

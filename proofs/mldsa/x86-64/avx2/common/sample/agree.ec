@@ -40,3 +40,28 @@ proof.
 move=> hsz; rewrite /agree => hag i /=; rewrite size_cat => rgi rgb.
 by rewrite nth_cat ifT 1:/#; smt().
 qed.
+
+(* -------------------------------------------------------------------- *)
+(* The sampler bookkeeping pair: the polynomial agrees with the         *)
+(* accepted stream and the fill counter is its size, capped at 256.     *)
+op filled_ok (p : W32.t Array256.t) (cs : W32.t list) (f : int) =
+  agree p 0 cs /\ f = min 256 (size cs).
+
+(* an accepted candidate is stored at the fill mark                     *)
+lemma filled_ok_snoc (p : W32.t Array256.t) (cs : W32.t list) (f : int) (w : W32.t) :
+  filled_ok p cs f => f < 256 =>
+  filled_ok p.[f <- w] (cs ++ [w]) (f + 1).
+proof.
+move=> @/filled_ok [hag hf] hlt; have hsz : f = size cs by smt().
+split; last by smt(size_cat).
+by rewrite hsz; apply agree_set; [smt() | exact hag].
+qed.
+
+(* a full polynomial absorbs any further candidates                     *)
+lemma filled_ok_full (p : W32.t Array256.t) (cs ds : W32.t list) (f : int) :
+  filled_ok p cs f => f = 256 =>
+  filled_ok p (cs ++ ds) f.
+proof.
+move=> @/filled_ok [hag hf] hfull; split; last by smt(size_cat size_ge0).
+by apply agree_full; [smt() | exact hag].
+qed.
