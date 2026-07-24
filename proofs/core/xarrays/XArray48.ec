@@ -81,7 +81,7 @@ clone BSWAS as BSWAS_48u8_128 with
 
   proof le_size by done.
 
-require import WArray48.
+from JazzEC require import WArray48.
 
 lemma BSWAS_48u8_128_slicegetE o (p : W8.t Array48.t):
     0 <= o*8 <= 48*8-128 =>

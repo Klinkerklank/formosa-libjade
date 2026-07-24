@@ -352,7 +352,8 @@ have ->: (1024 * i + (256 * j + k)) %% 256 = k by smt().
 done.
 qed.
 
-require import JWordList EclibExtra.
+require import EclibExtra.
+from CryptoSpecs require import JWordList.
 from Keccak require import Keccak1600_avx2x4.
 require import MLKEM_keccak_avx2.
 require import Mlkem_filters_bridge.
