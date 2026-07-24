@@ -146,7 +146,10 @@ case (asint r %% alpha <= alpha %/ 2) => ?.
   rewrite pmod_small; smt(ge0_asint).
 - rewrite addE oppE inzmodK modzDmr modzNDmr.
   rewrite pmod_small; first by smt(ge0_asint).
-  by rewrite {1} (divz_eq (asint r) alpha) => /#.
+  have -> : asint r - (asint r %% alpha - alpha)
+            = (asint r %/ alpha + 1) * alpha.
+  - by rewrite {1} (divz_eq (asint r) alpha); ring.
+  by apply dvdz_mull; exact dvdzz.
 qed.
 
 lemma round_upper_bound alpha x :
