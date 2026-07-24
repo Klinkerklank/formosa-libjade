@@ -12,11 +12,10 @@ continue in a fresh session (e.g. after moving to an x86-64 + AVX2 host).
     mlkem1024}_avx2.s`.
   - `src/include/` — C headers for the derand entry points (all six parameter
     sets; only 65/768/1024 have sources so far).
-  - `src/keccak` — symlink to `../submodules/formosa-keccak/src/amd64`.
+  - `src/fips202` — in-tree Keccak/FIPS202 sources (Jasmin `Keccak` namespace; flattened from formosa-keccak).
   - `src/tests/kat.py` — single-file ctypes KAT driver for the src build.
 - `proofs/` — EasyCrypt development (restored).
 - `bench/` — multi-backend KAT + cycle benchmark harness (details below).
-- `submodules/formosa-keccak` — Keccak sources (Jasmin `Keccak` namespace).
 - `mlkem/`, `mldsa/` — original subtree imports, still tracked. The end goal is
   to drop them and keep only `src/` + `proofs/`. `mldsa-implementation/` has
   already been removed.
@@ -60,7 +59,7 @@ make -C proofs/mlkem/extraction                  # -> {768,1024}/Jkem_avx2.ec (n
 cd bench
 git -C .. submodule update --init bench/third_party/mlkem-native \
     bench/third_party/mldsa-native bench/third_party/kyber \
-    bench/third_party/dilithium submodules/formosa-keccak
+    bench/third_party/dilithium
     # NB: plain `submodule update --init` aborts on a stale dilithium mapping
     # left in .gitmodules by the old mldsa subtree; name the paths explicitly.
 make libs                                        # <backend>_<scheme>.so via common derand ABI

@@ -11,7 +11,7 @@ import BitEncoding BitChunking.
 import Round ZModQ Zq.
 
 require import ArrayExtra.
-from CryptoSpecs require import JWord_extra EclibExtra JWordList.
+require import JWord_extra EclibExtra JWordList.
 
 require import XArray256 XArray640 XArray16 XWord20.
 

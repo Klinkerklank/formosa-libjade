@@ -20,7 +20,7 @@ require import Array2 Array32 Array48 Array64 Array256 Array768 Array1280 Array1
                require import WArray48.
 
 require import BitEncoding.
-from CryptoSpecs require import JWordList.
+require import JWordList.
 import BitChunking.
 
 lemma or64_ne0 w1 w2 :

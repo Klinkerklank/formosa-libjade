@@ -347,7 +347,7 @@ done.
 qed.
 
 require import EclibExtra.
-from CryptoSpecs require import JWordList.
+require import JWordList.
 from Keccak require import Keccak1600_avx2x4.
 require import MLKEM_keccak_avx2.
 require import Mlkem_filters_bridge.

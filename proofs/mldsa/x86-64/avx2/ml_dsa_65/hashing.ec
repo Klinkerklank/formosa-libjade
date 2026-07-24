@@ -10,7 +10,7 @@ import Round ZModQ Zq.
 
 require import Array2 Array26 Array32 Array48 Array64 Array66 Array128 Array136 Array768 Array1952.
 require import WArray2 Array7 WArray32 WArray48 WArray64 WArray66 WArray128 WArray136 WArray208 WArray768 WArray1952.
-from CryptoSpecs require import JWordList.
+require import JWordList.
 
 (****************************************************************************)
 (* Establish that M's keccak primitives equal Keccak1600_Jazz.M             *)
