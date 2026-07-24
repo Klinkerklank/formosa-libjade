@@ -129,7 +129,15 @@ lemma inzmodK_centered x :
      (p + 1) %/ 2 - p <= x
   => x < (p + 1) %/ 2
   => crepr (inzmod x) = x.
-proof. by rewrite /crepr inzmodK /#. qed.
+proof.
+move=> h1 h2; rewrite /crepr /= inzmodK.
+have hp := ge2_p.
+have hq1 : (p + 1) %/ 2 * 2 <= p + 1 by apply lez_floor.
+have hq2 : p + 1 < ((p + 1) %/ 2 + 1) * 2 by apply ltz_ceil.
+case: (0 <= x) => hx.
+- by rewrite pmod_small 1:/# ifF 1:/#.
+by rewrite -modzDr pmod_small 1:/# ifT 1:/#; ring.
+qed.
 
 (* -------------------------------------------------------------------- *)
 (* Algebraic laws under multiplication and addition.                    *)
