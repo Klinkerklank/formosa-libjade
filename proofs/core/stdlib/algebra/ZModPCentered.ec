@@ -122,7 +122,7 @@ rewrite /crepr /=.
 case ((p + 1) %/ 2 <= asint x) => ?; last by exact asintK.
 rewrite inzmod_mod.
 suff : (asint x - p) %% p = asint x by smt(asintK).
-smt(rg_asint).
+by rewrite (: asint x - p = (-1) * p + asint x) 1:#ring modzMDl pmod_small 1:rg_asint.
 qed.
 
 lemma inzmodK_centered x :
