@@ -2,7 +2,8 @@ require import AllCore IntDiv List.
 
 from Jasmin require import JModel.
 
-from CryptoSpecs require import JWordList FIPS202_Keccakf1600 FIPS202_SHA3_Spec.
+require import JWordList.
+from CryptoSpecs require import FIPS202_Keccakf1600 FIPS202_SHA3_Spec.
 
 from Keccak require import Keccakf1600.
 

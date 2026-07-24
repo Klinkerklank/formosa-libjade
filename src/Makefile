@@ -2,8 +2,7 @@
 #
 # Jasmin namespaces are resolved through JASMINPATH:
 #   Common -> per-implementation shared code (ML-DSA only)
-#   Keccak -> formosa-keccak, reached via the ./keccak symlink
-#             (-> ../submodules/formosa-keccak/src/amd64)
+#   Keccak -> in-tree src/fips202 (flattened from formosa-keccak)
 
 JASMINC ?= jasminc
 ARCH    ?= x86-64
@@ -27,7 +26,7 @@ else
   XARCH ?=
 endif
 
-KECCAK       := keccak
+KECCAK       := fips202
 MLDSA_COMMON := mldsa/avx2/common
 
 # ---- entry points -> output assembly -------------------------------------

@@ -688,7 +688,8 @@ qed.
 
 require import IntMin.
 require import EclibExtra.
-from CryptoSpecs require import JWordList Keccak1600_Spec.
+require import JWordList.
+from CryptoSpecs require import Keccak1600_Spec.
 
 (** parses a byte list into (candidate) coefficients *)
 op bytes2coeffs(bytes : W8.t list) : int list =

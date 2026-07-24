@@ -4,7 +4,7 @@
 
 REPO      := ../../../..
 SRC       := $(REPO)/src/mlkem/avx2
-KECCAK    := $(REPO)/submodules/formosa-keccak/src/amd64
+KECCAK    := $(REPO)/src/fips202
 JASMIN2EC := jasmin2ec
 
 COMMON_DEPS := $(wildcard $(SRC)/common/*.jinc) \

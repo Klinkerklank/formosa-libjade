@@ -120,7 +120,7 @@ block reads `freq governor: performance` across reboots.
 ## What the workflow runs
 
 `checkout` (no submodules) → explicit `submodule update --init` of the four
-`third_party` libs + `formosa-keccak` → **toolchain** (`opam install . --deps-only`
+`third_party` libs → **toolchain** (`opam install . --deps-only`
 from `jasmin-nist.opam` into the `jasmin-bench` switch) → `make -C src` +
 `make -C bench libs` → `make -C bench test` (KAT gate) → `make -C bench report` →
 append `bench.md` to `$GITHUB_STEP_SUMMARY`. The core to pin is auto-selected

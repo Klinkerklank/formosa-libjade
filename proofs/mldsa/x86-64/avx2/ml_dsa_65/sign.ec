@@ -20,7 +20,7 @@ require import Array2 Array32 Array48 Array64 Array128 Array256
 require import XArray5120 XWord4.
 
 require import BitEncoding.
-from CryptoSpecs require import JWordList.
+require import JWordList.
 import BitChunking.
 
 (* -------------------------------------------------------------------- *)

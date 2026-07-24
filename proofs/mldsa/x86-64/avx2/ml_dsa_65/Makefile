@@ -2,7 +2,7 @@ SOURCE = ../../../../../src/mldsa/avx2/65
 COMMON = ../../../../../src/mldsa/avx2/common
 OARRAYS = ../../../../arrays
 JASMIN2EC = jasmin2ec --output-array=$(OARRAYS)
-KECCAK = ../../../../../submodules/formosa-keccak/src/amd64
+KECCAK = ../../../../../src/fips202
 
 # --------------------------------------------------------------------
 all: ec
