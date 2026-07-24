@@ -263,7 +263,7 @@ proof.
 proc; simplify.
 if => //.
  auto => /> *.
- by rewrite /VPSLL_4u64 of_uintK modz_small /#.
+ by rewrite /VPSLL_4u64 /= !of_uintK !modz_small /#.
 by auto => /> *; rewrite !u64_shl0 pack4E /= -all_eqP /all_eq /=.
 qed.
 

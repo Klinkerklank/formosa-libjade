@@ -10,9 +10,11 @@ pragmas = -Warn:unused_unfold
 spec = common/avx2.spec
 
 idirs = JazzEC:../arrays
+rdirs = ../arrays
 rdirs = ../core
 
 rdirs = CryptoSpecs:spec
+rdirs = spec
 
 idirs = JazzEC:extracted
 idirs = common
