@@ -103,7 +103,9 @@ TEMPLATE = r"""<!doctype html>
   .legend .nm { flex: 1; color: var(--text-primary); overflow: hidden;
                 text-overflow: ellipsis; white-space: nowrap; }
   .legend .tm { color: var(--text-secondary); font-variant-numeric: tabular-nums; }
-  .hint { color: var(--muted); font-size: 12px; margin-top: 10px; }
+  .legend .usage { color: var(--muted); font-size: 12px; margin-top: 12px;
+                   line-height: 1.5; border-top: 1px solid var(--hairline);
+                   padding-top: 10px; }
   #crumbs { font-size: 13px; margin-top: 10px; color: var(--muted); }
   #crumbs a { color: var(--text-primary); cursor: pointer; text-decoration: none; }
   #crumbs a:hover { text-decoration: underline; }
@@ -121,8 +123,10 @@ TEMPLATE = r"""<!doctype html>
   path.arc:hover { filter: brightness(1.08); }
   text.albl { pointer-events: none; fill: #fff; font-size: 11px;
               dominant-baseline: central; }
-  text.center-t { fill: var(--text-primary); font-weight: 600; }
-  text.center-s { fill: var(--text-secondary); font-size: 12px; }
+  text.center-t { fill: var(--text-primary); font-weight: 600;
+                  pointer-events: none; }
+  text.center-s { fill: var(--text-secondary); font-size: 12px;
+                  pointer-events: none; }
   details { margin-top: 16px; border-top: 1px solid var(--hairline); padding-top: 10px; }
   summary { cursor: pointer; color: var(--text-secondary); font-size: 13px; }
   table { border-collapse: collapse; margin-top: 8px; width: 100%; font-size: 12.5px; }
@@ -141,9 +145,6 @@ TEMPLATE = r"""<!doctype html>
     <div id="chart"></div>
     <div class="legend" id="legend"></div>
   </div>
-  <div class="hint">Cumulative per-file checking time (a parallel run's wall
-    time is lower). Click a directory to zoom in; zoom out with the
-    breadcrumb above the chart (or by clicking the center).</div>
   <details><summary>All files as a table</summary>
     <table id="tbl"><thead><tr>
       <th>file</th><th class="n">seconds</th><th class="n">% of total</th>
@@ -191,9 +192,36 @@ function shade(hex, t) {
     Math.round(v + (s[i] - v) * t).toString(16).padStart(2, "0")).join("");
 }
 
+/* label ink for a given arc fill: dark on pale, white on saturated */
+function inkFor(hex) {
+  const [r, g, b] = [1, 3, 5].map(i => parseInt(hex.slice(i, i + 2), 16));
+  return 0.299 * r + 0.587 * g + 0.114 * b > 150 ? "#1a1a19" : "#ffffff";
+}
+
 /* ---- layout ---- */
 const W = 660, CX = W / 2, R0 = 52, RING = 46;
 let zoomRoot = root;
+
+/* zooming goes through the URL hash: #<path> deep-links a sub-category,
+   and back/forward navigate the zoom history */
+function zoomTo(node) {
+  const target = node === root ? "" : node.path;
+  if (decodeURIComponent(location.hash.replace(/^#/, "")) === target) return;
+  location.hash = target;   /* fires hashchange, which renders */
+}
+function applyHash() {
+  const h = decodeURIComponent(location.hash.replace(/^#/, ""));
+  let node = root;
+  if (h)
+    for (const seg of h.split("/")) {
+      const next = (node.children || []).find(k => k.name === seg);
+      if (!next) { node = root; break; }
+      node = next;
+    }
+  zoomRoot = node.children ? node : root;
+  render();
+}
+window.addEventListener("hashchange", applyHash);
 let maxDepth = 0;
 (function md(n) { maxDepth = Math.max(maxDepth, n.depth); (n.children || []).forEach(md); })(root);
 
@@ -240,7 +268,8 @@ function render() {
     if (node !== zoomRoot) {
       const r0 = R0 + ring * RING, r1 = r0 + RING - 2;
       const base = famColor(famOf(node));
-      const t = Math.min(0.62, 0.16 * (node.depth - 1));
+      const rel = node.depth - zoomRoot.depth;
+      const t = Math.min(0.62, 0.16 * (rel - 1));
       const fill = node.children ? shade(base, t) : shade(base, Math.min(0.7, t + 0.10));
       const path = el("path", {
         d: arcPath(a0, a1, r0, r1), fill, class: "arc",
@@ -259,14 +288,14 @@ function render() {
       });
       path.addEventListener("mouseleave", () => tip.style.display = "none");
       path.addEventListener("click", () => {
-        if (node.children) { zoomRoot = node; render(); }
+        if (node.children) zoomTo(node);
       });
       svg.appendChild(path);
 
       /* direct label following the arc's curve, one consistent (clockwise)
-         reading direction for every label */
+         reading direction for every label (directories and files alike) */
       const span = a1 - a0, rm = (r0 + r1) / 2, arcLen = span * rm;
-      if (node.children && arcLen > 34) {
+      if (arcLen > 34) {
         const p = (a, r) => [CX + r * Math.sin(a), CX - r * Math.cos(a)];
         const large = span > Math.PI ? 1 : 0;
         const [xs, ys] = p(a0, rm);
@@ -278,6 +307,7 @@ function render() {
         });
         svg.appendChild(guide);
         const txt = el("text", { class: "albl" });
+        txt.style.fill = inkFor(fill);
         const tp = el("textPath", { href: "#" + id, startOffset: "50%",
                                     "text-anchor": "middle" });
         tp.textContent = node.name;
@@ -306,8 +336,7 @@ function render() {
       let up = root;
       const parts = zoomRoot.path.split("/"); parts.pop();
       for (const p of parts) up = up.children.find(k => k.name === p) || up;
-      zoomRoot = zoomRoot.path.includes("/") ? up : root;
-      render();
+      zoomTo(zoomRoot.path.includes("/") ? up : root);
     }
   });
   svg.appendChild(c);
@@ -353,7 +382,7 @@ function render() {
     } else {
       const a = document.createElement("a");
       a.textContent = node.name;
-      a.addEventListener("click", () => { zoomRoot = node; render(); });
+      a.addEventListener("click", () => zoomTo(node));
       cr.appendChild(a);
     }
   });
@@ -361,15 +390,33 @@ function render() {
   /* legend */
   const lg = document.getElementById("legend");
   lg.innerHTML = "";
+  {
+    const row = document.createElement("div"); row.className = "row";
+    row.innerHTML =
+      `<span class="sw" style="background:var(--muted)"></span>` +
+      `<span class="nm">${root.name}</span>` +
+      `<span class="tm">${fmt(root.seconds)} · 100%</span>`;
+    row.addEventListener("click", () => zoomTo(root));
+    lg.appendChild(row);
+  }
   for (const f of root.children) {
     const row = document.createElement("div"); row.className = "row";
     row.innerHTML =
       `<span class="sw" style="background:${famColor(f.name)}"></span>` +
       `<span class="nm">${f.name}</span>` +
       `<span class="tm">${fmt(f.seconds)} · ${(100 * f.seconds / total).toFixed(0)}%</span>`;
-    row.addEventListener("click", () => { zoomRoot = f; render(); });
+    row.addEventListener("click", () => zoomTo(f));
     lg.appendChild(row);
   }
+  const usage = document.createElement("div");
+  usage.className = "usage";
+  usage.textContent =
+    "Click a slice or a legend entry to zoom in. Zoom out with the " +
+    "breadcrumb, or click the central disc to go up one level. Zooming " +
+    "updates the page URL, so copying it links directly to the current " +
+    "view. Times are cumulative per file (a parallel run's wall time is " +
+    "lower).";
+  lg.appendChild(usage);
 }
 
 /* subtitle from meta */
@@ -403,7 +450,7 @@ function render() {
   }
 })();
 
-render();
+applyHash();
 matchMedia("(prefers-color-scheme: dark)").addEventListener("change", render);
 new MutationObserver(render).observe(document.documentElement,
   { attributes: true, attributeFilter: ["data-theme"] });
