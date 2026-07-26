@@ -52,6 +52,44 @@ jobs:
         run: $ECDEV easycrypt config
 
       # All scenarios (the Makefile's default target) in one runtest
-      # invocation.
+      # invocation, with a per-file timing report.
       - name: Check proofs
-        run: $ECDEV make -C proofs JOBS=10
+        run: $ECDEV make -C proofs JOBS=10 ECFLAGS='-report timing.yml'
+
+      # Timing pipeline: runtest report -> timing JSON -> sunburst page,
+      # published as a run artifact.
+      - name: Timing sunburst
+        run: |
+          $ECDEV python3 scripts/timing-report-to-json.py proofs/timing.yml proofs-timing.json
+          $ECDEV python3 scripts/timing-sunburst.py proofs-timing.json proofs-timing.html
+
+      - name: Upload timing artifact
+        uses: actions/upload-artifact@v7
+        with:
+          name: proofs-timing
+          path: |
+            proofs/timing.yml
+            proofs-timing.json
+            proofs-timing.html
+
+      # Publish the sunburst to the public Pages companion repo
+      # (https://github.com/strub/jasmin-nist-timing). Only on pushes to
+      # main, so PR runs never touch the deploy key.
+      - name: Publish sunburst
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+        env:
+          DEPLOY_KEY: ${{ secrets.TIMING_DEPLOY_KEY }}
+        run: |
+          key="$RUNNER_TEMP/timing_deploy_key"
+          printf '%s\n' "$DEPLOY_KEY" > "$key" && chmod 600 "$key"
+          export GIT_SSH_COMMAND="ssh -i $key -o IdentitiesOnly=yes -o StrictHostKeyChecking=accept-new"
+          site="$RUNNER_TEMP/timing-site"
+          rm -rf "$site"
+          git clone -q --depth 1 git@github.com:strub/jasmin-nist-timing.git "$site"
+          cp proofs-timing.html "$site/index.html"
+          cp proofs-timing.json "$site/"
+          git -C "$site" add -A
+          git -C "$site" -c user.name='proofs-ci' \
+              -c user.email='proofs-ci@users.noreply.github.com' \
+              commit -qm "timing: $GITHUB_SHA" --allow-empty
+          git -C "$site" push -q
