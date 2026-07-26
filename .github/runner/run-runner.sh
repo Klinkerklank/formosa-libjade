@@ -1,37 +1,60 @@
 #!/usr/bin/env bash
 # Build the image and supervise a truly ephemeral runner instance: one fresh
-# container per job. One supervisor per instance (bench, proofs, ...); every
-# instance-identifying variable is MANDATORY so no unit can silently run under
-# another instance's identity:
+# container per job. One supervisor per bench machine (bench-skylake, ...).
+# Each iteration runs `docker run --rm`, and the in-container agent
+# registers as `--ephemeral`, so it serves exactly one job and exits; the
+# container is then removed and the loop starts a brand-new one. Nothing
+# survives between jobs (fresh _work *and* fresh $HOME). This runs in the
+# foreground and loops forever -- supervise it with the matching systemd unit
+# so it starts on boot and restarts if the loop itself dies.
 #
-#   REPO=strub/jasmin-nist ACCESS_TOKEN=<PAT> \
-#   LABELS=bench NAME=bench-runner CPUSET=7 ./run-runner.sh
+# All configuration comes from the environment (the systemd units load it
+# from ~/.config/<instance>/env). This is the ONLY place these variables are
+# documented:
 #
-# Each iteration runs `docker run --rm`, and the in-container agent registers as
-# `--ephemeral`, so it serves exactly one job and exits; the container is then
-# removed and the loop starts a brand-new one. Nothing survives between jobs
-# (fresh _work *and* fresh $HOME opam root). This runs in the foreground and
-# loops forever -- supervise it with the matching systemd unit
-# (bench-runner.service / proofs-runner.service) so it starts on boot and
-# restarts if the loop itself dies.
+#   REPO         (required)  owner/name of the GitHub repository
+#   ACCESS_TOKEN (required)  PAT able to create runner registration tokens
+#                            (classic `repo` scope, or fine-grained with
+#                            repository "Administration: write"). Only minted
+#                            into short-lived registration tokens; never
+#                            handed to the runner agent itself.
+#   LABELS       (required)  runner label(s) this instance advertises
+#                            (e.g. bench-skylake)
+#   NAME         (required)  instance name: container name and runner-name
+#                            prefix. MUST be unique per host -- the loop
+#                            starts with `docker rm -f $NAME`, so two
+#                            supervisors sharing a name kill each other's
+#                            containers.
+#   CPUSET       (optional)  pin the container to these cpu(s), forwarded as
+#                            CPU= so taskset targets the same core(s)
+#                            (recommended for stable bench cycles; the CPU
+#                            governor is a host setting, see README.md)
+#   MOUNT_NIX    (optional)  =1 shares the host's nix store with the job
+#                            containers: /nix is bind-mounted read-only and
+#                            builds go through the host's nix-daemon (its
+#                            socket is re-mounted read-write over the ro
+#                            store mount), so the store stays root-owned and
+#                            immutable from the job's point of view and jobs
+#                            cannot poison the toolchain for later jobs.
+#                            Requires a multi-user nix install on the host
+#                            (see README.md).
+#   IMAGE        (optional)  docker image tag to build and run
+#                            (default: jasmin-nist-runner)
 #
-# CPUSET (optional) pins the container to a core (recommended for stable bench
-# cycles; leave unset for the proofs instance) and is passed through as CPU= so
-# taskset targets the same core. The CPU governor is a host setting (see
-# README.md) -- not something the container changes.
+# Example (foreground test):
+#
+#   REPO=<owner>/<repo> ACCESS_TOKEN=<PAT> \
+#   LABELS=bench-skylake NAME=bench-runner CPUSET=7 MOUNT_NIX=1 ./run-runner.sh
 set -euo pipefail
 cd "$(dirname "$0")"
 
 REPO="${REPO:?set REPO=owner/name}"
 ACCESS_TOKEN="${ACCESS_TOKEN:?set ACCESS_TOKEN=<PAT that can create runner registration tokens>}"
-# Runner label(s) this instance advertises (bench, proofs, ...).
-LABELS="${LABELS:?set LABELS=<runner label(s), e.g. bench or proofs>}"
-# Instance name: container name and runner-name prefix. MUST be unique per
-# instance on a host -- the loop starts with `docker rm -f $NAME`, so two
-# supervisors sharing a name kill each other's containers.
-NAME="${NAME:?set NAME=<unique instance name, e.g. bench-runner>}"
+LABELS="${LABELS:?set LABELS=<runner label(s)>}"
+NAME="${NAME:?set NAME=<unique instance name>}"
 CPUSET="${CPUSET:-}"
-IMAGE="${IMAGE:-jasmin-ci-runner}"
+MOUNT_NIX="${MOUNT_NIX:-}"
+IMAGE="${IMAGE:-jasmin-nist-runner}"
 
 docker build -t "$IMAGE" .
 
@@ -45,7 +68,7 @@ while [ "$running" = 1 ]; do
   docker rm -f "$NAME" >/dev/null 2>&1 || true
   # No --privileged, no docker socket: the workflow needs neither, and granting
   # them would defeat the container's isolation. --rm discards the container
-  # (and its opam root) the moment the one-shot ephemeral job finishes.
+  # the moment the one-shot ephemeral job finishes.
   #
   # Run in the background and `wait`: bash only handles signals between
   # foreground commands, so a foreground `docker run` would defer the TERM
@@ -55,6 +78,9 @@ while [ "$running" = 1 ]; do
   # unit's cgroup, so systemd cannot kill it directly).
   docker run --rm --name "$NAME" \
       ${CPUSET:+--cpuset-cpus="$CPUSET" -e CPU="$CPUSET"} \
+      ${MOUNT_NIX:+-v /nix:/nix:ro \
+        -v /nix/var/nix/daemon-socket:/nix/var/nix/daemon-socket \
+        -e NIX_REMOTE=daemon} \
       -e REPO="$REPO" \
       -e ACCESS_TOKEN="$ACCESS_TOKEN" \
       -e LABELS="$LABELS" \

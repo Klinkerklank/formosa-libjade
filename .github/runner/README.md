@@ -1,13 +1,19 @@
-# Self-hosted runners (bench + proofs)
+# Self-hosted bench runners
 
-One-time setup for the machine that runs [`.github/workflows/bench.yml`](../.github/workflows/bench.yml).
-The workflow benchmarks the backends and writes the report to the run's Job
-Summary; everything here is the host-side provisioning it assumes.
+Host-side provisioning for the machines behind
+[`bench.yml`](../workflows/bench.yml) (cycle benchmarks): one **matrix job
+per bench machine**, each machine's runner advertising a
+`bench-<microarchitecture>` label (e.g. `bench-skylake`) and running one
+ephemeral container per job.
 
-## Security model (this is a public repo)
+The workflow builds its toolchain from the repo's `flake.nix` (derived from
+`jasmin-nist.opam` via opam-nix) with `nix develop`; nothing is cached on
+the GitHub side.
 
-A self-hosted runner executes job code on your machine, so on a **public** repo
-it is an RCE vector. The workflow is built to contain that:
+## Security model (designed for a public repo)
+
+A self-hosted runner executes job code on your machine, so on a **public**
+repo it is an RCE vector. The bench workflow is built to contain that:
 
 - **No fork code ever runs** (the primary defense). PR runs are gated on the
   `bench` *label* **and** `head.repo == this repo`, so only branches pushed into
@@ -29,24 +35,30 @@ Operational rules:
 - Do **not** relax the `head.repo == this repo` gate to bench forks unless you
   fully accept arbitrary-code execution on this host.
 
-## Option A — containerized runner (recommended)
+## Bench machine — containerized runner
 
-This directory builds a small image with the runner agent + a C/opam
-toolchain. `run-runner.sh` then supervises a loop that starts **one fresh
+This directory builds a small image with the runner agent and basic system
+tooling. `run-runner.sh` then supervises a loop that starts **one fresh
 container per job**: each iteration is `docker run --rm` with the in-container
 agent registered `--ephemeral`, so it serves a single job and exits, the
 container (and its whole filesystem) is removed, and the next job gets a
-brand-new one. Job code never touches the host filesystem and nothing — not
-`_work`, not `$HOME`/opam root — persists between jobs. The image does **not**
-contain jasmin/EasyCrypt — the workflow installs those from `jasmin-nist.opam`
-(so a version bump needs no image rebuild).
+brand-new one. Job code never touches the host filesystem and nothing in
+`$HOME` or `_work` persists between jobs.
+
+The toolchain (jasminc + the pinned C compiler from `devShells.bench`) is
+**not** in the image: jobs get it via `nix develop`, served by the host's nix
+store shared into the container (`MOUNT_NIX=1`, below) — so a jasmin or
+compiler bump changes `flake.lock`, never the image.
 
 For a quick manual test you can run the loop in the foreground:
 
 ```
 cd .github/runner
-REPO=strub/jasmin-nist ACCESS_TOKEN=<PAT> LABELS=bench NAME=bench-runner ./run-runner.sh   # Ctrl-C to stop
+REPO=<owner>/<repo> ACCESS_TOKEN=<PAT> LABELS=bench-skylake NAME=bench-runner MOUNT_NIX=1 ./run-runner.sh   # Ctrl-C to stop
 ```
+
+All instance variables (required and optional) are documented in one place:
+**the header of [`run-runner.sh`](run-runner.sh)**.
 
 For a persistent runner, supervise it with the provided systemd **user** unit
 so it starts on boot and restarts if the loop dies (this replaces docker's
@@ -56,54 +68,45 @@ so it starts on boot and restarts if the loop dies (this replaces docker's
 loginctl enable-linger "$USER"
 mkdir -p ~/.config/systemd/user ~/.config/bench-runner
 cp bench-runner.service ~/.config/systemd/user/
-printf 'REPO=strub/jasmin-nist\nACCESS_TOKEN=<PAT>\nLABELS=bench\nNAME=bench-runner\nCPUSET=7\n' > ~/.config/bench-runner/env
+printf 'REPO=<owner>/<repo>\nACCESS_TOKEN=<PAT>\nLABELS=bench-skylake\nNAME=bench-runner\nCPUSET=7\nMOUNT_NIX=1\n' > ~/.config/bench-runner/env
 chmod 600 ~/.config/bench-runner/env
 # edit ExecStart in the unit to point at this checkout, then:
 systemctl --user daemon-reload
 systemctl --user enable --now bench-runner        # logs: journalctl --user -u bench-runner -f
 ```
 
-- `ACCESS_TOKEN` is a PAT allowed to create runner registration tokens (classic
-  `repo` scope, or a fine-grained token with repository **Administration: write**).
-  `entrypoint.sh` mints a short-lived registration token from it each start, so
-  the PAT is never given to the runner agent. Pass it via env / the unit's
-  `EnvironmentFile` — do not commit it.
-- `CPUSET=<core>` pins the container to one core and forwards it to the bench as
-  `CPU=`; omit to let the Makefile's `taskset` pin. Under rootless Docker
-  `--cpuset-cpus` needs a `Delegate=cpuset` drop-in, so leaving it unset is
-  simplest (the in-container `taskset` still pins).
-- The container needs **no `--privileged`** and **no docker socket** (the
-  workflow is plain `make`/`cc`); `run-runner.sh` grants neither.
-- **Every job rebuilds the toolchain** (OCaml + jasmin + EasyCrypt) in the fresh
-  container, since nothing is persisted — wire up GitHub Actions caching (e.g.
-  an `~/.opam` cache keyed on `jasmin-nist.opam`) in the workflow if that gets
-  slow. Do **not** reintroduce persistence in the runner (a persisted `$HOME`
-  is exactly what made the toolchain silently survive before).
+Operational notes:
 
-## Option B — bare-metal runner
+- The PAT goes in the unit's `EnvironmentFile` (as above) — do not commit it.
+- Under rootless Docker `--cpuset-cpus` needs a `Delegate=cpuset` drop-in, so
+  leaving `CPUSET` unset is simplest (the in-container `taskset` still pins).
+- The container needs **no `--privileged`** and **no docker socket**;
+  `run-runner.sh` grants neither.
+- Do **not** reintroduce a persisted `$HOME` in the runner (a persisted
+  `$HOME` is exactly what made the opam-era toolchain silently survive
+  between jobs); the nix store sharing below is the supported way to carry
+  the toolchain.
 
-Install the GitHub Actions runner agent for `strub/jasmin-nist` (Settings →
-Actions → Runners → New self-hosted runner) and configure it as a dedicated
-unprivileged user with the `bench` label so `runs-on: [self-hosted, linux, x64,
-bench]` matches:
+## Sharing the host nix store with job containers (`MOUNT_NIX=1`)
+
+On an ephemeral-container runner the job needs a nix store that survives
+between jobs; share the **host's** store instead of caching.
+
+One-time host setup (multi-user nix, daemon mode — run as a sudo-capable
+user; the Debian `nix-bin` package does *not* fit here, its nix lives outside
+`/nix` and its socket is group-gated):
 
 ```
-./config.sh --url https://github.com/strub/jasmin-nist --token <TOKEN> --labels bench
-./run.sh        # or install as a service: sudo ./svc.sh install <user> && sudo ./svc.sh start
+sh <(curl -L https://nixos.org/nix/install) --daemon
 ```
 
-The runner user just needs `opam` plus a C toolchain (`build-essential`,
-`m4`, `pkg-config`, `libgmp-dev`), `python3`, `git`, and `make` on `PATH`. The
-**workflow itself** creates the `jasmin-bench` switch (name = `CI_OPAM_SWITCH`)
-and runs `opam install . --deps-only` (jasmin + EasyCrypt) against the checkout,
-using the runner's default opam root (`~/.opam`), which on a persistent bare-metal
-runner survives across jobs — so the toolchain build is naturally reused there.
+Then set `MOUNT_NIX=1` in the instance env (e.g. `~/.config/bench-runner/env`)
+and restart the unit (what the flag mounts, and why this preserves the
+isolation model, is documented with the variable in `run-runner.sh`).
+Occasional `nix-collect-garbage --delete-older-than 30d` on the host keeps
+the store bounded.
 
-(True `--ephemeral` on bare metal needs an autoscaler to re-register after each
-job; for one fixed box, run persistently and rely on the same-repo gate — or use
-Option A, which gives ephemeral cleanly.)
-
-## Frequency (stable cycle counts) — host, both options
+## Frequency (stable cycle counts) — host setting
 
 The workflow does not change CPU frequency (no sudo in CI); it relies on the
 core-pinning + warm-up in the Makefile. For stable numbers, pin the governor
@@ -117,11 +120,12 @@ echo 1 > /sys/devices/system/cpu/intel_pstate/no_turbo   # lock to base clock
 Make it persistent with a `systemd` unit or `tuned` so the report's Environment
 block reads `freq governor: performance` across reboots.
 
-## What the workflow runs
+## What the bench workflow runs
 
-`checkout` (no submodules) → explicit `submodule update --init` of the four
-`third_party` libs → **toolchain** (`opam install . --deps-only`
-from `jasmin-nist.opam` into the `jasmin-bench` switch) → `make -C src` +
-`make -C bench libs` → `make -C bench test` (KAT gate) → `make -C bench report` →
-append `bench.md` to `$GITHUB_STEP_SUMMARY`. The core to pin is auto-selected
-(highest-max-MHz core); override per run with the Makefile's `CPU=` if needed.
+Per matrix job (one per `bench-*` machine): `checkout` (with submodules — the
+`third_party` reference implementations) → **toolchain** (`nix develop .#bench`
+against the shared host store; seconds when warm) → `make -C src` +
+`make -C bench libs` → `make -C bench test` (KAT gate) → `make -C bench report`
+→ append `bench.md` to that job's `$GITHUB_STEP_SUMMARY`. The core to pin is
+auto-selected (highest-max-MHz core); override per run with the Makefile's
+`CPU=` if needed.

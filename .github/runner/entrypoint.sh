@@ -3,13 +3,15 @@
 # supervisor (run-runner.sh) launches this with `docker run --rm`, so container
 # exit removes it and a fresh container is started for the next job -- nothing
 # persists across jobs. A short-lived registration token is minted from
-# $ACCESS_TOKEN each start, so the PAT itself is never handed to the runner agent.
+# $ACCESS_TOKEN each start, so the PAT itself is never handed to the runner
+# agent. All variables are set by the supervisor and documented in
+# run-runner.sh.
 set -euo pipefail
 
-: "${REPO:?set REPO=owner/name (e.g. strub/jasmin-nist)}"
-: "${ACCESS_TOKEN:?set ACCESS_TOKEN to a PAT that can create runner registration tokens}"
-LABELS="${LABELS:?set LABELS=<runner label(s), e.g. bench or proofs>}"
-NAME="${RUNNER_NAME:?set RUNNER_NAME=<unique runner name>}"
+REPO="${REPO:?see run-runner.sh}"
+ACCESS_TOKEN="${ACCESS_TOKEN:?see run-runner.sh}"
+LABELS="${LABELS:?see run-runner.sh}"
+NAME="${RUNNER_NAME:?see run-runner.sh}"
 
 reg_token() {
   curl -fsSL -X POST \
@@ -18,6 +20,12 @@ reg_token() {
     "https://api.github.com/repos/${REPO}/actions/runners/registration-token" \
     | jq -r .token
 }
+
+# When the supervisor shares the host nix store (MOUNT_NIX=1), expose the
+# host's default nix profile so job steps find the `nix` CLI on PATH.
+if [ -d /nix/var/nix/profiles/default/bin ]; then
+  export PATH="$PATH:/nix/var/nix/profiles/default/bin"
+fi
 
 TOKEN="$(reg_token)"
 [ -n "$TOKEN" ] && [ "$TOKEN" != null ] || { echo "failed to mint registration token" >&2; exit 1; }

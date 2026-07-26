@@ -18,6 +18,14 @@ concurrency:
   group: bench
   cancel-in-progress: false
 
+# The toolchain (jasminc + a pinned C compiler) comes from flake.nix's bench
+# shell, served by the host's shared nix store (MOUNT_NIX=1 on the runner
+# instance; see .github/runner/README.md). --impure lets the flake's easycrypt
+# pin-depends resolve (bench never builds it, but the solver sees it).
+env:
+  NIX_CONFIG: 'experimental-features = nix-command flakes'
+  BENCHDEV: nix develop .#bench --impure --command
+
 jobs:
   bench:
     # dispatch/push run unconditionally; a PR runs only when a maintainer has
@@ -27,7 +35,13 @@ jobs:
       github.event_name != 'pull_request_target' ||
       (contains(github.event.pull_request.labels.*.name, 'bench') &&
        github.event.pull_request.head.repo.full_name == github.repository)
-    runs-on: [self-hosted, linux, x64, bench]
+    # One job per bench machine; each runner instance advertises a bench-<cpu>
+    # label naming its microarchitecture (E3-1245 v5 = Skylake).
+    strategy:
+      fail-fast: false
+      matrix:
+        runner: [bench-skylake]
+    runs-on: [self-hosted, linux, x64, '${{ matrix.runner }}']
     steps:
       - name: Checkout
         uses: actions/checkout@v7
@@ -39,44 +53,28 @@ jobs:
                 && github.event.pull_request.head.sha
                 || github.sha }}
 
-      - name: Opam cache
-        uses: actions/cache@v6
-        with:
-          path: ~/.opam
-          key: opam-${{ runner.environment }}-${{ runner.os }}-${{ hashFiles('.ocaml-version', 'jasmin-nist.opam') }}-${{ github.run_id }}
-          restore-keys: |
-            opam-${{ runner.environment }}-${{ runner.os }}-${{ hashFiles('.ocaml-version', 'jasmin-nist.opam') }}-
-
+      # Builds (or reuses from the host store) the bench toolchain.
       - name: Toolchain
-        run: |
-          opam init --bare --disable-sandboxing -y >/dev/null 2>&1 || true
-          opam switch jasmin-bench >/dev/null 2>&1 \
-            || opam switch create jasmin-bench "$(cat .ocaml-version)"
-          opam update -y                         # advance the easycrypt git pin
-          opam install . --deps-only -y          # jasmin + easycrypt
-          echo "$(opam var --switch=jasmin-bench bin)" >> "$GITHUB_PATH"
-          opam env --switch=jasmin-bench \
-            | sed -nE "s/^([A-Za-z_]+)='(.*)'; export.*/\1=\2/p" \
-            | grep -v '^PATH=' >> "$GITHUB_ENV"
+        run: $BENCHDEV true
 
       - name: Versions
         run: |
-          jasminc -version
-          cc --version | head -1
+          $BENCHDEV jasminc -version
+          $BENCHDEV cc --version | head -1
 
       - name: Build
         run: |
-          make -C src
-          make -C bench libs
+          $BENCHDEV make -C src
+          $BENCHDEV make -C bench libs
 
       # Correctness gate: fail before benching if any backend diverges from KAT.
       - name: KAT
         run: >-
-          make -C bench test
+          $BENCHDEV make -C bench test
           BACKENDS='jasmin mlkem-native mldsa-native pqcrystals pqcrystals-ref'
 
       - name: Benchmark + report
-        run: make -C bench report
+        run: $BENCHDEV make -C bench report
 
       - name: Publish to job summary
         run: cat bench/bench.md >> "$GITHUB_STEP_SUMMARY"

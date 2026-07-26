@@ -18,9 +18,14 @@ concurrency:
   group: proofs-${{ github.ref }}
   cancel-in-progress: true
 
+# The toolchain (jasmin + EasyCrypt + provers + python) comes from flake.nix,
+# itself derived from jasmin-nist.opam via opam-nix; the host's /nix/store
+# carries it between jobs, so there is nothing to cache on the GitHub side.
+# --impure lets the easycrypt pin-depends follow its branch HEAD (the
+# equivalent of `opam update` advancing the pin).
 env:
-  Z3_VERSION: 4.13.4
-  CVC5_VERSION: 1.3.2
+  NIX_CONFIG: 'experimental-features = nix-command flakes'
+  ECDEV: nix develop --impure --command
 
 jobs:
   check-ec-proofs:
@@ -33,59 +38,20 @@ jobs:
           submodules: false
           persist-credentials: false
 
-      - name: Opam cache
-        uses: actions/cache@v6
-        with:
-          path: ~/.opam
-          key: opam-${{ runner.environment }}-${{ runner.os }}-${{ hashFiles('.ocaml-version', 'jasmin-nist.opam') }}-${{ github.run_id }}
-          restore-keys: |
-            opam-${{ runner.environment }}-${{ runner.os }}-${{ hashFiles('.ocaml-version', 'jasmin-nist.opam') }}-
-
+      # Builds (or reuses from the store) the whole toolchain; this is the
+      # long step on a cold store or after an easycrypt pin advance.
       - name: Toolchain
-        run: |
-          opam init --bare --disable-sandboxing -y >/dev/null 2>&1 || true
-          opam switch proofs >/dev/null 2>&1 \
-            || opam switch create proofs "$(cat .ocaml-version)"
-          opam update -y                         # advance the easycrypt git pin
-          opam install . --deps-only -y          # jasmin + easycrypt
-          echo "$(opam var --switch=proofs bin)" >> "$GITHUB_PATH"
-          opam env --switch=proofs \
-            | sed -nE "s/^([A-Za-z_]+)='(.*)'; export.*/\1=\2/p" \
-            | grep -v '^PATH=' >> "$GITHUB_ENV"
-
-      - name: Prover cache
-        uses: actions/cache@v6
-        with:
-          path: ~/provers
-          key: provers-${{ runner.os }}-z3-${{ env.Z3_VERSION }}-cvc5-${{ env.CVC5_VERSION }}
-
-      - name: Provers
-        run: |
-          mkdir -p "$HOME/provers/bin"
-          if [ ! -x "$HOME/provers/bin/z3" ]; then
-            curl -fsSL -o z3.zip \
-              "https://github.com/Z3Prover/z3/releases/download/z3-$Z3_VERSION/z3-$Z3_VERSION-x64-glibc-2.35.zip"
-            unzip -q z3.zip
-            cp "z3-$Z3_VERSION-x64-glibc-2.35/bin/z3" "$HOME/provers/bin/"
-            rm -rf z3.zip "z3-$Z3_VERSION-x64-glibc-2.35"
-          fi
-          if [ ! -x "$HOME/provers/bin/cvc5" ]; then
-            curl -fsSL -o cvc5.zip \
-              "https://github.com/cvc5/cvc5/releases/download/cvc5-$CVC5_VERSION/cvc5-Linux-x86_64-static.zip"
-            unzip -q cvc5.zip
-            cp cvc5-Linux-x86_64-static/bin/cvc5 "$HOME/provers/bin/"
-            rm -rf cvc5.zip cvc5-Linux-x86_64-static
-          fi
-          echo "$HOME/provers/bin" >> "$GITHUB_PATH"
+        run: $ECDEV true
 
       - name: Why3 configuration
         run: |
-          z3 --version
-          cvc5 --version | head -1
-          easycrypt why3config
+          $ECDEV sh -c 'z3 --version; cvc5 --version | head -1'
+          $ECDEV easycrypt why3config
 
       - name: EasyCrypt configuration
-        run: easycrypt config
+        run: $ECDEV easycrypt config
 
+      # All scenarios (the Makefile's default target) in one runtest
+      # invocation.
       - name: Check proofs
-        run: make -C proofs JOBS=10
+        run: $ECDEV make -C proofs JOBS=10

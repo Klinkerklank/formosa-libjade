@@ -1,23 +1,7 @@
 # Rootless systemd *user* unit that supervises the ephemeral bench runner loop.
 # It replaces docker's --restart=always: run-runner.sh gives a fresh container
 # per job, and this keeps that loop alive across crashes and reboots.
-#
-# Install (as the dedicated runner user, with lingering enabled so it survives
-# logout/reboot):
-#
-#   loginctl enable-linger "$USER"
-#   mkdir -p ~/.config/systemd/user ~/.config/bench-runner
-#   cp bench-runner.service ~/.config/systemd/user/
-#   # secrets + config, kept out of git and the process list; LABELS and NAME
-#   # are mandatory and must be unique per instance on a host:
-#   printf 'REPO=strub/jasmin-nist\nACCESS_TOKEN=<PAT>\nLABELS=bench\nNAME=bench-runner\nCPUSET=7\n' \
-#       > ~/.config/bench-runner/env
-#   chmod 600 ~/.config/bench-runner/env
-#   # point ExecStart at your checkout, then:
-#   systemctl --user daemon-reload
-#   systemctl --user enable --now bench-runner
-#
-# Logs: journalctl --user -u bench-runner -f
+# Install instructions: README.md; instance variables: run-runner.sh.
 [Unit]
 Description=Ephemeral bench GitHub Actions runner (fresh container per job)
 After=default.target

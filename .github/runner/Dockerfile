@@ -1,23 +1,20 @@
 # Containerized self-hosted GitHub Actions runner for the bench workflow.
 #
-# The image carries only the stable pieces: the runner agent, a C toolchain,
-# python/git/make/taskset, and opam. It deliberately does NOT install jasmin or
-# EasyCrypt -- the workflow installs those from the repo's jasmin-nist.opam each
-# run (they change often), so a version bump needs no image rebuild. Build
-# caching is handled by the workflow, not here.
+# The image carries only the runner agent and basic system tooling (git,
+# curl/jq for the entrypoint, taskset). The build toolchain is NOT in the
+# image: jobs get it from the repo's flake.nix via `nix develop`, served by
+# the host's nix store shared into the container (MOUNT_NIX=1 in
+# run-runner.sh) -- so a toolchain bump changes flake.lock, never the image.
 #
 # No Docker-in-Docker is needed (the workflow is plain make/cc). Run WITHOUT
 # --privileged and WITHOUT mounting the docker socket.
 FROM ubuntu:22.04
 
 ENV DEBIAN_FRONTEND=noninteractive
-# build-essential/opam for the toolchain the workflow installs; m4/pkg-config/
-# libgmp-dev are the usual system deps of the OCaml stack (zarith etc.) so opam
-# does not need to shell out for depexts (it has no sudo in the container).
+# git for actions/checkout (submodules), curl/jq for the entrypoint and the
+# agent download below, util-linux for taskset (bench core pinning).
 RUN apt-get update && apt-get install -y --no-install-recommends \
-        build-essential python3 git make opam curl jq util-linux unzip \
-        ca-certificates m4 pkg-config autoconf \
-        libgmp-dev libmpfr-dev libpcre2-dev libppl-dev zlib1g-dev \
+        git curl jq ca-certificates util-linux \
     && rm -rf /var/lib/apt/lists/*
 
 # The runner agent must not run as root; use a dedicated unprivileged user.
