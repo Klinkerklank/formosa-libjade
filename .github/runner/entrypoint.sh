@@ -31,7 +31,8 @@ TOKEN="$(reg_token)"
 [ -n "$TOKEN" ] && [ "$TOKEN" != null ] || { echo "failed to mint registration token" >&2; exit 1; }
 
 cleanup() {
-  # An ephemeral runner usually deregisters itself; this is best-effort backup.
+  # Best-effort deregistration if we fail before handing over to the agent
+  # (after the exec below, an ephemeral runner deregisters itself).
   ./config.sh remove --token "$(reg_token)" >/dev/null 2>&1 || true
 }
 trap cleanup EXIT
@@ -43,4 +44,8 @@ trap cleanup EXIT
     --labels "${LABELS}" \
     --name "${NAME}"
 
+# Job steps run as this same user and could read the agent's environment via
+# /proc; drop the PAT (and the spent registration token) before handing over.
+# (exec never runs the EXIT trap, so cleanup loses nothing here.)
+unset ACCESS_TOKEN TOKEN
 exec ./run.sh
