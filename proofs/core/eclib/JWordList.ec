@@ -612,7 +612,7 @@ have L: forall k',
  move=> Hn Hn' IH _.
  rewrite Ring.IntID.mulrSl -cat_nseq 1..2:/#.
  rewrite SSSs_from_TTTs_cat.
-  by rewrite size_nseq /#.
+  by rewrite size_nseq ler_maxr 1:#smt:(mulr_ge0); apply dvdz_mull; exact dvdzz.
  rewrite IH 1:/# -!cat_nseq 1..2:/# nseq1; congr.
  rewrite /SSSs_from_TTTs chunkifyE 1:/#.
  rewrite size_nseq ler_maxr 1:/# dvdzz /=.
@@ -621,7 +621,7 @@ have L: forall k',
  by rewrite /= SSS_from_TTTs_nseq0 /#.
 rewrite {1}(divz_eq k n) -cat_nseq 1..2:/#.
 rewrite SSSs_from_TTTs_cat.
- by rewrite size_nseq /#.
+ by rewrite size_nseq ler_maxr 1:#smt:(divz_ge0); apply dvdz_mull; exact dvdzz.
 rewrite -cat_nseq 1..2:/# L 1..2:/#; congr.
  smt().
 rewrite dvdzE.

@@ -1,29 +1,30 @@
 name: bench
 
 # Runs the cycle benchmark on a self-hosted runner (label "bench") and publishes
-# the report to the workflow run's Job Summary. See bench/RUNNER.md for runner
+# the report to the workflow run's Job Summary. See .github/runner/README.md for runner
 # provisioning and the public-repo security model.
 
 on:
   workflow_dispatch:
   push:
-    branches: [main]
+    branches: [main, 'ci-*']
   pull_request_target:
     types: [labeled, synchronize]
 
-# Least privilege: the job only reads the tree and writes the run summary.
 permissions:
   contents: read
 
-# One self-hosted runner: serialize bench runs, and never cancel one in flight
-# (a half-run leaves no useful numbers).
 concurrency:
   group: bench
   cancel-in-progress: false
 
-# Toolchain provided by the runner (one-time opam switch with jasmin 2026.03.1).
+# The toolchain (jasminc + a pinned C compiler) comes from flake.nix's bench
+# shell, served by the host's shared nix store (MOUNT_NIX=1 on the runner
+# instance; see .github/runner/README.md). --impure lets the flake's easycrypt
+# pin-depends resolve (bench never builds it, but the solver sees it).
 env:
-  CI_OPAM_SWITCH: jasmin-bench
+  NIX_CONFIG: 'experimental-features = nix-command flakes'
+  BENCHDEV: nix develop .#bench --impure --command
 
 jobs:
   bench:
@@ -34,66 +35,46 @@ jobs:
       github.event_name != 'pull_request_target' ||
       (contains(github.event.pull_request.labels.*.name, 'bench') &&
        github.event.pull_request.head.repo.full_name == github.repository)
-    runs-on: [self-hosted, linux, x64, bench]
+    # One job per bench machine; each runner instance advertises a bench-<cpu>
+    # label naming its microarchitecture (E3-1245 v5 = Skylake).
+    strategy:
+      fail-fast: false
+      matrix:
+        runner: [bench-skylake]
+    runs-on: [self-hosted, linux, x64, '${{ matrix.runner }}']
     steps:
       - name: Checkout
         uses: actions/checkout@v7
         with:
-          submodules: false
-          # No credentials to persist: later steps only clone public submodules
-          # and never push. Avoids the post-job submodule auth cleanup, which
-          # trips over the mldsa/submodules/* gitlinks (mapped in mldsa/.gitmodules,
-          # which top-level git never reads, not the root .gitmodules).
+          submodules: true
           persist-credentials: false
           ref: >-
             ${{ github.event_name == 'pull_request_target'
                 && github.event.pull_request.head.sha
                 || github.sha }}
 
-      # A stale .gitmodules entry (mldsa/submodules/dilithium) makes a blanket
-      # submodule update abort, so init exactly the paths the build needs.
-      - name: Init submodules
-        run: >-
-          git submodule update --init
-          bench/third_party/mlkem-native
-          bench/third_party/mldsa-native
-          bench/third_party/kyber
-          bench/third_party/dilithium
-
-      # Install jasmin + EasyCrypt from the repo's opam file, so a version bump
-      # in the tree takes effect here without rebuilding the runner image.
-      # (Build caching is handled separately, not via a persistent opam root.)
+      # Builds (or reuses from the host store) the bench toolchain.
       - name: Toolchain
-        run: |
-          opam init --bare --disable-sandboxing -y >/dev/null 2>&1 || true
-          opam switch "$CI_OPAM_SWITCH" >/dev/null 2>&1 \
-            || opam switch create "$CI_OPAM_SWITCH" 5.3.0
-          opam update -y                         # advance the easycrypt git pin
-          opam install . --deps-only -y          # jasmin + easycrypt
-          # hand the switch to later steps
-          echo "$(opam var --switch="$CI_OPAM_SWITCH" bin)" >> "$GITHUB_PATH"
-          opam env --switch="$CI_OPAM_SWITCH" \
-            | sed -nE "s/^([A-Za-z_]+)='(.*)'; export.*/\1=\2/p" \
-            | grep -v '^PATH=' >> "$GITHUB_ENV"
+        run: $BENCHDEV true
 
       - name: Versions
         run: |
-          jasminc -version
-          cc --version | head -1
+          $BENCHDEV jasminc -version
+          $BENCHDEV cc --version | head -1
 
       - name: Build
         run: |
-          make -C src
-          make -C bench libs
+          $BENCHDEV make -C src
+          $BENCHDEV make -C bench libs
 
       # Correctness gate: fail before benching if any backend diverges from KAT.
       - name: KAT
         run: >-
-          make -C bench test
+          $BENCHDEV make -C bench test
           BACKENDS='jasmin mlkem-native mldsa-native pqcrystals pqcrystals-ref'
 
       - name: Benchmark + report
-        run: make -C bench report
+        run: $BENCHDEV make -C bench report
 
       - name: Publish to job summary
         run: cat bench/bench.md >> "$GITHUB_STEP_SUMMARY"

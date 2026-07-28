@@ -354,5 +354,6 @@ auto => |> &1 &2 Ht1t0 _ HA_urng Hs1_srng Hs2_srng.
 split; first by apply wpolylvec_srng_ntt_irng;
   apply (wpolylvec_srng_widen _ Eta Eta (q-1) (q-1)); smt(mldsa65_Eta).
 move => _ result Hlifts_s1p _ result0 Hpair _ _.
-rewrite Hlifts_s1p in Hpair; smt().
+rewrite Hlifts_s1p -Ht1t0 in Hpair.
+by move: Hpair => [# -> ->].
 qed.

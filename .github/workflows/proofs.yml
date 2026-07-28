@@ -1,0 +1,95 @@
+name: proofs
+
+# SECURITY: the plain pull_request trigger is safe while this repo is
+# PRIVATE (only collaborators can open PRs). Before making the repo public,
+# adopt bench.yml's model (pull_request_target + label + same-repo gate) so
+# fork code can never run on the self-hosted machine.
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main, 'ci-*']
+  pull_request:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: proofs-${{ github.ref }}
+  cancel-in-progress: true
+
+# The toolchain (jasmin + EasyCrypt + provers + python) comes from flake.nix,
+# itself derived from jasmin-nist.opam via opam-nix; the host's /nix/store
+# carries it between jobs, so there is nothing to cache on the GitHub side.
+# --impure lets the easycrypt pin-depends follow its branch HEAD (the
+# equivalent of `opam update` advancing the pin).
+env:
+  NIX_CONFIG: 'experimental-features = nix-command flakes'
+  ECDEV: nix develop --impure --command
+
+jobs:
+  check-ec-proofs:
+    runs-on: [self-hosted, linux, x64, selfrice]
+    timeout-minutes: 240
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+        with:
+          submodules: false
+          persist-credentials: false
+
+      # Builds (or reuses from the store) the whole toolchain; this is the
+      # long step on a cold store or after an easycrypt pin advance.
+      - name: Toolchain
+        run: $ECDEV true
+
+      - name: Why3 configuration
+        run: |
+          $ECDEV sh -c 'z3 --version; cvc5 --version | head -1'
+          $ECDEV easycrypt why3config
+
+      - name: EasyCrypt configuration
+        run: $ECDEV easycrypt config
+
+      # All scenarios (the Makefile's default target) in one runtest
+      # invocation, with a per-file timing report.
+      - name: Check proofs
+        run: $ECDEV make -C proofs JOBS=10 ECFLAGS='-report timing.yml'
+
+      # Timing pipeline: runtest report -> timing JSON -> sunburst page,
+      # published as a run artifact.
+      - name: Timing sunburst
+        run: |
+          $ECDEV python3 scripts/timing-report-to-json.py proofs/timing.yml proofs-timing.json
+          $ECDEV python3 scripts/timing-sunburst.py proofs-timing.json proofs-timing.html
+
+      - name: Upload timing artifact
+        uses: actions/upload-artifact@v7
+        with:
+          name: proofs-timing
+          path: |
+            proofs/timing.yml
+            proofs-timing.json
+            proofs-timing.html
+
+      # Publish the sunburst to the public Pages companion repo
+      # (https://github.com/strub/jasmin-nist-timing). Only on pushes to
+      # main, so PR runs never touch the deploy key.
+      - name: Publish sunburst
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+        env:
+          DEPLOY_KEY: ${{ secrets.TIMING_DEPLOY_KEY }}
+        run: |
+          key="$RUNNER_TEMP/timing_deploy_key"
+          printf '%s\n' "$DEPLOY_KEY" > "$key" && chmod 600 "$key"
+          export GIT_SSH_COMMAND="ssh -i $key -o IdentitiesOnly=yes -o StrictHostKeyChecking=accept-new"
+          site="$RUNNER_TEMP/timing-site"
+          rm -rf "$site"
+          git clone -q --depth 1 git@github.com:strub/jasmin-nist-timing.git "$site"
+          cp proofs-timing.html "$site/index.html"
+          cp proofs-timing.json "$site/"
+          git -C "$site" add -A
+          git -C "$site" -c user.name='proofs-ci' \
+              -c user.email='proofs-ci@users.noreply.github.com' \
+              commit -qm "timing: $GITHUB_SHA" --allow-empty
+          git -C "$site" push -q
