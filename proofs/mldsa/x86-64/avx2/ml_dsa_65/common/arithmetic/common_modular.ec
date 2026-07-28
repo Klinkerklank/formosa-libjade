@@ -4,11 +4,13 @@ from Jasmin require import JModel_x86.
 
 from JazzEC require import Ml_dsa_65_avx2 Mldsa_65_prelude.
 
+require import CircuitBindings Bindings.
+
 from Spec require import GFq Rq Parameters MLDSA_W32_Rep.
 
 import Round ZModQ Zq.
 
-require import Array256.
+require import XArray256 Array256.
 
 (* ================================================================== *)
 (* montgomery_multiply_and_reduce                                       *)
@@ -147,7 +149,30 @@ lemma polynomial__conditionally_add_modulus_correct (_a : W32.t Array256.t) :
         wpoly_urng q res
     ].
 proof.
-admitted. (* cond add modulus *)
+proc => /=.
+proc change ^while.1 : { lhs <- if (0 <= offset*8 <= 32*256-256) then BSWAS_256u32_256.sliceget polynomial (offset*8) else WArray1024.WArray1024.get256_direct (WArray1024.WArray1024.init32 (fun (i_0:int) => polynomial.[i_0])) offset; }; first (auto => /> &2; case (0 <= offset{2} * 8 <= 7936); [by move => *; rewrite -BSWAS_256u32_256_slicegetE 1:/# | by auto]).
+proc change ^while.5 : { polynomial <- if (0 <= offset*8 <= 32*256-256) then BSWAS_256u32_256.sliceset polynomial (offset*8) lhs else Array256.init (WArray1024.WArray1024.get32 (WArray1024.WArray1024.set256_direct (WArray1024.WArray1024.init32 (fun (i_0:int) => polynomial.[i_0])) offset lhs)); }; first (auto => /> &2; case (0 <= offset{2} * 8 <= 7936); [by move => *; rewrite BSWAS_256u32_256_slicesetE 1:/# | by auto]).
+unroll for ^while.
+wp 162.
+conseq (: polynomial = _a /\ wpoly_srng (q-1) (q-1) _a ==> polynomial = BSWA_256u32.init (fun (i:int) => if _a.[i] \slt W32.zero then _a.[i] + W32.of_int q else _a.[i])); last by circuit.
+move => &hr [# _ Hsr] p0 ->; move: Hsr; rewrite /wpoly_srng !allP => Hsr; split.
++ apply Array256.tP => i Hi; rewrite mapiE 1:/# mapiE 1:/# /BSWA_256u32.init initiE 1:/# /=.
+  have /= Hsi := Hsr i Hi; case: (_a.[i] \slt W32.zero) => Hlt //=.
+  have Hq : to_sint (W32.of_int q) = q by rewrite to_sintE of_uintK /smod /=; smt().
+  rewrite to_sintD_small Hq; first smt().
+  rewrite incoeffD.
+  have -> : incoeff q = Zq.zero by rewrite incoeff_eq0P dvdzz.
+  by ring.
+rewrite /wpoly_urng allP => k kb; have /= Hsk := Hsr k kb; rewrite /BSWA_256u32.init initiE 1:/# /=.
+have Hq : to_sint (W32.of_int q) = q by rewrite to_sintE of_uintK /smod /=; smt().
+have Hz : to_sint W32.zero = 0 by rewrite to_sintE of_uintK /smod /=.
+rewrite sltE Hz; case: (to_sint _a.[k] < 0) => Hlt /=.
++ have Hv : to_sint (_a.[k] + of_int q) = to_sint _a.[k] + q by rewrite to_sintD_small Hq; smt().
+  have Hnn : 0 <= to_sint (_a.[k] + of_int q) by smt().
+  by rewrite -(W32.to_sint_unsigned _ Hnn) Hv; smt().
+have Hnn : 0 <= to_sint _a.[k] by smt().
+by rewrite -(W32.to_sint_unsigned _ Hnn); smt().
+qed.
 
 lemma polynomial__conditionally_add_modulus_ph (_a : W32.t Array256.t) :
     phoare [ M.polynomial__conditionally_add_modulus :
