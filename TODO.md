@@ -5,3 +5,5 @@
 * Redo safety
 * Clean up dead lemmas
 * Remove redundant lemmas
+* Do ct + sct for mldsa
+* add ct + sct checks to CI
