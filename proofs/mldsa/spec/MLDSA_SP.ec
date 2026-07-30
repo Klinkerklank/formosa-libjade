@@ -113,7 +113,7 @@ module MLDSA_SP(S : Samplers, XOFSIB : XOF_SIB, RO : LeakyRO) = {
           if (bh) { zh <- Some (z,h); }
        }
      }
-     sigma <@ SigEncDec.sigEncode(ct,mods (oget zh).`1 q,(oget zh).`2);
+     sigma <@ SigEncDec.sigEncode(ct,mods (oget zh).`1,(oget zh).`2);
      return (sigma, leakage);
   }
 

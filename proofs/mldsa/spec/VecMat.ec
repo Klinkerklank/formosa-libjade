@@ -62,8 +62,8 @@ proof.
 by rewrite /infnorm_lt  allP /=; split => H i Hi /=.
 qed.
 
-op mods(v : polylvec, md : int) : polylvec = 
-  map (fun (vi : poly) => map (fun c => incoeff (smod (asint c) md)) vi) v.
+op mods(v : polylvec) : polylvec =
+  map (fun (vi : poly) => map (fun c => incoeff (crepr c)) vi) v.
 
  end PolyLVec.
 

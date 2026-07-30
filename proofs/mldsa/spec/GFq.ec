@@ -17,16 +17,16 @@ import Round ZModQ Zq.
 
 (* Signed representation *)
 
-op smod(n d : int) : int = if ((d + 1) %/2 <= n %% d) then n %% d - d else n %% d.
+op smodem(n d : int) : int = if (d %/ 2 < n %% d) then n %% d - d else n %% d.
 
 op Power2Round(x : coeff) : coeff * coeff = 
     let rplus = asint x in
-    let rzero = smod rplus 2^d
-    in (incoeff ((rplus - rzero) %/ 2^d), incoeff rzero).
+    let rzero = smodem rplus (2^d)
+    in (incoeff ((rplus - rzero) %/ (2^d)), incoeff rzero).
 
 op Decompose(r : coeff) : int * int = 
    let rplus = asint r in
-   let rzero = smod rplus (2*gamma2) in
+   let rzero = smodem rplus (2*gamma2) in
    if (rplus - rzero = q-1) 
    then (0,rzero - 1)
    else ((rplus - rzero) %/ (2*gamma2),rzero).

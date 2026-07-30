@@ -673,7 +673,7 @@ auto => /> &hr Hi1 Hi2 Hurng Hdone Hguard; split.
       by rewrite (H_t1_eq j _) 1:/# asintK /#.
     + rewrite Heq_slice; apply Array256.tP => j jb.
       rewrite /lifts_wpoly mapiE 1:/# /= /poly_Power2Round /= initiE 1:/# /=.
-      by rewrite (H_t0_eq j _) 1:/# asintK /#.
+      by rewrite (H_t0_eq j _) 1:/# creprK /#.
     + exact H_t1_rng.
     + exact H_t0_rng.
   + (* Old component k < i *)
