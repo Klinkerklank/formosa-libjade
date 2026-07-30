@@ -77,7 +77,7 @@ lemma __compute_signer_response_element_correct
         lifts_wpoly res =
           lifts_wpoly _mask_e &+ invntt (basemul (lifts_wpoly _s1e) (lifts_wpoly _c)) /\
         (* output is reduced to centered representatives *)
-        wpoly_srng ((q-1) %/ 2) ((q-1) %/ 2) res
+        wpoly_srng 6283009 6283008 res
     ].
 proof.
 proc.
@@ -96,7 +96,9 @@ have Hintt_rng_wide : wpoly_srng (q-1) (q-1) result0.
 + by apply (wpoly_srng_widen result0 invntt_obound invntt_obound (q-1) (q-1) _ _ Hintt_rng);
     smt(invntt_obound_fits_for_caddq mldsa65_Eta).
 split; 1: by smt(mldsa65_gamma1).
-move => _ _ result1 Hadd_eq _ result2 Hred_eq _.
+move => _ _ result1 Hadd_eq Hadd_rng.
+split; first by apply (wpoly_srng_widen result1 (8380416 + gamma1) (8380416 + gamma1) 2143289343 2143289343); [ smt(mldsa65_gamma1) | smt(mldsa65_gamma1) | exact Hadd_rng ].
+move => _ result2 Hred_eq _.
 rewrite Hred_eq Hadd_eq Hintt_eq Hbmul_eq.
 by rewrite Rq_addC.
 qed.
@@ -112,7 +114,7 @@ lemma __compute_signer_response_element_ph
         ==>
         lifts_wpoly res =
           lifts_wpoly _mask_e &+ invntt (basemul (lifts_wpoly _s1e) (lifts_wpoly _c)) /\
-        wpoly_srng ((q-1) %/ 2) ((q-1) %/ 2) res
+        wpoly_srng 6283009 6283008 res
     ] = 1%r
   by conseq __compute_signer_response_element_ll
             (__compute_signer_response_element_correct _s1e _c _mask_e _sre).
@@ -232,7 +234,7 @@ seq 6 : (#pre /\
          (lifts_wpoly _c)
          (lifts_wpolykvec (kvec_unflatten256 _s2)))).[base %/ n] /\
     (* coefficients are centered representatives: to_sint = crepr *)
-    wpoly_srng ((q-1) %/ 2) ((q-1) %/ 2)
+    wpoly_srng 6283009 6283008
                (Array256.init (fun i => w0_minus_cs2.[base + i]))).
 + (* Loop body: basemul → invNTT → subtract → writeback → reduce32 → writeback.
      Process backwards (ecall/wp work right-to-left). *)
@@ -243,7 +245,7 @@ seq 6 : (#pre /\
   ecall (polynomial__subtract_correct
            (Array256.init (fun i => w0_minus_cs2.[base + i]))
            (Array256.init (fun i => w0.[base + i]))
-           cs2 gamma2 (2^31 - gamma1)).
+           cs2 gamma2 invntt_obound).
   ecall (polynomial__invert_ntt_montgomery_correct cs2).
   ecall (polynomial__pointwise_montgomery_multiply_and_reduce_correct
            cs2
@@ -273,11 +275,13 @@ seq 6 : (#pre /\
   + rewrite -Heq_w0; move: Hw0_srng; rewrite /wpolykvec_srng allP => H.
     move: (H (base{hr} %/ n) _); 1: smt(mldsa65_kvec).
     rewrite /wpoly_srng !allP => H2 j Hj; have := H2 j Hj; smt(mldsa65_gamma2).
-  have /= Hresult0_rng' : wpoly_srng (2^31 - gamma1) (2^31 - gamma1) result0.
-  + move: Hintt_rng; rewrite/= /wpoly_srng !allP => H j Hj; have := H j Hj;
-      smt(mldsa65_gamma1 invntt_obound_fits_for_caddq mldsa65_Eta).
-  do split;1..3:by smt(mldsa65_gamma1 mldsa65_gamma2).
-  move => ??? result1 Hr1s Hr1v result2 Hr2s Hr2v.
+  split; first by do split; [ exact Hw0_slice | smt(invntt_obound_fits_for_caddq mldsa65_gamma2 mldsa65_Eta) ].
+  move => _ _ result1 Hr1s Hr1v.
+  split.
+  + have -> : (Array256.init (fun (i : int) => (Array1536.init (fun (i0 : int) => if base{hr} <= i0 < base{hr} + n then result1.[i0 - base{hr}] else w0_minus_cs2{hr}.[i0])).[base{hr} + i])) = result1.
+    + apply Array256.tP => j Hj; rewrite Array256.initiE 1:/# /= Array1536.initiE 1:/# /= ifT 1:/#; smt().
+    apply (wpoly_srng_widen result1 (gamma2 + invntt_obound) (gamma2 + invntt_obound) 2143289343 2143289343); [ smt(invntt_obound_fits_for_caddq mldsa65_gamma2 mldsa65_Eta) | smt(invntt_obound_fits_for_caddq mldsa65_gamma2 mldsa65_Eta) | exact Hr1v ].
+  move => _ result2 Hr2s Hr2v.
   (* outer = Array1536.init (fun i => if base <= i < base+n then result2.[i-base] else inner.[i])
      inner = Array1536.init (fun i => if base <= i < base+n then result1.[i-base] else w0_minus_cs2{hr}.[i]) *)
   do split.
@@ -378,7 +382,7 @@ have Hninfnorm : !infnorm_lt
     (lifts_wpoly (init (fun (i : int) => w0_minus_cs2{hr}.[base{hr} + i])))
     (gamma2 - Beta).
 + apply /negP => Hcontra; apply Hnwpoly.
-  apply (wpoly_infnorm_unliftE (gamma2 - Beta) ((q-1)%/2) ((q-1)%/2)
+  apply (wpoly_infnorm_unliftE (gamma2 - Beta) 6283009 6283008
            (Array256.init (fun (i : int) => w0_minus_cs2{hr}.[base{hr} + i]))).
   + smt(mldsa65_gamma2).
   + smt().
@@ -574,7 +578,7 @@ seq 3 : (#pre /\
       (PolyKVec.invnttv (PolyKVec.ntt_smul
          (lifts_wpoly _c)
          (lifts_wpolykvec (kvec_unflatten256 _t0)))).[base %/ n] /\
-    wpoly_srng ((q-1) %/ 2) ((q-1) %/ 2) ct0).
+    wpoly_srng 6283009 6283008 ct0).
 + ecall (polynomial__reduce32_correct ct0).
   ecall (polynomial__invert_ntt_montgomery_correct ct0).
   ecall (polynomial__pointwise_montgomery_multiply_and_reduce_correct
@@ -593,7 +597,8 @@ seq 3 : (#pre /\
   move => Hbmul_t0 Hbmul_c result [# Hbmul_eq Hbmul_rng].
   split; 1: by exact (wpoly_bmul_orng_intt_irng result Hbmul_rng).
   move => ?result0 [# Hintt_eq Hintt_rng].
-  move => result1 [# Hred_eq Hred_rng].
+  split; first by apply (wpoly_srng_widen result0 invntt_obound invntt_obound 2143289343 2143289343); [ smt(invntt_obound_fits_for_caddq mldsa65_Eta) | smt(invntt_obound_fits_for_caddq mldsa65_Eta) | exact Hintt_rng ].
+  move => _ result1 [# Hred_eq Hred_rng].
   rewrite Hred_eq Hintt_eq Hbmul_eq.
   rewrite invnttv_ntt_smul_k 1:/#.
   by rewrite (lifts_wpolykvec_slice _t0 base{hr}) 1:/# 1:/#.
@@ -619,7 +624,7 @@ seq 2 : (
     (PolyKVec.invnttv (PolyKVec.ntt_smul
       (lifts_wpoly _c)
       (lifts_wpolykvec (kvec_unflatten256 _t0)))).[base %/ n] /\
-  wpoly_srng ((q-1) %/ 2) ((q-1) %/ 2) ct0 /\
+  wpoly_srng 6283009 6283008 ct0 /\
   (* check_infnorm result: zero iff infnorm_lt holds *)
   (wpoly_infnorm_lt gamma2 ct0 => infinity_norm_check_result = W64.zero) /\
   (!wpoly_infnorm_lt gamma2 ct0 => infinity_norm_check_result = W64.one) /\
@@ -741,7 +746,7 @@ seq 2 : (
       by apply /negP => Hwpoly; smt().
     have Hninfnorm : !infnorm_lt (lifts_wpoly ct0{hr}) gamma2.
     + apply /negP => Hcontra; apply Hnwpoly.
-      apply (wpoly_infnorm_unliftE gamma2 ((q-1)%/2) ((q-1)%/2) ct0{hr}).
+      apply (wpoly_infnorm_unliftE gamma2 6283009 6283008 ct0{hr}).
       + smt(mldsa65_gamma2).
       + smt().
       + smt().
@@ -932,7 +937,7 @@ seq 2 : (#pre /\
        PolyLVec.invnttv (PolyLVec.ntt_smul
          (lifts_wpoly _c)
          (lifts_wpolylvec (lvec_unflatten256 _s1)))).[base %/ n] /\
-    wpoly_srng ((q-1) %/ 2) ((q-1) %/ 2)
+    wpoly_srng 6283009 6283008
                (Array256.init (fun i => signer_response.[base + i]))).
 + wp.
   ecall (__compute_signer_response_element_correct
@@ -1028,7 +1033,7 @@ have Hninfnorm : !infnorm_lt
     (lifts_wpoly (Array256.init (fun i => signer_response{hr}.[base{hr} + i])))
     (gamma1 - Beta).
 + apply /negP => Hcontra; apply Hnwpoly.
-  apply (wpoly_infnorm_unliftE (gamma1 - Beta) ((q-1)%/2) ((q-1)%/2)
+  apply (wpoly_infnorm_unliftE (gamma1 - Beta) 6283009 6283008
            (Array256.init (fun i => signer_response{hr}.[base{hr} + i]))).
   + smt(mldsa65_gamma1).
   + smt().

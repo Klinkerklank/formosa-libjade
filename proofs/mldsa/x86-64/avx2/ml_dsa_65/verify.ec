@@ -238,10 +238,12 @@ split.
   move: Hslice; rewrite Hdiv => Hslice.
   rewrite -Hslice.
   by move: Haz_rng; rewrite /wpolykvec_srng KArray.allP => H; apply H; smt(mldsa65_kvec).
-move => _ _ result3 Hlifts_sub Hsrng_sub result4 Hlifts_red Hsrng_red.
+move => _ _ result3 Hlifts_sub Hsrng_sub.
+split; first by apply (wpoly_srng_widen result3 (lvec * 8380416 + 8380416) (lvec * 8380416 + 8380416) 2143289343 2143289343); [ smt(mldsa65_lvec) | smt(mldsa65_lvec) | exact Hsrng_sub ].
+move => _ result4 Hlifts_red Hsrng_red.
 (* invert_ntt's pre: wpoly_intt_irng via widening + bridge *)
 split; first by apply wpoly_bmul_orng_intt_irng;
-  apply (wpoly_srng_widen _ ((q-1) %/ 2) ((q-1) %/ 2) (q-1) (q-1)); smt().
+  apply (wpoly_srng_widen _ 6283009 6283008 (q-1) (q-1)); smt().
 move => _ result5 Hlifts_invntt Hsrng_invntt.
 (* caddq's pre: wpoly_srng (q-1) (q-1) via widening *)
 split; first by apply (wpoly_srng_widen _ invntt_obound invntt_obound (q-1) (q-1));

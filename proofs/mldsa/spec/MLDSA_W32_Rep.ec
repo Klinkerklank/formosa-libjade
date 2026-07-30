@@ -68,6 +68,8 @@ op wpoly_bmul_irng : wpoly -> bool.  (* valid input  to   basemul *)
 (*    addition of s2 does not result in absolute values >= MLDSA_Q"     *)
 (* ------------------------------------------------------------------ *)
 op invntt_obound : int.
+(* Claude says this is provable: PY's invNTT bound (iscale_bnd: |coeff| < q) is Eta too loose,
+   but the code produces |coeff| <= q-1-Eta, which discharges this. *)
 axiom invntt_obound_fits_for_caddq :
   0 <= invntt_obound /\ invntt_obound + Eta <= q - 1.
 
@@ -111,8 +113,8 @@ move => [Hl Hr]; have /# := incoeffK_centered (to_sint pw.[j]) _; 1: smt().
 qed.
 
 lemma wpoly_infnorm_unliftE (b bl bh : int) (pw : wpoly) :
-    0 < b <= q %/ 2 =>
-    bl <= q %/ 2 => bh <= q %/ 2 =>
+    0 < b =>
+    bl + b <= q => bh + b <= q =>
     wpoly_srng bl bh pw =>
     infnorm_lt (lifts_wpoly pw) b => wpoly_infnorm_lt b pw.
 proof.
@@ -123,7 +125,9 @@ have /= Hk' := Hinf k _; 1: smt(mem_iota).
 rewrite mapiE 1:/# /= in Hk'.
 move: Hrng; rewrite /wpoly_srng allP => Hrng.
 have /= Hrng_k := Hrng k _; 1: smt().
-by have /# := incoeffK_centered (to_sint pw.[k]) _; 1: smt().
+have Hcong : (crepr (incoeff (to_sint pw.[k]))) %% q = (to_sint pw.[k]) %% q.
++ by rewrite -!incoeffK creprK.
+smt().
 qed.
 
 

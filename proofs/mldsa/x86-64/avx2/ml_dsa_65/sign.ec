@@ -522,9 +522,10 @@ while (
    move => _ result Hntt_eq Hntt_orng.
    split; first exact (wpolylvec_ntt_orng_bmul_irng _ Hntt_orng).
    move => _ result0 Hmul_eq Hmul_srng.
-   move => result1 Hred_eq Hred_srng.
+   split; first by apply (wpolykvec_srng_widen _ (lvec * 8380416) (lvec * 8380416) 2143289343 2143289343); smt(mldsa65_lvec).
+   move => _ result1 Hred_eq Hred_srng.
    split; first by apply wpolykvec_bmul_orng_intt_irng;
-     apply (wpolykvec_srng_widen _ ((q-1) %/ 2) ((q-1) %/ 2) (q-1) (q-1)); smt().
+     apply (wpolykvec_srng_widen _ 6283009 6283008 (q-1) (q-1)); smt().
    move => _ result2 Hinvntt_eq Hinvntt_srng.
    split;
      first by apply (wpolykvec_srng_widen _ invntt_obound invntt_obound (q-1) (q-1)); smt().

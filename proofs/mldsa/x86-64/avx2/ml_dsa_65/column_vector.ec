@@ -46,25 +46,27 @@ qed.
 
 lemma column_vector__reduce32_correct (_v : W32.t Array1536.t) :
     hoare [ M.column_vector__reduce32 :
-        vector = _v
+        vector = _v /\
+        wpolykvec_srng (kvec_unflatten256 _v) (2^31 - 2^22 - 1) (2^31 - 2^22 - 1)
         ==>
         lifts_wpolykvec (kvec_unflatten256 res) =
           lifts_wpolykvec (kvec_unflatten256 _v) /\
-        wpolykvec_srng (kvec_unflatten256 res) ((q-1) %/ 2) ((q-1) %/ 2)
+        wpolykvec_srng (kvec_unflatten256 res) 6283009 6283008
     ].
 proof.
 have kvec_val := mldsa65_kvec.
 proc.
 while (0 <= i <= 6 /\
+       wpolykvec_srng (kvec_unflatten256 _v) (2^31 - 2^22 - 1) (2^31 - 2^22 - 1) /\
        (forall k, 0 <= k < i =>
          lifts_wpoly (kvec_unflatten256 vector).[k] =
            lifts_wpoly (kvec_unflatten256 _v).[k] /\
-         wpoly_srng ((q-1) %/ 2) ((q-1) %/ 2) (kvec_unflatten256 vector).[k]) /\
+         wpoly_srng 6283009 6283008 (kvec_unflatten256 vector).[k]) /\
        (forall k, i <= k < 6 =>
          (kvec_unflatten256 vector).[k] = (kvec_unflatten256 _v).[k])
       ); last first.
 + (* Exit: combine per-component facts into vector-level properties *)
-  auto => |>; split; 1: smt().
+  auto => |>; move => Hpre; split; 1: smt().
   move => i0 v0 Hng Hi1 Hi2 Hdone Huntouched; split.
   + apply KArray.tP => k kb.
     rewrite /lifts_wpolykvec mapiE; 1: smt(mldsa65_kvec).
@@ -73,7 +75,15 @@ while (0 <= i <= 6 /\
   + by rewrite /wpolykvec_srng allP => k kb; have [_ ?] := Hdone k _; smt().
 wp; ecall (polynomial__reduce32_correct
              (Array256.init (fun j => vector.[(i * 256) + j]))).
-auto => /> &hr Hi1 Hi2 Hprocessed Huntouched Hguard result Hlifts Hrng; do split; 1,2: smt().
+auto => />.
+move => &hr Hle Hi6 Hpre_inv Hprocessed Huntouched Hguard.
+split.
++ have /= Hslice := kvec_slice_eq vector{hr} (i{hr}*n) _ _; 1,2: smt(mldsa65_kvec).
+  have Hdiv : i{hr}*n %/ n = i{hr} by smt().
+  have Hui : (kvec_unflatten256 vector{hr}).[i{hr}] = (kvec_unflatten256 _v).[i{hr}] by apply Huntouched; smt().
+  rewrite -Hslice Hdiv Hui.
+  move: Hpre_inv; rewrite /wpolykvec_srng KArray.allP => H; apply H; smt(mldsa65_kvec).
+move => _ result Hlifts Hrng; do split; 1,2: smt().
 + (* Processed components: k < i + 1 *)
   move => k ? Hk.
   have /= Hwb := kvec_unflatten256_writeback_iE vector{hr} result (i{hr} * 256) k _ _;
@@ -98,11 +108,12 @@ qed.
 
 lemma column_vector__reduce32_ph (_v : W32.t Array1536.t) :
     phoare [ M.column_vector__reduce32 :
-        vector = _v
+        vector = _v /\
+        wpolykvec_srng (kvec_unflatten256 _v) (2^31 - 2^22 - 1) (2^31 - 2^22 - 1)
         ==>
         lifts_wpolykvec (kvec_unflatten256 res) =
           lifts_wpolykvec (kvec_unflatten256 _v) /\
-        wpolykvec_srng (kvec_unflatten256 res) ((q-1) %/ 2) ((q-1) %/ 2)
+        wpolykvec_srng (kvec_unflatten256 res) 6283009 6283008
     ] = 1%r
   by conseq column_vector__reduce32_ll (column_vector__reduce32_correct _v).
 

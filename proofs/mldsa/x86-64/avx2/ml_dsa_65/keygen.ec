@@ -134,9 +134,11 @@ ecall (column_vector__reduce32_correct t).
 ecall (row_vector____multiply_with_matrix_A_correct _mat _s1).
 auto => /> Hurng_mat Horng_s1 Hsrng_s2.
 split; first exact (wpolylvec_ntt_orng_bmul_irng (lvec_unflatten256 _s1) Horng_s1).
-move => _ result Hlifts_mul _ result0 Hlifts_red Hsrng_red.
+move => _ result Hlifts_mul Hsrng_mul.
+split; first by apply (wpolykvec_srng_widen _ (lvec * 8380416) (lvec * 8380416) 2143289343 2143289343); smt(mldsa65_lvec).
+move => _ result0 Hlifts_red Hsrng_red.
 split; first by apply wpolykvec_bmul_orng_intt_irng;
-  apply (wpolykvec_srng_widen _ ((q-1) %/ 2) ((q-1) %/ 2) (q-1) (q-1)); smt().
+  apply (wpolykvec_srng_widen _ 6283009 6283008 (q-1) (q-1)); smt().
 move => _ result1 Hlifts_invntt Hsrng_invntt.
 split; 1: smt().
 move => _ result2 Hlifts_add Hsrng_add.

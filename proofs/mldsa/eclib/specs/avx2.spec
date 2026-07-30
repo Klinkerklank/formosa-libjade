@@ -100,6 +100,10 @@ VPMULHU_16u16(w1@256, w2@256) -> @256 =
 VPMULL_16u16(w1@256, w2@256) -> @256 =
   map<16, 16>(umullo<16>, w1, w2)
 
+# Intel intrinsic: _mm256_mullo_epi32
+VPMULL_8u32(w1@256, w2@256) -> @256 =
+  map<32, 8>(umullo<32>, w1, w2)
+
 # Intel intrinsic: _mm256_mulhrs_epi16
 VPMULHRS_16u16(w1@256, w2@256) -> @256 =
   map<16, 16>(
@@ -131,6 +135,17 @@ VPSRA_16u16(w@256, count@128) -> @256 =
       0xf : count[@8|0] 
     in sra<16>(w1, count), 
   w)
+
+# CHECKME
+# Intel intrinsic: _mm256_srai_epi32
+VPSRA_8u32(w@256, count@128) -> @256 =
+  map<32, 8>(
+    fun w1@32 .
+    let count = uge<128>(count, 0x1f) ?
+      0x1f : count[@8|0]
+    in sra<32>(w1, count),
+  w)
+
 
 # CHECKME
 # Intel intrinsic: _mm256_srli_epi16

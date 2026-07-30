@@ -26,8 +26,7 @@ lemma polynomial____check_infinity_norm_correct (_a : W32.t Array256.t) (_thresh
         _threshold = (q - 1) %/ 32 - 49 * w1_bits \/
         _threshold = (q - 1) %/ 32) /\
        polynomial = _a /\ threshold = _threshold /\
-       (* coefficients must be centered representatives so to_sint = crepr *)
-       wpoly_srng ((q-1) %/ 2) ((q-1) %/ 2) _a
+       wpoly_srng 6283009 6283008 _a
      ==>
        (wpoly_infnorm_lt _threshold _a => res = W64.zero) /\
        (!wpoly_infnorm_lt _threshold _a => res = W64.one)
@@ -81,8 +80,8 @@ unroll for ^while.
 cfold 131.
 wp -1.
 conseq (: polynomial = _a /\ threshold_vector = W256.of_int (_threshold - 1) /\
-        List.all (fun i => W32.of_int (-4190208) \sle _a.[i]
-               /\ _a.[i] \sle  W32.of_int 4190208) (iotared 0 256) /\
+        List.all (fun i => W32.of_int (-6283009) \sle _a.[i]
+               /\ _a.[i] \sle  W32.of_int 6283008) (iotared 0 256) /\
           (_threshold = 524092 \/ _threshold = 261692 \/ _threshold = 261888)  ==>
     zf = (check_inf_norm_circuit _a _threshold)).
 
@@ -105,22 +104,22 @@ rewrite ifT /=.
   (* Handle the circuit *)
 case (_threshold = 524092).
 + conseq (: polynomial = _a /\ threshold_vector = W256.of_int 524091 /\
-       List.all (fun i => W32.of_int (-4190208) \sle _a.[i]
-               /\ _a.[i] \sle  W32.of_int 4190208) (iotared 0 256)
+       List.all (fun i => W32.of_int (-6283009) \sle _a.[i]
+               /\ _a.[i] \sle  W32.of_int 6283008) (iotared 0 256)
           ==>
     zf = (check_inf_norm_circuit _a 524092));
     [ by smt() | by smt() | by simplify;circuit].
 case (_threshold = 261692).
 + conseq (: polynomial = _a /\ threshold_vector = W256.of_int 261691 /\
-       List.all (fun i => W32.of_int (-4190208) \sle _a.[i]
-               /\ _a.[i] \sle  W32.of_int 4190208) (iotared 0 256)
+       List.all (fun i => W32.of_int (-6283009) \sle _a.[i]
+               /\ _a.[i] \sle  W32.of_int 6283008) (iotared 0 256)
           ==>
     zf = (check_inf_norm_circuit _a 261692));
     [ by smt() | by smt() | by simplify;circuit].
 (* gamma2 = 261888: threshold_vector = W256.of_int 261887 *)
 + conseq (: polynomial = _a /\ threshold_vector = W256.of_int 261887 /\
-       List.all (fun i => W32.of_int (-4190208) \sle _a.[i]
-               /\ _a.[i] \sle  W32.of_int 4190208) (iotared 0 256)
+       List.all (fun i => W32.of_int (-6283009) \sle _a.[i]
+               /\ _a.[i] \sle  W32.of_int 6283008) (iotared 0 256)
           ==>
     zf = (check_inf_norm_circuit _a 261888));
     [ by smt() | by smt() | by simplify;circuit].
@@ -139,8 +138,7 @@ lemma polynomial____check_infinity_norm_ph (_a : W32.t Array256.t) (_threshold :
         _threshold = (q - 1) %/ 32 - 49 * w1_bits \/
         _threshold = (q - 1) %/ 32) /\
        polynomial = _a /\ threshold = _threshold /\
-       (* coefficients must be centered representatives so to_sint = crepr *)
-       wpoly_srng ((q-1) %/ 2) ((q-1) %/ 2) _a
+       wpoly_srng 6283009 6283008 _a
      ==>
        (wpoly_infnorm_lt _threshold _a => res = W64.zero) /\
        (!wpoly_infnorm_lt _threshold _a => res = W64.one)
