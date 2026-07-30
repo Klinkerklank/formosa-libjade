@@ -4,9 +4,11 @@
 #   Common -> per-implementation shared code (ML-DSA only)
 #   Keccak -> in-tree src/fips202 (flattened from formosa-keccak)
 
-JASMINC ?= jasminc
-ARCH    ?= x86-64
-JFLAGS  ?=
+JASMINC  ?= jasminc
+JASMINCT ?= jasmin-ct
+ARCH     ?= x86-64
+JFLAGS   ?=
+JCTFLAGS ?=
 
 CC      ?= cc
 PYTHON  ?= python3
@@ -63,6 +65,65 @@ $(BUILD)/mlkem%_avx2.s: mlkem/avx2/%/jmlkem.jazz $(MLKEM_DEPS) | $(BUILD)
 
 $(BUILD):
 	mkdir -p $@
+
+# ==========================================================================
+#  Constant-time (CT) and speculative-constant-time (SCT) checking.
+#
+#  `jasmin-ct` type-checks the source directly -- no assembly is produced and
+#  no AVX2 host is needed, so these run anywhere (including Apple Silicon).
+#  Namespaces are passed with -I, the jasmin-ct spelling of JASMINPATH.
+#
+#  Per-entry-point goals let you check one thing while another is being
+#  worked on:
+#    make ct                 # every entry point
+#    make ct-mlkem768        # just that one
+#    make sct-mldsa65
+#
+#  STATUS: ML-KEM passes both CT and SCT. ML-DSA does NOT yet pass either
+#  (the Keccak state in fips202/avx2/keccak1600_updstate.jinc lacks the
+#  security annotations on its result type), so `make ct` / `make sct`
+#  currently fail on mldsa65. The mlkem-only goals are what CI gates on.
+# ==========================================================================
+
+MLDSA_INC := -I Common=$(MLDSA_COMMON) -I Keccak=$(KECCAK)
+MLKEM_INC := -I Keccak=$(KECCAK)
+
+# Entry point names, derived from the same wildcards as the .s targets.
+MLDSA_SETS   := $(patsubst mldsa/avx2/%/mldsa.jazz,%,$(wildcard mldsa/avx2/*/mldsa.jazz))
+MLKEM_PARAMS := $(patsubst mlkem/avx2/%/jmlkem.jazz,%,$(wildcard mlkem/avx2/*/jmlkem.jazz))
+
+CT_MLDSA  := $(addprefix ct-mldsa,$(MLDSA_SETS))
+CT_MLKEM  := $(addprefix ct-mlkem,$(MLKEM_PARAMS))
+SCT_MLDSA := $(addprefix sct-mldsa,$(MLDSA_SETS))
+SCT_MLKEM := $(addprefix sct-mlkem,$(MLKEM_PARAMS))
+
+.PHONY: ct sct ct-mlkem sct-mlkem ct-mldsa sct-mldsa \
+        $(CT_MLDSA) $(CT_MLKEM) $(SCT_MLDSA) $(SCT_MLKEM)
+
+ct:  $(CT_MLKEM)  $(CT_MLDSA)
+sct: $(SCT_MLKEM) $(SCT_MLDSA)
+
+# Per-scheme aggregates.
+ct-mlkem:  $(CT_MLKEM)
+sct-mlkem: $(SCT_MLKEM)
+ct-mldsa:  $(CT_MLDSA)
+sct-mldsa: $(SCT_MLDSA)
+
+# Static pattern rules over the .PHONY goal names. A plain `ct-mldsa%:`
+# pattern rule would NOT be phony (pattern rules ignore .PHONY), so make
+# would see no file to build and report "nothing to be done" -- a silent
+# false pass. Static patterns keep the goals phony and always run.
+$(CT_MLDSA):  ct-mldsa%:  mldsa/avx2/%/mldsa.jazz
+	$(JASMINCT) --arch=$(ARCH) $(JCTFLAGS) $(MLDSA_INC) $<
+
+$(SCT_MLDSA): sct-mldsa%: mldsa/avx2/%/mldsa.jazz
+	$(JASMINCT) --sct --arch=$(ARCH) $(JCTFLAGS) $(MLDSA_INC) $<
+
+$(CT_MLKEM):  ct-mlkem%:  mlkem/avx2/%/jmlkem.jazz
+	$(JASMINCT) --arch=$(ARCH) $(JCTFLAGS) $(MLKEM_INC) $<
+
+$(SCT_MLKEM): sct-mlkem%: mlkem/avx2/%/jmlkem.jazz
+	$(JASMINCT) --sct --arch=$(ARCH) $(JCTFLAGS) $(MLKEM_INC) $<
 
 # ==========================================================================
 #  Shared libraries (assemble + link). Buildable on Apple Silicon; only

@@ -1,0 +1,60 @@
+name: ct
+
+# Constant-time (CT) and speculative-constant-time (SCT) checking of the
+# Jasmin sources, via `jasmin-ct` (ported from formosa-mlkem's per-
+# implementation `make ct` / `make sct` targets).
+#
+# SECURITY: the plain pull_request trigger is safe while this repo is
+# PRIVATE (only collaborators can open PRs). Before making the repo public,
+# adopt bench.yml's model (pull_request_target + label + same-repo gate) so
+# fork code can never run on the self-hosted machine.
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main, 'ci-*']
+  pull_request:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ct-${{ github.ref }}
+  cancel-in-progress: true
+
+# jasmin-ct ships with the same opam `jasmin` package as jasminc, so the
+# lightweight bench shell already provides it -- no need for the full proof
+# toolchain (EasyCrypt + provers) here. --impure lets the flake's easycrypt
+# pin-depends resolve (this job never builds it, but the solver sees it).
+env:
+  NIX_CONFIG: 'experimental-features = nix-command flakes'
+  CTDEV: nix develop .#bench --impure --command
+
+jobs:
+  ct:
+    runs-on: [self-hosted, linux, x64, selfrice]
+    timeout-minutes: 30
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+        with:
+          submodules: false
+          persist-credentials: false
+
+      - name: Toolchain
+        run: $CTDEV true
+
+      - name: Versions
+        run: $CTDEV jasminc -version
+
+      # ML-KEM only. ML-DSA is not checked here yet: `_absorb_m_updstate_avx2`
+      # unpacks its loop bound from the status word st[25], which shares an
+      # array with the secret Keccak lanes, so the checker requires the whole
+      # state to be public. Fixing it means splitting keccak_updstate's
+      # metadata from its lanes -- deferred; add ct-mldsa/sct-mldsa here once
+      # that lands.
+      - name: ML-KEM constant-time
+        run: $CTDEV make -C src ct-mlkem
+
+      - name: ML-KEM speculative constant-time
+        run: $CTDEV make -C src sct-mlkem
