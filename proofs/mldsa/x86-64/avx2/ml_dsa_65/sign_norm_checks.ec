@@ -130,10 +130,7 @@ lemma __apply_cs2_and_check_norm_correct
         (_incr = W64.zero \/ _incr = W64.one) /\
         wpoly_ntt_orng _c /\
         wpolykvec_ntt_orng (kvec_unflatten256 _s2) /\
-        (* w0 = LowBits(Ay), coefficients in [-gamma2, gamma2] = [-261888, 261888].
-           NB the lower end is -gamma2, not -(gamma2-1): FIPS 204 Decompose's
-           r - r0 = q-1 branch returns r0 - 1, one step below the textbook
-           (-gamma2, gamma2] band.  See arithmetic/rounding.ec:lb_rng. *)
+        (* w0 = LowBits(Ay), coefficients in [-gamma2, gamma2] *)
         wpolykvec_srng (kvec_unflatten256 _w0) gamma2 gamma2
         ==>
         (res.`2 = W64.zero \/ res.`2 = W64.one) /\
@@ -409,10 +406,7 @@ lemma __apply_cs2_and_check_norm_ph
         (_incr = W64.zero \/ _incr = W64.one) /\
         wpoly_ntt_orng _c /\
         wpolykvec_ntt_orng (kvec_unflatten256 _s2) /\
-        (* w0 = LowBits(Ay), coefficients in [-gamma2, gamma2] = [-261888, 261888].
-           NB the lower end is -gamma2, not -(gamma2-1): FIPS 204 Decompose's
-           r - r0 = q-1 branch returns r0 - 1, one step below the textbook
-           (-gamma2, gamma2] band.  See arithmetic/rounding.ec:lb_rng. *)
+        (* w0 = LowBits(Ay), coefficients in [-gamma2, gamma2] *)
         wpolykvec_srng (kvec_unflatten256 _w0) gamma2 gamma2
         ==>
         (res.`2 = W64.zero \/ res.`2 = W64.one) /\
