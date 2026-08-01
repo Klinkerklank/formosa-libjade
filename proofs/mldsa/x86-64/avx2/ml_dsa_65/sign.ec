@@ -490,7 +490,7 @@ while (
  seq 0 8 : (#pre /\
      lifts_wpolykvec (kvec_unflatten256 w0{2}) = w0{1} /\
      lifts_wpolykvec (kvec_unflatten256 w1{2}) = w1{1} /\
-     wpolykvec_srng (kvec_unflatten256 w0{2}) (gamma2 - 1) gamma2 /\
+     wpolykvec_srng (kvec_unflatten256 w0{2}) gamma2 gamma2 /\
      wpolykvec_urng (kvec_unflatten256 w1{2}) ((q-1) %/ (2*gamma2))).
    seq 0 2 : (#pre /\ mask_as_ntt{2} = mask{2}).
    + conseq (_: true ==> mask_as_ntt{2} = mask{2}); 1: smt().

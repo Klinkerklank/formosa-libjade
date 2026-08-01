@@ -17,6 +17,7 @@ bind circuit
     VPEXTR_32 <- "VEXTRACTI32_256",
     W4u32.VPEXTR_32 <- "VEXTRACTI32_128", (* FIXME: WHY ARE WE USING THIS BINDING? *)
     VPMULH_16u16 <- "VPMULH_16u16",
+    VPMULHU_16u16 <- "VPMULHU_16u16",
     VPMULHRS_16u16 <- "VPMULHRS_16u16",
     VPMULL_16u16 <- "VPMULL_16u16",
     VPMULL_8u32 <- "VPMULL_8u32",
@@ -65,6 +66,7 @@ bind circuit
     VPCMPEQ_16u8 <- "VPCMPEQ_16u8",
     MOVEMASK_16u8 <- "VPMOVMSKB_128",
     VPCMPGT_8u32 <- "VPCMPGT_8u32",
+    VPAND_256 <- "VPAND_256",
     VPABS_8u32 <- "VPABS_8u32",
     MOVEMASK_8u32 <- "MOVEMASK_8u32"
         from "specs/avx2.spec".

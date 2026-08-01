@@ -501,7 +501,7 @@ lemma column_vector____decompose_correct (_v : W32.t Array1536.t) :
           polykvec_LowBits (liftu_wpolykvec (kvec_unflatten256 _v)) /\
         liftu_wpolykvec (kvec_unflatten256 res.`2) =
           polykvec_HighBits (liftu_wpolykvec (kvec_unflatten256 _v)) /\
-        wpolykvec_srng (kvec_unflatten256 res.`1) (gamma2 - 1) gamma2 /\
+        wpolykvec_srng (kvec_unflatten256 res.`1) gamma2 gamma2 /\
         wpolykvec_urng (kvec_unflatten256 res.`2) ((q - 1) %/ (2 * gamma2))
     ].
 proof.
@@ -514,7 +514,7 @@ while (0 <= i <= 6 /\ vector = _v /\
             poly_LowBits (liftu_wpoly (kvec_unflatten256 _v).[k]) /\
           liftu_wpoly (kvec_unflatten256 high).[k] =
             poly_HighBits (liftu_wpoly (kvec_unflatten256 _v).[k]) /\
-          wpoly_srng (gamma2 - 1) gamma2 (kvec_unflatten256 low).[k] /\
+          wpoly_srng gamma2 gamma2 (kvec_unflatten256 low).[k] /\
           wpoly_urng ((q - 1) %/ (2 * gamma2)) (kvec_unflatten256 high).[k])
       ); last first.
 + (* Exit *)
@@ -578,7 +578,7 @@ lemma column_vector____decompose_ph (_v : W32.t Array1536.t) :
           polykvec_LowBits (liftu_wpolykvec (kvec_unflatten256 _v)) /\
         liftu_wpolykvec (kvec_unflatten256 res.`2) =
           polykvec_HighBits (liftu_wpolykvec (kvec_unflatten256 _v)) /\
-        wpolykvec_srng (kvec_unflatten256 res.`1) (gamma2 - 1) gamma2 /\
+        wpolykvec_srng (kvec_unflatten256 res.`1) gamma2 gamma2 /\
         wpolykvec_urng (kvec_unflatten256 res.`2) ((q - 1) %/ (2 * gamma2))
     ] = 1%r
   by conseq column_vector____decompose_ll
