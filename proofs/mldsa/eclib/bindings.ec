@@ -67,7 +67,10 @@ bind circuit
     MOVEMASK_16u8 <- "VPMOVMSKB_128",
     VPCMPGT_8u32 <- "VPCMPGT_8u32",
     VPAND_256 <- "VPAND_256",
+    VPOR_256 <- "VPOR_256",
     VPABS_8u32 <- "VPABS_8u32",
+    VPCMPEQ_8u32 <- "VPCMPEQ_8u32",
+    VPSIGN_8u32 <- "VPSIGN_8u32",
     MOVEMASK_8u32 <- "MOVEMASK_8u32"
         from "specs/avx2.spec".
 

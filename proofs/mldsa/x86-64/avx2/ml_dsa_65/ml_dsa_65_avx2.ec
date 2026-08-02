@@ -1370,16 +1370,19 @@ module M = {
   }
   proc polynomial__use_hints (commitment:W32.t Array256.t,
                               hint_polynomial:W32.t Array256.t) : W32.t Array256.t = {
+    var zeros:W256.t;
     var mask:W256.t;
     var lows:W32.t Array256.t;
     var highs:W32.t Array256.t;
     var low:W256.t;
     var hints:W256.t;
+    var low_lanes_which_are_zero:W256.t;
     var high:W256.t;
     var coefficients:W256.t;
     var offset:int;
     highs <- witness;
     lows <- witness;
+    zeros <- (set0_256);
     mask <- polynomial__CONSTANTS_TABLE.[0];
     (lows, highs) <@ polynomial__decompose (lows, highs, commitment);
     offset <- 0;
@@ -1388,6 +1391,8 @@ module M = {
       hints <-
       (get256_direct (WArray1024.init32 (fun i => hint_polynomial.[i]))
       offset);
+      low_lanes_which_are_zero <- (VPCMPEQ_8u32 low zeros);
+      low <- (VPOR_256 low low_lanes_which_are_zero);
       hints <- (VPSIGN_8u32 hints low);
       high <-
       (get256_direct (WArray1024.init32 (fun i => highs.[i])) offset);

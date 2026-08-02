@@ -261,6 +261,90 @@ lemma polynomial__decompose_ph
 (*                                   (liftu_wpoly _commitment)         *)
 (* ================================================================== *)
 
+(* Per-lane specification. The VPCMPEQ/VPOR pair maps low = 0 to all-ones so
+   that VPSIGN gives -1 there, not 0. *)
+op uh_lane (h l hi : W32.t) : W32.t =
+  let l' = l `|` (if l = W32.zero then W32.onew else W32.zero) in
+  let s  = (if l' \slt W32.zero then - h
+            else if W32.zero \slt l' then h else W32.zero) in
+  (hi + s) `&` W32.of_int 15.
+
+(* HighBits lands in [0, 16). *)
+lemma hb_rng16 (r : int) : 0 <= r < q => 0 <= HighBits (incoeff r) < 16.
+proof.
+move => Hr; rewrite -hb_spec 1://; exact (hb_rng r Hr).
+qed.
+
+lemma uh_spec (r : int) (hb : bool) :
+    0 <= r < q =>
+    (HighBits (incoeff r)
+     + (if hb then (if 0 < LowBits (incoeff r) then 1 else -1) else 0)) %% 16
+    = asint (UseHint hb (incoeff r)).
+proof.
+move => Hr.
+have Hb := hb_rng16 r Hr.
+have Hg : gamma2 = 261888 by smt(param_sets).
+rewrite /UseHint /HighBits /LowBits /= Hg /=.
+move: Hb; rewrite /HighBits.
+case (Decompose (incoeff r)) => r1 r0 /= Hb.
+case hb => Hh /=; last first.
++ by rewrite incoeffK (modz_small _ q) 1:/# (modz_small _ 16) 1:/#.
+case (0 < r0) => H0 /=.
++ by rewrite incoeffK (modz_small _ q) 1:/#.
+have -> : (r0 <= 0) = true by smt().
+by rewrite /= incoeffK (modz_small _ q) 1:/#.
+qed.
+
+(* uh_lane as an integer operation. *)
+lemma uh_lane_val (h l hi : W32.t) :
+    to_uint h < 2 => to_uint hi < 16 =>
+    to_uint (uh_lane h l hi)
+    = (to_uint hi
+       + (if h = W32.one then (if 0 < to_sint l then 1 else -1) else 0)) %% 16.
+proof.
+move => Hh Hhi; rewrite /uh_lane /=.
+have -> : W32.of_int 15 = W32.of_int (2^4 - 1) by done.
+rewrite W32.to_uint_and_mod 1://.
+have -> : XWord4.W4.modulus = 16 by done.
+have Ho : W32.to_sint W32.onew = -1
+  by rewrite /to_sint W32.to_uint_onew /max_uint /smod /=.
+have Hz : W32.to_sint W32.zero = 0 by rewrite /to_sint W32.to_uint0 /smod /=.
+(* h is 0 or 1, and to_uint is injective, so `h <> one` gives `to_uint h <> 1`. *)
+have Hn1 : h <> W32.one => to_uint h <> 1.
++ move => Hh1; apply/negP => He; move: Hh1; rewrite -(W32.to_uintK h) He; by apply.
+(* Concretize W32.modulus BEFORE any smt call: smt is useless with `^`. *)
+have Hge := W32.to_uint_cmp h; move: Hge; rewrite /= => Hge.
+case (l = W32.zero) => Hl0.
++ rewrite Hl0 W32.or0w /= !W32.sltE Ho Hz /=.
+  have HB := W32.to_uintBb hi h false; move: HB; rewrite /b2i /= => HB; rewrite HB.
+  case (h = W32.one) => Hh1.
+  + rewrite Hh1 W32.to_uint1 /=; case (to_uint hi < 1) => Hc /=; last done.
+    have -> : to_uint hi + 4294967295 = (to_uint hi - 1) + 268435456 * 16 by ring.
+    by rewrite modzMDr.
+  have Hh0 : to_uint h = 0 by move: (Hn1 Hh1); smt().
+  by rewrite Hh0 /=; smt().
+rewrite W32.orw0 !W32.sltE Hz.
+have Hls : to_sint l <> 0.
++ apply/negP => He; move: Hl0; move: He; rewrite /to_sint /smod /=.
+  have Hc := W32.to_uint_cmp l; move: Hc; rewrite /= => Hc.
+  move => He; have Hu0 : to_uint l = 0 by smt().
+  by rewrite -(W32.to_uintK l) Hu0.
+case (to_sint l < 0) => Hsl /=.
++ have -> : (0 < to_sint l) = false by smt().
+  have HB := W32.to_uintBb hi h false; move: HB; rewrite /b2i /= => HB; rewrite HB.
+  case (h = W32.one) => Hh1.
+  + rewrite Hh1 W32.to_uint1 /=; case (to_uint hi < 1) => Hc /=; last done.
+    have -> : to_uint hi + 4294967295 = (to_uint hi - 1) + 268435456 * 16 by ring.
+    by rewrite modzMDr.
+  have Hh0 : to_uint h = 0 by move: (Hn1 Hh1); smt().
+  by rewrite Hh0 /=; smt().
+have -> : (0 < to_sint l) = true by smt().
+rewrite /= W32.to_uintD /= modz_dvd 1://.
+case (h = W32.one) => Hh1; first by rewrite Hh1 W32.to_uint1.
+have Hh0 : to_uint h = 0 by move: (Hn1 Hh1); smt().
+by rewrite Hh0.
+qed.
+
 lemma polynomial__use_hints_ll : islossless M.polynomial__use_hints.
 proof.
 proc.
@@ -285,7 +369,77 @@ lemma polynomial__use_hints_correct
         wpoly_urng ((q - 1) %/ (2 * gamma2)) res
     ].
 proof.
-admitted. (* poly use hints *)
+proc => /=.
+proc change ^while.1 : { low <- if (0 <= offset*8 <= n*32-n) then BSWAS_256u32_256.sliceget lows (offset*8) else WArray1024.WArray1024.get256_direct (WArray1024.WArray1024.init32 (fun (i_0:int) => lows.[i_0])) offset; }; first (auto => /> &2; case (0 <= offset{2} * 8 <= 7936); [by move => *; rewrite -BSWAS_256u32_256_slicegetE 1:/# | by auto]).
+proc change ^while.2 : { hints <- if (0 <= offset*8 <= n*32-n) then BSWAS_256u32_256.sliceget hint_polynomial (offset*8) else WArray1024.WArray1024.get256_direct (WArray1024.WArray1024.init32 (fun (i_0:int) => hint_polynomial.[i_0])) offset; }; first (auto => /> &2; case (0 <= offset{2} * 8 <= 7936); [by move => *; rewrite -BSWAS_256u32_256_slicegetE 1:/# | by auto]).
+proc change ^while.6 : { high <- if (0 <= offset*8 <= n*32-n) then BSWAS_256u32_256.sliceget highs (offset*8) else WArray1024.WArray1024.get256_direct (WArray1024.WArray1024.init32 (fun (i_0:int) => highs.[i_0])) offset; }; first (auto => /> &2; case (0 <= offset{2} * 8 <= 7936); [by move => *; rewrite -BSWAS_256u32_256_slicegetE 1:/# | by auto]).
+proc change ^while.9 : { commitment <- if (0 <= offset*8 <= n*32-n) then BSWAS_256u32_256.sliceset commitment (offset*8) coefficients else Array256.init (WArray1024.WArray1024.get32 (WArray1024.WArray1024.set256_direct (WArray1024.WArray1024.init32 (fun (i_0:int) => commitment.[i_0])) offset coefficients)); }; first (auto => /> &2; case (0 <= offset{2} * 8 <= 7936); [by move => *; rewrite BSWAS_256u32_256_slicesetE 1:/# | by auto]).
+(* decompose gives the low/high characterisation; the loop is then a per-lane
+   map, so one conseq + circuit does the program part. *)
+seq 5 : (commitment = _commitment /\ hint_polynomial = _hints /\
+         wpoly_urng q _commitment /\ wpoly_urng 2 _hints /\
+         zeros = W256.zero /\
+         mask = Array5.Array5."_.[_]" polynomial__CONSTANTS_TABLE 0 /\
+         (forall i, 0 <= i < 256 =>
+            to_sint lows.[i] = LowBits ((liftu_wpoly _commitment).[i])) /\
+         (forall i, 0 <= i < 256 =>
+            to_uint highs.[i] = HighBits ((liftu_wpoly _commitment).[i])) /\
+         wpoly_urng 16 highs);
+  first (call (polynomial__decompose_correct witness witness _commitment);
+         auto => />; have Hm : 8380416 %/ (2 * gamma2) = 16 by smt(param_sets));
+  first by rewrite Hm.
+unroll for ^while; wp -1.
+conseq (: hint_polynomial = _hints /\ zeros = W256.zero /\
+          mask = Array5.Array5."_.[_]" polynomial__CONSTANTS_TABLE 0 /\
+          lows = lows /\ highs = highs ==>
+          commitment = BSWA_256u32.init
+                         (fun (i:int) => uh_lane _hints.[i] lows.[i] highs.[i])).
++ by move => &hr [# _ -> _ _ -> -> _ _ _].
++ move => &hr [# Hc Hhp Hcq Hhq Hz Hm Hlv Hhv Hhr] c0 Hc0.
+  have Hm16 : 8380416 %/ (2 * gamma2) = 16 by smt(param_sets).
+  (* Per-lane: the word-level map equals the spec's UseHint. *)
+  have Hkey : forall i, 0 <= i < 256 =>
+      to_uint c0.[i]
+      = asint (UseHint (!(liftu_wpoly _hints).[i] = Zq.zero)
+                       ((liftu_wpoly _commitment).[i])).
+  + move => i Hi; rewrite Hc0 /BSWA_256u32.init initiE 1:/# /=.
+    have Hhi2 : to_uint _hints.[i] < 2
+      by move: Hhq; rewrite /wpoly_urng allP /= => H; have := H i _; first smt().
+    have Hhg16 : to_uint highs{hr}.[i] < 16
+      by move: Hhr; rewrite /wpoly_urng allP /= => H; have := H i _; first smt().
+    rewrite (uh_lane_val _ _ _ Hhi2 Hhg16) Hhv 1:/# Hlv 1:/#.
+    (* the hint is 0/1, so "coeff nonzero" and "word = one" coincide *)
+    have Hhb : ((liftu_wpoly _hints).[i] <> Zq.zero) = (_hints.[i] = W32.one).
+    + rewrite /liftu_wpoly mapiE 1:/# /=.
+      case (to_uint _hints.[i] = 1) => Hu1.
+      + rewrite Hu1 -(W32.to_uintK _hints.[i]) Hu1
+                -(W32.to_uintK W32.one) W32.to_uint1 /=.
+        by rewrite eqT; apply/negP => He;
+           move: (Zq.incoeffK 1); rewrite He Zq.zeroE /q /=.
+      have Hge := W32.to_uint_cmp _hints.[i]; move: Hge; rewrite /= => Hge.
+      have Hu0 : to_uint _hints.[i] = 0 by smt().
+      rewrite Hu0 -(W32.to_uintK _hints.[i]) Hu0
+              -(W32.to_uintK W32.one) W32.to_uint1 /=.
+      have -> : Zq.incoeff 0 = Zq.zero by rewrite -Zq.zeroE asintK.
+      have Hne : W32.zero <> W32.one;
+        first (apply/negP => He; move: W32.to_uint1;
+               rewrite -He W32.to_uint0; by apply).
+      by move: Hne; case (W32.zero = W32.one).
+    rewrite Hhb /liftu_wpoly mapiE 1:/# /=.
+    by apply uh_spec; exact (urng_at _commitment i).
+  split; last first.
+  + rewrite Hm16 /wpoly_urng allP => x Hx.
+    rewrite Hc0 /BSWA_256u32.init initiE 1:/# /= /uh_lane /=.
+    have -> : W32.of_int 15 = W32.of_int (2^4 - 1) by done.
+    rewrite W32.to_uint_and_mod 1://.
+    have -> : XWord4.W4.modulus = 16 by done.
+    by apply modz_cmp.
+  apply Array256.ext_eq => x Hx.
+  rewrite /liftu_wpoly mapiE 1:/# /poly_UseHint initiE 1:/# /=.
+  rewrite -/liftu_wpoly (Hkey x Hx) asintK.
+  by rewrite /liftu_wpoly.
+by rewrite /uh_lane /=; circuit.
+qed.
 
 lemma polynomial__use_hints_ph
       (_commitment : W32.t Array256.t) (_hints : W32.t Array256.t) :

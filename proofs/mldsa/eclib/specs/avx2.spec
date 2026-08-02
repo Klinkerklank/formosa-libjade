@@ -71,8 +71,12 @@ VPSUB_8u32(w1@256, w2@256) -> @256 =
 VPAND_256(w1@256, w2@256) -> @256 = 
   and<256>(w1, w2)
 
+# Intel intrinsic: _mm256_or_si256
+VPOR_256(w1@256, w2@256) -> @256 =
+  or<256>(w1, w2)
+
 # Intel intrinsic: _mm256_andnot_si256
-VPNAND_256(w1@256, w2@256) -> @256 = 
+VPNAND_256(w1@256, w2@256) -> @256 =
   not<256>(and<256>(w1, w2))
 
 # Intel intrinsic: _mm256_broadcastw_epi16
@@ -432,6 +436,34 @@ VPABS_8u32(w@256) -> @256 =
   map<32, 8>(
     fun w@32 . sgt<32>(0@32, w) ? sub<32>(0@32, w) : w,
     w
+  )
+
+# Intel intrinsic: _mm256_cmpeq_epi32
+# No equality primitive: xor, then or-reduce the 32 bits by halving shifts.
+# Bit 0 of the fold is 1 iff the lanes differ, so (fold & 1) - 1 is the mask.
+VPCMPEQ_8u32(w1@256, w2@256) -> @256 =
+  map<32, 8>(
+    fun w1@32 w2@32 .
+      let d = xor<32>(w1, w2) in
+      let d = or<32>(d, srl<32>(d, 16)) in
+      let d = or<32>(d, srl<32>(d, 8)) in
+      let d = or<32>(d, srl<32>(d, 4)) in
+      let d = or<32>(d, srl<32>(d, 2)) in
+      let d = or<32>(d, srl<32>(d, 1)) in
+      sub<32>(and<32>(d, 1@32), 1@32),
+    w1,
+    w2
+  )
+
+# Intel intrinsic: _mm256_sign_epi32
+# w1 * sign(w2), per 32-bit lane; note sign(0) = 0 zeroes the lane.
+VPSIGN_8u32(w1@256, w2@256) -> @256 =
+  map<32, 8>(
+    fun w1@32 w2@32 .
+      sgt<32>(0@32, w2) ? sub<32>(0@32, w1) :
+      (sgt<32>(w2, 0@32) ? w1 : 0x00000000@32),
+    w1,
+    w2
   )
 
 # Intel intrinsic: _mm256_movemask_ps
