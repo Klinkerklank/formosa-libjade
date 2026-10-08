@@ -1,12 +1,13 @@
 #!/usr/bin/env bash
 # Build the image and supervise a truly ephemeral runner instance: one fresh
-# container per job. One supervisor per bench machine (bench-skylake, ...).
+# container per job. One supervisor per runner instance (bench-skylake on
+# each bench machine, proofs on the proofs hosts, ...).
 # Each iteration runs `docker run --rm`, and the in-container agent
 # registers as `--ephemeral`, so it serves exactly one job and exits; the
 # container is then removed and the loop starts a brand-new one. Nothing
 # survives between jobs (fresh _work *and* fresh $HOME). This runs in the
-# foreground and loops forever -- supervise it with the matching systemd unit
-# so it starts on boot and restarts if the loop itself dies.
+# foreground and loops forever -- supervise it with the runner@.service
+# template unit so it starts on boot and restarts if the loop itself dies.
 #
 # All configuration comes from the environment (the systemd units load it
 # from ~/.config/<instance>/env). This is the ONLY place these variables are

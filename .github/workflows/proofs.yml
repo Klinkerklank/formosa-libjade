@@ -29,7 +29,7 @@ env:
 
 jobs:
   check-ec-proofs:
-    runs-on: [self-hosted, linux, x64, selfrice]
+    runs-on: [self-hosted, linux, proofs]
     timeout-minutes: 240
     steps:
       - name: Checkout
@@ -52,9 +52,10 @@ jobs:
         run: $ECDEV easycrypt config
 
       # All scenarios (the Makefile's default target) in one runtest
-      # invocation, with a per-file timing report.
+      # invocation, with a per-file timing report. One job per CPU the
+      # runner's container is pinned to (CPUSET in its instance env).
       - name: Check proofs
-        run: $ECDEV make -C proofs JOBS=10 ECFLAGS='-report timing.yml'
+        run: $ECDEV make -C proofs JOBS=$(nproc) ECFLAGS='-report timing.yml'
 
       # Timing pipeline: runtest report -> timing JSON -> sunburst page,
       # published as a run artifact.

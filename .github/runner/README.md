@@ -1,14 +1,20 @@
-# Self-hosted bench runners
+# Self-hosted runners
 
-Host-side provisioning for the machines behind
-[`bench.yml`](../workflows/bench.yml) (cycle benchmarks): one **matrix job
-per bench machine**, each machine's runner advertising a
-`bench-<microarchitecture>` label (e.g. `bench-skylake`) and running one
+Host-side provisioning for the machines behind the self-hosted workflows:
+
+- [`bench.yml`](../workflows/bench.yml) (cycle benchmarks): one **matrix job
+  per bench machine**, each machine's runner advertising a
+  `bench-<microarchitecture>` label (e.g. `bench-skylake`);
+- [`proofs.yml`](../workflows/proofs.yml) (EasyCrypt proof check): any
+  runner advertising the `proofs` label, including a Linux VM on a Mac
+  (see [macOS host](#macos-host-linux-vm)).
+
+Every runner instance uses the same image and supervisor, and runs one
 ephemeral container per job.
 
-The workflow builds its toolchain from the repo's `flake.nix` (derived from
-`jasmin-nist.opam` via opam-nix) with `nix develop`; nothing is cached on
-the GitHub side.
+The workflows build their toolchain from the repo's `flake.nix` (derived
+from `jasmin-nist.opam` via opam-nix) with `nix develop`; nothing is cached
+on the GitHub side.
 
 ## Security model (designed for a public repo)
 
@@ -35,7 +41,7 @@ Operational rules:
 - Do **not** relax the `head.repo == this repo` gate to bench forks unless you
   fully accept arbitrary-code execution on this host.
 
-## Bench machine — containerized runner
+## Linux host — containerized runner
 
 This directory builds a small image with the runner agent and basic system
 tooling. `run-runner.sh` then supervises a loop that starts **one fresh
@@ -60,20 +66,26 @@ REPO=<owner>/<repo> ACCESS_TOKEN=<PAT> LABELS=bench-skylake NAME=bench-runner MO
 All instance variables (required and optional) are documented in one place:
 **the header of [`run-runner.sh`](run-runner.sh)**.
 
-For a persistent runner, supervise it with the provided systemd **user** unit
-so it starts on boot and restarts if the loop dies (this replaces docker's
-`--restart=always`, which cannot give a fresh container per job):
+For a persistent runner, supervise it with the provided systemd **user**
+template unit so it starts on boot and restarts if the loop dies (this
+replaces docker's `--restart=always`, which cannot give a fresh container
+per job). The instance name selects the env file, `~/.config/<instance>/env`,
+so one host can serve several instances (each with a distinct `NAME`):
 
 ```
 loginctl enable-linger "$USER"
 mkdir -p ~/.config/systemd/user ~/.config/bench-runner
-cp bench-runner.service ~/.config/systemd/user/
+cp runner@.service ~/.config/systemd/user/
 printf 'REPO=<owner>/<repo>\nACCESS_TOKEN=<PAT>\nLABELS=bench-skylake\nNAME=bench-runner\nCPUSET=7\nMOUNT_NIX=1\n' > ~/.config/bench-runner/env
 chmod 600 ~/.config/bench-runner/env
 # edit ExecStart in the unit to point at this checkout, then:
 systemctl --user daemon-reload
-systemctl --user enable --now bench-runner        # logs: journalctl --user -u bench-runner -f
+systemctl --user enable --now runner@bench-runner   # logs: journalctl --user -u runner@bench-runner -f
 ```
+
+(Hosts set up with the former `bench-runner.service` unit migrate with
+`systemctl --user disable --now bench-runner`, installing the template as
+above, and enabling `runner@bench-runner`; the env file is unchanged.)
 
 Operational notes:
 
@@ -105,6 +117,88 @@ and restart the unit (what the flag mounts, and why this preserves the
 isolation model, is documented with the variable in `run-runner.sh`).
 Occasional `nix-collect-garbage --delete-older-than 30d` on the host keeps
 the store bounded.
+
+## macOS host (Linux VM)
+
+The proofs and constant-time checks do not depend on the OS, so an
+Apple-silicon Mac serves them from a **long-lived Linux VM** that plays the
+part of the Linux host above: the VM runs Docker, the multi-user nix daemon,
+and the same `run-runner.sh` loop, and each job still gets a fresh container.
+Only the VM and its nix store persist; the store is read-only to jobs
+(`MOUNT_NIX=1`). Use [Lima](https://lima-vm.io) (one VM shared by all job
+containers), not Apple's `container` tool, which boots one VM per container
+and so has no host to share the nix store from.
+
+Install Lima system-wide (admin), either from the machine's Homebrew
+(`brew install lima && brew pin lima`, so that an unrelated `brew upgrade`
+cannot swap it under the VM; `limactl` is then `/opt/homebrew/bin/limactl`)
+or from the release tarball, which unpacks into `bin/` and `share/`:
+
+```
+v=2.2.1   # https://github.com/lima-vm/lima/releases
+curl -fsSL "https://github.com/lima-vm/lima/releases/download/v$v/lima-$v-Darwin-arm64.tar.gz" \
+  | sudo tar xz -C /usr/local
+```
+
+Then, as a dedicated non-admin user (e.g. `ghrunner`) that owns the VM:
+
+```
+limactl create --name=ci --vm-type=vz --cpus=16 --memory=48 --disk=200 \
+  --mount-none --containerd=none template:ubuntu-26.04
+limactl start ci
+```
+
+`--mount-none` matters: by default Lima mounts the Mac user's home into the
+VM. Size `--cpus`/`--memory` to the Mac (`sysctl -n hw.ncpu hw.memsize`),
+leaving headroom for the host.
+
+Start the VM at boot with a LaunchDaemon (admin; `limactl start-at-login`
+installs a LaunchAgent, which only runs while the user is logged in), e.g.
+`/Library/LaunchDaemons/io.lima.ci.plist`:
+
+```
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0"><dict>
+  <key>Label</key><string>io.lima.ci</string>
+  <key>UserName</key><string>ghrunner</string>
+  <key>EnvironmentVariables</key><dict><key>HOME</key><string>/Users/ghrunner</string></dict>
+  <key>ProgramArguments</key><array>
+    <!-- /opt/homebrew/bin/limactl for a Homebrew install -->
+    <string>/usr/local/bin/limactl</string><string>start</string><string>--foreground</string><string>ci</string>
+  </array>
+  <key>RunAtLoad</key><true/>
+  <key>KeepAlive</key><true/>
+</dict></plist>
+```
+
+```
+sudo launchctl bootstrap system /Library/LaunchDaemons/io.lima.ci.plist
+```
+
+Inside the VM (`limactl shell ci`), follow the Linux host setup: rootless
+Docker, multi-user nix (see below), then the systemd unit above with
+several `proofs` instances, each pinned to its own CPUs (`CPUSET`; the
+proofs job runs one EasyCrypt job per CPU it sees). On a 16-CPU VM, three
+5-CPU instances leave one CPU for the docker and nix daemons:
+
+```
+i=1; for cpus in 0-4 5-9 10-14; do
+  mkdir -p ~/.config/proofs-runner-$i
+  printf 'REPO=<owner>/<repo>\nACCESS_TOKEN=<PAT>\nLABELS=proofs\nNAME=proofs-runner-%s\nCPUSET=%s\nMOUNT_NIX=1\n' $i $cpus \
+    > ~/.config/proofs-runner-$i/env
+  chmod 600 ~/.config/proofs-runner-$i/env
+  systemctl --user enable --now runner@proofs-runner-$i
+  i=$((i+1))
+done
+```
+
+(Ubuntu's systemd already delegates the `cpuset` controller to user
+services, so rootless Docker honours `--cpuset-cpus` without a drop-in.)
+
+The image builds for the VM's architecture (`linux-arm64` agent), and the
+toolchain is built for `aarch64-linux` on the first job (z3 from source, so
+expect a slow first run); later jobs reuse the VM's store.
 
 ## Frequency (stable cycle counts) — host setting
 

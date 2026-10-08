@@ -32,7 +32,7 @@ env:
 
 jobs:
   ct:
-    runs-on: [self-hosted, linux, x64, selfrice]
+    runs-on: [self-hosted, linux, proofs]
     timeout-minutes: 30
     steps:
       - name: Checkout
