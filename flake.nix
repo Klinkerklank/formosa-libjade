@@ -120,6 +120,10 @@
 
         devShells.default = pkgs.mkShell {
           inputsFrom = [ scope.jasmin-nist ];
+          # The EasyCrypt commit the shell was built from (the pin follows a
+          # branch, and a nix build embeds no git hash in the binary); read by
+          # scripts/timing-report-to-json.py.
+          EASYCRYPT_REV = scope.easycrypt.src.rev or "unknown";
           shellHook = ''
             export XDG_CONFIG_DIRS="${ecJasminConf}''${XDG_CONFIG_DIRS:+:$XDG_CONFIG_DIRS}"
           '';

@@ -73,8 +73,103 @@ jobs:
           $BENCHDEV make -C bench test
           BACKENDS='jasmin mlkem-native mldsa-native pqcrystals pqcrystals-ref'
 
+      # REPS interleaved passes (bench/Makefile); bench.json carries every
+      # pass with its spread and the run metadata.
       - name: Benchmark + report
-        run: $BENCHDEV make -C bench report
+        run: $BENCHDEV make -C bench report META='runner=${{ matrix.runner }}'
 
-      - name: Publish to job summary
-        run: cat bench/bench.md >> "$GITHUB_STEP_SUMMARY"
+      # On main the results are published (publish job below): link the
+      # dashboard's comparison with the previous commit and fold the full
+      # report. Elsewhere (branches, labelled PRs) show the report itself.
+      # Links to the results dashboard rather than tables: on main the
+      # commit's results and its comparison with the previous commit, on a
+      # labelled PR the comparison with its merge base. Other runs are not
+      # published: the full report is in the artifact.
+      - name: Job summary
+        env:
+          SITE: https://www.strub.nu/jasmin-nist-timing
+          PUBLISHED: ${{ github.event_name == 'push' && github.ref == 'refs/heads/main' }}
+          PR: ${{ github.event_name == 'pull_request_target' && github.event.pull_request.number || '' }}
+          RUNNER: ${{ matrix.runner }}
+        run: |
+          if [ -n "$PR" ]; then
+            msg="**[compare with the merge base]($SITE/#/pr/$PR)** on the results dashboard (updated a minute after this run)."
+          elif [ "$PUBLISHED" = true ]; then
+            msg="**[results for this commit]($SITE/#/results/$GITHUB_SHA)** · **[compare with the previous commit]($SITE/#/compare/$GITHUB_SHA)** on the results dashboard (updated a minute after this run)."
+          else
+            msg="not published (only main and labelled PRs are); the full report is in the \`bench-$RUNNER\` artifact."
+          fi
+          echo "Benchmarks on \`$RUNNER\`: $msg" >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Upload bench artifact
+        uses: actions/upload-artifact@v7
+        with:
+          name: bench-${{ matrix.runner }}
+          path: |
+            bench/bench.json
+            bench/bench.md
+            bench/_build/bench.csv
+
+  # Add each machine's bench JSON to the results repo
+  # (https://github.com/strub/jasmin-nist-timing): pushes to main go to main's
+  # history (data/bench/<runner>), runs of labelled PRs to that PR's own
+  # space (data/pr/<number>/bench/<runner>), with the PR's merge base for the
+  # comparison. A separate job on a GitHub-hosted runner: it runs only this
+  # (base-branch) workflow's code and downloads the artifact as data, so no PR
+  # code ever shares a job with the deploy key, which never reaches a bench
+  # machine either. Keep the matrix in sync with bench's.
+  publish:
+    needs: bench
+    if: >-
+      (github.event_name == 'push' && github.ref == 'refs/heads/main') ||
+      github.event_name == 'pull_request_target'
+    strategy:
+      matrix:
+        runner: [bench-skylake]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          sparse-checkout: .github/actions
+          persist-credentials: false
+      - uses: actions/download-artifact@v8
+        with:
+          name: bench-${{ matrix.runner }}
+          path: result
+      # Where the record goes, from the event (trusted) rather than from the
+      # artifact (produced by the benchmarked code).
+      - name: Target
+        id: target
+        env:
+          GH_TOKEN: ${{ github.token }}
+          EVENT: ${{ github.event_name }}
+          RUNNER: ${{ matrix.runner }}
+          PR: ${{ github.event.pull_request.number }}
+          HEAD: ${{ github.event.pull_request.head.sha }}
+          BASE: ${{ github.event.pull_request.base.sha }}
+          HEAD_REF: ${{ github.event.pull_request.head.ref }}
+          TITLE: ${{ github.event.pull_request.title }}
+        run: |
+          set -euo pipefail
+          if [ "$EVENT" = pull_request_target ]; then
+            mb=$(gh api "repos/$GITHUB_REPOSITORY/compare/$BASE...$HEAD" \
+                   --jq '[.merge_base_commit.sha, .merge_base_commit.commit.committer.date] | @tsv')
+            meta=$(MB="$mb" python3 -I -c '
+          import json, os
+          sha, date = os.environ["MB"].split("\t")
+          print(json.dumps({"pr": {"number": int(os.environ["PR"]), "title": os.environ["TITLE"],
+                                   "head_ref": os.environ["HEAD_REF"], "base": os.environ["BASE"],
+                                   "merge_base": sha, "merge_base_date": date}}))')
+            { echo "dest=data/pr/$PR/bench/$RUNNER"; echo "commit=$HEAD"; echo "meta=$meta"; } >> "$GITHUB_OUTPUT"
+          else
+            { echo "dest=data/bench/$RUNNER"; echo "commit=$GITHUB_SHA"; echo "meta={}"; } >> "$GITHUB_OUTPUT"
+          fi
+      - uses: ./.github/actions/publish-result
+        with:
+          file: result/bench.json
+          dest: ${{ steps.target.outputs.dest }}
+          commit: ${{ steps.target.outputs.commit }}
+          meta: ${{ steps.target.outputs.meta }}
+          deploy-key: ${{ secrets.TIMING_DEPLOY_KEY }}

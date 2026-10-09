@@ -424,7 +424,7 @@ function render() {
 (function () {
   const m = DATA.meta || {};
   const bits = [];
-  if (m.commit) bits.push(`commit ${m.commit}`);
+  if (m.commit) bits.push(`commit ${m.commit.slice(0, 8)}`);
   if (m.branch) bits.push(m.branch);
   if (m.date) bits.push(m.date.slice(0, 10));
   const n = (function cnt(x) {

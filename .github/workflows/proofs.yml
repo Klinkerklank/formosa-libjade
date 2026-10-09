@@ -61,8 +61,23 @@ jobs:
       # published as a run artifact.
       - name: Timing sunburst
         run: |
-          $ECDEV python3 scripts/timing-report-to-json.py proofs/timing.yml proofs-timing.json
+          $ECDEV python3 scripts/timing-report-to-json.py --jobs "$(nproc)" proofs/timing.yml proofs-timing.json
           $ECDEV python3 scripts/timing-sunburst.py proofs-timing.json proofs-timing.html
+
+      - name: Job summary
+        env:
+          PUBLISHED: ${{ github.event_name == 'push' && github.ref == 'refs/heads/main' }}
+        run: |
+          $ECDEV python3 -I - proofs-timing.json >> "$GITHUB_STEP_SUMMARY" <<'EOF'
+          import json, sys
+          m = json.load(open(sys.argv[1]))["meta"]
+          print(f"Proof checking: **{m['total_seconds'] / 60:.1f} min** cumulative over "
+                f"{m['files']} files ({m.get('machine', {}).get('jobs', '?')} jobs).")
+          EOF
+          if [ "$PUBLISHED" = true ]; then
+            site=https://www.strub.nu/jasmin-nist-timing
+            echo "**[Results for this commit]($site/#/results/$GITHUB_SHA)** · **[compare with the previous commit]($site/#/compare/$GITHUB_SHA)** on the results dashboard (updated a minute after this run)." >> "$GITHUB_STEP_SUMMARY"
+          fi
 
       - name: Upload timing artifact
         uses: actions/upload-artifact@v7
@@ -73,24 +88,28 @@ jobs:
             proofs-timing.json
             proofs-timing.html
 
-      # Publish the sunburst to the public Pages companion repo
-      # (https://github.com/strub/jasmin-nist-timing). Only on pushes to
-      # main, so PR runs never touch the deploy key.
-      - name: Publish sunburst
-        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
-        env:
-          DEPLOY_KEY: ${{ secrets.TIMING_DEPLOY_KEY }}
-        run: |
-          key="$RUNNER_TEMP/timing_deploy_key"
-          printf '%s\n' "$DEPLOY_KEY" > "$key" && chmod 600 "$key"
-          export GIT_SSH_COMMAND="ssh -i $key -o IdentitiesOnly=yes -o StrictHostKeyChecking=accept-new"
-          site="$RUNNER_TEMP/timing-site"
-          rm -rf "$site"
-          git clone -q --depth 1 git@github.com:strub/jasmin-nist-timing.git "$site"
-          cp proofs-timing.html "$site/index.html"
-          cp proofs-timing.json "$site/"
-          git -C "$site" add -A
-          git -C "$site" -c user.name='proofs-ci' \
-              -c user.email='proofs-ci@users.noreply.github.com' \
-              commit -qm "timing: $GITHUB_SHA" --allow-empty
-          git -C "$site" push -q
+  # Add this run's timing JSON to the results repo
+  # (https://github.com/strub/jasmin-nist-timing), on pushes to main only.
+  # A separate job on a GitHub-hosted runner: it only downloads the artifact,
+  # so the deploy key never reaches the self-hosted machine nor shares a job
+  # with the proof-checking steps.
+  publish:
+    needs: check-ec-proofs
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          sparse-checkout: .github/actions
+          persist-credentials: false
+      - uses: actions/download-artifact@v8
+        with:
+          name: proofs-timing
+          path: result
+      - uses: ./.github/actions/publish-result
+        with:
+          file: result/proofs-timing.json
+          dest: data/proofs
+          deploy-key: ${{ secrets.TIMING_DEPLOY_KEY }}

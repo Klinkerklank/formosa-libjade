@@ -11,7 +11,8 @@
  *
  * Output is human-readable by default; set BENCH_FORMAT=csv for one row per
  * measurement -- "scheme,backend,operation,median_cycles" with no header (so
- * invocations concatenate; the bench-all target prints the header). */
+ * invocations concatenate; the bench-all target prints the header and
+ * prefixes each row with its pass number). */
 
 #include <dlfcn.h>
 #include <stdint.h>

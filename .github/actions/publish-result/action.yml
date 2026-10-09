@@ -1,0 +1,97 @@
+name: publish-result
+description: >-
+  Validate one result JSON produced by a CI run and add it to the results
+  repo as <dest>/<commit>.json. Meant for a job on a GitHub-hosted runner
+  that only downloads the producing job's artifact, so the deploy key never
+  reaches a self-hosted machine nor shares a job with build code.
+
+inputs:
+  file:
+    description: the result JSON (downloaded artifact)
+    required: true
+  dest:
+    description: directory in the results repo (data/proofs, data/bench/<runner>, data/pr/<n>/bench/<runner>)
+    required: true
+  deploy-key:
+    description: SSH deploy key with write access to the results repo
+    required: true
+  commit:
+    description: commit the record must be for (default GITHUB_SHA; a PR's head for PR runs)
+    default: ''
+  meta:
+    description: >-
+      JSON object merged into the record's meta, from the trusted publishing
+      side (e.g. a PR's number and merge base)
+    default: '{}'
+  repo:
+    description: results repo
+    default: strub/jasmin-nist-timing
+
+runs:
+  using: composite
+  steps:
+    # The file is data from another job: check it is the expected kind of
+    # record, for this very commit, before it goes anywhere; then add the
+    # trusted metadata.
+    - name: Prepare
+      shell: bash
+      env:
+        FILE: ${{ inputs.file }}
+        COMMIT: ${{ inputs.commit }}
+        EXTRA: ${{ inputs.meta }}
+      run: |
+        python3 -I - "$FILE" "$RUNNER_TEMP/result.json" <<'EOF'
+        import json, os, re, sys
+        path, out = sys.argv[1], sys.argv[2]
+        if os.path.getsize(path) > 5 * 1024 * 1024:
+            sys.exit(f"{path}: larger than 5 MiB")
+        d = json.load(open(path))
+        meta = d.setdefault("meta", {})
+        sha = os.environ.get("COMMIT") or os.environ["GITHUB_SHA"]
+        if not re.fullmatch(r"[0-9a-f]{40}", meta.get("commit", "")):
+            sys.exit(f"{path}: meta.commit is not a full commit hash")
+        if meta["commit"] != sha:
+            sys.exit(f"{path}: meta.commit {meta['commit']} is not the expected {sha}")
+        if not isinstance(d.get("files") or d.get("results"), list):
+            sys.exit(f"{path}: neither a proofs (files) nor a bench (results) record")
+        extra = json.loads(os.environ.get("EXTRA") or "{}")
+        if not isinstance(extra, dict):
+            sys.exit("meta input: not a JSON object")
+        meta.update(extra)
+        json.dump(d, open(out, "w"), indent=1)
+        print(f"{path}: ok ({sha[:8]})")
+        EOF
+
+    - name: Push
+      shell: bash
+      env:
+        DEST: ${{ inputs.dest }}
+        COMMIT: ${{ inputs.commit }}
+        REPO: ${{ inputs.repo }}
+        DEPLOY_KEY: ${{ inputs.deploy-key }}
+      run: |
+        set -euo pipefail
+        sha="${COMMIT:-$GITHUB_SHA}"
+        key="$RUNNER_TEMP/results_deploy_key"
+        printf '%s\n' "$DEPLOY_KEY" > "$key" && chmod 600 "$key"
+        export GIT_SSH_COMMAND="ssh -i $key -o IdentitiesOnly=yes -o StrictHostKeyChecking=accept-new"
+        site="$RUNNER_TEMP/results"
+        rm -rf "$site"
+        git clone -q --depth 1 "git@github.com:$REPO.git" "$site"
+        mkdir -p "$site/$DEST"
+        cp "$RUNNER_TEMP/result.json" "$site/$DEST/$sha.json"
+        git -C "$site" add "$DEST/$sha.json"
+        if git -C "$site" diff --cached --quiet; then
+          echo "unchanged: $DEST/$sha.json"; exit 0
+        fi
+        git -C "$site" -c user.name='jasmin-nist-ci' \
+            -c user.email='jasmin-nist-ci@users.noreply.github.com' \
+            commit -qm "$DEST: ${sha:0:8} (run $GITHUB_RUN_ID)"
+        # proofs and bench publish independently: rebase onto whatever the
+        # other one pushed meanwhile (distinct files, never a conflict)
+        for i in 1 2 3 4 5; do
+          git -C "$site" push -q && exit 0
+          sleep $((i * 3))
+          git -C "$site" pull -q --rebase
+        done
+        echo "could not push after 5 attempts" >&2; exit 1

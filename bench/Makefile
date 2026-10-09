@@ -169,6 +169,14 @@ SCHEME_BASE = $(shell echo $(SCHEME) | tr -d '-' | tr 'A-Z' 'a-z')
 ALL_SCHEMES ?= ML-KEM-512 ML-KEM-768 ML-KEM-1024 ML-DSA-44 ML-DSA-65 ML-DSA-87
 
 REPORT  ?= bench.md
+# machine-readable report (aggregated results + run metadata) next to REPORT
+REPORT_JSON ?= bench.json
+# bench-all passes over every (scheme, backend); each pass runs them all in
+# turn, so slow drift (temperature, frequency) hits every backend alike, and
+# the report gives the spread of the per-pass medians
+REPS    ?= 5
+# extra run metadata for the JSON report, as KEY=VALUE words (e.g. runner=...)
+META    ?=
 # backend(s) excluded from the report; override with EXCLUDE= to include all
 EXCLUDE ?= pqcrystals-ref
 # report only schemes containing this backend; REQUIRE= reports every scheme
@@ -199,17 +207,21 @@ bench: libs $(BUILD)/bench
 	@for so in $(BUILD)/*_$(SCHEME_BASE).so; do $(PIN)$(BUILD)/bench $(SCHEME) $$so; done
 
 # machine-readable (CSV) benchmark over every scheme x its built backends,
-# one process per (scheme, backend)
+# one process per (scheme, backend), REPS interleaved passes
 bench-all: libs $(BUILD)/bench
-	@echo "scheme,backend,operation,median_cycles"
-	@for s in $(ALL_SCHEMES); do \
-	   sb=$$(echo $$s | tr -d '-' | tr 'A-Z' 'a-z'); \
-	   for so in $(BUILD)/*_$$sb.so; do \
-	     BENCH_FORMAT=csv $(PIN)$(BUILD)/bench $$s $$so; \
+	@echo "rep,scheme,backend,operation,median_cycles"
+	@for r in $$(seq 1 $(REPS)); do \
+	   for s in $(ALL_SCHEMES); do \
+	     sb=$$(echo $$s | tr -d '-' | tr 'A-Z' 'a-z'); \
+	     for so in $(BUILD)/*_$$sb.so; do \
+	       out=$$(BENCH_FORMAT=csv $(PIN)$(BUILD)/bench $$s $$so) || exit $$?; \
+	       printf '%s\n' "$$out" | sed "s/^/$$r,/"; \
+	     done; \
 	   done; \
 	done
 
-# render a fresh bench-all into a Markdown report (tables + Mermaid charts).
+# render a fresh bench-all into a Markdown report (tables + Mermaid charts)
+# and its JSON counterpart (REPORT_JSON).
 # Versions are read from the pinned submodule revisions and the jasmin compiler.
 gitver = $$(git -C $(1) describe --tags --always --dirty 2>/dev/null || echo '?')
 report: libs $(BUILD)/bench
@@ -224,8 +236,10 @@ report: libs $(BUILD)/bench
 	        --version "mldsa-native=$(call gitver,$(MLDN)/..)" \
 	        --version "pq-crystals/kyber=$(call gitver,$(KREF)/..)" \
 	        --version "pq-crystals/dilithium=$(call gitver,$(DREF)/..)" \
-	        -o $(REPORT) $(BUILD)/bench.csv
-	@echo "wrote $(REPORT)"
+	        --meta "reps=$(REPS)" --meta "iters=$${BENCH_ITERS:-10000}" \
+	        $(addprefix --meta ,$(META)) \
+	        --json $(REPORT_JSON) -o $(REPORT) $(BUILD)/bench.csv
+	@echo "wrote $(REPORT) $(REPORT_JSON)"
 
 clean:
 	rm -rf $(BUILD)
