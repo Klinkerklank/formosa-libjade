@@ -784,7 +784,7 @@ seq 2 1 : (#pre /\
      sp_0 slots 0,1,2 (rv side) + ep slot 0 (e1 first poly).
      LHS: nonce<-0; getnoise; 4 slot inits = 6 stmts.  RHS: 0 stmts.
      Analogous to kg Step 3a (line 748). *)
-seq 6 0 : (#pre /\
+seq 7 0 : (#pre /\
            (forall i, 0 <= i < 3 =>
               lift_array256 (Array256.init (fun k => sp_0{1}.[256*i + k])) =
                 samplePolyCBD (Symmetric.PRF noiseseed{1} (W8.of_int i))) /\
@@ -796,7 +796,7 @@ seq 6 0 : (#pre /\
      Proposed: copy kg Step 3a tactic verbatim (lines 750-776), with
      `noiseseed{1}` and `(W8.of_int 0)`.  Replace `skpv` → `sp_0`,
      `e` → `ep` in the slot-init bookkeeping. *)
-  sp 1 0.
+  sp 2 0.
   wp.
   ecall {1} (jkem_getnoise_4x_ph noiseseed{1} (W8.of_int 0)).
   auto => /> &1 &2 Hpk1 Hpk2 Hpk3 Hpk4 Hk1 Hk2 _ result Hr1 Hr2 Hr3 Hr4 Hb1 Hb2 Hb3 Hb4.
@@ -825,7 +825,7 @@ seq 6 0 : (#pre /\
      by mmul loop below).  Establish full sp_0 ↔ rv, ep ↔ e1, epp ↔ e2.
      LHS: nonce<-4; getnoise; 4 slot inits = 6 stmts.  RHS: 0 stmts.
      Analogous to kg Step 3b (line 785). *)
-seq 6 0 : (#{/~forall i, 0 <= i < 3 =>
+seq 7 0 : (#{/~forall i, 0 <= i < 3 =>
                 lift_array256 (Array256.init (fun k => sp_0{1}.[256*i + k])) =
                   samplePolyCBD (Symmetric.PRF noiseseed{1} (W8.of_int i))}
             {/~lift_array256 (Array256.init (fun k => ep{1}.[k])) =
@@ -845,7 +845,7 @@ seq 6 0 : (#{/~forall i, 0 <= i < 3 =>
      The `lift_polyvec sp_0 = rv` step unfolds `prg_enc_inner.`1` via
      `eq_vectorP` + `offunvE` + `getv_setvE`, identical pattern to kg's
      `lift_polyvec skpv = (prg_kg_inner coins).`2`. *)
-  sp 1 0.
+  sp 2 0.
   wp.
   ecall {1} (jkem_getnoise_4x_ph noiseseed{1} (W8.of_int 4)).
   auto => /> &1 &2 ???????Hsp He?? result Hr1 Hr2 Hr3 Hr4 Hb1 Hb2 Hb3 Hb4.
@@ -1464,7 +1464,7 @@ seq 2 2 : (#{/~s{2} = (prg_kg_inner coins{2}).`2}
   by smt().
 
 
-seq 6 3 : (
+seq 7 3 : (
   publicseed{1} = rho{2} /\
   sv{2} = BytesPKVec.init (fun i => sk{1}.[i]) /\
   tv{2} = BytesPKVec.init (fun i => aux_3{1}.[i])); last first.
@@ -1497,7 +1497,7 @@ seq 6 3 : (
 
 ecall {1} (polyvec_tobytes_corr pkpv{1}).                 (* LHS5 *)
 ecall {1} (polyvec_tobytes_corr skpv{1}).                 (* LHS4 *)
-ecall {1} (polyvec_reduce_corr_avx (lift_array768 pkpv{1})). (* LHS3 *)
+wp; ecall {1} (polyvec_reduce_corr_avx (lift_array768 pkpv{1})). (* LHS3 *)
 ecall {1} (polyvec_add_corr_avx 2 2 _ _ (lift_array768 pkpv{1}) (lift_array768 e{1})) => //. (* LHS2 *)
 
 wp.

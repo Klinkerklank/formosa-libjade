@@ -811,12 +811,12 @@ seq 2 1 : (#pre /\
 (* === Step 3: first getnoise_4x call (1024: fills sp_0 cleanly, no boundary).
      TODO 1024: structure differs from 768 — first call fills sp_0[0..3] entirely
      (4 polys), no e1 first-slot crossover. *)
-seq 6 0 : (#pre /\
+seq 7 0 : (#pre /\
            (forall i, 0 <= i < 4 =>
               lift_array256 (Array256.init (fun k => sp_0{1}.[256*i + k])) =
                 samplePolyCBD (Symmetric.PRF noiseseed{1} (W8.of_int i))) /\
            signed_bound1024_cxq sp_0{1} 0 1024 1).
-+  sp 1 0.
++  sp 2 0.
   wp.
   ecall {1} (jkem_getnoise_4x_ph noiseseed{1} (W8.of_int 0)).
   auto => /> &1 &2 _ _ _ _ _ _ _ result Hr1 Hr2 Hr3 Hr4 Hb1 Hb2 Hb3 Hb4.
@@ -845,7 +845,7 @@ seq 6 0 : (#pre /\
 (* === Step 4: second getnoise_4x call (1024: fills ep cleanly + epp).
      TODO 1024: structure differs — second call fills ep[0..3] (4 polys), epp from extra. *)
 (* Step 4a: fill ep cleanly (4 polys) — mirrors Step 3 pattern. *)
-seq 6 0 : (#{/~forall i, 0 <= i < 4 =>
+seq 7 0 : (#{/~forall i, 0 <= i < 4 =>
                 lift_array256 (Array256.init (fun k => sp_0{1}.[256*i + k])) =
                   samplePolyCBD (Symmetric.PRF noiseseed{1} (W8.of_int i))}
             {/~signed_bound1024_cxq sp_0{1} 0 1024 1}pre /\
@@ -853,7 +853,7 @@ seq 6 0 : (#{/~forall i, 0 <= i < 4 =>
            lift_polyvec ep{1} = e1{2} /\
            signed_bound1024_cxq sp_0{1} 0 1024 1 /\
            signed_bound1024_cxq ep{1} 0 1024 1).
-+ sp 1 0.
++ sp 2 0.
   wp; ecall {1} (jkem_getnoise_4x_ph noiseseed{1} (W8.of_int 4)).
   auto => |>.
   move => &1 &2 Hpk1 Hpk2 Hpkpv Hpkb Hkv Hkb Hpge Haatb Hsp_fa Hsp_bnd result Hr1 Hr2 Hr3 Hr4 Hb1 Hb2 Hb3 Hb4.
@@ -902,10 +902,10 @@ seq 6 0 : (#{/~forall i, 0 <= i < 4 =>
     rewrite initiE 1:/# /= ifT 1:/#; smt(qE).
 
 (* Step 4b: fill epp via single-poly eta2. *)
-seq 2 0 : (#pre /\
+seq 3 0 : (#pre /\
            lift_array256 epp{1} = e2{2} /\
            signed_bound_cxq epp{1} 0 256 1).
-+ sp 1 0.
++ sp 2 0.
   wp; ecall {1} (jkem_getnoise_eta2_ph noiseseed{1} (W8.of_int 8)).
   auto => |> &1 &2;  rewrite /prg_enc_inner=>  ??????[#]?????? result Hepp_eq Hepp_bnd;split;smt(kvec_val).
 
@@ -1451,7 +1451,7 @@ seq 2 2 : (#{/~s{2} = (prg_kg_inner coins{2}).`2}
   by smt().
 
 
-seq 6 3 : (
+seq 7 3 : (
   publicseed{1} = rho{2} /\
   sv{2} = BytesPKVec.init (fun i => sk{1}.[i]) /\
   tv{2} = BytesPKVec.init (fun i => aux_3{1}.[i])); last first.
@@ -1484,7 +1484,7 @@ seq 6 3 : (
 
 ecall {1} (polyvec_tobytes_corr pkpv{1}).
 ecall {1} (polyvec_tobytes_corr skpv{1}).
-ecall {1} (polyvec_reduce_corr_avx (lift_array1024 pkpv{1})).
+wp; ecall {1} (polyvec_reduce_corr_avx (lift_array1024 pkpv{1})).
 ecall {1} (polyvec_add_corr_avx 2 2 _ _ (lift_array1024 pkpv{1}) (lift_array1024 e{1})) => //.
 
 wp.

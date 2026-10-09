@@ -843,7 +843,7 @@ proof.
 proc.
 wp; call getnoise_1x_equiv_avx.
 sp; conseq />.
-ecall {1} (shake256_128A_A33_ph seed{1} nonce_s{1}).
+wp; ecall {1} (shake256_128A_A33_ph seed{1} nonce_s{1}).
 auto => /> &2 r0; rewrite /SHAKE256_33_128 /=.
 have <- := (Array128.to_listK W8.zero r0); rewrite of_listK; 1: by rewrite size_to_list.
 move => ->.

@@ -757,7 +757,10 @@ local lemma bad_ok (qH qS : int) &m : 0 <= qH => 0 <= qS =>
      MLDSA_RO_DS1.bad /\ CountH.c <= qH /\ CountS.c <= qS] <=
   qH%r * p512 + qS%r * ((1 + max 0 kappa_max)%r * p512) + 2%r * p512.
 proof.
-move=> hqH hqS; byehoare => //; proc; inline MLDSA_RO_DS1(DS2.RO1.RO, DS2.RO2.RO).keygen.
+move=> hqH hqS; byehoare => //; last first.
++ have hp : 0%r <= p512 by smt(RealOrder.expr_ge0).
+  by smt(RealOrder.mulr_ge0).
+proc; inline MLDSA_RO_DS1(DS2.RO1.RO, DS2.RO2.RO).keygen.
 seq 6 : ((pk = MLDSA_RO_DS1.pkv /\ inv_m DS2.RO1.RO.m MLDSA_RO_DS1.pkv /\
           norel DS2.RO1.RO.m) `|`
          (qH%r * p512 + qS%r * ((1 + max 0 kappa_max)%r * p512) + 2%r * p512)%xr).

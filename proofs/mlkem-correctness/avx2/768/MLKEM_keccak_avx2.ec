@@ -405,8 +405,12 @@ module K = {
 (*********************************************************************************)
 equiv sha3_512A_A33_eq:
   M._sha3_512A_A33 ~ K._sha3_512A_A33
- : ={arg} ==> ={res}
+ : ={arg} ==> ={res}.
+proof.
+proc; inline{1} M.__KECCAK_F.
+rcondf{1} 8; 1: by auto => />; rewrite (: 255 = 2^8 - 1) // W256.and_mod.
 by sim.
+qed.
 
 hoare sha3_512A_A33_h' _in:
  K._sha3_512A_A33
@@ -450,8 +454,12 @@ qed.
 (*********************************************************************************)
 equiv sha3_512A_A64_eq:
   M._sha3_512A_A64 ~ K._sha3_512A_A64
- : ={arg} ==> ={res}
+ : ={arg} ==> ={res}.
+proof.
+proc; inline{1} M.__KECCAK_F.
+rcondf{1} 8; 1: by auto => />; rewrite (: 255 = 2^8 - 1) // W256.and_mod.
 by sim.
+qed.
 
 hoare sha3_512A_A64_h' _in:
  K._sha3_512A_A64
@@ -561,8 +569,12 @@ from JazzEC require import Array1184.
 (*********************************************************************************)
 equiv sha3_256A_A1184_eq:
   Jkem_avx2.M._sha3_256A_A1184 ~ K._sha3_256A_A1184
- : ={arg} ==> ={res}
- by sim.
+ : ={arg} ==> ={res}.
+proof.
+proc; inline{1} M.__KECCAK_F.
+rcondf{1} 8; 1: by auto => />; rewrite (: 255 = 2^8 - 1) // W256.and_mod.
+by sim.
+qed.
 
 hoare sha3_256A_A1184_h' _in:
  K._sha3_256A_A1184
@@ -626,8 +638,12 @@ from JazzEC require import Array960 Array128.
 (*********************************************************************************)
 equiv shake256_A32__A1120_eq:
   Jkem_avx2.M._shake256_A32__A1120 ~ K._shake256_A32__A1120
- : ={arg, Glob.mem} ==> ={res, Glob.mem}
- by sim.
+ : ={arg, Glob.mem} ==> ={res, Glob.mem}.
+proof.
+proc; inline{1} M.__KECCAK_F.
+rcondf{1} 8; 1: by auto => />; rewrite (: 255 = 2^8 - 1) // W256.and_mod.
+by sim.
+qed.
 
 hoare shake256_A32__A1120_h' _in:
  K._shake256_A32__A1120
@@ -697,8 +713,12 @@ qed.
 
 equiv shake128_absorb_A32_A2_eq:
   M._shake128_absorb_A32_A2 ~ K._shake128_absorb_A32_A2
- : ={arg} ==> ={res}
- by sim.
+ : ={arg} ==> ={res}.
+proof.
+proc; inline{1} M.__KECCAK_F.
+rcondf{1} 5; 1: by auto => />; rewrite (: 255 = 2^8 - 1) // W256.and_mod.
+by sim.
+qed.
 
 hoare shake128_absorb_A32_A2_h' _rho _rc:
  K._shake128_absorb_A32_A2
@@ -745,7 +765,12 @@ qed.
 (*********************************************************************************)
 equiv shake128_squeeze3blocks_eq:
   M._shake128_squeeze3blocks ~ K._shake128_squeeze3blocks
- : ={arg} ==> ={res} by proc; sim.
+ : ={arg} ==> ={res}.
+proof.
+proc; inline{1} M.__KECCAK_F.
+rcondf{1} 5; 1: by auto => />; rewrite (: 255 = 2^8 - 1) // W256.and_mod.
+by sim.
+qed.
 
 hoare shake128_squeeze3blocks_h' _buf _st:
  K._shake128_squeeze3blocks
@@ -835,7 +860,12 @@ qed.
 (*********************************************************************************)
 equiv shake128_next_state_eq:
   M._shake128_next_state ~ K._shake128_next_state
- : ={arg} ==> ={res} by sim.
+ : ={arg} ==> ={res}.
+proof.
+proc; inline{1} M.__KECCAK_F.
+rcondf{1} 5; 1: by auto => />; rewrite (: 255 = 2^8 - 1) // W256.and_mod.
+by sim.
+qed.
 
 hoare shake128_next_state_h' _buf:
  K._shake128_next_state

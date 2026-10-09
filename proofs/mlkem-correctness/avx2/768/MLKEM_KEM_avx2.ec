@@ -31,7 +31,7 @@ proof.
 proc => /=.
 seq 5 0 : #pre;1: by auto.
 swap {1} 1 12. sp.
-seq 3 1 : (#{/~skcpa{1}}{~sk{1}}pre /\  
+seq 4 1 : (#{/~skcpa{1}}{~sk{1}}pre /\
    (forall k, 0 <= k < 1152 => sk{1}.[k] = sk{2}.[k]) /\
    pk{2}.`1 = BytesPKVec.init (fun i => pk{1}.[i])  /\
    pk{2}.`2 = Array32.init (fun i => pk{1}.[i+1152])).
@@ -63,7 +63,7 @@ seq 3 0 : (#pre /\
     rewrite /get8 /init8 /(\bits8) wordP => *.
     rewrite initiE 1:/# /= /#.
     
-seq 3 1 : (#pre /\
+seq 6 1 : (#pre /\
     (forall (k : int), 0 <= k < 32 => sk{1}.[k+1152 + 1184] = hpk{2}.[k])).
 wp;ecall {1} (sha3_256A_M1184_ph pk{1}).
 + auto => /> &1 &2 ???HH0 HH1?; do split.
@@ -76,7 +76,7 @@ wp;ecall {1} (sha3_256A_M1184_ph pk{1}).
       rewrite get_to_list get_to_list initiE 1:/# HH0 initiE /=; smt(kvec_val).
     + by rewrite HH1;smt().
 
-seq  5 0 : (#pre /\
+seq  3 0 : (#pre /\
     (forall (k : int), 0 <= k < 32 => sk{1}.[k+1152 + 1184 + 32] =randomnessp{1}.[k+32])).
 + while {1} (#pre /\ inc{1} = 4 /\ 0 <= i{1} <= 4 /\
     (forall k, 0 <= k < i{1}*8 =>
@@ -342,7 +342,7 @@ lemma mlkem_kem_correct_dec  :
        c1 = BytesCtVec.init(fun i => ct{1}.[i]) /\
        c2 = BytesPoly.init(fun i => ct{1}.[i + 960])
        ==> ={res}].
-proc => /=. sp 0 1. swap {1} [5..7] 8.
+proc => /=. sp 0 1. swap {1} [5..7] 10.
 
 seq 6 1 : (#pre /\ aux{1} = m{2}).
 + call (mlkem_correct_dec).
@@ -353,11 +353,11 @@ seq 6 1 : (#pre /\ aux{1} = m{2}).
   move => x1 x2 Hx; move: Hcph; rewrite Hx /= => -[-> H2]; split; first done.
   rewrite H2; apply BytesPoly.tP => i ib; rewrite !BytesPoly.initiE 1,2:/#; smt().
 
-seq 4 1 : (#pre /\
+seq 5 1 : (#pre /\
            (forall k, 0<=k<32 => buf{1}.[k] = m{2}.[k]) /\
            (forall k, 0<=k<32 => kr{1}.[k] = _K{2}.[k]) /\
            (forall k, 0<=k<32 => kr{1}.[k+32] = r{2}.[k])).
-ecall {1} (sha3_512A_A64_ph buf{1}).
+wp; ecall {1} (sha3_512A_A64_ph buf{1}).
 + auto => /> &1 &2; rewrite !tP => buf bvl bvh ; do split.
   + by move => k kbl kbh; rewrite initiE 1:/# /= ifF 1:/# /get8 !initiE 1..2:/# /= ifT.
   + move => k kbl kbh; rewrite initiE 1:/# /= kbh /= /G_mhpk; congr; congr;congr.
@@ -390,7 +390,7 @@ seq 1 1 : (#pre /\
     rewrite initiE /=; by  smt(Parameters.param_sets Array128.initiE Array960.initiE  kvec_val).
   rewrite Hr;1:smt(kvec_val Parameters.param_sets).
   rewrite initiE /=; by  smt(Parameters.param_sets Array128.initiE Array960.initiE  kvec_val).
-seq 1 0 : (#pre /\ 
+seq 2 0 : (#pre /\
                   (c{2}  = cph{2} => cnd{1} = W64.of_int 0) /\
                   (c{2}  <> cph{2} => cnd{1} = W64.of_int 1)).
    ecall {1} (verify_correct ct{1} ctc{1}). 

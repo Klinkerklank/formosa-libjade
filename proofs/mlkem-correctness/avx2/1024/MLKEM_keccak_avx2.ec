@@ -408,8 +408,12 @@ module K = {
 (*********************************************************************************)
 equiv sha3_512A_A33_eq:
   M._sha3_512A_A33 ~ K._sha3_512A_A33
- : ={arg} ==> ={res}
+ : ={arg} ==> ={res}.
+proof.
+proc; inline{1} M.__KECCAK_F.
+rcondf{1} 8; 1: by auto => />; rewrite (: 255 = 2^8 - 1) // W256.and_mod.
 by sim.
+qed.
 
 hoare sha3_512A_A33_h' _in:
  K._sha3_512A_A33
@@ -453,7 +457,12 @@ qed.
 (*********************************************************************************)
 equiv shake256_128A_A33_eq:
   M._shake256_A128__A32_A1 ~ K._shake256_A128__A32_A1
- : ={arg} ==> ={res} by sim.
+ : ={arg} ==> ={res}.
+proof.
+proc; inline{1} M.__KECCAK_F.
+rcondf{1} 8; 1: by auto => />; rewrite (: 255 = 2^8 - 1) // W256.and_mod.
+by sim.
+qed.
 
 hoare shake256_128A_A33_h' _in0 _in1:
  K._shake256_A128__A32_A1
@@ -502,8 +511,12 @@ qed.
 (*********************************************************************************)
 equiv sha3_512A_A64_eq:
   M._sha3_512A_A64 ~ K._sha3_512A_A64
- : ={arg} ==> ={res}
+ : ={arg} ==> ={res}.
+proof.
+proc; inline{1} M.__KECCAK_F.
+rcondf{1} 8; 1: by auto => />; rewrite (: 255 = 2^8 - 1) // W256.and_mod.
 by sim.
+qed.
 
 hoare sha3_512A_A64_h' _in:
  K._sha3_512A_A64
@@ -613,8 +626,12 @@ from JazzEC require import Array1568.
 (*********************************************************************************)
 equiv sha3_256A_A1568_eq:
   Jkem_avx2.M._sha3_256A_A1568 ~ K._sha3_256A_A1568
- : ={arg} ==> ={res}
- by sim.
+ : ={arg} ==> ={res}.
+proof.
+proc; inline{1} M.__KECCAK_F.
+rcondf{1} 8; 1: by auto => />; rewrite (: 255 = 2^8 - 1) // W256.and_mod.
+by sim.
+qed.
 
 hoare sha3_256A_A1568_h' _in:
  K._sha3_256A_A1568
@@ -678,8 +695,12 @@ from JazzEC require import Array1408 Array160.
 (*********************************************************************************)
 equiv shake256_A32__A1600_eq:
   M._shake256_A32__A1600 ~ K._shake256_A32__A1600
- : ={arg, Glob.mem} ==> ={res, Glob.mem}
- by sim.
+ : ={arg, Glob.mem} ==> ={res, Glob.mem}.
+proof.
+proc; inline{1} M.__KECCAK_F.
+rcondf{1} 8; 1: by auto => />; rewrite (: 255 = 2^8 - 1) // W256.and_mod.
+by sim.
+qed.
 
 hoare shake256_A32__A1600_h' _in:
  K._shake256_A32__A1600
@@ -750,8 +771,12 @@ qed.
 
 equiv shake128_next_state_eq:
   M._shake128_next_state ~ K._shake128_next_state
- : ={arg} ==> ={res}
+ : ={arg} ==> ={res}.
+proof.
+proc; inline{1} M.__KECCAK_F.
+rcondf{1} 5; 1: by auto => />; rewrite (: 255 = 2^8 - 1) // W256.and_mod.
 by sim.
+qed.
 
 hoare shake128_next_state_h' _buf:
  K._shake128_next_state
