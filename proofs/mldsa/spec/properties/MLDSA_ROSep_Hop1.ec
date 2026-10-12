@@ -319,39 +319,39 @@ qed.
 (* One signing call costs p512 for H_mu and p512 per iteration for H_ct *)
 ehoare sign_coll (pk0 : BytesPK.t) (k : real) : MLDSA_RO(DS2.RO1.RO, DS2.RO2.RO).sign_derand :
   (inv_m DS2.RO1.RO.m pk0 /\ 0%r <= k) `|`
-    (b2r (coll DS2.RO1.RO.m pk0) + (1 + max 0 kappa_max)%r * p512 + k)%xr
+    (b2r (coll DS2.RO1.RO.m pk0) + (1 + kappa_max)%r * p512 + k)%xr
   ==> inv_m DS2.RO1.RO.m pk0 `|` (b2r (coll DS2.RO1.RO.m pk0) + k)%xr.
 proof.
 proc; seq 15 : ((inv_m DS2.RO1.RO.m pk0 /\ 0%r <= k /\ kappa = 0) `|`
-                (b2r (coll DS2.RO1.RO.m pk0) + (max 0 kappa_max)%r * p512 + k)%xr).
+                (b2r (coll DS2.RO1.RO.m pk0) + kappa_max%r * p512 + k)%xr).
 + seq 11 : ((inv_m DS2.RO1.RO.m pk0 /\ 0%r <= k) `|`
-            (b2r (coll DS2.RO1.RO.m pk0) + (max 0 kappa_max)%r * p512 + k)%xr).
+            (b2r (coll DS2.RO1.RO.m pk0) + kappa_max%r * p512 + k)%xr).
   + seq 9 : ((inv_m DS2.RO1.RO.m pk0 /\ 0%r <= k) `|`
-             (b2r (coll DS2.RO1.RO.m pk0) + (1 + max 0 kappa_max)%r * p512 + k)%xr).
+             (b2r (coll DS2.RO1.RO.m pk0) + (1 + kappa_max)%r * p512 + k)%xr).
     + exlim DS2.RO1.RO.m => m0.
       call /(fun y => (DS2.RO1.RO.m = m0) `|` y)
            (ExpandA_e ((inv_m m0 pk0 /\ 0%r <= k) `|`
-                       (b2r (coll m0 pk0) + (1 + max 0 kappa_max)%r * p512 + k)%xr)).
+                       (b2r (coll m0 pk0) + (1 + kappa_max)%r * p512 + k)%xr)).
       + by move=> &hr /=; apply xle_cxr_r => [#] hm hinv hk; rewrite hm hinv hk.
       wp; call /(fun y => (DS2.RO1.RO.m = m0) `|` y)
            (skDecode_e ((inv_m m0 pk0 /\ 0%r <= k) `|`
-                        (b2r (coll m0 pk0) + (1 + max 0 kappa_max)%r * p512 + k)%xr)).
+                        (b2r (coll m0 pk0) + (1 + kappa_max)%r * p512 + k)%xr)).
       auto => &hr /=.
       by apply xle_cxr_r => [#] hm hinv hk; rewrite hm hinv hk.
     wp; exlim tr, m => tr_ m_.
     call /(fun y => (0%r <= k) `|` y)
-         (Squeeze_coll pk0 (Bytes64.to_list tr_ ++ m_) 64 ((max 0 kappa_max)%r * p512 + k)).
-    + by move=> &hr /=; apply xle_cxr => /> *; apply le_pos; smt().
+         (Squeeze_coll pk0 (Bytes64.to_list tr_ ++ m_) 64 (kappa_max%r * p512 + k)).
+    + by move=> &hr /=; apply xle_cxr => /> *; apply le_pos; smt(kappa_max_bnd).
     skip => &hr /=; apply xle_cxr => /> *.
-    by split; [smt(RealOrder.expr_ge0) | apply le_pos; smt(RealOrder.expr_ge0)].
+    by split; [smt(RealOrder.expr_ge0 kappa_max_bnd) | apply le_pos; smt(RealOrder.expr_ge0 kappa_max_bnd)].
   wp; exlim _K, coins, mu => K_ c_ mu_.
   call /(fun y => (0%r <= k) `|` y)
        (Squeeze_coll pk0 (Bytes32.to_list K_ ++ rnd_to_list c_ ++ Bytes64.to_list mu_) 64
-                     ((max 0 kappa_max)%r * p512 + k)).
-  + by move=> &hr /=; apply xle_cxr => /> *; apply le_pos; smt().
+                     (kappa_max%r * p512 + k)).
+  + by move=> &hr /=; apply xle_cxr => /> *; apply le_pos; smt(kappa_max_bnd).
   skip => &hr /=; apply xle_cxr => /> *.
   rewrite !size_cat Bytes32.size_to_list Bytes64.size_to_list /rnd_to_list Bytes32.size_to_list /=.
-  by split; [smt(RealOrder.expr_ge0) | apply le_pos; smt(w1_bytes_big)].
+  by split; [smt(RealOrder.expr_ge0 kappa_max_bnd) | apply le_pos; smt(w1_bytes_big kappa_max_bnd)].
 seq 1 : ((inv_m DS2.RO1.RO.m pk0 /\ 0%r <= k) `|` (b2r (coll DS2.RO1.RO.m pk0) + k)%xr).
 + while ((inv_m DS2.RO1.RO.m pk0 /\ 0%r <= k /\ 0 <= kappa) `|`
          (b2r (coll DS2.RO1.RO.m pk0) + (max 0 (kappa_max - kappa))%r * p512 + k)%xr).
@@ -372,7 +372,7 @@ seq 1 : ((inv_m DS2.RO1.RO.m pk0 /\ 0%r <= k) `|` (b2r (coll DS2.RO1.RO.m pk0) +
     apply le_pos.
     have -> : max 0 (kappa_max - kappa{hr}) = 1 + max 0 (kappa_max - (kappa{hr} + 1)) by smt().
     by rewrite fromintD; smt().
-  by skip => &hr /=; apply xle_cxr => /> *.
+  by skip => &hr /=; apply xle_cxr => /> *; apply le_pos; smt(RealOrder.expr_ge0 kappa_max_bnd).
 if; last by auto => &hr /=; apply xle_cxr => />.
 exlim DS2.RO1.RO.m => m0.
 call /(fun y => (DS2.RO1.RO.m = m0) `|` y)
@@ -636,7 +636,7 @@ op pot (qH qS ch cs : int) (m : (W8.t list * int, W8.t list) fmap) (pk : BytesPK
   if ch <= qH /\ cs <= qS
   then inv_m m pk `|`
        (b2r (coll m pk) + (qH - ch)%r * p512 +
-        (qS - cs)%r * ((1 + max 0 kappa_max)%r * p512) + 2%r * p512)%xr
+        (qS - cs)%r * ((1 + kappa_max)%r * p512) + 2%r * p512)%xr
   else 0%xr.
 
 ehoare CountH_get (qH qS : int) : CountH(DS2.RO1.RO).get :
@@ -647,18 +647,18 @@ proc; exlim x, DS2.RO1.RO.m, MLDSA_RO_DS1.pkv, CountH.c, CountS.c => x1 m1 pk0 c
 call /(fun y => (MLDSA_RO_DS1.pkv = pk0 /\ CountH.c = ch + 1 /\ CountS.c = cs) `|`
                 (if ch + 1 <= qH /\ cs <= qS then y else 0%xr))
      (RO1_get_coll pk0 x1 m1 ((qH - (ch + 1))%r * p512 +
-                              (qS - cs)%r * ((1 + max 0 kappa_max)%r * p512) + 2%r * p512)).
+                              (qS - cs)%r * ((1 + kappa_max)%r * p512) + 2%r * p512)).
 + move=> &hr; apply xle_cxr_r => [#] hpk hch hcs; rewrite /pot hpk hch hcs.
   case: (ch + 1 <= qH /\ cs <= qS) => hok //=.
-  by apply xle_cxr => /> *; apply le_pos; smt().
+  by apply xle_cxr => /> *; apply le_pos; smt(kappa_max_bnd).
 wp; skip => &hr /=; apply xle_cxr_r => [#] ->> ->> ->> ->> ->>; rewrite /pot.
 case: (CountH.c{hr} + 1 <= qH /\ CountS.c{hr} <= qS) => hok /=; last by apply xle0x.
 have -> /= : CountH.c{hr} <= qH /\ CountS.c{hr} <= qS by smt().
 apply xle_cxr => /> hinv _; have hp : 0%r <= p512 by smt(RealOrder.expr_ge0).
 have hk : 0%r <= (qH - (CountH.c{hr} + 1))%r * p512 +
-               (qS - CountS.c{hr})%r * ((1 + max 0 kappa_max)%r * p512) + 2%r * p512.
-+ by smt(RealOrder.mulr_ge0).
-by split => //; apply le_pos; smt().
+               (qS - CountS.c{hr})%r * ((1 + kappa_max)%r * p512) + 2%r * p512.
++ by smt(RealOrder.mulr_ge0 kappa_max_bnd).
+by split => //; apply le_pos; smt(kappa_max_bnd).
 qed.
 
 ehoare RO2_get_pot (qH qS : int) : DS2.RO2.RO.get :
@@ -741,31 +741,31 @@ exlim MLDSA_RO_DS1.pkv, CountH.c, CountS.c => pk0 ch cs.
 call /(fun y => (MLDSA_RO_DS1.pkv = pk0 /\ CountH.c = ch /\ CountS.c = cs + 1) `|`
                 (if ch <= qH /\ cs + 1 <= qS then y else 0%xr))
      (sign_coll pk0 ((qH - ch)%r * p512 +
-                     (qS - (cs + 1))%r * ((1 + max 0 kappa_max)%r * p512) + 2%r * p512)).
+                     (qS - (cs + 1))%r * ((1 + kappa_max)%r * p512) + 2%r * p512)).
 + move=> &hr; apply xle_cxr_r => [#] hpk hch hcs; rewrite /pot hpk hch hcs.
   case: (ch <= qH /\ cs + 1 <= qS) => hok //=.
-  by apply xle_cxr => /> *; apply le_pos; smt().
+  by apply xle_cxr => /> *; apply le_pos; smt(kappa_max_bnd).
 auto => &hr /=; apply xle_cxr_r => [#] ->> ->> ->>; rewrite EpC drnd_ll /pot smul1m /=.
 case: (CountH.c{hr} <= qH /\ CountS.c{hr} + 1 <= qS) => hok /=; last by apply xle0x.
 have -> /= : CountH.c{hr} <= qH /\ CountS.c{hr} <= qS by smt().
 apply xle_cxr => /> hinv _; have hp : 0%r <= p512 by smt(RealOrder.expr_ge0).
-by split; [smt(RealOrder.mulr_ge0) | apply le_pos; smt()].
+by split; [smt(RealOrder.mulr_ge0 kappa_max_bnd) | apply le_pos; smt(kappa_max_bnd)].
 qed.
 
 local lemma bad_ok (qH qS : int) &m : 0 <= qH => 0 <= qS =>
   Pr[DS2.EUF_CMA(DS2.RO1.RO, DS2.RO2.RO, MLDSA_RO_DS1, CountA(A)).main() @ &m :
      MLDSA_RO_DS1.bad /\ CountH.c <= qH /\ CountS.c <= qS] <=
-  qH%r * p512 + qS%r * ((1 + max 0 kappa_max)%r * p512) + 2%r * p512.
+  qH%r * p512 + qS%r * ((1 + kappa_max)%r * p512) + 2%r * p512.
 proof.
 move=> hqH hqS; byehoare => //; last first.
 + have hp : 0%r <= p512 by smt(RealOrder.expr_ge0).
-  by smt(RealOrder.mulr_ge0).
+  by smt(RealOrder.mulr_ge0 kappa_max_bnd).
 proc; inline MLDSA_RO_DS1(DS2.RO1.RO, DS2.RO2.RO).keygen.
 seq 6 : ((pk = MLDSA_RO_DS1.pkv /\ inv_m DS2.RO1.RO.m MLDSA_RO_DS1.pkv /\
           norel DS2.RO1.RO.m) `|`
-         (qH%r * p512 + qS%r * ((1 + max 0 kappa_max)%r * p512) + 2%r * p512)%xr).
+         (qH%r * p512 + qS%r * ((1 + kappa_max)%r * p512) + 2%r * p512)%xr).
 + wp; call /(fun y => y)
-           (keygen_norel (qH%r * p512 + qS%r * ((1 + max 0 kappa_max)%r * p512) +
+           (keygen_norel (qH%r * p512 + qS%r * ((1 + kappa_max)%r * p512) +
                           2%r * p512)%xr).
   by inline *; auto.
 seq 1 : ((pk = MLDSA_RO_DS1.pkv) `|`
@@ -792,7 +792,7 @@ call /(fun y => (MLDSA_RO_DS1.pkv = pk0 /\ CountH.c = ch /\ CountS.c = cs) `|`
 skip => &hr /=; apply xle_cxr_r => [#] ->> ->> ->> hpk; rewrite /pot /=.
 case: (CountH.c{hr} <= qH /\ CountS.c{hr} <= qS) => hok //=.
 apply xle_cxr => /> hinv _; have hp : 0%r <= p512 by smt(RealOrder.expr_ge0).
-by apply le_pos; smt(RealOrder.mulr_ge0).
+by apply le_pos; smt(RealOrder.mulr_ge0 kappa_max_bnd).
 qed.
 
 local lemma count_ok (qH qS : int) &m :
@@ -835,7 +835,7 @@ lemma hop1 (qH qS : int) &m : 0 <= qH => 0 <= qS =>
               CountH.c = 0 /\ CountS.c = 0 ==> CountH.c <= qH /\ CountS.c <= qS]) =>
   Pr[DS2.EUF_CMA(DS2.RO1.RO, DS2.RO2.RO, MLDSA_RO_DS, A).main() @ &m : res] <=
   Pr[DS2.EUF_CMA(DS2.RO1.RO, DS2.RO2.RO, MLDSA_RO_DS1, A).main() @ &m : res] +
-  (qH + qS * (1 + max 0 kappa_max) + 2)%r * p512.
+  (qH + qS * (1 + kappa_max) + 2)%r * p512.
 proof.
 move=> hqH hqS A_count.
 have h1 := hop1_uptobad &m.
@@ -850,8 +850,8 @@ have h3 : Pr[DS2.EUF_CMA(DS2.RO1.RO, DS2.RO2.RO, MLDSA_RO_DS1, CountA(A)).main()
              !(CountH.c <= qH /\ CountS.c <= qS)].
 + rewrite Pr[mu_split (CountH.c <= qH /\ CountS.c <= qS)]; apply RealOrder.ler_add2l.
   by rewrite Pr[mu_sub].
-have -> : (qH + qS * (1 + max 0 kappa_max) + 2)%r * p512 =
-          qH%r * p512 + qS%r * ((1 + max 0 kappa_max)%r * p512) + 2%r * p512.
+have -> : (qH + qS * (1 + kappa_max) + 2)%r * p512 =
+          qH%r * p512 + qS%r * ((1 + kappa_max)%r * p512) + 2%r * p512.
 + by rewrite !fromintD fromintM; ring.
 smt().
 qed.

@@ -27,6 +27,8 @@ axiom param_sets :
                                                   (60,256,2^19,(q-1)%/32,8,7,2,75)
                                                 ].
 
+axiom kappa_max_bnd : 0 <= kappa_max /\ kappa_max * lvec <= 65536.
+
 theory MLDSAParams.
 
 (* Parameter axioms — inlined from the former DParams clone. *)

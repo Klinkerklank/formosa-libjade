@@ -205,9 +205,11 @@ clone FullRO as RO_rest with
 
 (* The last 64 - lambda/4 bytes of block 0 on H_ct inputs *)
 clone FullRO as RO_pad with
-  type in_t  <- W8.t list,
-  type out_t <- W8.t list,
-  op   dout  <- fun _ => dlist W8.dword (64 - lambda %/ 4).
+  type in_t    <- W8.t list,
+  type out_t   <- W8.t list,
+  op   dout    <- fun _ => dlist W8.dword (64 - lambda %/ 4),
+  type d_in_t  <- unit,
+  type d_out_t <- bool.
 
 module Router(A : DS2.Adversary)
              (XA : DS5.POracle1, XC : DS5.POracle2,
@@ -255,6 +257,7 @@ module Router(A : DS2.Adversary)
   proc forge(pk : BytesPK.t) : W8.t list * BytesSig.t = {
     var r;
     RO_rest.RO.init();
+    RO_pad.RO.init();
     tr <@ Htr.get(pk);
     r <@ A(H, XA, O).forge(pk);
     return r;

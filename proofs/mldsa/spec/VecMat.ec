@@ -25,14 +25,20 @@ theory PolyLVec.
 type polylvec = poly LArray.t.
 type apolylvec  = vector.
 
-op polylvec2alg(v : polylvec) : apolylvec. (* Write me: PY *)
-op alg2polylvec(v : apolylvec) : polylvec. (* Write me: PY *)
+op [opaque] polylvec2alg(v : polylvec) : apolylvec = offunv (fun i => poly2alg v.[i], lvec).
+op [opaque] alg2polylvec(v : apolylvec) : polylvec = LArray.init (fun i => alg2poly v.[i]).
 
-lemma polylvec2algK : cancel alg2polylvec polylvec2alg.
-admitted. (* FIXME: PY *)
+lemma polylvec2algK (v : apolylvec) : size v = lvec => polylvec2alg (alg2polylvec v) = v.
+proof.
+move=> hs; rewrite /polylvec2alg /alg2polylvec; apply/eq_vectorP; rewrite size_offunv hs; split; 1: smt(gt0_l).
+by move=> i hi; rewrite get_offunv 1:/# /= LArray.initiE 1:/# /= poly2algK.
+qed.
 
 lemma alg2polylvecK : cancel polylvec2alg alg2polylvec.
-admitted. (* FIXME: PY *)
+proof.
+move=> v; rewrite /alg2polylvec /polylvec2alg; apply LArray.ext_eq => i hi.
+by rewrite LArray.initiE //= get_offunv //= alg2polyK.
+qed.
 
 op nttv v = LArray.map ntt v.
 op invnttv v = LArray.map invntt v. 
@@ -40,11 +46,12 @@ op zerov : polylvec = LArray.init (fun i =>  poly_zero).
 
 op (+) (v1 v2 : polylvec) : polylvec = alg2polylvec ((polylvec2alg v1) + (polylvec2alg v2)).
 
-(* Componentwise indexing of polylvec addition.
-   Same hurdle as polykvec: (+) routes through abstract algebra (FIXME: PY). *)
 lemma polylvec_add_iE (v1 v2 : polylvec) k :
   0 <= k < lvec => (v1 + v2).[k] = v1.[k] &+ v2.[k].
-  admitted. (* FIXME: PY *)
+proof.
+move=> hk; have -> : v1 + v2 = alg2polylvec (polylvec2alg v1 + polylvec2alg v2) by done.
+by rewrite /alg2polylvec LArray.initiE //= get_addv /polylvec2alg !get_offunv.
+qed.
 
 op ntt_smul(p : poly, v : polylvec) : polylvec = map (fun p' => basemul p' p) v.
 
@@ -71,14 +78,20 @@ theory PolyKVec.
 type polykvec = poly KArray.t.
 type apolykvec  = vector.
 
-op polykvec2alg(v : polykvec) : apolykvec. (* Write me: PY *)
-op alg2polykvec(v : apolykvec) : polykvec. (* Write me: PY *)
+op [opaque] polykvec2alg(v : polykvec) : apolykvec = offunv (fun i => poly2alg v.[i], kvec).
+op [opaque] alg2polykvec(v : apolykvec) : polykvec = KArray.init (fun i => alg2poly v.[i]).
 
-lemma polykvec2algK : cancel alg2polykvec polykvec2alg.
-admitted. (* FIXME: PY *)
+lemma polykvec2algK (v : apolykvec) : size v = kvec => polykvec2alg (alg2polykvec v) = v.
+proof.
+move=> hs; rewrite /polykvec2alg /alg2polykvec; apply/eq_vectorP; rewrite size_offunv hs; split; 1: smt(gt0_k).
+by move=> i hi; rewrite get_offunv 1:/# /= KArray.initiE 1:/# /= poly2algK.
+qed.
 
 lemma alg2polykvecK : cancel polykvec2alg alg2polykvec.
-admitted. (* FIXME: PY *)
+proof.
+move=> v; rewrite /alg2polykvec /polykvec2alg; apply KArray.ext_eq => i hi.
+by rewrite KArray.initiE //= get_offunv //= alg2polyK.
+qed.
 
 
 op nttv v = KArray.map ntt v.
@@ -94,19 +107,19 @@ lemma invnttv_ntt_smul_k (c : poly) (sv : polykvec) (k : int) :
   (invnttv (ntt_smul c sv)).[k] = invntt (basemul sv.[k] c).
 proof. by move => hk; rewrite /invnttv /ntt_smul !mapiE 1:/# /=. qed.
 
-(* Componentwise indexing of polykvec subtraction.
-   Hurdle: (-) routes through the abstract algebra (polykvec2alg / alg2polykvec),
-   whose concrete definitions and alg2polykvecK are admitted (FIXME: PY).
-   Once those are filled in this axiom becomes provable by unfolding. *)
 lemma polykvec_sub_iE (v1 v2 : polykvec) k :
   0 <= k < kvec => (v1 - v2).[k] = v1.[k] &+ (&-) v2.[k].
-  admitted. (* FIXME: PY *)
+proof.
+move=> hk; have -> : v1 - v2 = alg2polykvec (polykvec2alg v1 - polykvec2alg v2) by done.
+by rewrite /alg2polykvec KArray.initiE //= get_addv getvN /polykvec2alg !get_offunv //= /(&+) /(&-) poly2algK.
+qed.
 
-(* Componentwise indexing of polykvec addition.
-   Same hurdle as subtraction: (+) routes through abstract algebra (FIXME: PY). *)
 lemma polykvec_add_iE (v1 v2 : polykvec) k :
   0 <= k < kvec => (v1 + v2).[k] = v1.[k] &+ v2.[k].
-  admitted. (* FIXME: PY *)
+proof.
+move=> hk; have -> : v1 + v2 = alg2polykvec (polykvec2alg v1 + polykvec2alg v2) by done.
+by rewrite /alg2polykvec KArray.initiE //= get_addv /polykvec2alg !get_offunv.
+qed.
 
 op smul(v : polykvec, c : coeff) : polykvec =
    KArray.map (fun (vi : poly) => map (fun ci => c*ci) vi) v.
