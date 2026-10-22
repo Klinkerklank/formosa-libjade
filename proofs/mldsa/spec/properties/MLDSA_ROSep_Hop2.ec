@@ -3,14 +3,18 @@ from Jasmin require import JByte_array JWord.
 require import Array256.
 
 require import Parameters GFq Rq.
-require import Spec65.
-import MLDSA65.
-import PolyLVec PolyKVec PolyMat.
-import Round ZModQ Zq MLDSAParams.
-
+require MLDSA_ROSep_Hop1.
 require import MLDSA_RO MLDSA_ROSep MLDSA_ROSep_Hop1.
 require import FMapExtra.
 require import JWordExtra.
+
+abstract theory MLDSA_ROSep_Hop2.
+
+clone include MLDSA_ROSep_Hop1.MLDSA_ROSep_Hop1.
+import Spec.
+import PolyLVec PolyKVec PolyMat.
+import Round ZModQ Zq MLDSAParams.
+
 
 (*************** G1: SHAKE256 routed to separate random oracles ****************)
 
@@ -470,7 +474,7 @@ equiv next_unset : XOFS_O(DS2.RO1.RO).next ~ XOFS_O(RoutedH).next :
       inv_pre DS2.RO1.RO.m{1} DS5.RO3.RO.m{2} DS5.RO4.RO.m{2} DS5.RO5.RO.m{2} DS5.RO2.RO.m{2}
               RO_rest.RO.m{2} RO_pad.RO.m{2}.
 proof.
-by proc; inline ReadByte(DS2.RO1.RO).read ReadByte(RoutedH).read; wp; call get_unset; auto => />.
+by proc; inline ReadByte(DS2.RO1.RO).read ReadByte(RoutedH).read; wp; call get_unset; auto => />; smt(w1_bytes_big param_sets).
 qed.
 
 equiv rbp_unset : RejBoundedPoly(XOFS_O(DS2.RO1.RO)).sample ~ RejBoundedPoly(XOFS_O(RoutedH)).sample :
@@ -518,7 +522,7 @@ proc; inline MLDSA_RO(DS2.RO1.RO, DS2.RO2.RO).keygen_derand MLDSA_RO(RoutedH, DS
 wp; call (: true); 1: by sim.
 wp; call squeeze_tr; call (: true); 1: by sim.
 wp; call expandS_unset; call (: ={glob DS2.RO2.RO, glob XOFA_O}); 1: by sim.
-by wp; call squeeze_unset; wp; rnd; auto => />.
+by wp; call squeeze_unset; wp; rnd; auto => />; smt(w1_bytes_big param_sets).
 qed.
 
 (*************** Signing and verification ****************)
@@ -713,11 +717,11 @@ apply (ExpandA_ll DS2.RO2.RO (fun (m : (W8.t list * int, W8.t) fmap) x => x \in 
 by move=> g r; apply fmap_bounded_snd.
 qed.
 
-(* SampleInBall terminates over the random oracles (MLDSA_RO.SampleInBall_ll):
+(* SampleInBall terminates over the random oracles (MLDSA_RO.SampleInBall_O_ll):
    a block is known once queried, and an unknown block is a fresh uniform one *)
 lemma sib_RO1_ll : islossless SampleInBall_O(DS2.RO1.RO).sample.
 proof.
-conseq (SampleInBall_ll DS2.RO1.RO (fun (m : (W8.t list * int, W8.t list) fmap) x => x \in m)
+conseq (SampleInBall_O_ll DS2.RO1.RO (fun (m : (W8.t list * int, W8.t list) fmap) x => x \in m)
           predT RO1_get_ll _ _ _) => //.
 - move=> g0 x _; proc; auto => />.
   by move=> r _; split => hx c; rewrite ?mem_set; smt().
@@ -736,7 +740,7 @@ op rh_known (g : glob RoutedH) (y : W8.t list * int) : bool =
 
 lemma sib_RoutedH_ll : islossless SampleInBall_O(RoutedH).sample.
 proof.
-conseq (SampleInBall_ll RoutedH rh_known (fun l => size l = lambda %/ 4) RoutedH_get_ll _ _ _).
+conseq (SampleInBall_O_ll RoutedH rh_known (fun l => size l = lambda %/ 4) RoutedH_get_ll _ _ _).
 - move=> g0 x /= hx; proc; inline *; sp.
   if.
   + if.
@@ -855,7 +859,7 @@ hoare next_pre (rho0 : Bytes64.t) : XOFS_O(RoutedH).next :
   ==> !RoutedH.trset /\ !RoutedH.bad /\ DS5.RO3.RO.m = empty /\ pre_ok rho0 RO_rest.RO.m /\
       take 64 (Bytes66.to_list XOFS_O.seed) = Bytes64.to_list rho0.
 proof.
-by proc; inline ReadByte(RoutedH).read; wp; call (get_pre rho0); auto => />.
+by proc; inline ReadByte(RoutedH).read; wp; call (get_pre rho0); auto => />; smt(w1_bytes_big param_sets).
 qed.
 
 hoare rbp_pre (rho0 : Bytes64.t) : RejBoundedPoly(XOFS_O(RoutedH)).sample :
@@ -1103,3 +1107,5 @@ by rewrite Pr[mu_or]; have := hop2_bad &m; smt(mu_bounded).
 qed.
 
 end section.
+
+end MLDSA_ROSep_Hop2.

@@ -3,17 +3,21 @@ from Jasmin require import JByte_array JWord.
 require import Array256.
 
 require import Parameters GFq Rq.
-require import Spec65.
-import MLDSA65.
-import PolyLVec PolyKVec PolyMat.
-import Round ZModQ Zq MLDSAParams.
-
+require MLDSA_ROSep_Hop15.
 require import MLDSA_RO MLDSA_ROSep MLDSA_ROSep_Hop1 MLDSA_ROSep_Hop2 MLDSA_ROSep_Hop3.
 require import MLDSA_ROSep_Hop4 MLDSA_ROSep_Hop5 MLDSA_ROSep_Hop6 MLDSA_ROSep_Hop7 MLDSA_ROSep_Hop8.
 require import MLDSA_ROSep_Hop9 MLDSA_ROSep_Hop10 MLDSA_ROSep_Hop11 MLDSA_ROSep_Hop12 MLDSA_ROSep_Hop13.
 require import MLDSA_ROSep_Hop14 MLDSA_ROSep_Hop15.
 require import ConcreteDRing MLDSATargetFIPS Leakage.
 require DS_ROM.
+
+abstract theory MLDSA_ROSep_Hop16.
+
+clone include MLDSA_ROSep_Hop15.MLDSA_ROSep_Hop15.
+import Spec.
+import PolyLVec PolyKVec PolyMat.
+import Round ZModQ Zq MLDSAParams.
+
 import PolyReduce.
 import TF.DV TF.DV.MatRq.Vectors TF.DV.MatRq.Matrices.
 
@@ -375,3 +379,5 @@ by move=> rL rR -> _ ->.
 qed.
 
 end section.
+
+end MLDSA_ROSep_Hop16.

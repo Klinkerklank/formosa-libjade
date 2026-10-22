@@ -3,16 +3,20 @@ from Jasmin require import JByte_array JWord.
 require import Array256.
 
 require import Parameters GFq Rq.
-require import Spec65.
-import MLDSA65.
-import PolyLVec PolyKVec PolyMat.
-import Round ZModQ Zq MLDSAParams.
-
+require MLDSA_ROSep_Hop11.
 require import MLDSA_RO MLDSA_ROSep MLDSA_ROSep_Hop1 MLDSA_ROSep_Hop2 MLDSA_ROSep_Hop3.
 require import MLDSA_ROSep_Hop4 MLDSA_ROSep_Hop5 MLDSA_ROSep_Hop6 MLDSA_ROSep_Hop7 MLDSA_ROSep_Hop8.
 require import MLDSA_ROSep_Hop9 MLDSA_ROSep_Hop10 MLDSA_ROSep_Hop11.
 require import ConcreteDRing MLDSATargetFIPS Leakage.
 require DS_ROM.
+
+abstract theory MLDSA_ROSep_Hop12.
+
+clone include MLDSA_ROSep_Hop11.MLDSA_ROSep_Hop11.
+import Spec.
+import PolyLVec PolyKVec PolyMat.
+import Round ZModQ Zq MLDSAParams.
+
 
 (*************** The target game ****************)
 
@@ -114,25 +118,35 @@ have -> : support TF.SIB.B.dB = support W8.dword by apply fun_ext => y; rewrite 
 done.
 qed.
 
-lemma highbits_shift (c : int) : 0 <= c <= 15 => highbits (2 * gamma2) (incoeff (c * (2 * gamma2))) = c.
+lemma highbits_shift_gen (c : int) :
+  0 <= c < hb_range => highbits (2 * gamma2) (incoeff (c * (2 * gamma2))) = c.
 proof.
-move=> hc; have hg : gamma2 = 261888 by have /= H := param_sets; smt().
-rewrite hg /highbits /rightshift /round /lowbits /= incoeffK.
-have hx : asint (incoeff (c * 523776)) = c * 523776 by rewrite incoeffK modz_small; smt().
-rewrite hx ifF 1:/# /cmod /mod_to_cmod /= modzMl /= incoeff0 ZModpRing.oppr0 zeroE /= modz_small 1:/#.
-smt().
+move=> hc; have hq := hb_rangeE; have hg2 := ge2_gamma2.
+have hle : c * (2 * gamma2) <= (hb_range - 1) * (2 * gamma2) by apply StdOrder.IntOrder.ler_wpmul2r; smt().
+have hx : asint (incoeff (c * (2 * gamma2))) = c * (2 * gamma2) by rewrite incoeffK modz_small; smt().
+rewrite /highbits /rightshift /round /lowbits hx ifF; 1: smt().
+rewrite /cmod /mod_to_cmod /= modzMl /= ifT; 1: smt().
+by rewrite incoeff0 ZModpRing.subr0 hx mulzK /#.
 qed.
 
-lemma w1_img (p : poly) :
-  (forall j, 0 <= j < n => asint p.[j] <= 15) =>
+lemma highbits_shift (c : int) : 0 <= c <= 15 => highbits (2 * gamma2) (incoeff (c * (2 * gamma2))) = c.
+proof. by move=> hc; apply highbits_shift_gen; smt(hb_range_cases). qed.
+
+lemma w1_img_gen (p : poly) :
+  (forall j, 0 <= j < n => asint p.[j] < hb_range) =>
   Supplementary.image (poly_highbits (2 * gamma2)) (map asint (Array256.to_list p)).
 proof.
 move=> hp; exists (poly2alg (Array256.map (fun c => incoeff (asint c * (2 * gamma2))) p)).
 rewrite /poly_highbits; apply (eq_from_nth 0); 1: by rewrite size_mkseq size_map Array256.size_to_list.
 move=> i; rewrite size_mkseq => hi.
 rewrite nth_mkseq 1:/# /= (nth_map witness) ?Array256.size_to_list 1:/# Array256.get_to_list poly2algiE 1:/#
-        Array256.mapiE 1:/# /= highbits_shift //; smt(ge0_asint).
+        Array256.mapiE 1:/# /= highbits_shift_gen //; smt(ge0_asint).
 qed.
+
+lemma w1_img (p : poly) :
+  (forall j, 0 <= j < n => asint p.[j] <= 15) =>
+  Supplementary.image (poly_highbits (2 * gamma2)) (map asint (Array256.to_list p)).
+proof. by move=> hp; apply w1_img_gen => j hj; smt(hb_range_cases). qed.
 
 lemma w1_key_nth (w : polykvec) i :
   0 <= i < kvec => nth witness (w1_key w) i = TF.DV.HL.S.insubd (map asint (Array256.to_list w.[i])).
@@ -145,32 +159,14 @@ lemma w1_key_inj (w w' : polykvec) : w1rng w => w1rng w' => w1_key w = w1_key w'
 proof.
 move=> hw hw' heq; apply KArray.ext_eq => i hi.
 have h : nth witness (w1_key w) i = nth witness (w1_key w') i by rewrite heq.
-have hb : hb_range = 16 by rewrite /hb_range /gamma2 /gamma2_div /Params65.gamma2_div.
 move: h; rewrite !w1_key_nth // => /(congr1 TF.DV.HL.S.val); rewrite !TF.DV.HL.S.insubdK.
-+ by apply w1_img => j hj; have := hw i j hi hj; rewrite hb /#.
-+ by apply w1_img => j hj; have := hw' i j hi hj; rewrite hb /#.
++ by apply w1_img_gen => j hj; exact: hw i j hi hj.
++ by apply w1_img_gen => j hj; exact: hw' i j hi hj.
 move=> h2; apply Array256.ext_eq => j hj.
 have : nth 0 (map asint (Array256.to_list w.[i])) j = nth 0 (map asint (Array256.to_list w'.[i])) j by rewrite h2.
 rewrite (nth_map witness 0 asint) ?Array256.size_to_list // (nth_map witness 0 asint) ?Array256.size_to_list //
         !Array256.get_to_list.
 by apply asint_inj.
-qed.
-
-lemma w1Dec_rng (b : BytesW1.t) : w1rng (w1Dec b).
-proof.
-move=> i j hi hj; have /= H := param_sets.
-rewrite /w1Dec KArray.initiE //= /SimpleBitUnpack /= Array256.initiE //=.
-have h3 : RealExp.ilog 2 15 = 3 by rewrite RealExp.ilog_eq.
-rewrite (_ : 8380416 %/ (2 * gamma2) - 1 = 15) 1:/# h3 /=.
-have hs : size (BytesW1.to_list b) = 128 * kvec by rewrite BytesW1.size_to_list; smt().
-pose cs := BitEncoding.BitChunking.chunk w1_bits (BytesToBits (take 128 (drop (128 * i) (BytesW1.to_list b)))).
-have hcs : size cs = n
-  by rewrite /cs BitEncoding.BitChunking.size_chunk // size_BytesToBits size_take // size_drop 1:/# hs; smt().
-rewrite (nth_map witness) 1:/# /= /BitsToInteger.
-have hm := BitEncoding.BitChunking.in_chunk_size _ _ _ _ (mem_nth witness cs j _); 1,2: smt().
-have := BitEncoding.BS2Int.bs2int_le2Xs (nth witness cs j); have := BitEncoding.BS2Int.bs2int_ge0 (nth witness cs j).
-rewrite hm (_ : 2 ^ w1_bits = 16) // => h0 h16.
-by rewrite incoeffK modz_small; smt().
 qed.
 
 lemma xa_key_inj (x y : W8.t list * int) :
@@ -224,6 +220,7 @@ have -> : map (fun (p0 : poly) => SimpleBitPack p0 1023) (KArray.to_list (pk_t1 
   rewrite /= drop_drop 1,2:/#.
   by apply SimpleBitUnpackK => //; rewrite ?hb // size_take // size_drop 1:/# hsz; smt().
 rewrite BitEncoding.BitChunking.chunkK // ?size_drop // ?hsz.
++ by rewrite (_ : max 0 (32 + 320 * kvec - 32) = 320 * kvec); [smt(gt0_k) | apply dvdz_mulr].
 by rewrite cat_take_drop BytesPK.to_listK.
 qed.
 
@@ -236,7 +233,7 @@ op rel_xa (m5 : (W8.t list * int, W8.t) fmap) (mt : ((Bytes32.t * int * int) * i
           (mr : (W8.t list * int, W8.t) fmap) : bool =
   forall x, m5.[x] = if size x.`1 = 34 then mt.[xa_key x] else mr.[x].
 
-equiv xa_get : DS5.RO1.RO.get ~ XAw(DST.RO1.RO).get :
+equiv xa_get_w : DS5.RO1.RO.get ~ XAw(DST.RO1.RO).get :
   ={x} /\ rel_xa DS5.RO1.RO.m{1} DST.RO1.RO.m{2} RO_xr.RO.m{2}
   ==> ={res} /\ rel_xa DS5.RO1.RO.m{1} DST.RO1.RO.m{2} RO_xr.RO.m{2}.
 proof.
@@ -334,7 +331,7 @@ qed.
 equiv xofa_next : XOFA_O(DS5.RO1.RO).next ~ XOFA_O(XAw(DST.RO1.RO)).next :
   ={glob XOFA_O} /\ rel_xa DS5.RO1.RO.m{1} DST.RO1.RO.m{2} RO_xr.RO.m{2}
   ==> ={res, glob XOFA_O} /\ rel_xa DS5.RO1.RO.m{1} DST.RO1.RO.m{2} RO_xr.RO.m{2}.
-proof. by proc; wp; call xa_get; wp; call xa_get; wp; call xa_get; auto. qed.
+proof. by proc; wp; call xa_get_w; wp; call xa_get_w; wp; call xa_get_w; auto. qed.
 
 equiv expandA_eq : ExpandA(XOFA_O(DS5.RO1.RO)).sample ~ ExpandA(XOFA_O(XAw(DST.RO1.RO))).sample :
   ={rho, glob XOFA_O} /\ rel_xa DS5.RO1.RO.m{1} DST.RO1.RO.m{2} RO_xr.RO.m{2}
@@ -428,7 +425,7 @@ equiv hctroute_12 : HctRoute(DS10.RO5.RO).get ~ HctRoute(Hctw(DST.RO5.RO)).get :
   ==> ={res, RO_hr.RO.m} /\ rel_ct DS10.RO5.RO.m{1} DST.RO5.RO.m{2}.
 proof.
 proc; if => //.
-+ by call ct_get; auto => /> *; apply w1Dec_rng.
++ by call ct_get; auto => /> &1 &2 _ [_ ->].
 by call (: ={RO_hr.RO.m}); [by sim | auto].
 qed.
 
@@ -498,7 +495,7 @@ wp; call (: ={RO_pad.RO.m, RO_rest.RO.m, RO_hr.RO.m, glob XOFA_O, RO_y.RO.m, Rou
             rel_xc RO_xc.RO.m{1} DST.RO2.RO.m{2} /\ rel_tr DS5.RO3.RO.m{1} DST.RO3.RO.m{2} /\
             rel_ct DS10.RO5.RO.m{1} DST.RO5.RO.m{2}).
 + by proc; call sign_12; auto.
-+ by proc*; call xa_get; auto.
++ by proc*; call xa_get_w; auto.
 + proc; sp; if => //.
   - if => //.
     + by wp; call (: DS5.RO4.RO.m{1} = DST.RO4.RO.m{2}); [by auto | auto].
@@ -521,3 +518,5 @@ by rewrite /rel_xa /rel_tr /rel_xc /rel_ct; smt(emptyE).
 qed.
 
 end section.
+
+end MLDSA_ROSep_Hop12.

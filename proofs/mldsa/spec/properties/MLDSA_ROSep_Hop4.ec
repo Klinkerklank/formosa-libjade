@@ -3,13 +3,17 @@ from Jasmin require import JByte_array JWord.
 require import Array256.
 
 require import Parameters GFq Rq.
-require import Spec65.
-import MLDSA65.
+require MLDSA_ROSep_Hop3.
+require import MLDSA_RO MLDSA_ROSep MLDSA_ROSep_Hop1 MLDSA_ROSep_Hop2 MLDSA_ROSep_Hop3.
+require import DistrExtra.
+
+abstract theory MLDSA_ROSep_Hop4.
+
+clone include MLDSA_ROSep_Hop3.MLDSA_ROSep_Hop3.
+import Spec.
 import PolyLVec PolyKVec PolyMat.
 import Round ZModQ Zq MLDSAParams.
 
-require import MLDSA_RO MLDSA_ROSep MLDSA_ROSep_Hop1 MLDSA_ROSep_Hop2 MLDSA_ROSep_Hop3.
-require import DistrExtra.
 
 (*************** G3: the hidden inputs leave the routed oracle ****************)
 
@@ -1343,3 +1347,5 @@ smt().
 qed.
 
 end section.
+
+end MLDSA_ROSep_Hop4.

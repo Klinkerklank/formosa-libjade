@@ -3,17 +3,21 @@ from Jasmin require import JByte_array JWord.
 require import Array256.
 
 require import Parameters GFq Rq.
-require import Spec65.
-import MLDSA65.
-import PolyLVec PolyKVec PolyMat.
-import Round ZModQ Zq MLDSAParams.
-
+require MLDSA_ROSep_Hop14.
 require import MLDSA_RO MLDSA_ROSep MLDSA_ROSep_Hop1 MLDSA_ROSep_Hop2 MLDSA_ROSep_Hop3.
 require import MLDSA_ROSep_Hop4 MLDSA_ROSep_Hop5 MLDSA_ROSep_Hop6 MLDSA_ROSep_Hop7 MLDSA_ROSep_Hop8.
 require import MLDSA_ROSep_Hop9 MLDSA_ROSep_Hop10 MLDSA_ROSep_Hop11 MLDSA_ROSep_Hop12 MLDSA_ROSep_Hop13.
 require import MLDSA_ROSep_Hop14.
 require import ConcreteDRing MLDSATargetFIPS Leakage.
 require DS_ROM.
+
+abstract theory MLDSA_ROSep_Hop15.
+
+clone include MLDSA_ROSep_Hop14.MLDSA_ROSep_Hop14.
+import Spec.
+import PolyLVec PolyKVec PolyMat.
+import Round ZModQ Zq MLDSAParams.
+
 import PolyReduce.
 import TF.DV TF.DV.MatRq.Vectors TF.DV.MatRq.Matrices.
 
@@ -74,6 +78,7 @@ seq 5 1 : (={i, DST.RO2.RO.m} /\ x{2} = rho{1} /\ pos{1} = ctx{2} /\ ctx{2} = la
   rewrite Bytes8.of_listK // /BytesToBits /TF.SIB.to_bool_list /(\o) /=.
   split; 1: by congr; apply eq_map => b; rewrite w2bits_int2bs.
   split; 1: by rewrite size_nseq.
+  split; 2: smt(tau_bound).
   move=> k hk0 hk; rewrite nth_nseq //= /poly_zero Array256.createiE //; smt(incoeff0).
 while (={i, DST.RO2.RO.m} /\ x{2} = rho{1} /\ pos{1} = ctx{2} /\ ctx{2} = last 8 leak{2} /\
        leakage{1} = sib_bools leak{2} /\ h{1} = TF.SIB.to_bool_list signs{2} /\ size challenge{2} = 256 /\
@@ -298,3 +303,5 @@ by inline *; auto.
 qed.
 
 end section.
+
+end MLDSA_ROSep_Hop15.

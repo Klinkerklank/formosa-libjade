@@ -3,13 +3,17 @@ from Jasmin require import JByte_array JWord.
 require import Array256.
 
 require import Parameters GFq Rq.
-require import Spec65.
-import MLDSA65.
+require MLDSA_ROSep_Hop5.
+require import MLDSA_RO MLDSA_ROSep MLDSA_ROSep_Hop1 MLDSA_ROSep_Hop2 MLDSA_ROSep_Hop3.
+require import MLDSA_ROSep_Hop4 MLDSA_ROSep_Hop5.
+
+abstract theory MLDSA_ROSep_Hop6.
+
+clone include MLDSA_ROSep_Hop5.MLDSA_ROSep_Hop5.
+import Spec.
 import PolyLVec PolyKVec PolyMat.
 import Round ZModQ Zq MLDSAParams.
 
-require import MLDSA_RO MLDSA_ROSep MLDSA_ROSep_Hop1 MLDSA_ROSep_Hop2 MLDSA_ROSep_Hop3.
-require import MLDSA_ROSep_Hop4 MLDSA_ROSep_Hop5.
 
 (*************** G6: the adversary queries five random oracles ****************)
 
@@ -236,8 +240,7 @@ seq 15 9 : (={pk, rho, s1, s2, t0, RO_pad.RO.m, DS5.RO2.RO.m, DS5.RO3.RO.m, DS5.
 + call (: true); 1: by sim.
   wp; call (: ={glob RO_S.RO, glob XOFS_O}); 1: by sim.
   call expandA6.
-  wp; rnd{1}; rnd; wp; rnd{1}; auto => />.
-  by move=> _ _; rewrite /dxi; apply dmap_ll; apply dlist_ll; apply W8.dword_ll.
+  by wp; rnd{1}; rnd; wp; rnd{1}; auto => />.
 exlim pk{2} => pk0; call (: true); 1: by sim.
 by wp; call (pktr6 pk0); auto => /> &1 &2 _ _ o ->; rewrite Bytes64.to_listK.
 qed.
@@ -398,3 +401,5 @@ by rewrite -(G5_G6 &m); apply (hop5 A qH qS &m hqH hqS A_ll A_count).
 qed.
 
 end section.
+
+end MLDSA_ROSep_Hop6.

@@ -3,52 +3,78 @@ from Jasmin require import JByte_array JWord.
 require import Array256.
 
 require import Parameters GFq Rq.
-require import Spec65.
-import MLDSA65.
-import PolyLVec PolyKVec PolyMat.
-import Round ZModQ Zq MLDSAParams.
-
+require MLDSA_ROSep_Hop12.
 require import MLDSA_RO MLDSA_ROSep MLDSA_ROSep_Hop1 MLDSA_ROSep_Hop2 MLDSA_ROSep_Hop3.
 require import MLDSA_ROSep_Hop4 MLDSA_ROSep_Hop5 MLDSA_ROSep_Hop6 MLDSA_ROSep_Hop7 MLDSA_ROSep_Hop8.
 require import MLDSA_ROSep_Hop9 MLDSA_ROSep_Hop10 MLDSA_ROSep_Hop11 MLDSA_ROSep_Hop12.
 require import ConcreteDRing MLDSATargetFIPS.
 require DS_ROM.
+
+abstract theory MLDSA_ROSep_Hop13.
+
+clone include MLDSA_ROSep_Hop12.MLDSA_ROSep_Hop12.
+import Spec.
+import PolyLVec PolyKVec PolyMat.
+import Round ZModQ Zq MLDSAParams.
+
 import PolyReduce.
 
 (*************** The rounding of FIPS 204 and the rounding of the target ****************)
 
 lemma HighBits_E (r : coeff) : HighBits r = highbits (2 * gamma2) r.
 proof.
-have hg : gamma2 = 261888 by have /= H := param_sets; smt().
 have hr := ge0_asint r; have hq := gtp_asint r.
-rewrite /HighBits /Decompose /highbits /rightshift /round /lowbits /smodem /cmod /mod_to_cmod hg /=.
-have hq' : asint r < 8380417 by move: hq => /=.
-have [hx hb] : asint r = 523776 * (asint r %/ 523776) + asint r %% 523776 /\ 0 <= asint r %% 523776 < 523776
-  by smt(divz_eq modz_ge0 ltz_pmod).
-case: (8118529 <= asint r) => hc /=.
-+ smt(zeroE).
-pose c := if asint r %% 523776 <= 261888 then asint r %% 523776 else asint r %% 523776 - 523776.
-have -> : r - incoeff c = incoeff (asint r - c) by rewrite incoeffB asintK.
-have hm : (asint r - c) %% q = asint r - c by rewrite modz_small; rewrite /c; smt().
-rewrite incoeffK hm /c.
-have -> : (if asint r %% 523776 <= 261888 then asint r %% 523776 else asint r %% 523776 - 523776) =
-          (if 261888 < asint r %% 523776 then asint r %% 523776 - 523776 else asint r %% 523776) by smt().
-rewrite ifF //; smt().
+case: gamma2_cases => hg.
+- rewrite /HighBits /Decompose /highbits /rightshift /round /lowbits /smodem /cmod /mod_to_cmod hg /=.
+  have hq' : asint r < 8380417 by move: hq => /=.
+  have [hx hb] : asint r = 190464 * (asint r %/ 190464) + asint r %% 190464 /\ 0 <= asint r %% 190464 < 190464
+    by smt(divz_eq modz_ge0 ltz_pmod).
+  case: (8285185 <= asint r) => hc /=.
+  + smt(zeroE).
+  pose c := if asint r %% 190464 <= 95232 then asint r %% 190464 else asint r %% 190464 - 190464.
+  have -> : r - incoeff c = incoeff (asint r - c) by rewrite incoeffB asintK.
+  have hm : (asint r - c) %% q = asint r - c by rewrite modz_small; rewrite /c; smt().
+  rewrite incoeffK hm /c.
+  have -> : (if asint r %% 190464 <= 95232 then asint r %% 190464 else asint r %% 190464 - 190464) =
+            (if 95232 < asint r %% 190464 then asint r %% 190464 - 190464 else asint r %% 190464) by smt().
+  rewrite ifF //; smt().
+- rewrite /HighBits /Decompose /highbits /rightshift /round /lowbits /smodem /cmod /mod_to_cmod hg /=.
+  have hq' : asint r < 8380417 by move: hq => /=.
+  have [hx hb] : asint r = 523776 * (asint r %/ 523776) + asint r %% 523776 /\ 0 <= asint r %% 523776 < 523776
+    by smt(divz_eq modz_ge0 ltz_pmod).
+  case: (8118529 <= asint r) => hc /=.
+  + smt(zeroE).
+  pose c := if asint r %% 523776 <= 261888 then asint r %% 523776 else asint r %% 523776 - 523776.
+  have -> : r - incoeff c = incoeff (asint r - c) by rewrite incoeffB asintK.
+  have hm : (asint r - c) %% q = asint r - c by rewrite modz_small; rewrite /c; smt().
+  rewrite incoeffK hm /c.
+  have -> : (if asint r %% 523776 <= 261888 then asint r %% 523776 else asint r %% 523776 - 523776) =
+            (if 261888 < asint r %% 523776 then asint r %% 523776 - 523776 else asint r %% 523776) by smt().
+  rewrite ifF //; smt().
 qed.
 
 lemma LowBits_E (r : coeff) : LowBits r = crepr (lowbits (2 * gamma2) r).
 proof.
-have hg : gamma2 = 261888 by have /= H := param_sets; smt().
 have hr := ge0_asint r; have hq := gtp_asint r.
-have [hx hb] : asint r = 523776 * (asint r %/ 523776) + asint r %% 523776 /\ 0 <= asint r %% 523776 < 523776
-  by smt(divz_eq modz_ge0 ltz_pmod).
-rewrite /LowBits /Decompose /lowbits /smodem /cmod /mod_to_cmod hg /=.
-case: (8118529 <= asint r) => hc /=.
-+ rewrite ifT /=; 1: smt().
-  rewrite /crepr /=; smt().
-rewrite ifF /=; 1: smt().
-rewrite incoeffK_centered; 1,2: smt().
-smt().
+case: gamma2_cases => hg.
+- have [hx hb] : asint r = 190464 * (asint r %/ 190464) + asint r %% 190464 /\ 0 <= asint r %% 190464 < 190464
+    by smt(divz_eq modz_ge0 ltz_pmod).
+  rewrite /LowBits /Decompose /lowbits /smodem /cmod /mod_to_cmod hg /=.
+  case: (8285185 <= asint r) => hc /=.
+  + rewrite ifT /=; 1: smt().
+    rewrite /crepr /=; smt().
+  rewrite ifF /=; 1: smt().
+  rewrite incoeffK_centered; 1,2: smt().
+  smt().
+- have [hx hb] : asint r = 523776 * (asint r %/ 523776) + asint r %% 523776 /\ 0 <= asint r %% 523776 < 523776
+    by smt(divz_eq modz_ge0 ltz_pmod).
+  rewrite /LowBits /Decompose /lowbits /smodem /cmod /mod_to_cmod hg /=.
+  case: (8118529 <= asint r) => hc /=.
+  + rewrite ifT /=; 1: smt().
+    rewrite /crepr /=; smt().
+  rewrite ifF /=; 1: smt().
+  rewrite incoeffK_centered; 1,2: smt().
+  smt().
 qed.
 
 lemma MakeHint_E (z r : coeff) : MakeHint z r = makehint (2 * gamma2) z r.
@@ -64,17 +90,25 @@ have -> // : (if asint x %% 8192 <= 4096 then asint x %% 8192 else asint x %% 81
              (if 4096 < asint x %% 8192 then asint x %% 8192 - 8192 else asint x %% 8192) by smt().
 qed.
 
+lemma hb_range_pred : (q - 2 * gamma2 - 1) %/ (2 * gamma2) = hb_range - 1.
+proof.
+have -> : q - 2 * gamma2 - 1 = (hb_range - 1) * (2 * gamma2) by smt(hb_rangeE).
+by rewrite mulzK; smt(ge2_gamma2).
+qed.
+
 lemma UseHint_E (h : bool) (r : coeff) : UseHint h r = incoeff (usehint (2 * gamma2) h r).
 proof.
 have hD : Decompose r = (HighBits r, LowBits r) by rewrite /HighBits /LowBits; case: (Decompose r).
-have [[h0 h16] _] := Decompose_cases r.
-have hg : gamma2 = 261888 by have /= H := param_sets; smt().
-rewrite /UseHint /usehint hD /= -HighBits_E -LowBits_E hg /=.
+have [[h0 hM] _] := Decompose_cases r.
+have hM1 := gt1_hb_range.
+rewrite /UseHint /usehint hD /= -HighBits_E -LowBits_E -/hb_range hb_range_pred.
 case: h => //= _.
 case: (0 < LowBits r) => hl /=.
-+ by case: (HighBits r = 15) => [-> // | hne]; rewrite modz_small; smt().
++ case: (HighBits r = hb_range - 1) => [-> /= | hne]; 1: by rewrite modzz.
+  by rewrite modz_small; smt().
 rewrite ifT 1:/#.
-by case: (HighBits r = 0) => [-> // | hne]; rewrite modz_small; smt().
+case: (HighBits r = 0) => [-> /= | hne]; 2: by rewrite modz_small; smt().
+by rewrite -(modzMDr 1) pmod_small /#.
 qed.
 
 (*************** Vectors and matrices ****************)
@@ -208,7 +242,7 @@ proof.
 apply TF.DV.MatRq.Vectors.eq_vectorP; rewrite TF.DV.MatRq.Vectors.size_mapv !size_vec_of_k /= => i hi.
 rewrite TF.DV.MatRq.Vectors.get_mapv ?size_vec_of_k // !vec_of_kE // /polykvec_LowBits KArray.mapiE //=
         /TF.DV.HL.lowBits /=.
-apply polyXnD1_eqP => j hj; rewrite poly2algiE // /poly_LowBits Array256.initiE //= poly_lowbits_correct //.
+apply polyXnD1_eqP => j hj; rewrite poly2algiE // /poly_LowBits Array256.initiE //= poly_lowbits_correct //; 1: smt(ge2_gamma2).
 by rewrite LowBits_E poly2algiE // creprK.
 qed.
 
@@ -223,7 +257,7 @@ rewrite -/(w1_key _) w1_key_nth // /TF.DV.highBitsV (nth_map witness witness TF.
 congr; apply (eq_from_nth 0); 1: by rewrite size_map Array256.size_to_list /poly_highbits size_mkseq.
 move=> j; rewrite size_map Array256.size_to_list => hj.
 rewrite (nth_map witness 0 asint) ?Array256.size_to_list // Array256.get_to_list /polykvec_HighBits KArray.mapiE //=
-        /poly_HighBits Array256.initiE //= incoeffK modz_small; 1: smt(Decompose_cases).
+        /poly_HighBits Array256.initiE //= incoeffK modz_small; 1: smt(Decompose_cases hb_range_cases).
 by rewrite /poly_highbits nth_mkseq //= HighBits_E poly2algiE.
 qed.
 
@@ -254,11 +288,10 @@ apply StdBigop.Bigint.BIA.eq_big_seq => ii _ /=.
 by rewrite count_map /Array256.to_list /mkseq count_map.
 qed.
 
-lemma usehint_rng (b : bool) (x : coeff) : 0 <= usehint (2 * gamma2) b x <= 15.
+lemma usehint_rng_hb (b : bool) (x : coeff) : 0 <= usehint (2 * gamma2) b x < hb_range.
 proof.
-have [[h0 h16] _] := Decompose_cases x.
-have hg : gamma2 = 261888 by have /= H := param_sets; smt().
-rewrite /usehint /= -HighBits_E hg /=; smt().
+have [[h0 hM] _] := Decompose_cases x.
+rewrite /usehint /= -HighBits_E hb_range_pred; smt(gt1_hb_range).
 qed.
 
 lemma w1_key_UseHint (h r : polykvec) : w1_key (UseHint h r) = TF.DV.useHintV (hints_of h) (vec_of_k r).
@@ -280,7 +313,7 @@ apply (eq_from_nth 0); 1: by rewrite size_map Array256.size_to_list size_poly_us
 move=> j; rewrite size_map Array256.size_to_list => hj.
 rewrite (nth_map witness 0 asint) ?Array256.size_to_list // Array256.get_to_list /UseHint KArray.map2iE //=
         /poly_UseHint Array256.initiE //= /poly_usehint nth_mkseq //= poly2algiE // UseHint_E incoeffK modz_small;
-  1: smt(usehint_rng).
+  1: smt(usehint_rng_hb hb_range_cases).
 by rewrite (nth_map witness false (fun (c : coeff) => c <> Zq.zero)) ?Array256.size_to_list // Array256.get_to_list.
 qed.
 
@@ -686,3 +719,5 @@ by inline *; auto.
 qed.
 
 end section.
+
+end MLDSA_ROSep_Hop13.

@@ -3,16 +3,20 @@ from Jasmin require import JByte_array JWord.
 require import Array256.
 
 require import Parameters GFq Rq.
-require import Spec65.
-import MLDSA65.
-import PolyLVec PolyKVec PolyMat.
-import Round ZModQ Zq MLDSAParams.
-
+require MLDSA_ROSep_Hop13.
 require import MLDSA_RO MLDSA_ROSep MLDSA_ROSep_Hop1 MLDSA_ROSep_Hop2 MLDSA_ROSep_Hop3.
 require import MLDSA_ROSep_Hop4 MLDSA_ROSep_Hop5 MLDSA_ROSep_Hop6 MLDSA_ROSep_Hop7 MLDSA_ROSep_Hop8.
 require import MLDSA_ROSep_Hop9 MLDSA_ROSep_Hop10 MLDSA_ROSep_Hop11 MLDSA_ROSep_Hop12 MLDSA_ROSep_Hop13.
 require import ConcreteDRing MLDSATargetFIPS.
 require DS_ROM.
+
+abstract theory MLDSA_ROSep_Hop14.
+
+clone include MLDSA_ROSep_Hop13.MLDSA_ROSep_Hop13.
+import Spec.
+import PolyLVec PolyKVec PolyMat.
+import Round ZModQ Zq MLDSAParams.
+
 import PolyReduce.
 import TF.DV TF.DV.MatRq.Vectors TF.DV.MatRq.Matrices.
 
@@ -121,6 +125,7 @@ while (={r, rho, DST.RO1.RO.m, RO_xr.RO.m} /\ 0 <= r{1} <= kvec /\ size mA{2} = 
     rewrite (_ : r{2} * lvec + (s{2} + 1) = r{2} * lvec + s{2} + 1) 1:/#.
     apply filled_upd => //; smt().
   auto => /> &1 &2 hr0 _ hrow hcol hf hr.
+  split; 1: smt(gt0_l).
   move=> aa mA s hs1 hs0 hs2 hrow' hcol' hf' hf2.
   split; 1: smt().
   by rewrite (_ : (r{2} + 1) * lvec = r{2} * lvec + s) 1:/#.
@@ -306,3 +311,5 @@ by inline *; auto.
 qed.
 
 end section.
+
+end MLDSA_ROSep_Hop14.

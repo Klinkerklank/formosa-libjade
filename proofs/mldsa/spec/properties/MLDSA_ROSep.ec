@@ -3,14 +3,18 @@ from Jasmin require import JByte_array JWord.
 require import Array256.
 
 require import Parameters GFq Rq.
-require import Spec65.
-import MLDSA65.
-import PolyLVec PolyKVec PolyMat.
-import Round ZModQ Zq MLDSAParams.
-
+require MLDSA_RO.
 require import MLDSA_RO.
 require import DistrExtra JWordExtra StdBigop StdOrder.
 require DS_ROM.
+
+abstract theory MLDSA_ROSep.
+
+clone include MLDSA_RO.MLDSA_RO.
+import Spec.
+import PolyLVec PolyKVec PolyMat.
+import Round ZModQ Zq MLDSAParams.
+
 
 op dxi : Bytes32.t distr = dmap (dlist W8.dword 32) Bytes32.of_list.
 op [lossless] drnd : rnd_ distr.
@@ -372,3 +376,4 @@ module CountS(O : DS2.SOracle) = {
   }
 }.
 
+end MLDSA_ROSep.

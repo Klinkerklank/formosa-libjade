@@ -3,15 +3,19 @@ from Jasmin require import JByte_array JWord.
 require import Array256.
 
 require import Parameters GFq Rq.
-require import Spec65.
-import MLDSA65.
-import PolyLVec PolyKVec PolyMat.
-import Round ZModQ Zq MLDSAParams.
-
+require MLDSA_ROSep_Hop10.
 require import MLDSA_RO MLDSA_ROSep MLDSA_ROSep_Hop1 MLDSA_ROSep_Hop2 MLDSA_ROSep_Hop3.
 require import MLDSA_ROSep_Hop4 MLDSA_ROSep_Hop5 MLDSA_ROSep_Hop6 MLDSA_ROSep_Hop7 MLDSA_ROSep_Hop8.
 require import MLDSA_ROSep_Hop9 MLDSA_ROSep_Hop10.
 require DS_ROM.
+
+abstract theory MLDSA_ROSep_Hop11.
+
+clone include MLDSA_ROSep_Hop10.MLDSA_ROSep_Hop10.
+import Spec.
+import PolyLVec PolyKVec PolyMat.
+import Round ZModQ Zq MLDSAParams.
+
 
 (*************** G11: SampleInBall reads a byte stream on c~ ****************)
 
@@ -680,3 +684,5 @@ by rewrite -(G10_G11 &m); apply (hop10 A qH qS &m hqH hqS A_ll A_count).
 qed.
 
 end section.
+
+end MLDSA_ROSep_Hop11.

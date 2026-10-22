@@ -3,13 +3,17 @@ from Jasmin require import JByte_array JWord.
 require import Array256.
 
 require import Parameters GFq Rq.
-require import Spec65.
-import MLDSA65.
+require MLDSA_ROSep.
+require import MLDSA_RO MLDSA_ROSep.
+require import DistrExtra.
+
+abstract theory MLDSA_ROSep_Hop1.
+
+clone include MLDSA_ROSep.MLDSA_ROSep.
+import Spec.
 import PolyLVec PolyKVec PolyMat.
 import Round ZModQ Zq MLDSAParams.
 
-require import MLDSA_RO MLDSA_ROSep.
-require import DistrExtra.
 
 (* G0': verify rejects c~ = tr *)
 module MLDSA_RO_DS1(H : BlockOracle, G : Oracle) = {
@@ -162,7 +166,8 @@ proc; while ((inv_m DS2.RO1.RO.m pk0 /\ 0%r <= k) `|` (b2r (coll DS2.RO1.RO.m pk
 wp; exlim rho => rho_.
 call /(fun y => (0%r <= k) `|` y) (Squeeze_coll pk0 (BytesCT.to_list rho_) 8 k).
 + by move=> &hr /=; apply xle_cxr => />.
-by auto => &hr /=; apply xle_cxr => /> *.
+auto => &hr /=; apply xle_cxr => /> *.
+by apply le_pos; smt(ct_len_nrel BytesCT.size_to_list).
 qed.
 
 (* The H_ct squeeze costs p512, SampleInBall is free *)
@@ -190,7 +195,8 @@ proc; while ((inv_m DS2.RO1.RO.m pk0 /\ 0%r <= k) `|` (b2r (coll DS2.RO1.RO.m pk
   call /(fun y => (0%r <= k) `|` y)
        (Squeeze_coll pk0 (Bytes66.to_list rhop_) (n * (gamma1m1_bits + 1) %/ 8) k).
   + by move=> &hr /=; apply xle_cxr => />.
-  by skip => &hr /=; apply xle_cxr => /> *.
+  skip => &hr /=; apply xle_cxr => /> *.
+  by apply le_pos; smt(w1_bytes_big).
 by auto.
 qed.
 
@@ -815,3 +821,5 @@ smt().
 qed.
 
 end section.
+
+end MLDSA_ROSep_Hop1.

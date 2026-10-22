@@ -3,13 +3,17 @@ from Jasmin require import JByte_array JWord.
 require import Array256.
 
 require import Parameters GFq Rq.
-require import Spec65.
-import MLDSA65.
+require MLDSA_ROSep_Hop2.
+require import MLDSA_RO MLDSA_ROSep MLDSA_ROSep_Hop1 MLDSA_ROSep_Hop2.
+require import FMapExtra JWordExtra.
+
+abstract theory MLDSA_ROSep_Hop3.
+
+clone include MLDSA_ROSep_Hop2.MLDSA_ROSep_Hop2.
+import Spec.
 import PolyLVec PolyKVec PolyMat.
 import Round ZModQ Zq MLDSAParams.
 
-require import MLDSA_RO MLDSA_ROSep MLDSA_ROSep_Hop1 MLDSA_ROSep_Hop2.
-require import FMapExtra JWordExtra.
 
 (*************** G2: the scheme queries Htr, Hmu, Hct and XC directly ****************)
 
@@ -274,12 +278,12 @@ proof. by conseq (: ={rho, mu, glob RoutedH} ==> ={res, glob RoutedH}) _ (emask_
 
 (*************** Losslessness ****************)
 
-(* SampleInBall terminates over the random oracle (MLDSA_RO.SampleInBall_ll) *)
+(* SampleInBall terminates over the random oracle (MLDSA_RO.SampleInBall_O_ll) *)
 lemma sib_XC_ll : islossless SampleInBall_O(DS5.RO2.RO).sample.
 proof.
 have RO2_get_ll : islossless DS5.RO2.RO.get.
 - by islossless; apply dlist_ll; apply W8.dword_ll.
-conseq (SampleInBall_ll DS5.RO2.RO (fun (m : (W8.t list * int, W8.t list) fmap) x => x \in m)
+conseq (SampleInBall_O_ll DS5.RO2.RO (fun (m : (W8.t list * int, W8.t list) fmap) x => x \in m)
           predT RO2_get_ll _ _ _) => //.
 - move=> g0 x _; proc; auto => />.
   by move=> r _; split => hx c; rewrite ?mem_set; smt().
@@ -503,7 +507,7 @@ by if => //; wp; call hctpad_ll; wp; call sib_XC_ll;
          call expandA_ll; auto]].
 qed.
 
-hoare sigDecode_ct (s : BytesSig.t) : SigEncDec.sigDecode :
+hoare sigDecode_ct_h (s : BytesSig.t) : SigEncDec.sigDecode :
   sigma = s ==> res.`1 = BytesCT.init (fun ii => BytesSig."_.[_]" s ii).
 proof.
 by proc; call (: true); 1: (by conseq />);
@@ -534,7 +538,7 @@ inline *; auto => />.
 by move=> &hr _ hp _ r _; rewrite domE hp /= take_oversize // Bytes64.size_to_list.
 qed.
 
-equiv squeeze_tr (p : BytesPK.t) (t : Bytes64.t) : Squeeze(RoutedH).squeeze ~ DS5.RO3.RO.get :
+equiv squeeze_tr_pk (p : BytesPK.t) (t : Bytes64.t) : Squeeze(RoutedH).squeeze ~ DS5.RO3.RO.get :
   ={glob RoutedH} /\ x{2} = p /\ x{1} = BytesPK.to_list p /\ len{1} = 64 /\
   RoutedH.trset{1} /\ RoutedH.tr{1} = t /\ DS5.RO3.RO.m{1}.[p] = Some t /\
   take 64 (BytesPK.to_list p) <> Bytes64.to_list t
@@ -585,7 +589,7 @@ hoare verify2_ct (t : Bytes64.t) : MLDSA_RO_DS2(RoutedH, DS2.RO2.RO).verify :
   ==> res => mapbad t DS5.RO4.RO.m DS5.RO5.RO.m.
 proof.
 proc; seq 4 : (take 64 (BytesCT.to_list ct) = Bytes64.to_list t /\ !rb).
-+ ecall (sigDecode_ct sigma).
++ ecall (sigDecode_ct_h sigma).
   call (: true); [by conseq /> | auto => />].
   by move=> &hr h r ->.
 if; 2: by auto.
@@ -641,7 +645,7 @@ wp; seq 7 4 : (={rho, t1, z, h, w1, rb, glob RoutedH, glob DS2.RO2.RO, glob XOFA
                Bytes64.to_list t).
 + call (: ={sigma} /\ sigma{2} = ss ==>
           ={res} /\ res{2}.`1 = BytesCT.init (fun ii => BytesSig."_.[_]" ss ii));
-    1: by conseq (: ={sigma} ==> ={res}) _ (sigDecode_ct ss) => //; sim.
+    1: by conseq (: ={sigma} ==> ={res}) _ (sigDecode_ct_h ss) => //; sim.
   by call (: true); [sim | auto => /> /#].
 if; [smt() | | by auto => />; smt(take_oversize Bytes64.size_to_list)].
 seq 1 1 : (={rho, t1, z, h, w1, rb, _A, glob RoutedH, glob DS2.RO2.RO, glob XOFA_O} /\
@@ -664,7 +668,7 @@ seq 4 2 : (={rho, t1, z, h, w1, rb, _A, mu, glob RoutedH, glob DS2.RO2.RO, glob 
           take 64 (BytesPK.to_list p) <> Bytes64.to_list t
           ==> ={glob RoutedH} /\ res{1} = Bytes64.to_list t /\ res{2} = t /\
               DS5.RO3.RO.m{2}.[p] = Some t).
-  + conseq (squeeze_tr p t) _ (_ : x = p /\ DS5.RO3.RO.m.[p] = Some t ==> DS5.RO3.RO.m.[p] = Some t).
+  + conseq (squeeze_tr_pk p t) _ (_ : x = p /\ DS5.RO3.RO.m.[p] = Some t ==> DS5.RO3.RO.m.[p] = Some t).
     + by move=> &1 &2 />.
     + by move=> &1 &2 />.
     by proc; auto => /> &hr hp r _; rewrite domE hp.
@@ -965,3 +969,5 @@ smt().
 qed.
 
 end section.
+
+end MLDSA_ROSep_Hop3.

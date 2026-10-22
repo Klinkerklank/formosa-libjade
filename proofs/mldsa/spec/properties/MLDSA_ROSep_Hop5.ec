@@ -3,14 +3,18 @@ from Jasmin require import JByte_array JWord.
 require import Array256.
 
 require import Parameters GFq Rq.
-require import Spec65.
-import MLDSA65.
-import PolyLVec PolyKVec PolyMat.
-import Round ZModQ Zq MLDSAParams.
-
+require MLDSA_ROSep_Hop4.
 require import MLDSA_RO MLDSA_ROSep MLDSA_ROSep_Hop1 MLDSA_ROSep_Hop2 MLDSA_ROSep_Hop3.
 require import DistrExtra.
 require import MLDSA_ROSep_Hop4.
+
+abstract theory MLDSA_ROSep_Hop5.
+
+clone include MLDSA_ROSep_Hop4.MLDSA_ROSep_Hop4.
+import Spec.
+import PolyLVec PolyKVec PolyMat.
+import Round ZModQ Zq MLDSAParams.
+
 
 (*************** G4: K, xi and rho' leave the scheme's data ****************)
 
@@ -127,7 +131,8 @@ proc; do 3! (wp; while (={i, rho, tr, s1, s2, t0} /\ k{2} = cK /\ sk{1} = s /\ s
                         0 <= i{1});
                1: by auto => /> &1 &2 *; rewrite setK_drop; [have /= H := param_sets; smt() | smt()]).
 auto => />; have [h1 h2] := setK_take s cK.
-by rewrite h1 h2 Bytes32.to_listK setK_drop //= Bytes32.of_listK // size_take // size_drop // BytesSK.size_to_list.
+have hsk : 128 <= sk_bytes by have /= H := param_sets; smt(ge0_size BytesSK.ge0_size).
+by rewrite h1 h2 Bytes32.to_listK setK_drop //= Bytes32.of_listK // size_take // size_drop // BytesSK.size_to_list /#.
 qed.
 
 lemma setK_of_list (l : W8.t list) (c : Bytes32.t) :
@@ -1260,3 +1265,5 @@ smt().
 qed.
 
 end section.
+
+end MLDSA_ROSep_Hop5.

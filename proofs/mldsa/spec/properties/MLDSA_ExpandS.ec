@@ -4,8 +4,12 @@ require import Array256.
 
 require import DistrExtra JWordExtra.
 require import Parameters GFq Rq.
-require import Spec65.
-import MLDSA65.
+require MLDSA.
+
+abstract theory MLDSA_ExpandS.
+
+clone MLDSA.MLDSAT as Spec.
+import Spec.
 import Round ZModQ Zq MLDSAParams Bigreal.
 
 lemma eta_cases : Eta = 2 \/ Eta = 4 by smt(param_sets).
@@ -534,3 +538,5 @@ move=> h1 h2; rewrite /sseed !Bytes66.of_listK.
 rewrite eqseq_cat // => -[_ h].
 by rewrite -(IntegerToBytesK r1 2) // h IntegerToBytesK.
 qed.
+
+end MLDSA_ExpandS.

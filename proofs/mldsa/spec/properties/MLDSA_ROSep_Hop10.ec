@@ -3,16 +3,20 @@ from Jasmin require import JByte_array JWord.
 require import Array256.
 
 require import Parameters GFq Rq.
-require import Spec65.
-import MLDSA65.
-import PolyLVec PolyKVec PolyMat.
-import Round ZModQ Zq MLDSAParams.
-
+require MLDSA_ROSep_Hop9.
 require import MLDSA_RO MLDSA_ROSep MLDSA_ROSep_Hop1 MLDSA_ROSep_Hop2 MLDSA_ROSep_Hop3.
 require import JWordList.
 require import MLDSA_ROSep_Hop4 MLDSA_ROSep_Hop5 MLDSA_ROSep_Hop6 MLDSA_ROSep_Hop7 MLDSA_ROSep_Hop8.
 require import MLDSA_ROSep_Hop9.
 require DS_ROM.
+
+abstract theory MLDSA_ROSep_Hop10.
+
+clone include MLDSA_ROSep_Hop9.MLDSA_ROSep_Hop9.
+import Spec.
+import PolyLVec PolyKVec PolyMat.
+import Round ZModQ Zq MLDSAParams.
+
 
 (*************** G10: H_ct takes w1 ****************)
 
@@ -44,10 +48,13 @@ clone FullRO as RO_hr with
   type out_t <- BytesCT.t,
   op   dout  <- fun _ => dbytesCT.
 
+(* b is the encoding of a valid w1 (for ML-DSA-44, w1Dec can decode out-of-range 6-bit values) *)
+op is_w1_enc (b : BytesW1.t) = w1Encode (w1Dec b) = b /\ w1rng (w1Dec b).
+
 module HctRoute(Hct : DS10.POracle5) = {
   proc get(mu : Bytes64.t, b : BytesW1.t) : BytesCT.t = {
     var r;
-    if (w1Encode (w1Dec b) = b) {
+    if (is_w1_enc b) {
       r <@ Hct.get(w1Dec b, mu);
     } else {
       r <@ RO_hr.RO.get(mu, b);
@@ -196,7 +203,7 @@ module MLDSA_RO_DS10(XA : DS10.POracle1, XC : DS10.POracle2, Htr : DS10.POracle3
 (* H_ct of G9 and the two oracles of G10 *)
 op hctrel (m5 : (Bytes64.t * BytesW1.t, BytesCT.t) fmap) (ms : (polykvec * Bytes64.t, BytesCT.t) fmap)
           (mr : (Bytes64.t * BytesW1.t, BytesCT.t) fmap) : bool =
-     (forall mu b, m5.[(mu, b)] = if w1Encode (w1Dec b) = b then ms.[(w1Dec b, mu)] else mr.[(mu, b)])
+     (forall mu b, m5.[(mu, b)] = if is_w1_enc b then ms.[(w1Dec b, mu)] else mr.[(mu, b)])
   /\ (forall w1 mu, (w1, mu) \in ms => w1Dec (w1Encode w1) = w1).
 
 lemma hctrel_empty : hctrel empty empty empty.
@@ -205,19 +212,19 @@ by rewrite /hctrel; split => [mu b | w1 mu]; rewrite ?emptyE ?mem_empty //.
 qed.
 
 lemma hctrel_img m5 ms mr mu b v :
-  hctrel m5 ms mr => w1Encode (w1Dec b) = b => hctrel m5.[(mu, b) <- v] ms.[(w1Dec b, mu) <- v] mr.
+  hctrel m5 ms mr => is_w1_enc b => hctrel m5.[(mu, b) <- v] ms.[(w1Dec b, mu) <- v] mr.
 proof.
 move=> [h1 h2] hb; split.
 + move=> mu' b'; rewrite !get_setE; case: ((mu', b') = (mu, b)) => [[->> ->>] | hne] /=; 1: by rewrite hb.
-  rewrite h1; case: (w1Encode (w1Dec b') = b') => hb' //=.
+  rewrite h1; case: (is_w1_enc b') => hb' //=.
   case: (w1Dec b' = w1Dec b /\ mu' = mu) => [[e1 e2] | //].
-  have heq : (mu', b') = (mu, b) by rewrite e2 -hb' -hb e1.
+  have heq : (mu', b') = (mu, b) by rewrite e2 -(andWl _ _ hb') -(andWl _ _ hb) e1.
   by move: hne; rewrite heq.
-move=> w1 mu'; rewrite mem_set => -[/h2 // | [-> _]]; by rewrite hb.
+move=> w1 mu'; rewrite mem_set => -[/h2 // | [-> _]]; by rewrite (andWl _ _ hb).
 qed.
 
 lemma hctrel_rest m5 ms mr mu b v :
-  hctrel m5 ms mr => w1Encode (w1Dec b) <> b => hctrel m5.[(mu, b) <- v] ms mr.[(mu, b) <- v].
+  hctrel m5 ms mr => ! is_w1_enc b => hctrel m5.[(mu, b) <- v] ms mr.[(mu, b) <- v].
 proof.
 move=> [h1 h2] hb; split => // mu' b'; rewrite !get_setE.
 case: ((mu', b') = (mu, b)) => [[->> ->>] | hne] /=; 1: by rewrite hb.
@@ -229,7 +236,8 @@ equiv hct_route : DS5.RO5.RO.get ~ HctRoute(DS10.RO5.RO).get :
   ==> ={res} /\ hctrel DS5.RO5.RO.m{1} DS10.RO5.RO.m{2} RO_hr.RO.m{2}.
 proof.
 proc; inline *; if{2}.
-+ auto => /> &1 &2 hr hb v hv _; have he := hr mu{2} b{2}; rewrite v /= in he.
++ auto => /> &1 &2 hr hb v1 v2 hv _; have v : is_w1_enc b{2} by done.
+  have he := hr mu{2} b{2}; rewrite v /= in he.
   have hI : hctrel DS5.RO5.RO.m{1} DS10.RO5.RO.m{2} RO_hr.RO.m{2} by split.
   have hdom : ((mu{2}, b{2}) \in DS5.RO5.RO.m{1}) <=> ((w1Dec b{2}, mu{2}) \in DS10.RO5.RO.m{2})
     by rewrite !domE he.
@@ -257,7 +265,7 @@ proof.
 proc; auto => />.
 move=> &1 &2 hw hr hb v _.
 have hk := w1DecK x{2}.`1 hw.
-have himg : w1Encode (w1Dec (w1Encode x{2}.`1)) = w1Encode x{2}.`1 by rewrite hk.
+have himg : is_w1_enc (w1Encode x{2}.`1) by rewrite /is_w1_enc hk.
 have hx : x{2} = (x{2}.`1, x{2}.`2) by smt().
 have he := hr x{2}.`2 (w1Encode x{2}.`1); rewrite himg hk /= -hx in he.
 have hI : hctrel DS5.RO5.RO.m{1} DS10.RO5.RO.m{2} RO_hr.RO.m{2} by split.
@@ -394,3 +402,5 @@ by rewrite -(G9_G10 &m); apply (hop9 A qH qS &m hqH hqS A_ll A_count).
 qed.
 
 end section.
+
+end MLDSA_ROSep_Hop10.

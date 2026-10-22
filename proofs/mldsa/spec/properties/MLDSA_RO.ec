@@ -3,12 +3,19 @@ from Jasmin require import JByte_array JWord.
 require import Array256.
 
 require import Parameters GFq Rq.
-require import Spec65 Symmetric.
-import MLDSA65.
+require import Symmetric.
+require MLDSATargetFIPS.
+from CryptoSpecs require import Keccak1600_Spec.
+require import Xreal.
+require import DistrExtra.
+
+abstract theory MLDSA_RO.
+
+clone include MLDSATargetFIPS.MLDSATargetFIPS.
+import Spec.
 import PolyLVec PolyKVec PolyMat.
 import Round ZModQ Zq MLDSAParams.
 
-from CryptoSpecs require import Keccak1600_Spec.
 
 
 (* H = SHAKE256, as an oracle returning the 64-byte block j of the output stream on x;
@@ -355,7 +362,7 @@ proof.
 proc.
 while (={r, s, rho, mu}); 2: by auto.
 wp; ecall{2} (Squeeze_SHAKE256_ph (Bytes66.to_list rhop{2}) (n * (gamma1m1_bits + 1) %/ 8)).
-by auto => />.
+by auto => />; smt(param_sets).
 qed.
 
 equiv SampleInBall_equiv :
@@ -441,7 +448,6 @@ qed.
 (* -------------------------------------------------------------------- *)
 (* the block-oracle samplers are lossless, and keep any constant        *)
 (* potential, when the oracle is and does                               *)
-require import Xreal.
 
 lemma Squeeze_ll (H <: BlockOracle) : islossless H.get => islossless Squeeze(H).squeeze.
 proof.
@@ -516,7 +522,6 @@ qed.
 (* probability at least 1/256.  A zero byte is always accepted, and the *)
 (* reads walk past the known blocks, so the rejection loop stops with   *)
 (* probability 1.                                                       *)
-require import DistrExtra.
 
 (* the known blocks of r: below B, or already read (up to position p) *)
 op known_below ['g] (known : 'g -> W8.t list * int -> bool) (g : 'g) (r : W8.t list) (B p : int) =
@@ -536,7 +541,7 @@ lemma known_below_step ['g] (known : 'g -> W8.t list * int -> bool) g g' r B p :
   => known_below known g' r B (p + 1).
 proof. by move=> h hk c /hk [/h [| ] | ->]; smt(leq_div2r). qed.
 
-lemma SampleInBall_ll (H <: BlockOracle)
+lemma SampleInBall_O_ll (H <: BlockOracle)
   (known : glob H -> W8.t list * int -> bool) (ok : W8.t list -> bool) :
      islossless H.get
   => (forall (g0 : glob H) (x : W8.t list * int), ok x.`1 =>
@@ -657,7 +662,7 @@ op rej_variant ['g] (known : 'g -> W8.t list * int -> bool) (g : 'g) (r : W8.t l
   else (256 - j) * (max B 3 + 1)
        + (if known g (r, p + 2) then max B (p + 3) - p else 0).
 
-lemma RejNTTPoly_ll (G <: Oracle {-XOFA_O}) (known : glob G -> W8.t list * int -> bool) :
+lemma RejNTTPoly_O_ll (G <: Oracle {-XOFA_O}) (known : glob G -> W8.t list * int -> bool) :
      islossless G.get
   => (forall (g0 : glob G) (x : W8.t list * int),
         hoare [G.get : glob G = g0 /\ arg = x ==>
@@ -802,8 +807,10 @@ lemma ExpandA_ll (G <: Oracle {-XOFA_O}) (known : glob G -> W8.t list * int -> b
   => (forall (g : glob G) r, exists B, forall c, known g (r, c) => c < B)
   => islossless ExpandA(XOFA_O(G)).sample.
 proof.
-move=> G_ll G_kn G_fr G_fin; have rej_ll := RejNTTPoly_ll G known G_ll G_kn G_fr G_fin.
+move=> G_ll G_kn G_fr G_fin; have rej_ll := RejNTTPoly_O_ll G known G_ll G_kn G_fr G_fin.
 proc; while true (kvec - r); 2: by auto => /#.
 move=> z; wp; while true (lvec - s); 2: by auto => /#.
 by move=> z'; wp; call rej_ll; auto => /#.
 qed.
+
+end MLDSA_RO.

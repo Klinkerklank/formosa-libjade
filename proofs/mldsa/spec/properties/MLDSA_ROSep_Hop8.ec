@@ -3,15 +3,19 @@ from Jasmin require import JByte_array JWord.
 require import Array256.
 
 require import Parameters GFq Rq.
-require import Spec65.
-import MLDSA65.
-import PolyLVec PolyKVec PolyMat.
-import Round ZModQ Zq MLDSAParams.
-
+require MLDSA_ROSep_Hop7.
 require import MLDSA_RO MLDSA_ROSep MLDSA_ROSep_Hop1 MLDSA_ROSep_Hop2 MLDSA_ROSep_Hop3.
 require import JWordList ListExtra.
 require import MLDSA_ROSep_Hop4 MLDSA_ROSep_Hop5 MLDSA_ROSep_Hop6 MLDSA_ROSep_Hop7.
 require DS_ROM.
+
+abstract theory MLDSA_ROSep_Hop8.
+
+clone include MLDSA_ROSep_Hop7.MLDSA_ROSep_Hop7.
+import Spec.
+import PolyLVec PolyKVec PolyMat.
+import Round ZModQ Zq MLDSAParams.
+
 
 (*************** G8: the secret key is (rho, tr, s1, s2, t0) ****************)
 
@@ -335,3 +339,5 @@ by rewrite -(G7_G8 &m); apply (hop7 A qH qS &m hqH hqS A_ll A_count).
 qed.
 
 end section.
+
+end MLDSA_ROSep_Hop8.

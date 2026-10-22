@@ -3,20 +3,29 @@ from Jasmin require import JByte_array JWord.
 require import Array256.
 
 require import Parameters GFq Rq.
-require import Spec65.
-import MLDSA65.
-import PolyLVec PolyKVec PolyMat.
-import Round ZModQ Zq MLDSAParams.
-
+require MLDSA_ROSep_Hop6.
 require import MLDSA_RO MLDSA_ROSep MLDSA_ROSep_Hop1 MLDSA_ROSep_Hop2 MLDSA_ROSep_Hop3.
 require import DistrExtra.
 require import MLDSA_ROSep_Hop4 MLDSA_ROSep_Hop5 MLDSA_ROSep_Hop6.
 require import MLDSA_ExpandS.
 require DMap.
 
-(* the mask encoding widths of ML-DSA-65 as literals *)
-lemma gamma1_log65 : gamma1_log = 19 by done.
-hint simplify gamma1_log65.
+abstract theory MLDSA_ROSep_Hop7.
+
+clone include MLDSA_ROSep_Hop6.MLDSA_ROSep_Hop6.
+import Spec.
+import PolyLVec PolyKVec PolyMat.
+import Round ZModQ Zq MLDSAParams.
+
+
+(* the number of 64-byte XOF blocks of a mask polynomial (9 for ML-DSA-44, 10 otherwise) *)
+op nyb : int = n * (gamma1m1_bits + 1) %/ 8 %/ 64.
+
+lemma nybP : n * (gamma1m1_bits + 1) %/ 8 = 64 * nyb.
+proof. by rewrite /nyb; have /= := param_sets; case=> [|[|]] [#] _ _ -> *. qed.
+
+lemma gt0_nyb : 0 < nyb.
+proof. by rewrite /nyb; have /= := param_sets; case=> [|[|]] [#] _ _ -> *. qed.
 
 (*************** G7: the hidden samplers are replaced by distributions ****************)
 
@@ -69,7 +78,7 @@ module FreshEM = {
 module SY = {
   proc bytes() : W8.t list = {
     var bs;
-    bs <$ dlist W8.dword 640;
+    bs <$ dlist W8.dword (n * (gamma1m1_bits + 1) %/ 8);
     return bs;
   }
 
@@ -89,7 +98,7 @@ module SY = {
 module EMB = {
   proc loop() : W8.t list = {
     var l;
-    l <@ PB.LoopSnoc.sample(10);
+    l <@ PB.LoopSnoc.sample(nyb);
     return flatten l;
   }
 
@@ -118,22 +127,23 @@ module EMV = {
 equiv bytes_loop : FreshEM.bytes ~ EMB.loop : true ==> ={res}.
 proof.
 proc; inline PB.LoopSnoc.sample; wp.
-while (j{1} = i{2} /\ n{2} = 10 /\ bs{1} = flatten l0{2} /\ size bs{1} = 64 * j{1} /\ 0 <= j{1} <= 10).
-+ auto => /> &2 hs h0 h10 _ hi b hb; rewrite flatten_cat flatten_seq1 size_cat hs.
-  by move: hb; rewrite supp_dlist // => -[-> _] /#.
-by auto => /> i l h1 h2 hs h3 h4; rewrite take_oversize // hs /#.
+while (j{1} = i{2} /\ n{2} = nyb /\ bs{1} = flatten l0{2} /\ size bs{1} = 64 * j{1} /\ 0 <= j{1} <= nyb).
++ auto => /> &2 hs h0 hnyb _ hi b hb; rewrite flatten_cat flatten_seq1 size_cat hs.
+  by move: hb; rewrite supp_dlist // => -[-> _]; smt(nybP).
+auto => />; split; 1: smt(nybP gt0_nyb).
+by move=> i l h1 h2 hs h3 h4; rewrite take_oversize // hs; smt(nybP gt0_nyb).
 qed.
 
 equiv loop_bytes : EMB.loop ~ SY.bytes : true ==> ={res}.
 proof.
 bypr (res{1}) (res{2}) => // &1 &2 a.
-have -> : Pr[EMB.loop() @ &1 : res = a] = Pr[PB.Sample.sample(10) @ &1 : flatten res = a].
+have -> : Pr[EMB.loop() @ &1 : res = a] = Pr[PB.Sample.sample(nyb) @ &1 : flatten res = a].
 + byequiv => //; proc*; inline EMB.loop; wp; call (: ={arg} ==> ={res}); 2: by auto.
   by symmetry; conseq PB.Sample_LoopSnoc_eq => /#.
-have -> : Pr[PB.Sample.sample(10) @ &1 : flatten res = a] = mu (dlist dblock 10) (fun l => flatten l = a)
-  by byphoare (: n = 10 ==> flatten res = a) => //; proc; rnd; auto.
-have -> : Pr[SY.bytes() @ &2 : res = a] = mu1 (dlist W8.dword 640) a by byphoare => //; proc; rnd; auto.
-by rewrite -(dlist_flatten W8.dword 64 10) // dmap1E /pred1 /(\o).
+have -> : Pr[PB.Sample.sample(nyb) @ &1 : flatten res = a] = mu (dlist dblock nyb) (fun l => flatten l = a)
+  by byphoare (: n = nyb ==> flatten res = a) => //; proc; rnd; auto.
+have -> : Pr[SY.bytes() @ &2 : res = a] = mu1 (dlist W8.dword (n * (gamma1m1_bits + 1) %/ 8)) a by byphoare => //; proc; rnd; auto.
+by rewrite nybP -(dlist_flatten W8.dword 64 nyb) // 1:ltzW 1:gt0_nyb dmap1E /pred1 /(\o).
 qed.
 
 equiv bytes_dlist : FreshEM.bytes ~ SY.bytes : true ==> ={res}.
@@ -141,20 +151,22 @@ proof.
 by transitivity EMB.loop (true ==> ={res}) (true ==> ={res}) => //; [exact bytes_loop | exact loop_bytes].
 qed.
 
-hoare sy_bytes_size : SY.bytes : true ==> size res = 640.
-proof. by proc; auto => /> bs; rewrite supp_dlist. qed.
+hoare sy_bytes_size : SY.bytes : true ==> size res = (n * (gamma1m1_bits + 1) %/ 8).
+proof. by proc; auto => /> bs; rewrite supp_dlist; smt(nybP gt0_nyb). qed.
 
 equiv poly_eq : FreshEM.poly ~ SY.poly : true ==> ={res}.
 proof.
 bypr (res{1}) (res{2}) => // &1 &2 a.
 have -> : Pr[FreshEM.poly() @ &1 : res = a] = Pr[SY.bytes() @ &1 : BitUnpack res (gamma1 - 1) gamma1 = a].
 + byequiv => //; proc*; inline FreshEM.poly; wp.
-  call (: true ==> ={res} /\ size res{2} = 640); 1: by conseq bytes_dlist _ sy_bytes_size.
+  call (: true ==> ={res} /\ size res{2} = (n * (gamma1m1_bits + 1) %/ 8)); 1: by conseq bytes_dlist _ sy_bytes_size.
   by auto => /> r hr; rewrite BytesV.of_listK ?hr.
 have -> : Pr[SY.bytes() @ &1 : BitUnpack res (gamma1 - 1) gamma1 = a] =
-          mu (dlist W8.dword 640) (fun bs => BitUnpack bs (gamma1 - 1) gamma1 = a)
+          mu (dlist W8.dword (n * (gamma1m1_bits + 1) %/ 8)) (fun bs => BitUnpack bs (gamma1 - 1) gamma1 = a)
   by byphoare => //; proc; rnd; auto.
 have -> : Pr[SY.poly() @ &2 : res = a] = mu1 (dpoly (-gamma1 + 1) gamma1) a by byphoare => //; proc; rnd; auto.
+have -> : n * (gamma1m1_bits + 1) %/ 8 = 32 * (gamma1m1_bits + 1)
+  by have /= := param_sets; case=> [|[|]] [#] _ _ -> *.
 by rewrite -dmap_BitUnpack_gamma1 dmap1E /pred1 /(\o).
 qed.
 
@@ -302,21 +314,21 @@ op ekey (k0 : Bytes32.t) (c : rnd_) (mu : Bytes64.t) (i : int) : W8.t list =
   (Bytes32.to_list k0 ++ rnd_to_list c ++ Bytes64.to_list mu) ++ IntegerToBytes i 2.
 
 op yblocks (m : (W8.t list * int, W8.t list) fmap) (x : W8.t list) : W8.t list =
-  take (n * (gamma1m1_bits + 1) %/ 8) (flatten (map (fun j => oget m.[(x, j)]) (iota_ 0 10))).
+  take (n * (gamma1m1_bits + 1) %/ 8) (flatten (map (fun j => oget m.[(x, j)]) (iota_ 0 nyb))).
 
 op yval (m : (W8.t list * int, W8.t list) fmap) (k0 : Bytes32.t) (c : rnd_) (mu : Bytes64.t) (k : int) : polylvec =
   LArray.init (fun r => BitUnpack (BytesV.to_list (BytesV.of_list (yblocks m (ekey k0 c mu (k * lvec + r)))))
                                   (gamma1 - 1) gamma1).
 
 op gp (m : (W8.t list * int, W8.t list) fmap) (k0 : Bytes32.t) (c : rnd_) (mu : Bytes64.t) (k : int) : bool =
-  forall r j, 0 <= r < lvec => 0 <= j < 10 => (ekey k0 c mu (k * lvec + r), j) \in m.
+  forall r j, 0 <= r < lvec => 0 <= j < nyb => (ekey k0 c mu (k * lvec + r), j) \in m.
 
 (* RO_v of G6 and RO_y of G7: RO_v holds complete groups of blocks, RO_y the y they give *)
 op inv7 (k0 : Bytes32.t) (mv : (W8.t list * int, W8.t list) fmap) (my : (rnd_ * Bytes64.t * int, polylvec) fmap) =
      (forall c mu k, (c, mu, k) \in my <=> 0 <= k < kappa_max /\ gp mv k0 c mu k)
   /\ (forall c mu k, (c, mu, k) \in my => my.[(c, mu, k)] = Some (yval mv k0 c mu k))
   /\ (forall x, x \in mv =>
-        exists c mu k r, 0 <= k < kappa_max /\ 0 <= r < lvec /\ 0 <= x.`2 < 10 /\
+        exists c mu k r, 0 <= k < kappa_max /\ 0 <= r < lvec /\ 0 <= x.`2 < nyb /\
                          x.`1 = ekey k0 c mu (k * lvec + r) /\ gp mv k0 c mu k).
 
 lemma ekey_inj k0 c1 mu1 i1 c2 mu2 i2 :
@@ -334,7 +346,7 @@ by rewrite -(IntegerToBytesK i1 2) // hib IntegerToBytesK.
 qed.
 
 lemma yblocks_eq (m1 m2 : (W8.t list * int, W8.t list) fmap) (x : W8.t list) :
-  (forall j, 0 <= j < 10 => m1.[(x, j)] = m2.[(x, j)]) => yblocks m1 x = yblocks m2 x.
+  (forall j, 0 <= j < nyb => m1.[(x, j)] = m2.[(x, j)]) => yblocks m1 x = yblocks m2 x.
 proof.
 move=> h; rewrite /yblocks; congr; congr; apply eq_in_map => j /mem_iota hj /=.
 by rewrite h //; smt().
@@ -348,44 +360,44 @@ proof. move=> hk h1 h2 /(ekey_inj _ _ _ _ _ _ _ (nonce_rng _ _ hk h1) (nonce_rng
 equiv squeeze_fresh (x0 : W8.t list) (m0 : (W8.t list * int, W8.t list) fmap) :
   Squeeze(RO_v.RO).squeeze ~ FreshEM.bytes :
   x{1} = x0 /\ len{1} = n * (gamma1m1_bits + 1) %/ 8 /\ RO_v.RO.m{1} = m0 /\
-  (forall j, 0 <= j < 10 => (x0, j) \notin m0)
-  ==> ={res} /\ res{1} = yblocks RO_v.RO.m{1} x0 /\ (forall j, 0 <= j < 10 => (x0, j) \in RO_v.RO.m{1}) /\
-      (forall (y : W8.t list * int), !(y.`1 = x0 /\ 0 <= y.`2 < 10) => RO_v.RO.m{1}.[y] = m0.[y]).
+  (forall j, 0 <= j < nyb => (x0, j) \notin m0)
+  ==> ={res} /\ res{1} = yblocks RO_v.RO.m{1} x0 /\ (forall j, 0 <= j < nyb => (x0, j) \in RO_v.RO.m{1}) /\
+      (forall (y : W8.t list * int), !(y.`1 = x0 /\ 0 <= y.`2 < nyb) => RO_v.RO.m{1}.[y] = m0.[y]).
 proof.
 proc; inline RO_v.RO.get; wp.
-while (={j} /\ r{1} = bs{2} /\ x{1} = x0 /\ len{1} = 640 /\ 0 <= j{1} <= 10 /\
+while (={j} /\ r{1} = bs{2} /\ x{1} = x0 /\ len{1} = (n * (gamma1m1_bits + 1) %/ 8) /\ 0 <= j{1} <= nyb /\
        r{1} = flatten (map (fun j' => oget RO_v.RO.m{1}.[(x0, j')]) (iota_ 0 j{1})) /\
        (forall j', 0 <= j' < j{1} => (x0, j') \in RO_v.RO.m{1}) /\
-       (forall j', j{1} <= j' < 10 => (x0, j') \notin RO_v.RO.m{1}) /\
+       (forall j', j{1} <= j' < nyb => (x0, j') \notin RO_v.RO.m{1}) /\
        (forall (y : W8.t list * int), !(y.`1 = x0 /\ 0 <= y.`2 < j{1}) => RO_v.RO.m{1}.[y] = m0.[y])).
-+ rcondt{1} 3; 1: by auto => /> /#.
-  auto => /> &1 &2 h0 h10 hin hout hm hj b hb; rewrite get_set_sameE /=; do! split; 1,2: smt().
++ rcondt{1} 3; 1: by auto => />; smt(nybP).
+  auto => /> &1 &2 h0 hnyb hin hout hm hj b hb; rewrite get_set_sameE /=; do! split; 1,2: smt(nybP).
   + rewrite iotaSr // map_rcons -cats1 flatten_cat flatten_seq1 /= get_set_sameE /=; congr; congr.
     by apply eq_in_map => j' /mem_iota hj' /=; rewrite get_set_neqE /#.
   + by move=> j' h1 h2; rewrite mem_set /#.
   + by move=> j' h1 h2; rewrite mem_set /#.
   by move=> y hy; rewrite get_setE /#.
-auto => /> _; split; 1: (split; [by rewrite iota0 // flatten_nil | smt()]).
-move=> m j h1 _ h2 h3 hin hout hm; have ->> : j = 10 by smt().
+auto => /> _; split; 1: (split; [smt(gt0_nyb) | split; [by rewrite iota0 // flatten_nil | smt()]]).
+move=> m j h1 _ h2 h3 hin hout hm; have ->> : j = nyb by smt(nybP).
 split; 1: by rewrite /yblocks.
 by split; smt().
 qed.
 
 phoare squeeze_present (x0 : W8.t list) (m0 : (W8.t list * int, W8.t list) fmap) :
   [Squeeze(RO_v.RO).squeeze :
-   x = x0 /\ len = n * (gamma1m1_bits + 1) %/ 8 /\ RO_v.RO.m = m0 /\ (forall j, 0 <= j < 10 => (x0, j) \in m0)
+   x = x0 /\ len = n * (gamma1m1_bits + 1) %/ 8 /\ RO_v.RO.m = m0 /\ (forall j, 0 <= j < nyb => (x0, j) \in m0)
    ==> res = yblocks m0 x0 /\ RO_v.RO.m = m0] = 1%r.
 proof.
 proc; inline RO_v.RO.get; wp.
-while (x = x0 /\ len = 640 /\ RO_v.RO.m = m0 /\ 0 <= j <= 10 /\
+while (x = x0 /\ len = (n * (gamma1m1_bits + 1) %/ 8) /\ RO_v.RO.m = m0 /\ 0 <= j <= nyb /\
        r = flatten (map (fun j' => oget m0.[(x0, j')]) (iota_ 0 j)) /\
-       (forall j, 0 <= j < 10 => (x0, j) \in m0)) (10 - j).
-+ move=> z; rcondf 3; 1: by auto => /> /#.
-  auto => /> &hr h0 h10 hin hj; split; 1: by have := dlist_ll W8.dword 64 W8.dword_ll.
-  by move=> _ b _ _; rewrite iotaSr // map_rcons -cats1 flatten_cat flatten_seq1 /=; smt().
-auto => /> hin; split; 1: by rewrite iota0.
-move=> j; split; 1: smt().
-move=> h1 h2 h3; have ->> : j = 10 by smt().
+       (forall j, 0 <= j < nyb => (x0, j) \in m0)) (nyb - j).
++ move=> z; rcondf 3; 1: by auto => />; smt(nybP).
+  auto => /> &hr h0 hnyb hin hj; split; 1: by have := dlist_ll W8.dword 64 W8.dword_ll.
+  by move=> _ b _ _; rewrite iotaSr // map_rcons -cats1 flatten_cat flatten_seq1 /=; smt(nybP).
+auto => /> hin; split; 1: by rewrite iota0 //=; smt(gt0_nyb).
+move=> j; split; 1: smt(nybP).
+move=> h1 h2 h3; have ->> : j = nyb by smt(nybP).
 by rewrite /yblocks.
 qed.
 
@@ -394,10 +406,10 @@ equiv emask_fresh (k0 : Bytes32.t) (c0 : rnd_) (mu0 : Bytes64.t) (k : int)
   ExpandMask_L(RO_v.RO).sample ~ FreshEM.sample :
   kp{1} = Bytes32.to_list k0 ++ rnd_to_list c0 ++ Bytes64.to_list mu0 /\ mu{1} = k * lvec /\
   0 <= k < kappa_max /\ RO_v.RO.m{1} = m0 /\
-  (forall r j, 0 <= r < lvec => 0 <= j < 10 => (ekey k0 c0 mu0 (k * lvec + r), j) \notin m0)
+  (forall r j, 0 <= r < lvec => 0 <= j < nyb => (ekey k0 c0 mu0 (k * lvec + r), j) \notin m0)
   ==> ={res} /\ res{1} = yval RO_v.RO.m{1} k0 c0 mu0 k /\ gp RO_v.RO.m{1} k0 c0 mu0 k /\
       (forall (y : W8.t list * int),
-         !(exists r, 0 <= r < lvec /\ y.`1 = ekey k0 c0 mu0 (k * lvec + r) /\ 0 <= y.`2 < 10) =>
+         !(exists r, 0 <= r < lvec /\ y.`1 = ekey k0 c0 mu0 (k * lvec + r) /\ 0 <= y.`2 < nyb) =>
          RO_v.RO.m{1}.[y] = m0.[y]).
 proof.
 proc.
@@ -406,11 +418,11 @@ while (={r, s} /\ 0 <= r{1} <= lvec /\ kp{1} = Bytes32.to_list k0 ++ rnd_to_list
        (forall r', 0 <= r' < r{1} =>
           s{1}.[r'] = BitUnpack (BytesV.to_list (BytesV.of_list (yblocks RO_v.RO.m{1} (ekey k0 c0 mu0 (k * lvec + r')))))
                                 (gamma1 - 1) gamma1) /\
-       (forall r' j, 0 <= r' < r{1} => 0 <= j < 10 => (ekey k0 c0 mu0 (k * lvec + r'), j) \in RO_v.RO.m{1}) /\
-       (forall r' j, r{1} <= r' < lvec => 0 <= j < 10 =>
+       (forall r' j, 0 <= r' < r{1} => 0 <= j < nyb => (ekey k0 c0 mu0 (k * lvec + r'), j) \in RO_v.RO.m{1}) /\
+       (forall r' j, r{1} <= r' < lvec => 0 <= j < nyb =>
           (ekey k0 c0 mu0 (k * lvec + r'), j) \notin RO_v.RO.m{1}) /\
        (forall (y : W8.t list * int),
-          !(exists r', 0 <= r' < r{1} /\ y.`1 = ekey k0 c0 mu0 (k * lvec + r') /\ 0 <= y.`2 < 10) =>
+          !(exists r', 0 <= r' < r{1} /\ y.`1 = ekey k0 c0 mu0 (k * lvec + r') /\ 0 <= y.`2 < nyb) =>
           RO_v.RO.m{1}.[y] = m0.[y])).
 + inline FreshEM.poly; wp.
   exlim RO_v.RO.m{1}, r{1} => mc rc.
@@ -465,7 +477,7 @@ proof. move=> [ha [hb _]] h; have := ha c mu k; rewrite h /= => -[_ hgp]; by rew
 
 lemma inv7_fresh k0 mv my c mu k :
   inv7 k0 mv my => 0 <= k < kappa_max => (c, mu, k) \notin my =>
-  forall r j, 0 <= r < lvec => 0 <= j < 10 => (ekey k0 c mu (k * lvec + r), j) \notin mv.
+  forall r j, 0 <= r < lvec => 0 <= j < nyb => (ekey k0 c mu (k * lvec + r), j) \notin mv.
 proof.
 move=> [ha [hb hc]] hk hn r j hr hj; apply/negP => hin.
 have [c' mu' k' r' [hk' [hr' [hj' [he hgp]]]]] := hc _ hin.
@@ -478,7 +490,7 @@ qed.
 lemma inv7_add k0 mv mv' my c mu k :
   inv7 k0 mv my => 0 <= k < kappa_max => (c, mu, k) \notin my => gp mv' k0 c mu k =>
   (forall (z : W8.t list * int),
-     !(exists r, 0 <= r < lvec /\ z.`1 = ekey k0 c mu (k * lvec + r) /\ 0 <= z.`2 < 10) => mv'.[z] = mv.[z]) =>
+     !(exists r, 0 <= r < lvec /\ z.`1 = ekey k0 c mu (k * lvec + r) /\ 0 <= z.`2 < nyb) => mv'.[z] = mv.[z]) =>
   inv7 k0 mv' my.[(c, mu, k) <- yval mv' k0 c mu k].
 proof.
 move=> [ha [hb hc]] hk hn hgp' hmv.
@@ -509,7 +521,7 @@ split.
   have hk' : 0 <= k' < kappa_max by move: (ha c' mu' k'); rewrite h /#.
   have hne' : (c', mu', k') <> (c, mu, k) by smt().
   by rewrite hb // hyeq.
-move=> x; case: (exists r, 0 <= r < lvec /\ x.`1 = ekey k0 c mu (k * lvec + r) /\ 0 <= x.`2 < 10).
+move=> x; case: (exists r, 0 <= r < lvec /\ x.`1 = ekey k0 c mu (k * lvec + r) /\ 0 <= x.`2 < nyb).
 + by move=> [r [hr [hx1 hx2]]] _; exists c mu k r.
 move=> hnx; rewrite domE hmv // -domE => hx.
 have [c' mu' k' r' [hk' [hr' [hx2 [hx1 hgp]]]]] := hc _ hx.
@@ -682,7 +694,7 @@ wp; while (={r, s1, s2, rho} /\ 0 <= r{1} <= lvec /\ sfresh_from rho{1} RO_S.RO.
   call (rbp_ro_fresh (Bytes66.to_list (sseed rho0 r0)) m0).
   auto => /> hr hr' hm hl; split; 1: by move=> c; apply hm; smt(gt0_k).
   by move=> _ _ m' hf; split; [smt() | apply (sfresh_from_step _ _ _ _ _ hm hf)].
-auto => /> &2; split; 1: by move=> r' c _; rewrite mem_empty.
+auto => /> &2; split; 1: by split; [smt(gt0_l) | move=> r' c _; rewrite mem_empty].
 by move=> m r _ h1 h2 h3; rewrite (_ : r = lvec) 1:/#.
 qed.
 
@@ -736,7 +748,7 @@ lemma inv7_empty k0 : inv7 k0 empty empty.
 proof.
 rewrite /inv7 /gp; do! split; 2,3: smt(mem_empty).
 move=> c mu k; rewrite mem_empty /=; apply/negP => -[_ h].
-have := h 0 0 _ _; [smt(gt0_l) | done | by rewrite mem_empty].
+have := h 0 0 _ _; [smt(gt0_l) | smt(gt0_nyb) | by rewrite mem_empty].
 qed.
 
 equiv keygen67 :
@@ -813,3 +825,5 @@ by rewrite -(G6_G7 &m); apply (hop6 A qH qS &m hqH hqS A_ll A_count).
 qed.
 
 end section.
+
+end MLDSA_ROSep_Hop7.

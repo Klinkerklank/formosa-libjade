@@ -20,7 +20,8 @@ op tau : { int | 1 <= tau <= n /\ tau <= 64 } as tau_bound. (* challenge weight 
 op d : { int | 0 < d } as gt0_d.        (* bits dropped from public key *)
 
 axiom eta_tau_leq_b : eta_ * tau <= beta_.
-axiom ub_d : tau * 2 ^ d <= 2 * gamma2.
+(* No bound [tau * 2^(d-1) <= gamma2] is assumed: it fails for ML-DSA-44, and
+   the signing procedure checks [||c t0||_inf < gamma2] explicitly instead. *)
 
 axiom gamma2_bound  : 2 <= gamma2 <= q %/ 4.
 axiom gamma2_div : 2 * gamma2 %| (q - 1).

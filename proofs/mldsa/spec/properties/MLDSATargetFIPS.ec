@@ -2,9 +2,13 @@ require import AllCore IntDiv List Distr DList.
 from Jasmin require import JWord.
 require import Array256.
 require import Parameters GFq Rq ConcreteDRing.
-require import Spec65.
-import MLDSA65.
+require MLDSA_ExpandS.
 require MLDSATarget.
+
+abstract theory MLDSATargetFIPS.
+
+clone include MLDSA_ExpandS.MLDSA_ExpandS.
+import Spec.
 import Round ZModQ Zq PolyReduce MLDSAParams.
 
 (* The target security spec at the ML-DSA parameters, over the FIPS 204 ring *)
@@ -57,10 +61,6 @@ realize Params.gt0_beta by exact gt0_beta.
 realize Params.tau_bound by exact tau_bound.
 realize Params.gt0_d by exact gt0_d.
 realize Params.eta_tau_leq_b by exact eta_tau_leq_b.
-realize Params.ub_d.
-have -> : 2 ^ d = 8192 by do 12!(rewrite expr_pred //=); rewrite expr1.
-by rewrite /gamma2 /tau /gamma2_div /Params65.tau /Params65.gamma2_div.
-qed.
 realize Params.gamma2_bound by exact gamma2_bound.
 realize Params.gamma2_div by exact gamma2_div.
 realize Params.beta_gamma1_lt by exact beta_gamma1_lt.
@@ -69,12 +69,10 @@ realize DV.HL.d_bound by split.
 realize DV.HL.S.inhabited by exists (poly_highbits (2 * gamma2) zeroXnD1); exists zeroXnD1.
 realize gt0_kappa_max by case: kappa_max_bnd.
 realize dRq_mask_ll.
-have hg : gamma1 = 524288 by rewrite /gamma1 /gamma1_log /Params65.gamma1_log.
-by apply dmap_ll; apply Rq.dpoly_ll; rewrite hg.
+by apply dmap_ll; apply Rq.dpoly_ll; case: gamma1_cases => ->.
 qed.
 realize dRq_mask_uni.
-have hg : gamma1 = 524288 by rewrite /gamma1 /gamma1_log /Params65.gamma1_log.
-apply dmap_uni_in_inj; last by apply Rq.dpoly_uni; rewrite hg.
+apply dmap_uni_in_inj; last by apply Rq.dpoly_uni; case: gamma1_cases => ->.
 by move=> x y _ _; apply (can_inj _ _ alg2polyK).
 qed.
 realize toRqK.
@@ -111,3 +109,5 @@ realize SIB.B.to_int_in_surj.
 move=> i; split => [hi | [b <-]]; 1: by exists (W8.of_int i); rewrite W8.of_uintK modz_small /#.
 by have := W8.to_uint_cmp b.
 qed.
+
+end MLDSATargetFIPS.
