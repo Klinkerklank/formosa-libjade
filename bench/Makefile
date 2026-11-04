@@ -53,8 +53,14 @@ PQCR_SIG   := $(BUILD)/pqcrystals-ref_mldsa44.so \
               $(BUILD)/pqcrystals-ref_mldsa65.so \
               $(BUILD)/pqcrystals-ref_mldsa87.so
 
-LIBS := $(JASMIN_KEM) $(JASMIN_SIG) $(MLKN_KEM) $(MLDN_SIG) \
-        $(PQC_KEM) $(PQC_SIG) $(PQCR_KEM) $(PQCR_SIG)
+# the libraries of each backend (BACKENDS names them)
+LIBS_jasmin         := $(JASMIN_KEM) $(JASMIN_SIG)
+LIBS_mlkem-native   := $(MLKN_KEM)
+LIBS_mldsa-native   := $(MLDN_SIG)
+LIBS_pqcrystals     := $(PQC_KEM) $(PQC_SIG)
+LIBS_pqcrystals-ref := $(PQCR_KEM) $(PQCR_SIG)
+
+LIBS := $(foreach b,jasmin mlkem-native mldsa-native pqcrystals pqcrystals-ref,$(LIBS_$(b)))
 
 .PHONY: libs clean
 libs: $(LIBS)
@@ -193,12 +199,29 @@ REQUIRE ?= jasmin
 CPU ?= $(shell lscpu -e=CPU,MAXMHZ 2>/dev/null | awk 'NR>1 && $$2+0>=m {m=$$2+0; c=$$1} END{print c}')
 PIN := $(if $(and $(CPU),$(shell command -v taskset)),taskset -c $(CPU) ,)
 
-.PHONY: bench-bin test compare bench bench-all report
+.PHONY: bench-bin test memcheck compare bench bench-all report
 bench-bin: $(BUILD)/bench
 
 # KAT: run each backend over the vector files
-test: libs
+test: $(foreach b,$(BACKENDS),$(LIBS_$(b)))
 	@for b in $(BACKENDS); do echo "== $$b =="; $(PYTHON) kat.py --backend $$b $(VECTORS) || exit $$?; done
+
+# memory safety of the jasmin libraries under Valgrind's memcheck
+# (memcheck.c: exact-size heap buffers, initialised outputs); VALGRIND=
+# runs the driver alone
+VALGRIND ?= valgrind --error-exitcode=1 --track-origins=yes --leak-check=no -q
+
+$(BUILD)/memcheck: memcheck.c FORCE | $(BUILD)
+	$(CC) $(XARCH) -O1 -g $(if $(VALGRIND),-DWITH_VALGRIND) -o $@ memcheck.c $(DLLIB)
+
+.PHONY: FORCE
+FORCE:
+
+memcheck: $(LIBS_jasmin) $(BUILD)/memcheck
+	@for s in $(ALL_SCHEMES); do \
+	   sb=$$(echo $$s | tr -d '-' | tr 'A-Z' 'a-z'); \
+	   $(VALGRIND) $(BUILD)/memcheck $$s $(BUILD)/jasmin_$$sb.so || exit 1; \
+	 done
 
 # differential agreement across backends for one scheme
 compare: libs

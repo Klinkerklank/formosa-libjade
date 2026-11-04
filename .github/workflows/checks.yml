@@ -1,0 +1,179 @@
+name: checks
+
+# The checks of the Jasmin sources and of the committed EasyCrypt models,
+# one result per check and target (scripts/checks.sh, made of the same
+# `make` targets as a local run):
+#  - ct: constant time and speculative constant time (`jasmin-ct`);
+#  - extraction: the committed models are the jasmin2ec extraction of src/;
+#  - kat-memcheck: the known-answer tests of bench/vectors, then Valgrind's
+#    memcheck on every entry point (x86-64 + AVX2 runners).
+# The results make one record per commit (scripts/checks-record.py), added
+# to the results repo: by the publish job below for main, by publish-pr for
+# pull requests.
+#
+# SECURITY: the plain pull_request trigger is safe while this repo is
+# PRIVATE (only collaborators can open PRs). Before making the repo public,
+# adopt bench.yml's model (pull_request_target + same-repo gate) so fork
+# code can never run on the self-hosted machines.
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: checks-${{ github.ref }}
+  cancel-in-progress: true
+
+# The bench shell has jasmin (jasminc, jasmin-ct), a pinned C toolchain and
+# Valgrind; the extraction shell adds the jasmin2ec of the safety models.
+# --impure lets the flake's easycrypt pin-depends resolve (these jobs never
+# build it, but the solver sees it). A pull request is checked at its head
+# commit, the commit its record is for.
+env:
+  NIX_CONFIG: 'experimental-features = nix-command flakes'
+  BENCHDEV: nix develop .#bench --impure --command
+  XDEV: nix develop .#extraction --impure --command
+  HEAD: ${{ github.event.pull_request.head.sha || github.sha }}
+
+jobs:
+  ct:
+    runs-on: [self-hosted, linux, proofs]
+    timeout-minutes: 30
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+        with:
+          ref: ${{ env.HEAD }}
+          submodules: false
+          persist-credentials: false
+
+      - name: Toolchain
+        run: $BENCHDEV true
+
+      - name: CT and SCT
+        run: $BENCHDEV sh scripts/checks.sh ct checks/ct.jsonl
+
+      - name: Upload results
+        if: ${{ !cancelled() }}
+        uses: actions/upload-artifact@v7
+        with:
+          name: checks-ct
+          path: checks/ct.jsonl
+
+  extraction:
+    runs-on: [self-hosted, linux, proofs]
+    timeout-minutes: 30
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+        with:
+          ref: ${{ env.HEAD }}
+          submodules: false
+          persist-credentials: false
+
+      - name: Toolchain
+        run: $XDEV true
+
+      - name: Extracted models
+        run: $XDEV sh scripts/checks.sh extraction checks/extraction.jsonl
+
+      - name: Upload results
+        if: ${{ !cancelled() }}
+        uses: actions/upload-artifact@v7
+        with:
+          name: checks-extraction
+          path: checks/extraction.jsonl
+
+  kat-memcheck:
+    runs-on: [self-hosted, linux, x64]
+    timeout-minutes: 30
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+        with:
+          ref: ${{ env.HEAD }}
+          submodules: false
+          persist-credentials: false
+
+      - name: Toolchain
+        run: $BENCHDEV true
+
+      - name: KAT and memcheck
+        run: $BENCHDEV sh scripts/checks.sh kat-memcheck checks/kat-memcheck.jsonl
+
+      - name: Upload results
+        if: ${{ !cancelled() }}
+        uses: actions/upload-artifact@v7
+        with:
+          name: checks-kat-memcheck
+          path: checks/kat-memcheck.jsonl
+
+  # The record of the commit, from the results of the three jobs, whatever
+  # their outcome (a failed check is recorded too), with the end of the log
+  # of every job that failed: the record must not depend on the run's logs,
+  # which GitHub deletes after the retention period.
+  record:
+    needs: [ct, extraction, kat-memcheck]
+    if: ${{ !cancelled() }}
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      actions: read
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          ref: ${{ env.HEAD }}
+          persist-credentials: false
+      - uses: actions/download-artifact@v8
+        with:
+          pattern: checks-*
+          path: checks
+          merge-multiple: true
+      - name: Logs of the failed jobs
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          mkdir -p logs
+          gh api "repos/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID/jobs" \
+            --jq '.jobs[] | select(.conclusion == "failure") | "\(.id) \(.name)"' |
+          while read -r id name; do
+            gh api "repos/$GITHUB_REPOSITORY/actions/jobs/$id/logs" > "logs/$name.log" || true
+          done
+      - name: Record
+        env:
+          JOBS: ${{ toJSON(needs) }}
+          JOB_LOGS: logs
+        run: python3 -I scripts/checks-record.py merge checks.json checks/*.jsonl
+      - uses: actions/upload-artifact@v7
+        with:
+          name: checks-record
+          path: checks.json
+
+  # Add the record to the results repo
+  # (https://github.com/strub/jasmin-nist-timing), on pushes to main only. A
+  # separate job on a GitHub-hosted runner: it only downloads the record, so
+  # the deploy key never reaches a self-hosted machine nor shares a job with
+  # the checks.
+  publish:
+    needs: record
+    if: ${{ !cancelled() && needs.record.result == 'success' && github.event_name == 'push' && github.ref == 'refs/heads/main' }}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          sparse-checkout: .github/actions
+          persist-credentials: false
+      - uses: actions/download-artifact@v8
+        with:
+          name: checks-record
+          path: result
+      - uses: ./.github/actions/publish-result
+        with:
+          file: result/checks.json
+          dest: data/checks
+          deploy-key: ${{ secrets.TIMING_DEPLOY_KEY }}

@@ -13,7 +13,6 @@ continue in a fresh session (e.g. after moving to an x86-64 + AVX2 host).
   - `src/include/` — C headers for the derand entry points (all six parameter
     sets; only 65/768/1024 have sources so far).
   - `src/fips202` — in-tree Keccak/FIPS202 sources (Jasmin `Keccak` namespace; flattened from formosa-keccak).
-  - `src/tests/kat.py` — single-file ctypes KAT driver for the src build.
 - `proofs/` — EasyCrypt development (restored).
 - `bench/` — multi-backend KAT + cycle benchmark harness (details below).
 - `mlkem/`, `mldsa/` — original subtree imports, still tracked. The end goal is
@@ -53,8 +52,8 @@ continue in a fresh session (e.g. after moving to an x86-64 + AVX2 host).
 cd src && make            # .s for mldsa65, mlkem768/1024
 
 # EasyCrypt extraction
-make -C proofs/mldsa/extraction                  # -> Mldsa{44,65,87}.ec + arrays/
-make -C proofs/mlkem/extraction                  # -> {768,1024}/Jkem_avx2.ec (no arrays)
+make -C proofs extract                           # every model, arrays/, generic theories
+make -C proofs check-extraction                  # ... and fail if a file under proofs/ changed
 
 # Multi-backend harness (run targets need an x86-64 + AVX2 host)
 cd bench

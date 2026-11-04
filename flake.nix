@@ -18,10 +18,17 @@
       url = "github:ocaml/opam-repository";
       flake = false;
     };
+    # The jasmin2ec of the safety models (`-m safety`): the extracted
+    # compiler of the Jasmin branch safety-assert2 (jasmin 1e7479a2,
+    # jasmin-lang/jasmin PR 1170), which no release ships yet.
+    jasmin-safety = {
+      url = "gitlab:jasmin-lang/jasmin-compiler/c1cae60e0d053c9e478d1e662b609242796202c4";
+      flake = false;
+    };
   };
 
   outputs =
-    { self, opam-nix, nixpkgs, flake-utils, opam-repository }:
+    { self, opam-nix, nixpkgs, flake-utils, opam-repository, jasmin-safety }:
     flake-utils.lib.eachDefaultSystem (system:
       let
         pkgs = nixpkgs.legacyPackages.${system};
@@ -56,17 +63,20 @@
           runHook postBuild
         '';
 
+        ezConfFixups = final: prev: {
+          conf-gmp-paths = prev.conf-gmp-paths.overrideAttrs (_: {
+            buildPhase = ezConfProbe "gmp" pkgs.gmp;
+          });
+          conf-mpfr-paths = prev.conf-mpfr-paths.overrideAttrs (_: {
+            buildPhase = ezConfProbe "mpfr" pkgs.mpfr;
+          });
+        };
+
         # Fixups for opam's conf-* probe packages under opam-nix.
         scope = scope'.overrideScope (
-          final: prev: {
+          final: prev: ezConfFixups final prev // {
             conf-git = prev.conf-git.overrideAttrs (a: {
               nativeBuildInputs = (a.nativeBuildInputs or [ ]) ++ [ pkgs.git ];
-            });
-            conf-gmp-paths = prev.conf-gmp-paths.overrideAttrs (_: {
-              buildPhase = ezConfProbe "gmp" pkgs.gmp;
-            });
-            conf-mpfr-paths = prev.conf-mpfr-paths.overrideAttrs (_: {
-              buildPhase = ezConfProbe "mpfr" pkgs.mpfr;
             });
             # Same fixups as EasyCrypt's own flake: the codesign shim for
             # dune's macOS link step, and a lib/easycrypt symlink so the
@@ -82,6 +92,25 @@
             });
           }
         );
+
+        # The safety-assert2 compiler, built like the release. Its opam file
+        # declares a conflict with ez-conf-lib (the release's does not),
+        # which forces the solver onto apron/mlgmpidl versions older than the
+        # conf-*-paths packages; the conflict is dropped.
+        jasminSafetySrc = pkgs.runCommand "jasmin-safety-assert2-src" { } ''
+          cp -r ${jasmin-safety} $out
+          chmod -R u+w $out
+          sed -i '/^conflicts: \[/,/^\]/d' $out/jasmin.opam
+        '';
+        safetyScope' = on.buildOpamProject' { repos = [ opam-repository ]; } jasminSafetySrc {
+          ocaml-base-compiler = ocamlVersion;
+        };
+        safetyScope = safetyScope'.overrideScope ezConfFixups;
+        # Installed under its own name, next to the release's jasmin2ec.
+        jasmin2ecSafety = pkgs.writeShellScriptBin "jasmin2ec-safety" ''
+          exec ${safetyScope.jasmin}/bin/jasmin2ec "$@"
+        '';
+
         # proofs/*/easycrypt.project pins Z3@4.13; nixpkgs dropped that
         # series, so build the current recipe at the 4.13.4 tag.
         z3 = pkgs.z3.overrideAttrs (_: {
@@ -106,12 +135,27 @@
       {
         packages.default = scope.jasmin-nist;
 
-        # Toolchain for the cycle benchmarks: jasminc and a pinned C
-        # toolchain (mkShell's stdenv cc), no EasyCrypt/provers — keeps the
-        # bench closure small and the benchmark compiler pinned by flake.lock.
+        # Toolchain for the cycle benchmarks, the KATs, memcheck and the
+        # constant-time checks: jasmin and a pinned C toolchain (mkShell's
+        # stdenv cc), no EasyCrypt/provers — keeps the bench closure small and
+        # the benchmark compiler pinned by flake.lock. Valgrind (Linux only)
+        # is a build input for the headers of its client requests.
         devShells.bench = pkgs.mkShell {
           packages = [
             scope.jasmin
+            pkgs.python3
+            pkgs.gnumake
+            pkgs.git
+          ];
+          buildInputs = nixpkgs.lib.optionals pkgs.stdenv.isLinux [ pkgs.valgrind ];
+        };
+
+        # Extraction of the EasyCrypt models: the release's jasmin2ec for the
+        # correctness models, jasmin2ec-safety for the safety models.
+        devShells.extraction = pkgs.mkShell {
+          packages = [
+            scope.jasmin
+            jasmin2ecSafety
             pkgs.python3
             pkgs.gnumake
             pkgs.git

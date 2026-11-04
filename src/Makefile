@@ -10,23 +10,11 @@ ARCH     ?= x86-64
 JFLAGS   ?=
 JCTFLAGS ?=
 
-CC      ?= cc
-PYTHON  ?= python3
-
 BUILD   ?= _build
 
 # Jasmin emits OS-specific assembly: the .s produced here matches the host
-# (Mach-O on macOS, ELF on Linux). The x86-64 AVX2 code therefore runs on an
-# x86-64 host of the SAME OS as the one that generated the .s. On an Apple
-# Silicon Mac the code is cross-assembled/linked (clang -arch x86_64); it
-# runs under Rosetta, which executes AVX2, from an x86-64 process (e.g. an
-# x86-64 Python for the KAT driver: `arch -x86_64 <python> tests/kat.py ...`).
-UNAME_S := $(shell uname -s)
-ifeq ($(UNAME_S),Darwin)
-  XARCH ?= -arch x86_64
-else
-  XARCH ?=
-endif
+# (Mach-O on macOS, ELF on Linux). bench/ links it into the libraries that
+# the KATs, memcheck and the benchmarks load.
 
 KECCAK       := fips202
 MLDSA_COMMON := mldsa/avx2/common
@@ -121,36 +109,6 @@ $(CT_MLKEM):  ct-mlkem%:  mlkem/avx2/%/jmlkem.jazz
 
 $(SCT_MLKEM): sct-mlkem%: mlkem/avx2/%/jmlkem.jazz
 	$(JASMINCT) --sct --arch=$(ARCH) $(JCTFLAGS) $(MLKEM_INC) $<
-
-# ==========================================================================
-#  Shared libraries (assemble + link). Buildable on Apple Silicon; only
-#  loadable/runnable on an x86-64 + AVX2 host.
-# ==========================================================================
-
-# One shared library per discovered entry point.
-LIBS := $(TARGETS:.s=.so)
-
-.PHONY: libs
-libs: $(LIBS)
-
-# Every entry point exports a plain C ABI (see include/*.h); one rule turns
-# each generated .s into a position-independent shared library.
-$(BUILD)/%_avx2.so: $(BUILD)/%_avx2.s | $(BUILD)
-	$(CC) $(XARCH) -fPIC -shared -o $@ $<
-
-# ==========================================================================
-#  Run the KATs through the single ctypes driver (x86-64 + AVX2 host only).
-# ==========================================================================
-
-VECTORS := $(wildcard tests/vectors/*.json)
-
-.PHONY: test
-test: libs
-	@if [ -z "$(VECTORS)" ]; then \
-	  echo "no KAT vectors in tests/vectors/ -- nothing to run"; \
-	else \
-	  $(PYTHON) tests/kat.py --lib-dir $(BUILD) $(VECTORS); \
-	fi
 
 clean:
 	rm -rf $(BUILD)

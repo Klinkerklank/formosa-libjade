@@ -186,7 +186,7 @@ def git(*argv):
 def to_json(data, order, versions, extra):
     """Every measurement (no --exclude/--require filtering) with its
     statistics, and the run metadata."""
-    # the commit actually checked out: on labelled PRs (pull_request_target)
+    # the commit actually checked out: on PRs (pull_request_target)
     # GITHUB_SHA is the base branch, not the benchmarked head
     commit = git("rev-parse", "HEAD") or os.environ.get("GITHUB_SHA")
     meta = {

@@ -3,7 +3,7 @@
 
 Loads _build/<backend>_<scheme>.so (built by `make libs`) and replays the KAT
 vectors through the common derand ABI (adapters/common_abi.h): kem_* for ML-KEM,
-sig_* for ML-DSA. Same JSON schema as src/tests; selects the library by backend.
+sig_* for ML-DSA; selects the library by backend.
 
 Usage:
     python3 kat.py --backend jasmin vectors/*.json

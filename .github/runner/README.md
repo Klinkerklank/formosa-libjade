@@ -21,9 +21,9 @@ on the GitHub side.
 A self-hosted runner executes job code on your machine, so on a **public**
 repo it is an RCE vector. The bench workflow is built to contain that:
 
-- **No fork code ever runs** (the primary defense). PR runs are gated on the
-  `bench` *label* **and** `head.repo == this repo`, so only branches pushed into
-  the repo by collaborators are benched. A labeled fork PR is skipped.
+- **No fork code ever runs** (the primary defense). PR runs are gated on
+  `head.repo == this repo`, so only branches pushed into the repo by
+  collaborators are benched. A fork PR is skipped.
 - **The PR can't weaken the gate.** `pull_request_target` runs the workflow file
   from the **base branch**, not the PR's copy, so a PR cannot edit the gate or
   steps to bypass these checks. (It can still change the `src/`/`bench/` code we
@@ -35,7 +35,7 @@ repo it is an RCE vector. The bench workflow is built to contain that:
 
 Operational rules:
 
-- **Review the diff before adding the `bench` label** to any PR.
+- Only collaborators push branches to the repo: review who has write access.
 - Run the agent as a **dedicated unprivileged user** (the container path below
   does this for you), and restrict its network egress.
 - Do **not** relax the `head.repo == this repo` gate to bench forks unless you

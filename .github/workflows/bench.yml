@@ -9,7 +9,7 @@ on:
   push:
     branches: [main]
   pull_request_target:
-    types: [labeled, synchronize]
+    types: [opened, synchronize, reopened]
 
 permissions:
   contents: read
@@ -35,13 +35,12 @@ env:
 
 jobs:
   bench:
-    # dispatch/push run unconditionally; a PR runs only when a maintainer has
-    # applied the "bench" label AND the PR is from this repo (never a fork), so
-    # untrusted fork code can never execute on the self-hosted machine.
+    # dispatch/push run unconditionally; a PR runs only when it is from this
+    # repo (never a fork), so untrusted fork code can never execute on the
+    # self-hosted machine.
     if: >-
       github.event_name != 'pull_request_target' ||
-      (contains(github.event.pull_request.labels.*.name, 'bench') &&
-       github.event.pull_request.head.repo.full_name == github.repository)
+      github.event.pull_request.head.repo.full_name == github.repository
     # One job per bench machine; each runner instance advertises a bench-<cpu>
     # label naming its microarchitecture (E3-1245 v5 = Skylake).
     strategy:
@@ -85,13 +84,10 @@ jobs:
       - name: Benchmark + report
         run: $BENCHDEV make -C bench report META='runner=${{ matrix.runner }}'
 
-      # On main the results are published (publish job below): link the
-      # dashboard's comparison with the previous commit and fold the full
-      # report. Elsewhere (branches, labelled PRs) show the report itself.
       # Links to the results dashboard rather than tables: on main the
       # commit's results and its comparison with the previous commit, on a
-      # labelled PR the comparison with its merge base. Other runs are not
-      # published: the full report is in the artifact.
+      # PR the comparison with its merge base. Other runs are not published:
+      # the full report is in the artifact.
       - name: Job summary
         env:
           SITE: https://www.strub.nu/jasmin-nist-timing
@@ -104,7 +100,7 @@ jobs:
           elif [ "$PUBLISHED" = true ]; then
             msg="**[results for this commit]($SITE/#/results/$GITHUB_SHA)** · **[compare with the previous commit]($SITE/#/compare/$GITHUB_SHA)** on the results dashboard (updated a minute after this run)."
           else
-            msg="not published (only main and labelled PRs are); the full report is in the \`bench-$RUNNER\` artifact."
+            msg="not published (only main and PRs are); the full report is in the \`bench-$RUNNER\` artifact."
           fi
           echo "Benchmarks on \`$RUNNER\`: $msg" >> "$GITHUB_STEP_SUMMARY"
 
@@ -119,7 +115,7 @@ jobs:
 
   # Add each machine's bench JSON to the results repo
   # (https://github.com/strub/jasmin-nist-timing): pushes to main go to main's
-  # history (data/bench/<runner>), runs of labelled PRs to that PR's own
+  # history (data/bench/<runner>), runs of PRs to that PR's own
   # space (data/pr/<number>/bench/<runner>), with the PR's merge base for the
   # comparison. A separate job on a GitHub-hosted runner: it runs only this
   # (base-branch) workflow's code and downloads the artifact as data, so no PR

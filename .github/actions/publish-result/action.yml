@@ -10,7 +10,7 @@ inputs:
     description: the result JSON (downloaded artifact)
     required: true
   dest:
-    description: directory in the results repo (data/proofs, data/bench/<runner>, data/pr/<n>/bench/<runner>)
+    description: directory in the results repo (data/proofs, data/checks, data/bench/<runner>, data/pr/<n>/...)
     required: true
   deploy-key:
     description: SSH deploy key with write access to the results repo
@@ -53,7 +53,7 @@ runs:
         if meta["commit"] != sha:
             sys.exit(f"{path}: meta.commit {meta['commit']} is not the expected {sha}")
         if not isinstance(d.get("files") or d.get("results"), list):
-            sys.exit(f"{path}: neither a proofs (files) nor a bench (results) record")
+            sys.exit(f"{path}: neither a proofs (files) nor a bench or checks (results) record")
         extra = json.loads(os.environ.get("EXTRA") or "{}")
         if not isinstance(extra, dict):
             sys.exit("meta input: not a JSON object")

@@ -34,6 +34,23 @@
         "type": "github"
       }
     },
+    "jasmin-safety": {
+      "flake": false,
+      "locked": {
+        "lastModified": 1772953208,
+        "narHash": "sha256-GuCTSQQ3CI+15ZzCqdQ0PmRt0913BxKtZSyZAfgoDTk=",
+        "owner": "jasmin-lang",
+        "repo": "jasmin-compiler",
+        "rev": "c1cae60e0d053c9e478d1e662b609242796202c4",
+        "type": "gitlab"
+      },
+      "original": {
+        "owner": "jasmin-lang",
+        "repo": "jasmin-compiler",
+        "rev": "c1cae60e0d053c9e478d1e662b609242796202c4",
+        "type": "gitlab"
+      }
+    },
     "mirage-opam-overlays": {
       "flake": false,
       "locked": {
@@ -217,6 +234,7 @@
           "opam-nix",
           "flake-utils"
         ],
+        "jasmin-safety": "jasmin-safety",
         "nixpkgs": [
           "opam-nix",
           "nixpkgs"

@@ -1,15 +1,18 @@
 name: proofs
 
-# Pull requests are checked on demand: run this workflow on the PR's branch
-# (Actions > proofs > Run workflow, or `gh workflow run proofs.yml --ref
-# <branch>`). proofs-status reports the run as the commit status `proofs`
-# of the branch's head, which the PR shows until the next push. Only users
-# with write access can start it, and only on branches of this repo.
+# Checks every proof on pushes to main and on every pull request; a new push
+# to a PR cancels its run in progress.
+#
+# SECURITY: the plain pull_request trigger is safe while this repo is
+# PRIVATE (only collaborators can open PRs). Before making the repo public,
+# adopt bench.yml's model (pull_request_target + same-repo gate) so fork
+# code can never run on the self-hosted machines.
 
 on:
   workflow_dispatch:
   push:
     branches: [main]
+  pull_request:
 
 permissions:
   contents: read
@@ -32,9 +35,12 @@ jobs:
     runs-on: [self-hosted, linux, proofs]
     timeout-minutes: 240
     steps:
+      # A pull request is checked at its head commit, the commit its timing
+      # record is for.
       - name: Checkout
         uses: actions/checkout@v7
         with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
           submodules: false
           persist-credentials: false
 
@@ -83,7 +89,7 @@ jobs:
           if [ "$PUBLISHED" = true ]; then
             echo "**[Results for this commit]($site/#/results/$GITHUB_SHA)** · **[compare with the previous commit]($site/#/compare/$GITHUB_SHA)** on the results dashboard (updated a minute after this run)." >> "$GITHUB_STEP_SUMMARY"
           else
-            echo "If this commit is the head of a PR, its page on the **[results dashboard]($site/)** compares it with the merge base (published by publish-pr-proofs a minute after this run)." >> "$GITHUB_STEP_SUMMARY"
+            echo "If this commit is the head of a PR, its page on the **[results dashboard]($site/)** compares it with the merge base (published by publish-pr a minute after this run)." >> "$GITHUB_STEP_SUMMARY"
           fi
 
       - name: Upload timing artifact

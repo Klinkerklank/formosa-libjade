@@ -1,24 +1,26 @@
-name: publish-pr-proofs
+name: publish-pr
 
-# Adds a pull request's proofs timing to the results repo
-# (https://github.com/strub/jasmin-nist-timing), as
-# data/pr/<number>/proofs/<head>.json with the PR's merge base, once its
-# proofs run has succeeded.
+# Adds the records of a pull request's runs to the results repo
+# (https://github.com/strub/jasmin-nist-timing), with the PR's merge base:
+#  - its proofs timing, as data/pr/<number>/proofs/<head>.json, once its
+#    proofs run has succeeded;
+#  - its checks record, as data/pr/<number>/checks/<head>.json, once its
+#    checks run has completed (failed checks are recorded too).
 #
-# A PR's proofs run is started by hand on its branch (workflow_dispatch),
-# i.e. with the branch's copy of the workflow, so it must never hold the
-# deploy key. This workflow is triggered by its completion and always runs
-# main's version (workflow_run): it only downloads the run's artifact as
-# data, validates it, and takes the target (PR, head, merge base) from the
-# event and the API.
+# A PR's runs (pull_request, or started by hand on its branch) run the
+# branch's copy of the workflows, so they must never hold the deploy key.
+# This workflow is triggered by their completion and always runs main's
+# version (workflow_run): it only downloads the run's artifact as data,
+# validates it, and takes the target (PR, head, merge base) from the event
+# and the API.
 
 on:
   workflow_run:
-    workflows: [proofs]
+    workflows: [proofs, checks]
     types: [completed]
 
-# actions: read to download the proofs run's artifact; pull-requests: read
-# for the PR's details (base, branch, title).
+# actions: read to download the run's artifact; pull-requests: read for the
+# PR's details (base, branch, title).
 permissions:
   contents: read
   actions: read
@@ -27,8 +29,11 @@ permissions:
 jobs:
   publish:
     if: >-
-      github.event.workflow_run.event == 'workflow_dispatch' &&
-      github.event.workflow_run.conclusion == 'success' &&
+      (github.event.workflow_run.event == 'pull_request' ||
+       github.event.workflow_run.event == 'workflow_dispatch') &&
+      (github.event.workflow_run.conclusion == 'success' ||
+       (github.event.workflow_run.name == 'checks' &&
+        github.event.workflow_run.conclusion == 'failure')) &&
       github.event.workflow_run.head_repository.full_name == github.repository
     runs-on: ubuntu-latest
     steps:
@@ -38,7 +43,7 @@ jobs:
           persist-credentials: false
       - uses: actions/download-artifact@v8
         with:
-          name: proofs-timing
+          name: ${{ github.event.workflow_run.name == 'proofs' && 'proofs-timing' || 'checks-record' }}
           path: result
           run-id: ${{ github.event.workflow_run.id }}
           github-token: ${{ github.token }}
@@ -48,10 +53,11 @@ jobs:
           GH_TOKEN: ${{ github.token }}
           HEAD: ${{ github.event.workflow_run.head_sha }}
           PR: ${{ github.event.workflow_run.pull_requests[0].number }}
+          KIND: ${{ github.event.workflow_run.name }}
         run: |
           set -euo pipefail
           # The event may not list the PR (a dispatched run, or a PR merged or
-          # closed before its proofs run ended): find it from its head commit.
+          # closed before its run ended): find it from its head commit.
           # A run on a commit that is no PR's head publishes nothing.
           if [ -z "$PR" ]; then
             PR=$(gh api "repos/$GITHUB_REPOSITORY/commits/$HEAD/pulls" \
@@ -73,11 +79,15 @@ jobs:
           print(json.dumps({"pr": {"number": pr["number"], "title": pr["title"],
                                    "head_ref": pr["head"]["ref"], "base": pr["base"]["sha"],
                                    "merge_base": sha, "merge_base_date": date}}))' "$RUNNER_TEMP/pr.json")
-          { echo "dest=data/pr/$PR/proofs"; echo "commit=$HEAD"; echo "meta=$meta"; } >> "$GITHUB_OUTPUT"
+          case "$KIND" in
+            proofs) file=result/proofs-timing.json ;;
+            checks) file=result/checks.json ;;
+          esac
+          { echo "dest=data/pr/$PR/$KIND"; echo "file=$file"; echo "commit=$HEAD"; echo "meta=$meta"; } >> "$GITHUB_OUTPUT"
       - if: steps.target.outputs.skip != 'true'
         uses: ./.github/actions/publish-result
         with:
-          file: result/proofs-timing.json
+          file: ${{ steps.target.outputs.file }}
           dest: ${{ steps.target.outputs.dest }}
           commit: ${{ steps.target.outputs.commit }}
           meta: ${{ steps.target.outputs.meta }}
