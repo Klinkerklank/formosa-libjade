@@ -5,8 +5,21 @@
 # --------------------------------------------------------------------
 EASYCRYPT ?= easycrypt
 JOBS      ?=
+REPORT    ?=
+MEMORY    ?=
 ECFLAGS   ?=
-ECRUNTEST ?= $(EASYCRYPT) runtest $(if $(JOBS),-jobs $(JOBS),) $(ECFLAGS)
+ECRUNTEST ?= $(EASYCRYPT) runtest $(if $(JOBS),-jobs $(JOBS),) $(if $(REPORT),-report $(REPORT),) $(ECFLAGS)
+
+# REPORT=<file>: the per-file report of runtest (YAML). MEMORY=<file>: the
+# peak memory of every checked file, one JSON line each (../scripts/ecmem):
+# the runtest script of the installed EasyCrypt runs with ecmem as its
+# binary, which `easycrypt runtest` does not allow (ECFLAGS is not used).
+ifneq ($(MEMORY),)
+RUNTEST   := $(shell $(EASYCRYPT) config 2>&1 | sed -n 's|^Commands PATH: *||p')/runtest
+ECRUNTEST := env ECMEM_LOG=$(abspath $(MEMORY)) ECMEM_EASYCRYPT=$(shell command -v $(EASYCRYPT)) \
+  python3 $(RUNTEST) --bin=$(abspath ../scripts/ecmem) $(if $(JOBS),--jobs=$(JOBS),) \
+  $(if $(REPORT),--report=$(REPORT),)
+endif
 
 CONFIG    := tests.config
 SCENARIOS := core fips202 mldsa mlkem mlkem-avx2-generic mlkem-avx2-512 mlkem-avx2-768 mlkem-avx2-1024 mlkem-safety mldsa-safety fips202-safety

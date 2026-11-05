@@ -1,0 +1,48 @@
+#!/usr/bin/env python3
+"""easycrypt, with its peak memory: `easycrypt runtest --bin scripts/ecmem`.
+
+Runs easycrypt with the arguments it is given (its output goes through
+untouched) and, when ECMEM_LOG names a file, appends to it one JSON line:
+
+    {"file": <the checked file, the last argument>, "maxrss": <bytes>,
+     "user": <s>, "sys": <s>}
+
+maxrss is the peak resident memory of the largest process among easycrypt
+and the provers it ran (the kernel's accounting of the waited-for
+descendants, getrusage(RUSAGE_CHILDREN)), exact whatever their duration.
+The exit status is easycrypt's; a signal that kills easycrypt kills this
+wrapper too, so that runtest sees the same status. ECMEM_EASYCRYPT names
+the easycrypt binary (default: easycrypt on PATH).
+"""
+
+import json
+import os
+import resource
+import signal
+import subprocess
+import sys
+
+
+def main():
+    proc = subprocess.Popen([os.environ.get("ECMEM_EASYCRYPT", "easycrypt"), *sys.argv[1:]])
+    for sig in (signal.SIGINT, signal.SIGTERM):
+        signal.signal(sig, lambda s, _: proc.send_signal(s))
+    status = proc.wait()
+    ru = resource.getrusage(resource.RUSAGE_CHILDREN)
+    log = os.environ.get("ECMEM_LOG")
+    if log and len(sys.argv) > 1:
+        # kilobytes on Linux, bytes on macOS
+        scale = 1 if sys.platform == "darwin" else 1024
+        line = json.dumps({"file": os.path.normpath(sys.argv[-1]), "maxrss": ru.ru_maxrss * scale,
+                           "user": round(ru.ru_utime, 2), "sys": round(ru.ru_stime, 2)})
+        # one short write in append mode: lines of parallel runs never interleave
+        with open(log, "a") as f:
+            f.write(line + "\n")
+    if status < 0:
+        signal.signal(-status, signal.SIG_DFL)
+        os.kill(os.getpid(), -status)
+    sys.exit(status)
+
+
+if __name__ == "__main__":
+    main()

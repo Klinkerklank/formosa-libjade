@@ -12,7 +12,14 @@ The report has one node per scenario, each with per-file details:
 
 Output is the sunburst input format (see scripts/timing-sunburst.py):
 
-    { "meta": {...}, "files": [{"path": ..., "seconds": ...}, ...] }
+    { "meta": {...}, "files": [{"path": ..., "seconds": ..., "maxrss": ...}, ...] }
+
+With --memory (the log of scripts/ecmem), each file also has its peak
+memory "maxrss" (bytes, the largest process among easycrypt and its
+provers). With --samples (the samples of scripts/memwatch.py), the meta has
+"memory": the peaks of the whole run (all processes, easycrypt, provers)
+and "series", the samples reduced to at most 600 points
+[[seconds, total, easycrypt, provers], ...], each the maximum of its span.
 
 Run metadata is picked up from the GitHub Actions environment when
 present (GITHUB_SHA, GITHUB_REF_NAME, GITHUB_RUN_ID, RUNNER_NAME); the
@@ -21,7 +28,8 @@ comparison between two runs needs to be meaningful: the commit date,
 the machine (architecture, CPUs available, parallel jobs) and the
 EasyCrypt and prover versions, probed from the tools on PATH.
 
-Usage:  timing-report-to-json.py [--jobs N] report.yml [out.json]
+Usage:  timing-report-to-json.py [--jobs N] [--memory LOG] [--samples LOG]
+                                report.yml [out.json]
 Exits non-zero if the report contains failures (no timing JSON is
 written from a broken run).
 """
@@ -71,12 +79,42 @@ def cpus():
         return os.cpu_count()
 
 
+def load_lines(path):
+    """the JSON lines of a file (a line cut by a killed writer is skipped)"""
+    out = []
+    for line in Path(path).read_text().splitlines():
+        try:
+            out.append(json.loads(line))
+        except ValueError:
+            pass
+    return out
+
+
+def run_memory(samples, points=600):
+    """the peaks of the run and its samples, reduced to `points` spans"""
+    if not samples:
+        return None
+    keys = ("total", "easycrypt", "provers")
+    peak = {k: max(x[k] for x in samples) for k in keys}
+    step = max(1, -(-len(samples) // points))
+    series = []
+    for i in range(0, len(samples), step):
+        span = samples[i:i + step]
+        series.append([span[0]["t"]] + [max(x[k] for x in span) for k in keys])
+    return {"peak_total": peak["total"], "peak_easycrypt": peak["easycrypt"],
+            "peak_provers": peak["provers"],
+            "interval": round(samples[1]["t"] - samples[0]["t"], 1) if len(samples) > 1 else None,
+            "series": series}
+
+
 def main():
     ap = argparse.ArgumentParser(description=__doc__,
                                  formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("report", nargs="?", default="timing.yml")
     ap.add_argument("out", nargs="?", default="proofs-timing.json")
     ap.add_argument("--jobs", type=int, help="parallel jobs of the checked run")
+    ap.add_argument("--memory", help="peak memory per file (scripts/ecmem log)")
+    ap.add_argument("--samples", help="memory samples of the run (scripts/memwatch.py)")
     args = ap.parse_args()
     inp, out = Path(args.report), Path(args.out)
 
@@ -100,6 +138,12 @@ def main():
         for p in failures:
             print(f"  {p}", file=sys.stderr)
         sys.exit(1)
+
+    if args.memory:
+        maxrss = {d["file"]: d["maxrss"] for d in load_lines(args.memory)}
+        for f in files:
+            if f["path"] in maxrss:
+                f["maxrss"] = maxrss[f["path"]]
 
     files.sort(key=lambda f: f["path"])
     # the commit actually checked out (on pull requests GITHUB_SHA can differ)
@@ -128,6 +172,8 @@ def main():
         },
         "files": len(files),
         "total_seconds": round(sum(f["seconds"] for f in files), 1),
+        "max_file_maxrss": max((f["maxrss"] for f in files if "maxrss" in f), default=None),
+        "memory": run_memory(load_lines(args.samples)) if args.samples else None,
     }
     for k in ("machine", "tools"):
         meta[k] = {kk: v for kk, v in meta[k].items() if v is not None}

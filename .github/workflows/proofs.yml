@@ -64,15 +64,24 @@ jobs:
         run: echo "JOBS=$(( ($(nproc) + 1) / 2 ))" >> "$GITHUB_ENV"
 
       # All scenarios (the Makefile's default target) in one runtest
-      # invocation, with a per-file timing report.
+      # invocation, with a per-file report of the time and of the peak
+      # memory (scripts/ecmem), and the memory of the whole run sampled
+      # every second (scripts/memwatch.py).
       - name: Check proofs
-        run: $ECDEV make -C proofs JOBS=$JOBS ECFLAGS='-report timing.yml'
+        run: |
+          $ECDEV sh -c '
+            python3 scripts/memwatch.py proofs-samples.jsonl & watch=$!
+            make -C proofs JOBS=$1 REPORT=timing.yml MEMORY=../proofs-maxrss.jsonl; rc=$?
+            kill $watch; wait $watch
+            exit $rc' sh "$JOBS"
 
-      # Timing pipeline: runtest report -> timing JSON -> sunburst page,
-      # published as a run artifact.
+      # Timing pipeline: runtest report and memory -> timing JSON -> sunburst
+      # page, published as a run artifact.
       - name: Timing sunburst
         run: |
-          $ECDEV python3 scripts/timing-report-to-json.py --jobs "$JOBS" proofs/timing.yml proofs-timing.json
+          $ECDEV python3 scripts/timing-report-to-json.py --jobs "$JOBS" \
+            --memory proofs-maxrss.jsonl --samples proofs-samples.jsonl \
+            proofs/timing.yml proofs-timing.json
           $ECDEV python3 scripts/timing-sunburst.py proofs-timing.json proofs-timing.html
 
       - name: Job summary
@@ -84,6 +93,10 @@ jobs:
           m = json.load(open(sys.argv[1]))["meta"]
           print(f"Proof checking: **{m['total_seconds'] / 60:.1f} min** cumulative over "
                 f"{m['files']} files ({m.get('machine', {}).get('jobs', '?')} jobs).")
+          if m.get("memory"):
+              gb = lambda b: f"{b / 1e9:.1f} GB"
+              print(f"Memory: peak **{gb(m['memory']['peak_total'])}** for the whole run, "
+                    f"largest file {gb(m.get('max_file_maxrss') or 0)}.")
           EOF
           site=https://www.strub.nu/jasmin-nist-timing
           if [ "$PUBLISHED" = true ]; then
