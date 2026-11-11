@@ -9,6 +9,7 @@ from Common require "slhdsa.jinc"
 // See src/include/slhdsasha2128s.h for the sizes of the buffers expected by these functions.
 
 // Algorithm 21 of FIPS 205 (slh_keygen), with randomness = SK.seed || SK.prf || PK.seed.
+#[ct = "public * secret * secret -> public * secret"]
 export fn slh_dsa_sha2128s_keygen(
     reg ptr u8[SPX_PKBYTES] verification_key,
     reg ptr u8[SPX_SKBYTES] signing_key,
@@ -22,6 +23,7 @@ export fn slh_dsa_sha2128s_keygen(
 }
 
 // Algorithm 22 of FIPS 205 (slh_sign), with randomness = opt_rand (PK.seed for the deterministic variant).
+#[ct = "public * secret * public * public * public * secret -> public * public"]
 export fn slh_dsa_sha2128s_sign(
     reg ptr u8[SPX_SIG] signature,
     reg ptr u8[SPX_SKBYTES] signing_key,
@@ -39,6 +41,7 @@ export fn slh_dsa_sha2128s_sign(
 }
 
 // Algorithm 24 of FIPS 205 (slh_verify).
+#[ct = "public * public * public * public * public -> public"]
 export fn slh_dsa_sha2128s_verify(
     reg ptr u8[SPX_PKBYTES] verification_key,
     reg ptr u64[2] context,

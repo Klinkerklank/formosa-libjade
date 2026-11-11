@@ -151,6 +151,9 @@ fn slh_keygen_internal_(
 
     pk[SPX_N : SPX_N] = __copy_nbytes(pk[SPX_N : SPX_N], pkroot[0 : SPX_N]); // copy PK.root to PK
 
+    // the verification key, (PK.seed, PK.root), is public
+    () = #declassify(pk);
+
     res = 0; // set return value to 0 (successful)
     return sk, pk, res;
 }
@@ -228,10 +231,12 @@ fn slh_sign_internal_(
     // separate PK.seed and PK.root from the overall secret key
     pkseed = sk[2*SPX_N : SPX_N];
     pkroot = sk[3*SPX_N : SPX_N];
+    () = #declassify(pkseed); // part of the public key, public
 
     // compute the message digest
     () = #spill(pkseed, sig_slh, sk);
     digest = __H_msg(digest, r, pkseed, pkroot, ctx_ptr, ctx_len, msg_ptr, msg_len);
+    () = #declassify(digest); // a function of public values: R, PK.seed, PK.root, M'
     () = #unspill(pkseed, sig_slh, sk);
 
     // separate the message digest into disjoint bytestrings needed for individual processing
@@ -261,6 +266,7 @@ fn slh_sign_internal_(
     sig_fors = sig_slh[SPX_N : FORS_SIG]; // get the pointer to the subarray so the full array can be spilled
     () = #spill(skseed, sig_slh, md, idx_leaf);
     sig_fors, adrs = __fors_sign(sig_fors, md, skseed, adrs, sha2_state_caches);
+    () = #declassify(sig_fors); // part of the signature, public
     () = #unspill(skseed, sig_slh, md, idx_leaf);
     sig_slh[SPX_N : FORS_SIG] = sig_fors; // redesignate the pointer so the region of the full array is not partial
 
@@ -275,6 +281,8 @@ fn slh_sign_internal_(
     sig_ht = __ht_sign(sig_ht, pk_fors, skseed, idx_tree, idx_leaf, sha2_state_caches);
     () = #unspill(skseed, sig_slh);
     sig_slh[SPX_N + FORS_SIG : HT_SIG] = sig_ht; // redesignate the pointer so the region of the full array is not partial
+
+    () = #declassify(sig_slh); // the signature is public
 
     res = 0; // set return value to 0 (successful)
     return sig_slh, res;
@@ -346,6 +354,7 @@ fn slh_verify_internal_(
     // compute the message digest
     () = #spill(pkseed, pkroot, sig_slh);
     digest = __H_msg(digest, r, pkseed, pkroot, ctx_ptr, ctx_len, msg_ptr, msg_len);
+    () = #declassify(digest); // a function of public values: R, PK.seed, PK.root, M'
     () = #unspill(pkseed, pkroot, sig_slh);
 
     // separate the message digest into disjoint bytestrings needed for individual processing

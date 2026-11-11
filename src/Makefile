@@ -145,21 +145,23 @@ check-asm: extract-asm
 #    make sct-mldsa65
 #
 #  STATUS: ML-KEM and ML-DSA pass both CT and SCT (with --doit); CI gates on
-#  all of them.
+#  all of them. SLH-DSA passes CT (with --doit); it has no SCT goals yet.
 # ==========================================================================
 
 MLDSA_INC := -I Common=$(MLDSA_COMMON) -I Keccak=$(KECCAK)
 MLKEM_INC := -I Keccak=$(KECCAK)
+SLHDSA_INC := -I Common=$(SLHDSA_COMMON) -I Keccak=$(KECCAK)
 
 CT_MLDSA  := $(addprefix ct-mldsa,$(MLDSA_SETS))
 CT_MLKEM  := $(addprefix ct-mlkem,$(MLKEM_PARAMS))
+CT_SLHDSA := $(addprefix ct-slhdsa,$(SLHDSA_SETS))
 SCT_MLDSA := $(addprefix sct-mldsa,$(MLDSA_SETS))
 SCT_MLKEM := $(addprefix sct-mlkem,$(MLKEM_PARAMS))
 
-.PHONY: ct sct ct-mlkem sct-mlkem ct-mldsa sct-mldsa \
-        $(CT_MLDSA) $(CT_MLKEM) $(SCT_MLDSA) $(SCT_MLKEM)
+.PHONY: ct sct ct-mlkem sct-mlkem ct-mldsa sct-mldsa ct-slhdsa \
+        $(CT_MLDSA) $(CT_MLKEM) $(CT_SLHDSA) $(SCT_MLDSA) $(SCT_MLKEM)
 
-ct:  $(CT_MLKEM)  $(CT_MLDSA)
+ct:  $(CT_MLKEM)  $(CT_MLDSA) $(CT_SLHDSA)
 sct: $(SCT_MLKEM) $(SCT_MLDSA)
 
 # Per-scheme aggregates.
@@ -167,6 +169,7 @@ ct-mlkem:  $(CT_MLKEM)
 sct-mlkem: $(SCT_MLKEM)
 ct-mldsa:  $(CT_MLDSA)
 sct-mldsa: $(SCT_MLDSA)
+ct-slhdsa: $(CT_SLHDSA)
 
 # Static pattern rules over the .PHONY goal names. A plain `ct-mldsa%:`
 # pattern rule would NOT be phony (pattern rules ignore .PHONY), so make
@@ -183,6 +186,9 @@ $(CT_MLKEM):  ct-mlkem%:  $(MLKEM)/%/jmlkem.jazz
 
 $(SCT_MLKEM): sct-mlkem%: $(MLKEM)/%/jmlkem.jazz
 	$(JASMINCT) --sct --doit --arch=$(ARCH) $(JCTFLAGS) $(MLKEM_INC) $<
+
+$(CT_SLHDSA): ct-slhdsa%: $(SLHDSA)/%/slhdsa.jazz
+	$(JASMINCT) --doit --arch=$(ARCH) $(JCTFLAGS) $(SLHDSA_INC) $<
 
 clean:
 	rm -rf $(BUILD)

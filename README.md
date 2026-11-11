@@ -54,9 +54,10 @@ for each set it covers:
 SLH-DSA (FIPS 205), parameter sets SHA2-128s, SHA2-128f, SHA2-192s, SHA2-192f,
 SHA2-256s, SHA2-256f, SHAKE-128s, SHAKE-128f, SHAKE-192s, SHAKE-192f, SHAKE-256s and
 SHAKE-256f (directories `sha2128s` to `shake256f`), is validated by
-[KAT](docs/assurance.md#kat) and [memcheck](docs/assurance.md#memcheck) only, for
-now: its EasyCrypt specification ([SLHDSA.ec](proofs/slhdsa/spec/SLHDSA.ec)) is a
-placeholder, without a security theorem.
+[KAT](docs/assurance.md#kat) and [memcheck](docs/assurance.md#memcheck) and checked
+for [CT](docs/assurance.md#ct-and-sct), without proofs for now: its EasyCrypt
+specification ([SLHDSA.ec](proofs/slhdsa/spec/SLHDSA.ec)) is a placeholder, without a
+security theorem.
 
 SHA-3 (FIPS 202) is available as building blocks under
 `src/fips202/<target>/common/`; the self-contained one-shot functions and incremental
@@ -85,7 +86,7 @@ An implementation of an algorithm is fixed by two choices:
   [CT and SCT](docs/assurance.md#ct-and-sct) countermeasures.
 
 Every algorithm has one implementation, `avx2` / `sct`, with its sources in
-`src/<algorithm>/avx2/sct/`. SLH-DSA does not claim CT and SCT yet (see its
+`src/<algorithm>/avx2/sct/`. SLH-DSA claims CT but not SCT yet (see its
 `meta.toml` files).
 
 ### Claims

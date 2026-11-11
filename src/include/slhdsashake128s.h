@@ -16,8 +16,19 @@
  *   Pointers need no alignment.
  *   Constant time: the signing key and the randomness are secret; the
  *     verification key, the message, the context and the signature are public.
- *     The implementation is not yet checked for CT or SCT (it claims neither in
- *     its meta.toml). */
+ *     The code declassifies:
+ *     - in keygen, the verification key (PK.seed and PK.root);
+ *     - in sign:
+ *       - PK.seed, read from the signing key, which is part of the
+ *         verification key;
+ *       - the message digest H_msg(R, PK.seed, PK.root, M'), which is a function
+ *         of public values (the signature randomizer R, the verification key,
+ *         the message and the context) and selects the FORS leaves and the
+ *         hypertree path;
+ *       - the FORS signature and each XMSS signature as they are computed, and
+ *         the signature, which are output;
+ *     - in verify, the message digest, as in sign.
+ *   The implementation is checked for CT, not yet for SCT. */
 #ifndef SLHDSASHAKE128S_AVX2_H
 #define SLHDSASHAKE128S_AVX2_H
 

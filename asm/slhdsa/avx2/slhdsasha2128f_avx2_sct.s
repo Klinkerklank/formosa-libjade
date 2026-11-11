@@ -120,6 +120,7 @@ slh_dsa_sha2128f_keygen:
 	call	.LH_msg$1
 .Lslh_verify_internal_$5:
 	leaq	200(%rsp), %rsp
+// declassify_mem 34 [RSP + 192]
 	movq	8(%rsp), %r9
 	movq	16(%rsp), %rcx
 	movq	24(%rsp), %rdx
@@ -303,6 +304,7 @@ slh_dsa_sha2128f_keygen:
 	movq	32(%rsp), %rcx
 	leaq	32(%rsi), %r9
 	leaq	48(%rsi), %r10
+// declassify_mem 16 [R9]
 	movq	%r9, 32(%rsp)
 	movq	%rax, 24(%rsp)
 	movq	%rsi, 16(%rsp)
@@ -313,6 +315,7 @@ slh_dsa_sha2128f_keygen:
 	call	.LH_msg$1
 .Lslh_sign_internal_$6:
 	leaq	200(%rsp), %rsp
+// declassify_mem 34 [RSP + 216]
 	movq	32(%rsp), %r9
 	movq	24(%rsp), %rax
 	movq	16(%rsp), %rsi
@@ -455,6 +458,7 @@ slh_dsa_sha2128f_keygen:
 	call	.Lfors_sign$1
 .Lslh_sign_internal_$4:
 	leaq	216(%rsp), %rsp
+// declassify_mem 3696 [R10]
 	movq	32(%rsp), %rdx
 	movq	24(%rsp), %rax
 	movq	16(%rsp), %rcx
@@ -484,6 +488,7 @@ slh_dsa_sha2128f_keygen:
 .Lslh_sign_internal_$2:
 	leaq	120(%rsp), %rsp
 	movq	24(%rsp), %rax
+// declassify_mem 17088 [RAX]
 	movq	$0, %rcx
 	ret
 .Lslh_keygen_internal_$1:
@@ -551,6 +556,7 @@ slh_dsa_sha2128f_keygen:
 	movq	%rdx, (%r11)
 	movq	8(%rcx), %rdx
 	movq	%rdx, 8(%r11)
+// declassify_mem 32 [RDI]
 	ret
 .Lfors_pkfromsig$1:
 	movq	%rdx, 8(%rsp)
@@ -2186,6 +2192,7 @@ slh_dsa_sha2128f_keygen:
 .Lht_sign$8:
 	leaq	56(%rsp), %rsp
 	movq	%rcx, %rdx
+// declassify_mem 608 [RDX]
 	movq	8(%rsp), %rcx
 	movq	16(%rsp), %rsi
 	movq	24(%rsp), %rax
@@ -2250,6 +2257,7 @@ slh_dsa_sha2128f_keygen:
 .Lht_sign$6:
 	leaq	56(%rsp), %rsp
 	movq	%rcx, %rdx
+// declassify_mem 608 [RDX]
 	movq	24(%rsp), %rcx
 	movl	104(%rsp), %r11d
 	movq	32(%rsp), %rsi

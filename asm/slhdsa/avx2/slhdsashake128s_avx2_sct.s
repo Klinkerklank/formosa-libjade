@@ -110,6 +110,7 @@ slh_dsa_shake128s_keygen:
 	call	.LH_msg$1
 .Lslh_verify_internal_$4:
 	leaq	280(%rsp), %rsp
+// declassify_mem 30 [RSP + 120]
 	movq	48(%rsp), %r8
 	movq	56(%rsp), %rax
 	movq	64(%rsp), %rcx
@@ -271,6 +272,7 @@ slh_dsa_shake128s_keygen:
 	movq	72(%rsp), %rsi
 	leaq	32(%rcx), %r9
 	leaq	48(%rcx), %r10
+// declassify_mem 16 [R9]
 	movq	%r9, 72(%rsp)
 	movq	%rax, 64(%rsp)
 	movq	%rcx, 56(%rsp)
@@ -279,6 +281,7 @@ slh_dsa_shake128s_keygen:
 	call	.LH_msg$1
 .Lslh_sign_internal_$5:
 	leaq	280(%rsp), %rsp
+// declassify_mem 30 [RSP + 144]
 	movq	72(%rsp), %r8
 	movq	64(%rsp), %rax
 	movq	56(%rsp), %rcx
@@ -400,6 +403,7 @@ slh_dsa_shake128s_keygen:
 	call	.Lfors_sign$1
 .Lslh_sign_internal_$4:
 	leaq	120(%rsp), %rsp
+// declassify_mem 2912 [R9]
 	movq	56(%rsp), %rcx
 	movq	64(%rsp), %r8
 	movq	72(%rsp), %rax
@@ -428,6 +432,7 @@ slh_dsa_shake128s_keygen:
 .Lslh_sign_internal_$2:
 	leaq	120(%rsp), %rsp
 	movq	64(%rsp), %rax
+// declassify_mem 7856 [RAX]
 	movq	$0, %rcx
 	ret
 .Lslh_keygen_internal_$1:
@@ -483,6 +488,7 @@ slh_dsa_shake128s_keygen:
 	movq	%rdx, (%r11)
 	movq	8(%rax), %rdx
 	movq	%rdx, 8(%r11)
+// declassify_mem 32 [RDI]
 	ret
 .Lfors_pkfromsig$1:
 	movq	%rax, 352(%rsp)
@@ -1483,6 +1489,7 @@ slh_dsa_shake128s_keygen:
 	call	.Lxmss_sign$1
 .Lht_sign$8:
 	leaq	56(%rsp), %rsp
+// declassify_mem 704 [RSI]
 	movq	8(%rsp), %rcx
 	movq	16(%rsp), %r11
 	movq	24(%rsp), %r8
@@ -1546,6 +1553,7 @@ slh_dsa_shake128s_keygen:
 	call	.Lxmss_sign$1
 .Lht_sign$6:
 	leaq	56(%rsp), %rsp
+// declassify_mem 704 [RSI]
 	movq	24(%rsp), %rcx
 	movq	32(%rsp), %r8
 	movl	104(%rsp), %edi
