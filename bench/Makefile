@@ -26,11 +26,14 @@ DAVX := third_party/dilithium/avx2
 
 # ---- backend library sets (<backend>_<scheme>.so) ------------------------
 # jasmin: only the parameter sets present in src/, discovered from
-# src/mlkem/avx2/sct/<set>/jmlkem.jazz and src/mldsa/avx2/sct/<set>/mldsa.jazz.
+# src/mlkem/avx2/sct/<set>/jmlkem.jazz, src/mldsa/avx2/sct/<set>/mldsa.jazz and
+# src/slhdsa/avx2/sct/<set>/slhdsa.jazz.
 JASMIN_KEM := $(patsubst ../src/mlkem/avx2/sct/%/jmlkem.jazz,$(BUILD)/jasmin_mlkem%.so,\
                 $(wildcard ../src/mlkem/avx2/sct/*/jmlkem.jazz))
 JASMIN_SIG := $(patsubst ../src/mldsa/avx2/sct/%/mldsa.jazz,$(BUILD)/jasmin_mldsa%.so,\
                 $(wildcard ../src/mldsa/avx2/sct/*/mldsa.jazz))
+JASMIN_SLHDSA := $(patsubst ../src/slhdsa/avx2/sct/%/slhdsa.jazz,$(BUILD)/jasmin_slhdsa%.so,\
+                $(wildcard ../src/slhdsa/avx2/sct/*/slhdsa.jazz))
 # native reference libraries: all parameter sets.
 MLKN_KEM   := $(BUILD)/mlkem-native_mlkem512.so \
               $(BUILD)/mlkem-native_mlkem768.so \
@@ -54,7 +57,7 @@ PQCR_SIG   := $(BUILD)/pqcrystals-ref_mldsa44.so \
               $(BUILD)/pqcrystals-ref_mldsa87.so
 
 # the libraries of each backend (BACKENDS names them)
-LIBS_jasmin         := $(JASMIN_KEM) $(JASMIN_SIG)
+LIBS_jasmin         := $(JASMIN_KEM) $(JASMIN_SIG) $(JASMIN_SLHDSA)
 LIBS_mlkem-native   := $(MLKN_KEM)
 LIBS_mldsa-native   := $(MLDN_SIG)
 LIBS_pqcrystals     := $(PQC_KEM) $(PQC_SIG)
@@ -82,6 +85,13 @@ $(SRC_BUILD)/mldsa%_avx2.s:
 $(BUILD)/jasmin_mldsa%.so: $(ADAPTERS)/jasmin/sig_shim.c $(SRC_BUILD)/mldsa%_avx2.s | $(BUILD)
 	$(CC) $(XARCH) -O2 -fPIC -shared -I$(ADAPTERS) \
 	    -DJASMIN_SIG_NS=ml_dsa_$* -o $@ $^
+
+$(SRC_BUILD)/slhdsa%_avx2.s:
+	$(MAKE) -C ../src _build/slhdsa$*_avx2.s
+
+$(BUILD)/jasmin_slhdsa%.so: $(ADAPTERS)/jasmin/sig_shim.c $(SRC_BUILD)/slhdsa%_avx2.s | $(BUILD)
+	$(CC) $(XARCH) -O2 -fPIC -shared -I$(ADAPTERS) \
+	    -DJASMIN_SIG_NS=slh_dsa_$* -o $@ $^
 
 # ---- mlkem-native backend: shim + monolithic source + asm, AVX2 backend --
 # mlkem_native_asm.S bundles the x86_64 backend assembly; NO_RANDOMIZED_API
@@ -175,7 +185,13 @@ BACKENDS ?= jasmin mlkem-native
 SCHEME   ?= ML-KEM-768
 N        ?= 100
 SCHEME_BASE = $(shell echo $(SCHEME) | tr -d '-' | tr 'A-Z' 'a-z')
-ALL_SCHEMES ?= ML-KEM-512 ML-KEM-768 ML-KEM-1024 ML-DSA-44 ML-DSA-65 ML-DSA-87
+# SLH-DSA schemes are named <PRIMITIVE>-<set>, as scripts/checks.py passes them
+ALL_SCHEMES ?= ML-KEM-512 ML-KEM-768 ML-KEM-1024 ML-DSA-44 ML-DSA-65 ML-DSA-87 \
+               SLH-DSA-sha2128s SLH-DSA-sha2128f SLH-DSA-sha2192s SLH-DSA-sha2192f SLH-DSA-sha2256s SLH-DSA-sha2256f \
+               SLH-DSA-shake128s SLH-DSA-shake128f SLH-DSA-shake192s SLH-DSA-shake192f SLH-DSA-shake256s SLH-DSA-shake256f
+# the iterations of bench.c when BENCH_ITERS is not set (the slow SLH-DSA has
+# its own default)
+ITERS_DEFAULT := 10000, SLH-DSA 20 (s sets) or 200 (f sets)
 
 REPORT  ?= bench.md
 # machine-readable report (aggregated results + run metadata) next to REPORT
@@ -229,7 +245,7 @@ compare: libs
 
 # cycle benchmark for one scheme: one process per built backend library
 bench: libs $(BUILD)/bench
-	@echo "$(SCHEME) (median cycles over $${BENCH_ITERS:-10000} iters$(if $(PIN), on cpu $(CPU))):"
+	@echo "$(SCHEME) (median cycles over $${BENCH_ITERS:-$(ITERS_DEFAULT)} iters$(if $(PIN), on cpu $(CPU))):"
 	@for so in $(BUILD)/*_$(SCHEME_BASE).so; do $(PIN)$(BUILD)/bench $(SCHEME) $$so; done
 
 # machine-readable (CSV) benchmark over every scheme x its built backends,
@@ -262,7 +278,7 @@ report: libs $(BUILD)/bench
 	        --version "mldsa-native=$(call gitver,$(MLDN)/..)" \
 	        --version "pq-crystals/kyber=$(call gitver,$(KREF)/..)" \
 	        --version "pq-crystals/dilithium=$(call gitver,$(DREF)/..)" \
-	        --meta "reps=$(REPS)" --meta "iters=$${BENCH_ITERS:-10000}" \
+	        --meta "reps=$(REPS)" --meta "iters=$${BENCH_ITERS:-$(ITERS_DEFAULT)}" \
 	        $(addprefix --meta ,$(META)) \
 	        --json $(REPORT_JSON) -o $(REPORT) $(BUILD)/bench.csv
 	@echo "wrote $(REPORT) $(REPORT_JSON)"

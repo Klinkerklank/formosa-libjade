@@ -8,7 +8,9 @@ Two sources, both downloaded at a fixed version:
   checks (FIPS 203 7.2, 7.3) included (mlkem<n>.json); ML-DSA-keyGen /
   -sigGen / -sigVer (mldsa<n>-acvp.json), only the groups of the external,
   pure interface, the one the common ABI exposes (the importer lists the
-  others).
+  others); SLH-DSA-keyGen / -sigGen / -sigVer (slhdsa<set>-acvp.json, e.g.
+  slhdsasha2128s-acvp.json), the same groups, with the signatures of
+  sigGen as SHA3-256 hashes (they are up to 49856 bytes long).
 - the KAT files of post-quantum-cryptography/KAT (an archived repository,
   pinned to a commit), with the SHA3-256 hashes of the long outputs:
   ML-DSA hedged_pure (mldsa<n>.json), keygen then signing; ML-KEM
@@ -29,6 +31,10 @@ from pathlib import Path
 ACVP_BASE = "https://raw.githubusercontent.com/usnistgov/ACVP-Server/{v}/gen-val/json-files"
 ACVP_MLKEM = ["ML-KEM-keyGen-FIPS203", "ML-KEM-encapDecap-FIPS203"]
 ACVP_MLDSA = ["ML-DSA-keyGen-FIPS204", "ML-DSA-sigGen-FIPS204", "ML-DSA-sigVer-FIPS204"]
+ACVP_SLHDSA = ["SLH-DSA-keyGen-FIPS205", "SLH-DSA-sigGen-FIPS205", "SLH-DSA-sigVer-FIPS205"]
+# SLH-DSA signature size of each parameter set suffix (FIPS 205, Table 2)
+SLHDSA_SIGNATURE = {"128s": 7856, "128f": 17088, "192s": 16224,
+                    "192f": 35664, "256s": 29792, "256f": 49856}
 PQC_COMMIT = "f238e347b1323344208eb316df9993c923334817"
 PQC_BASE = f"https://raw.githubusercontent.com/post-quantum-cryptography/KAT/{PQC_COMMIT}"
 PQC_TESTS = 100  # ML-KEM records kept per parameter set (the files have 1000)
@@ -241,28 +247,96 @@ def import_mldsa_acvp(version, out_dir, cache):
         write_scheme(out_dir, algo, tests, f"NIST ACVP {version}", suffix="-acvp")
 
 
+def import_slhdsa_acvp(version, out_dir, cache):
+    a = fetch_acvp(version, cache, ACVP_SLHDSA)
+    schemes = {}  # algo -> list of tests
+
+    def external_pure(name, g):
+        if g.get("signatureInterface") == "external" and g.get("preHash") == "pure":
+            return True
+        print(f"  skipped {name} group {g['tgId']} ({g['parameterSet']},"
+              f" {g.get('signatureInterface')}, {g.get('preHash') or 'message'},"
+              f" {len(g['tests'])} tests): not in the common ABI")
+        return False
+
+    prompt, exp = a["SLH-DSA-keyGen-FIPS205"]
+    for g in prompt["testGroups"]:
+        for t in g["tests"]:
+            e = exp[t["tcId"]]
+            schemes.setdefault(g["parameterSet"], []).append({
+                "count": t["tcId"],
+                # slh_keygen_internal randomness = SK.seed || SK.prf || PK.seed
+                "keygen": {"seed": t["skSeed"] + t["skPrf"] + t["pkSeed"],
+                           "verification_key": e["pk"], "signing_key": e["sk"]},
+            })
+
+    prompt, exp = a["SLH-DSA-sigGen-FIPS205"]
+    for g in prompt["testGroups"]:
+        if not external_pure("sigGen", g):
+            continue
+        for t in g["tests"]:
+            # deterministic signing is signing with opt_rand = PK.seed, the
+            # third quarter of the signing key SK.seed || SK.prf || PK.seed || PK.root
+            q = len(t["sk"]) // 4
+            rnd = t["sk"][2 * q:3 * q] if g["deterministic"] else t["additionalRandomness"]
+            schemes.setdefault(g["parameterSet"], []).append({
+                "count": t["tcId"],
+                "sign": {"signing_key": t["sk"], "context": t["context"],
+                         "message": t["message"], "randomness": rnd,
+                         "signature_sha3_256": sha3(exp[t["tcId"]]["signature"])},
+            })
+
+    prompt, exp = a["SLH-DSA-sigVer-FIPS205"]
+    for g in prompt["testGroups"]:
+        if not external_pure("sigVer", g):
+            continue
+        size = SLHDSA_SIGNATURE[g["parameterSet"][-4:]]
+        for t in g["tests"]:
+            if len(t["signature"]) != 2 * size:
+                # the common ABI takes a signature of the fixed size, so one
+                # of another length cannot be passed (ACVP expects it rejected)
+                if exp[t["tcId"]]["testPassed"]:
+                    raise SystemExit(f"SLH-DSA-sigVer tcId {t['tcId']}: accepted signature"
+                                     f" of {len(t['signature']) // 2} bytes")
+                print(f"  skipped sigVer tcId {t['tcId']} ({g['parameterSet']}): signature of"
+                      f" {len(t['signature']) // 2} bytes, not {size}")
+                continue
+            schemes.setdefault(g["parameterSet"], []).append({
+                "count": t["tcId"],
+                "verify": {"verification_key": t["pk"], "context": t["context"],
+                           "message": t["message"], "signature": t["signature"],
+                           "result": 0 if exp[t["tcId"]]["testPassed"] else -1},
+            })
+
+    for algo, tests in schemes.items():
+        write_scheme(out_dir, algo, tests, f"NIST ACVP {version}", suffix="-acvp")
+
+
 def main(argv=None):
     ap = argparse.ArgumentParser(description=__doc__,
                                  formatter_class=argparse.RawDescriptionHelpFormatter)
     here = Path(__file__).resolve().parent.parent
     ap.add_argument("--out", type=Path, default=here / "vectors")
     ap.add_argument("--acvp-version", default="v1.1.0.43")
-    ap.add_argument("--only", choices=("mldsa", "mlkem"))
+    ap.add_argument("--only", choices=("mldsa", "mlkem", "slhdsa"))
     args = ap.parse_args(argv)
     args.out.mkdir(parents=True, exist_ok=True)
 
     cache = args.out / ".cache"
     acvp = cache / "acvp" / args.acvp_version
-    if args.only != "mlkem":
+    if args.only not in ("mlkem", "slhdsa"):
         print("ML-DSA (post-quantum-cryptography/KAT):")
         import_mldsa_pqc(args.out, cache / "pqc")
         print("ML-DSA (NIST ACVP):")
         import_mldsa_acvp(args.acvp_version, args.out, acvp)
-    if args.only != "mldsa":
+    if args.only not in ("mldsa", "slhdsa"):
         print("ML-KEM (NIST ACVP):")
         import_mlkem(args.acvp_version, args.out, acvp)
         print("ML-KEM (post-quantum-cryptography/KAT):")
         import_mlkem_pqc(args.out, cache / "pqc")
+    if args.only in (None, "slhdsa"):
+        print("SLH-DSA (NIST ACVP):")
+        import_slhdsa_acvp(args.acvp_version, args.out, acvp)
     return 0
 
 

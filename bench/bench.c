@@ -3,7 +3,8 @@
  *   ./bench <scheme> <backend.so>
  *
  * dlopen's a single backend's common-ABI .so, runs each derand operation
- * BENCH_ITERS times (env, default 10000) and reports median CPU cycles via
+ * BENCH_ITERS times (env; default 10000, or the scheme's own default for the
+ * slow SLH-DSA) and reports median CPU cycles via
  * rdtsc. Each iteration runs on fresh inputs, made untimed beforehand: the
  * randomness of keypair, encaps, keygen and sign comes from a xorshift reset
  * to a fixed seed at the start of each operation's bench, and decaps and
@@ -33,8 +34,12 @@ typedef struct {
   const char *name;
   kind_t kind;
   /* KEM: pk, sk, ct, ss=32, kp_coins=64, enc_coins=32
-   * SIG: vk(pk), sk, sig, seed=32, rnd=32 */
+   * SIG: vk(pk), sk, sig, seed=keygen_rnd, rnd=sign_rnd */
   int a, b, c;
+  /* SIG: the randomness of keygen and of sign (0: 32 bytes) */
+  int keygen_rnd, sign_rnd;
+  /* the default number of iterations (0: ITERS_DEFAULT) */
+  int iters;
 } scheme_t;
 
 static const scheme_t SCHEMES[] = {
@@ -44,6 +49,18 @@ static const scheme_t SCHEMES[] = {
     {"ML-DSA-44", SIG, 1312, 2560, 2420},
     {"ML-DSA-65", SIG, 1952, 4032, 3309},
     {"ML-DSA-87", SIG, 2592, 4896, 4627},
+    {"SLH-DSA-sha2128s", SIG, 32, 64, 7856, 48, 16, 20},
+    {"SLH-DSA-sha2128f", SIG, 32, 64, 17088, 48, 16, 200},
+    {"SLH-DSA-sha2192s", SIG, 48, 96, 16224, 72, 24, 20},
+    {"SLH-DSA-sha2192f", SIG, 48, 96, 35664, 72, 24, 200},
+    {"SLH-DSA-sha2256s", SIG, 64, 128, 29792, 96, 32, 20},
+    {"SLH-DSA-sha2256f", SIG, 64, 128, 49856, 96, 32, 200},
+    {"SLH-DSA-shake128s", SIG, 32, 64, 7856, 48, 16, 20},
+    {"SLH-DSA-shake128f", SIG, 32, 64, 17088, 48, 16, 200},
+    {"SLH-DSA-shake192s", SIG, 48, 96, 16224, 72, 24, 20},
+    {"SLH-DSA-shake192f", SIG, 48, 96, 35664, 72, 24, 200},
+    {"SLH-DSA-shake256s", SIG, 64, 128, 29792, 96, 32, 20},
+    {"SLH-DSA-shake256f", SIG, 64, 128, 49856, 96, 32, 200},
 };
 
 /* ---- common ABI signatures ---- */
@@ -162,9 +179,11 @@ static void bench_backend(const char *path, const scheme_t *s, size_t iters,
   }
   uint8_t *A = xalloc32((size_t)s->a), *B = xalloc32((size_t)s->b);
   uint8_t *C = xalloc32((size_t)s->c);
-  _Alignas(32) uint8_t ss[32], coins[64], seed[32], rnd[32], msg[64];
+  _Alignas(32) uint8_t ss[32], coins[64], seed[96], rnd[32], msg[64];
+  size_t ns = s->keygen_rnd ? (size_t)s->keygen_rnd : 32;
+  size_t nr = s->sign_rnd ? (size_t)s->sign_rnd : 32;
   uint64_t m0 = 0, m1 = 0, m2 = 0;
-  fill(coins, 64); fill(seed, 32); fill(rnd, 32); fill(msg, 64);
+  fill(coins, 64); fill(seed, ns); fill(rnd, nr); fill(msg, 64);
 
   if (s->kind == KEM) {
     kem_keypair_t kp = dlsym(h, "kem_keypair_derand");
@@ -183,11 +202,11 @@ static void bench_backend(const char *path, const scheme_t *s, size_t iters,
     sig_verify_t ver = dlsym(h, "sig_verify");
     kg(A, B, seed);                                   /* A=vk B=sk */
     sign(C, B, NULL, 0, msg, sizeof msg, rnd);        /* C=sig, empty context */
-    BENCH(iters, samples, &m0, next_rnd(seed, 32), kg(A, B, seed));
-    BENCH(iters, samples, &m1, next_rnd(rnd, 32),
+    BENCH(iters, samples, &m0, next_rnd(seed, ns), kg(A, B, seed));
+    BENCH(iters, samples, &m1, next_rnd(rnd, nr),
           sign(C, B, NULL, 0, msg, sizeof msg, rnd));
     BENCH(iters, samples, &m2,
-          (next_rnd(rnd, 32), sign(C, B, NULL, 0, msg, sizeof msg, rnd)),
+          (next_rnd(rnd, nr), sign(C, B, NULL, 0, msg, sizeof msg, rnd)),
           ver(A, NULL, 0, msg, sizeof msg, C));
     report(path, s, m0, m1, m2);
   }
@@ -205,7 +224,7 @@ int main(int argc, char **argv) {
     if (!strcmp(argv[1], SCHEMES[i].name)) s = &SCHEMES[i];
   if (!s) { fprintf(stderr, "unknown scheme %s\n", argv[1]); return 2; }
 
-  size_t iters = ITERS_DEFAULT;
+  size_t iters = s->iters ? (size_t)s->iters : ITERS_DEFAULT;
   const char *e = getenv("BENCH_ITERS");
   if (e) iters = strtoul(e, NULL, 10);
   const char *fmt = getenv("BENCH_FORMAT");

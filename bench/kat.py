@@ -3,7 +3,7 @@
 
 Loads _build/<backend>_<scheme>.so (built by `make libs`) and replays the KAT
 vectors through the common derand ABI (adapters/common_abi.h): kem_* for ML-KEM,
-sig_* for ML-DSA; selects the library by backend.
+sig_* for ML-DSA and SLH-DSA; selects the library by backend.
 
 Usage:
     python3 kat.py --backend jasmin vectors/*.json
@@ -24,6 +24,12 @@ def _mldsa(base, vk, sk, sig):
             "verification_key": vk, "signing_key": sk, "signature": sig}
 
 
+# SLH-DSA runs on the ML-DSA runner: the same sig_* ABI, the randomness sizes
+# (3n for keygen, n for sign) being those of the vectors
+def _slhdsa(base, n, sig):
+    return _mldsa(base, 2 * n, 4 * n, sig)
+
+
 def _mlkem(base, pk, sk, ct):
     return {"kind": "mlkem", "base": base,
             "public_key": pk, "secret_key": sk, "ciphertext": ct,
@@ -37,6 +43,18 @@ SCHEMES = {
     "ML-KEM-512": _mlkem("mlkem512", 800, 1632, 768),
     "ML-KEM-768": _mlkem("mlkem768", 1184, 2400, 1088),
     "ML-KEM-1024": _mlkem("mlkem1024", 1568, 3168, 1568),
+    "SLH-DSA-SHA2-128s": _slhdsa("slhdsasha2128s", 16, 7856),
+    "SLH-DSA-SHA2-128f": _slhdsa("slhdsasha2128f", 16, 17088),
+    "SLH-DSA-SHA2-192s": _slhdsa("slhdsasha2192s", 24, 16224),
+    "SLH-DSA-SHA2-192f": _slhdsa("slhdsasha2192f", 24, 35664),
+    "SLH-DSA-SHA2-256s": _slhdsa("slhdsasha2256s", 32, 29792),
+    "SLH-DSA-SHA2-256f": _slhdsa("slhdsasha2256f", 32, 49856),
+    "SLH-DSA-SHAKE-128s": _slhdsa("slhdsashake128s", 16, 7856),
+    "SLH-DSA-SHAKE-128f": _slhdsa("slhdsashake128f", 16, 17088),
+    "SLH-DSA-SHAKE-192s": _slhdsa("slhdsashake192s", 24, 16224),
+    "SLH-DSA-SHAKE-192f": _slhdsa("slhdsashake192f", 24, 35664),
+    "SLH-DSA-SHAKE-256s": _slhdsa("slhdsashake256s", 32, 29792),
+    "SLH-DSA-SHAKE-256f": _slhdsa("slhdsashake256f", 32, 49856),
 }
 
 

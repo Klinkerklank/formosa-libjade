@@ -32,6 +32,8 @@ typedef struct {
   kind_t kind;
   /* KEM: pk, sk, ct; SIG: vk, sk, sig */
   size_t a, b, c;
+  /* SIG: the randomness of keygen and of sign (0: 32 bytes) */
+  size_t keygen_rnd, sign_rnd;
 } scheme_t;
 
 static const scheme_t SCHEMES[] = {
@@ -41,6 +43,18 @@ static const scheme_t SCHEMES[] = {
     {"ML-DSA-44", SIG, 1312, 2560, 2420},
     {"ML-DSA-65", SIG, 1952, 4032, 3309},
     {"ML-DSA-87", SIG, 2592, 4896, 4627},
+    {"SLH-DSA-sha2128s", SIG, 32, 64, 7856, 48, 16},
+    {"SLH-DSA-sha2128f", SIG, 32, 64, 17088, 48, 16},
+    {"SLH-DSA-sha2192s", SIG, 48, 96, 16224, 72, 24},
+    {"SLH-DSA-sha2192f", SIG, 48, 96, 35664, 72, 24},
+    {"SLH-DSA-sha2256s", SIG, 64, 128, 29792, 96, 32},
+    {"SLH-DSA-sha2256f", SIG, 64, 128, 49856, 96, 32},
+    {"SLH-DSA-shake128s", SIG, 32, 64, 7856, 48, 16},
+    {"SLH-DSA-shake128f", SIG, 32, 64, 17088, 48, 16},
+    {"SLH-DSA-shake192s", SIG, 48, 96, 16224, 72, 24},
+    {"SLH-DSA-shake192f", SIG, 48, 96, 35664, 72, 24},
+    {"SLH-DSA-shake256s", SIG, 64, 128, 29792, 96, 32},
+    {"SLH-DSA-shake256f", SIG, 64, 128, 49856, 96, 32},
 };
 
 typedef int (*kem_keypair_t)(uint8_t *, uint8_t *, const uint8_t *);
@@ -139,7 +153,9 @@ static void run_sig(void *h, const scheme_t *s) {
   sig_verify_t verify = (sig_verify_t)sym(h, "sig_verify", 1);
 
   uint8_t *vk = buf(s->a), *sk = buf(s->b), *sig = buf(s->c);
-  uint8_t *seed = input(32);
+  size_t keygen_rnd = s->keygen_rnd ? s->keygen_rnd : 32;
+  size_t sign_rnd = s->sign_rnd ? s->sign_rnd : 32;
+  uint8_t *seed = input(keygen_rnd);
 
   keygen(vk, sk, seed);
   defined("keygen: verification key", vk, s->a);
@@ -150,7 +166,7 @@ static void run_sig(void *h, const scheme_t *s) {
   for (size_t i = 0; i < sizeof MSG_LENS / sizeof *MSG_LENS; i++) {
     for (size_t j = 0; j < sizeof CTX_LENS / sizeof *CTX_LENS; j++) {
       uint8_t *msg = input(MSG_LENS[i]), *ctx = input(CTX_LENS[j]);
-      uint8_t *rnd = input(32);
+      uint8_t *rnd = input(sign_rnd);
       if (sign(sig, sk, ctx, CTX_LENS[j], msg, MSG_LENS[i], rnd) != 0)
         fail("sign failed");
       defined("sign: signature", sig, s->c);
@@ -164,7 +180,7 @@ static void run_sig(void *h, const scheme_t *s) {
   }
 
   /* a context longer than 255 bytes is rejected */
-  uint8_t *msg = input(16), *ctx = input(256), *rnd = input(32);
+  uint8_t *msg = input(16), *ctx = input(256), *rnd = input(sign_rnd);
   if (sign(sig, sk, ctx, 256, msg, 16, rnd) == 0)
     fail("sign accepts a 256-byte context");
   free(msg), free(ctx), free(rnd);
