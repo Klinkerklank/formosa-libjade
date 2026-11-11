@@ -16,15 +16,20 @@ slh_dsa_sha2128s_verify:
 	movq	%r14, 32(%rsp)
 	movq	%r15, 40(%rsp)
 	movq	%rax, 48(%rsp)
+	lfence
+	movq	$0, %rax
 	movq	(%rsi), %rax
-	movq	8(%rsi), %r11
-	movq	%rcx, %rsi
-	cmpq	$255, %r11
+	movq	8(%rsi), %rsi
+	movq	%rcx, %r9
+	lfence
+	movq	$0, %rcx
+	cmpq	$255, %rsi
 	jbe 	.Lslh_dsa_sha2128s_verify$1
 	movq	$-1, %rax
 	jmp 	.Lslh_dsa_sha2128s_verify$2
 .Lslh_dsa_sha2128s_verify$1:
-	movq	%r11, %rcx
+	movq	%rsi, %rcx
+	movq	%r9, %rsi
 	leaq	-216(%rsp), %rsp
 	call	.Lslh_verify_internal_$1
 .Lslh_dsa_sha2128s_verify$3:
@@ -50,22 +55,24 @@ slh_dsa_sha2128s_sign:
 	movq	%r14, 32(%rsp)
 	movq	%r15, 40(%rsp)
 	movq	%rax, 48(%rsp)
-	movq	%rdi, %rax
-	movq	(%rdx), %rdi
+	lfence
+	movq	$0, %rax
+	movq	(%rdx), %rax
 	movq	8(%rdx), %rdx
 	movq	%rcx, %r10
+	lfence
+	movq	$0, %rcx
 	cmpq	$255, %rdx
 	jbe 	.Lslh_dsa_sha2128s_sign$1
 	movq	$-1, %rax
 	jmp 	.Lslh_dsa_sha2128s_sign$2
 .Lslh_dsa_sha2128s_sign$1:
-	movq	%rdi, %rcx
-	movq	%r10, %rdi
+	movq	%rdx, %rcx
+	movq	%r10, %rdx
 	leaq	-248(%rsp), %rsp
 	call	.Lslh_sign_internal_$1
 .Lslh_dsa_sha2128s_sign$3:
 	leaq	248(%rsp), %rsp
-	movq	%rcx, %rax
 .Lslh_dsa_sha2128s_sign$2:
 	movq	(%rsp), %rbx
 	movq	8(%rsp), %rbp
@@ -87,8 +94,9 @@ slh_dsa_sha2128s_keygen:
 	movq	%r14, 32(%rsp)
 	movq	%r15, 40(%rsp)
 	movq	%rax, 48(%rsp)
-	movq	%rdi, %rax
-	movq	%rdx, %rcx
+	movq	%rdx, %rax
+	lfence
+	movq	$0, %rcx
 	leaq	-152(%rsp), %rsp
 	call	.Lslh_keygen_internal_$1
 .Lslh_dsa_sha2128s_keygen$1:
@@ -115,8 +123,6 @@ slh_dsa_sha2128s_keygen:
 	movq	%r8, 24(%rsp)
 	leaq	192(%rsp), %rdi
 	movq	%r11, %r8
-	movq	%rcx, %r11
-	movq	%rsi, %rcx
 	leaq	-168(%rsp), %rsp
 	call	.LH_msg$1
 .Lslh_verify_internal_$5:
@@ -124,10 +130,12 @@ slh_dsa_sha2128s_keygen:
 // declassify_mem 30 [RSP + 192]
 	movq	8(%rsp), %r9
 	movq	16(%rsp), %rcx
-	movq	24(%rsp), %rdx
+	movq	24(%rsp), %rdi
+	lfence
+	movq	$0, %rax
 	leaq	192(%rsp), %rax
-	leaq	213(%rsp), %rsi
-	leaq	220(%rsp), %rdi
+	leaq	213(%rsp), %rdx
+	leaq	220(%rsp), %rsi
 	movl	$0, 84(%rsp)
 	movl	$0, 88(%rsp)
 	movl	$0, 92(%rsp)
@@ -140,7 +148,7 @@ slh_dsa_sha2128s_keygen:
 	shrl	$24, %r8d
 	orl 	%r8d, 88(%rsp)
 	shll	$8, 92(%rsp)
-	movzbl	(%rsi), %r8d
+	movzbl	(%rdx), %r8d
 	orl 	%r8d, 92(%rsp)
 	shll	$8, 84(%rsp)
 	movl	88(%rsp), %r8d
@@ -151,7 +159,7 @@ slh_dsa_sha2128s_keygen:
 	shrl	$24, %r8d
 	orl 	%r8d, 88(%rsp)
 	shll	$8, 92(%rsp)
-	movzbl	1(%rsi), %r8d
+	movzbl	1(%rdx), %r8d
 	orl 	%r8d, 92(%rsp)
 	shll	$8, 84(%rsp)
 	movl	88(%rsp), %r8d
@@ -162,7 +170,7 @@ slh_dsa_sha2128s_keygen:
 	shrl	$24, %r8d
 	orl 	%r8d, 88(%rsp)
 	shll	$8, 92(%rsp)
-	movzbl	2(%rsi), %r8d
+	movzbl	2(%rdx), %r8d
 	orl 	%r8d, 92(%rsp)
 	shll	$8, 84(%rsp)
 	movl	88(%rsp), %r8d
@@ -173,7 +181,7 @@ slh_dsa_sha2128s_keygen:
 	shrl	$24, %r8d
 	orl 	%r8d, 88(%rsp)
 	shll	$8, 92(%rsp)
-	movzbl	3(%rsi), %r8d
+	movzbl	3(%rdx), %r8d
 	orl 	%r8d, 92(%rsp)
 	shll	$8, 84(%rsp)
 	movl	88(%rsp), %r8d
@@ -184,7 +192,7 @@ slh_dsa_sha2128s_keygen:
 	shrl	$24, %r8d
 	orl 	%r8d, 88(%rsp)
 	shll	$8, 92(%rsp)
-	movzbl	4(%rsi), %r8d
+	movzbl	4(%rdx), %r8d
 	orl 	%r8d, 92(%rsp)
 	shll	$8, 84(%rsp)
 	movl	88(%rsp), %r8d
@@ -195,7 +203,7 @@ slh_dsa_sha2128s_keygen:
 	shrl	$24, %r8d
 	orl 	%r8d, 88(%rsp)
 	shll	$8, 92(%rsp)
-	movzbl	5(%rsi), %r8d
+	movzbl	5(%rdx), %r8d
 	orl 	%r8d, 92(%rsp)
 	shll	$8, 84(%rsp)
 	movl	88(%rsp), %r8d
@@ -206,117 +214,120 @@ slh_dsa_sha2128s_keygen:
 	shrl	$24, %r8d
 	orl 	%r8d, 88(%rsp)
 	shll	$8, 92(%rsp)
-	movzbl	6(%rsi), %r8d
+	movzbl	6(%rdx), %r8d
 	orl 	%r8d, 92(%rsp)
 	movl	$0, 84(%rsp)
 	andl	$4194303, 88(%rsp)
-	movl	$0, %esi
-	shll	$8, %esi
-	movzbl	(%rdi), %r8d
-	orl 	%r8d, %esi
-	shll	$8, %esi
-	movzbl	1(%rdi), %r8d
-	orl 	%r8d, %esi
-	andl	$511, %esi
-	leaq	48(%rsp), %r8
-	movl	84(%rsp), %edi
-	movl	%edi, 4(%r8)
-	movl	88(%rsp), %edi
-	movl	%edi, 8(%r8)
-	movl	92(%rsp), %edi
-	movl	%edi, 12(%r8)
-	leaq	48(%rsp), %r8
-	movq	$0, 16(%r8)
-	movq	$0, 24(%r8)
-	movl	$3, 16(%r8)
-	leaq	48(%rsp), %r8
-	movl	%esi, 20(%r8)
+	movl	$0, %edx
+	shll	$8, %edx
+	movzbl	(%rsi), %r8d
+	orl 	%r8d, %edx
+	shll	$8, %edx
+	movzbl	1(%rsi), %r8d
+	orl 	%r8d, %edx
+	andl	$511, %edx
+	leaq	48(%rsp), %rsi
+	movl	84(%rsp), %r8d
+	movl	%r8d, 4(%rsi)
+	movl	88(%rsp), %r8d
+	movl	%r8d, 8(%rsi)
+	movl	92(%rsp), %r8d
+	movl	%r8d, 12(%rsi)
+	leaq	48(%rsp), %rsi
+	movq	$0, 16(%rsi)
+	movq	$0, 24(%rsi)
+	movl	$3, 16(%rsi)
+	leaq	48(%rsp), %rsi
+	movl	%edx, 20(%rsi)
 	movq	%rcx, 24(%rsp)
-	movq	%rdx, 16(%rsp)
-	movl	%esi, 80(%rsp)
+	movq	%rdi, 16(%rsp)
+	movl	%edx, 80(%rsp)
 	leaq	96(%rsp), %rdx
 	leaq	-8(%rsp), %rsp
 	call	.Linit_cache$1
 .Lslh_verify_internal_$4:
 	leaq	8(%rsp), %rsp
 	movq	24(%rsp), %rcx
-	movq	16(%rsp), %rdx
-	movl	80(%rsp), %esi
-	leaq	16(%rdx), %r10
+	movq	16(%rsp), %rdi
+	movl	80(%rsp), %edx
+	lfence
+	movq	$0, %rsi
+	leaq	16(%rdi), %r10
 	movq	%rcx, 16(%rsp)
-	movq	%rdx, 24(%rsp)
-	movl	%esi, 80(%rsp)
+	movq	%rdi, 24(%rsp)
+	movl	%edx, 80(%rsp)
 	leaq	32(%rsp), %rcx
 	leaq	48(%rsp), %r9
-	leaq	96(%rsp), %rdi
-	movq	%rcx, %rdx
+	leaq	96(%rsp), %r8
 	leaq	-440(%rsp), %rsp
 	call	.Lfors_pkfromsig$1
 .Lslh_verify_internal_$3:
 	leaq	440(%rsp), %rsp
 	movq	16(%rsp), %r10
-	movq	24(%rsp), %rax
+	movq	24(%rsp), %rdi
 	movl	80(%rsp), %edx
-	leaq	32(%rsp), %rcx
-	leaq	2928(%rax), %rsi
-	leaq	84(%rsp), %rdi
+	lfence
+	movq	$0, %rax
+	leaq	32(%rsp), %rax
+	leaq	2928(%rdi), %rcx
+	leaq	84(%rsp), %rsi
 	leaq	96(%rsp), %r8
-	movq	%rcx, %rax
-	movq	%rsi, %rcx
-	movq	%rdi, %r9
-	movq	%r8, %rdi
 	leaq	-120(%rsp), %rsp
 	call	.Lht_verify$1
 .Lslh_verify_internal_$2:
 	leaq	120(%rsp), %rsp
 	ret
 .Lslh_sign_internal_$1:
-	leaq	72(%rsp), %r10
-	movq	$0, (%r10)
-	movq	$0, 8(%r10)
-	movq	$0, 16(%r10)
-	movq	$0, 24(%r10)
-	movq	%rcx, 8(%rsp)
-	movq	%rdx, 16(%rsp)
-	movq	%rdi, 24(%rsp)
+	leaq	72(%rsp), %r11
+	movq	$0, (%r11)
+	movq	$0, 8(%r11)
+	movq	$0, 16(%r11)
+	movq	$0, 24(%r11)
+	movq	%rax, 8(%rsp)
+	movq	%rcx, 16(%rsp)
+	movq	%rdx, 24(%rsp)
 	movq	%r8, 32(%rsp)
 	leaq	16(%rsi), %r10
-	movq	%rax, %r11
-	movq	%rax, 40(%rsp)
+	movq	%rdi, %r11
+	movq	%rdi, 40(%rsp)
 	movq	%rsi, 48(%rsp)
-	movq	%r9, %rax
-	movq	%r8, %rsi
-	leaq	-296(%rsp), %rsp
+	movq	%r9, %rsi
+	leaq	-280(%rsp), %rsp
 	call	.LPRF_msg$1
 .Lslh_sign_internal_$7:
-	leaq	296(%rsp), %rsp
-	movq	%rcx, %r8
-	movq	40(%rsp), %rax
-	movq	48(%rsp), %rsi
+	leaq	280(%rsp), %rsp
+	movq	%rax, %r8
+	movq	40(%rsp), %rdi
+	movq	48(%rsp), %rax
+	lfence
+	movq	$0, %rcx
 	movq	8(%rsp), %r11
-	movq	16(%rsp), %rbx
+	movq	16(%rsp), %rcx
 	movq	24(%rsp), %rdx
-	movq	32(%rsp), %rcx
-	leaq	32(%rsi), %r9
-	leaq	48(%rsi), %r10
+	movq	32(%rsp), %rsi
+	lfence
+	movq	$0, %r9
+	leaq	32(%rax), %r9
+	leaq	48(%rax), %r10
 // declassify_mem 16 [R9]
 	movq	%r9, 32(%rsp)
-	movq	%rax, 24(%rsp)
-	movq	%rsi, 16(%rsp)
+	movq	%rdi, 24(%rsp)
+	movq	%rax, 16(%rsp)
 	leaq	216(%rsp), %rdi
 	movq	%r11, %rax
-	movq	%rbx, %r11
 	leaq	-168(%rsp), %rsp
 	call	.LH_msg$1
 .Lslh_sign_internal_$6:
 	leaq	168(%rsp), %rsp
 // declassify_mem 30 [RSP + 216]
 	movq	32(%rsp), %r9
-	movq	24(%rsp), %rax
+	movq	24(%rsp), %rdi
 	movq	16(%rsp), %rsi
-	leaq	216(%rsp), %rcx
+	lfence
+	movq	$0, %rax
+	leaq	216(%rsp), %rax
 	leaq	237(%rsp), %rdx
-	leaq	244(%rsp), %rdi
+	leaq	244(%rsp), %rcx
 	movl	$0, 108(%rsp)
 	movl	$0, 112(%rsp)
 	movl	$0, 116(%rsp)
@@ -401,28 +412,28 @@ slh_dsa_sha2128s_keygen:
 	andl	$4194303, 112(%rsp)
 	movl	$0, %edx
 	shll	$8, %edx
-	movzbl	(%rdi), %r8d
+	movzbl	(%rcx), %r8d
 	orl 	%r8d, %edx
 	shll	$8, %edx
-	movzbl	1(%rdi), %r8d
+	movzbl	1(%rcx), %r8d
 	orl 	%r8d, %edx
 	andl	$511, %edx
-	leaq	72(%rsp), %r8
-	movl	108(%rsp), %edi
-	movl	%edi, 4(%r8)
-	movl	112(%rsp), %edi
-	movl	%edi, 8(%r8)
-	movl	116(%rsp), %edi
-	movl	%edi, 12(%r8)
-	leaq	72(%rsp), %r8
-	movq	$0, 16(%r8)
-	movq	$0, 24(%r8)
-	movl	$3, 16(%r8)
-	leaq	72(%rsp), %r8
-	movl	%edx, 20(%r8)
+	leaq	72(%rsp), %r11
+	movl	108(%rsp), %r8d
+	movl	%r8d, 4(%r11)
+	movl	112(%rsp), %r8d
+	movl	%r8d, 8(%r11)
+	movl	116(%rsp), %r8d
+	movl	%r8d, 12(%r11)
+	leaq	72(%rsp), %r11
+	movq	$0, 16(%r11)
+	movq	$0, 24(%r11)
+	movl	$3, 16(%r11)
+	leaq	72(%rsp), %r11
+	movl	%edx, 20(%r11)
 	movq	%rsi, 16(%rsp)
-	movq	%rax, 24(%rsp)
-	movq	%rcx, 32(%rsp)
+	movq	%rdi, 24(%rsp)
+	movq	%rax, 32(%rsp)
 	movl	%edx, 104(%rsp)
 	leaq	120(%rsp), %rdx
 	leaq	-8(%rsp), %rsp
@@ -430,87 +441,88 @@ slh_dsa_sha2128s_keygen:
 .Lslh_sign_internal_$5:
 	leaq	8(%rsp), %rsp
 	movq	16(%rsp), %rbx
-	movq	24(%rsp), %rax
-	movq	32(%rsp), %rcx
+	movq	24(%rsp), %rdi
+	movq	32(%rsp), %rax
 	movl	104(%rsp), %edx
-	leaq	16(%rax), %r9
+	lfence
+	movq	$0, %rcx
+	leaq	16(%rdi), %r10
 	movq	%rbx, 32(%rsp)
-	movq	%rax, 24(%rsp)
-	movq	%rcx, 16(%rsp)
+	movq	%rdi, 24(%rsp)
+	movq	%rax, 16(%rsp)
 	movl	%edx, 104(%rsp)
-	leaq	72(%rsp), %r10
-	leaq	120(%rsp), %rdi
-	movq	%rcx, %rax
+	leaq	72(%rsp), %rsi
+	leaq	120(%rsp), %r8
 	leaq	-120(%rsp), %rsp
 	call	.Lfors_sign$1
 .Lslh_sign_internal_$4:
 	leaq	120(%rsp), %rsp
-// declassify_mem 2912 [R9]
+// declassify_mem 2912 [R10]
 	movq	32(%rsp), %rdx
-	movq	24(%rsp), %rax
-	movq	16(%rsp), %rcx
-	movl	104(%rsp), %esi
+	movq	24(%rsp), %rdi
+	movq	16(%rsp), %rax
+	movl	104(%rsp), %r9d
+	lfence
+	movq	$0, %rcx
 	movq	%rdx, 16(%rsp)
-	movq	%rax, 24(%rsp)
-	movl	%esi, 104(%rsp)
-	leaq	56(%rsp), %rax
-	leaq	72(%rsp), %r8
-	leaq	120(%rsp), %rdi
-	movq	%rax, %rdx
-	movq	%r9, %r10
-	movq	%rcx, %rax
-	movq	%r8, %r9
+	movq	%rdi, 24(%rsp)
+	movl	%r9d, 104(%rsp)
+	leaq	56(%rsp), %rcx
+	leaq	72(%rsp), %r9
+	leaq	120(%rsp), %r8
 	leaq	-440(%rsp), %rsp
 	call	.Lfors_pkfromsig$1
 .Lslh_sign_internal_$3:
 	leaq	440(%rsp), %rsp
 	movq	16(%rsp), %rdx
-	movq	24(%rsp), %rax
+	movq	24(%rsp), %rdi
 	movl	104(%rsp), %esi
-	leaq	2928(%rax), %rcx
-	movq	%rax, 24(%rsp)
+	lfence
+	movq	$0, %rax
+	leaq	2928(%rdi), %rcx
+	movq	%rdi, 24(%rsp)
 	leaq	56(%rsp), %rax
 	leaq	108(%rsp), %rdi
 	leaq	120(%rsp), %r8
-	movq	%rdi, %r9
-	movq	%r8, %rdi
 	leaq	-120(%rsp), %rsp
 	call	.Lht_sign$1
 .Lslh_sign_internal_$2:
 	leaq	120(%rsp), %rsp
-	movq	24(%rsp), %rax
-// declassify_mem 7856 [RAX]
-	movq	$0, %rcx
+	movq	24(%rsp), %rdi
+	lfence
+	movq	$0, %rax
+// declassify_mem 7856 [RDI]
+	movq	$0, %rax
 	ret
 .Lslh_keygen_internal_$1:
-	movq	%rsi, %rdi
-	movq	%rcx, %r8
+	movq	%rsi, %r11
+	movq	%rax, %r8
 	movq	(%r8), %rdx
-	movq	%rdx, (%rdi)
+	movq	%rdx, (%r11)
 	movq	8(%r8), %rdx
-	movq	%rdx, 8(%rdi)
-	leaq	16(%rsi), %rdi
-	leaq	16(%rcx), %r8
+	movq	%rdx, 8(%r11)
+	leaq	16(%rsi), %r11
+	leaq	16(%rax), %r8
 	movq	(%r8), %rdx
-	movq	%rdx, (%rdi)
+	movq	%rdx, (%r11)
 	movq	8(%r8), %rdx
-	movq	%rdx, 8(%rdi)
-	leaq	32(%rsi), %rdi
-	leaq	32(%rcx), %r8
+	movq	%rdx, 8(%r11)
+	leaq	32(%rsi), %r11
+	leaq	32(%rax), %r8
 	movq	(%r8), %rdx
-	movq	%rdx, (%rdi)
+	movq	%rdx, (%r11)
 	movq	8(%r8), %rdx
-	movq	%rdx, 8(%rdi)
-	movq	%rax, %rdi
-	leaq	32(%rcx), %r8
+	movq	%rdx, 8(%r11)
+	movq	%rdi, %r11
+	leaq	32(%rax), %r8
 	movq	(%r8), %rdx
-	movq	%rdx, (%rdi)
+	movq	%rdx, (%r11)
 	movq	8(%r8), %rdx
-	movq	%rdx, 8(%rdi)
+	movq	%rdx, 8(%r11)
 	movq	%rsi, %rdx
 	leaq	32(%rsi), %r9
 	movq	%rsi, 8(%rsp)
-	movq	%rax, 16(%rsp)
+	movq	%rdi, 16(%rsp)
 	movq	%rdx, 24(%rsp)
 	leaq	64(%rsp), %rdx
 	leaq	-8(%rsp), %rsp
@@ -520,27 +532,33 @@ slh_dsa_sha2128s_keygen:
 	movq	8(%rsp), %rax
 	movq	16(%rsp), %rdi
 	movq	24(%rsp), %rbx
-	leaq	32(%rsp), %r8
-	movq	$0, (%r8)
-	movq	$0, 8(%r8)
-	movq	$0, 16(%r8)
-	movq	$0, 24(%r8)
+	lfence
+	movq	$0, %rcx
+	leaq	32(%rsp), %rsi
+	movq	$0, (%rsi)
+	movq	$0, 8(%rsi)
+	movq	$0, 16(%rsi)
+	movq	$0, 24(%rsi)
 	movl	$6, %r11d
-	leaq	32(%rsp), %r8
-	movl	%r11d, (%r8)
-	movl	$0, %r9d
-	movl	$9, %edx
+	leaq	32(%rsp), %rsi
+	movl	%r11d, (%rsi)
+	movl	$0, %edx
+	movl	$9, %r11d
 	leaq	48(%rax), %rcx
 	movq	%rax, 24(%rsp)
 	movq	%rdi, 16(%rsp)
-	leaq	32(%rsp), %r8
-	leaq	64(%rsp), %rdi
+	leaq	32(%rsp), %rsi
+	leaq	64(%rsp), %r8
+	movl	%edx, %edi
+	movl	%r11d, %edx
 	leaq	-18808(%rsp), %rsp
 	call	.Lxmss_node$1
 .Lslh_keygen_internal_$2:
 	leaq	18808(%rsp), %rsp
 	movq	24(%rsp), %rax
 	movq	16(%rsp), %rdi
+	lfence
+	movq	$0, %r9
 	leaq	16(%rdi), %r11
 	movq	(%rcx), %rdx
 	movq	%rdx, (%r11)
@@ -549,347 +567,358 @@ slh_dsa_sha2128s_keygen:
 // declassify_mem 32 [RDI]
 	ret
 .Lfors_pkfromsig$1:
-	movq	%rdx, 8(%rsp)
+	movq	%rcx, 8(%rsp)
 	leaq	392(%rsp), %rdx
 	movq	$0, %rsi
 	movl	$0, %ecx
-	movl	$0, %r8d
+	movl	$0, %edi
 	jmp 	.Lfors_pkfromsig$37
 .Lfors_pkfromsig$38:
-	shll	$8, %r8d
+	shll	$8, %edi
 	movzbl	(%rax,%rsi), %r11d
-	orl 	%r11d, %r8d
+	orl 	%r11d, %edi
 	incq	%rsi
 	addl	$8, %ecx
 .Lfors_pkfromsig$37:
 	cmpl	$12, %ecx
 	jb  	.Lfors_pkfromsig$38
-	movl	%r8d, %r11d
+	movl	%edi, %r11d
 	addl	$-12, %ecx
 	shrq	%cl, %r11
 	andq	$4095, %r11
 	movl	%r11d, (%rdx)
 	jmp 	.Lfors_pkfromsig$35
 .Lfors_pkfromsig$36:
-	shll	$8, %r8d
+	shll	$8, %edi
 	movzbl	(%rax,%rsi), %r11d
-	orl 	%r11d, %r8d
+	orl 	%r11d, %edi
 	incq	%rsi
 	addl	$8, %ecx
 .Lfors_pkfromsig$35:
 	cmpl	$12, %ecx
 	jb  	.Lfors_pkfromsig$36
-	movl	%r8d, %r11d
+	movl	%edi, %r11d
 	addl	$-12, %ecx
 	shrq	%cl, %r11
 	andq	$4095, %r11
 	movl	%r11d, 4(%rdx)
 	jmp 	.Lfors_pkfromsig$33
 .Lfors_pkfromsig$34:
-	shll	$8, %r8d
+	shll	$8, %edi
 	movzbl	(%rax,%rsi), %r11d
-	orl 	%r11d, %r8d
+	orl 	%r11d, %edi
 	incq	%rsi
 	addl	$8, %ecx
 .Lfors_pkfromsig$33:
 	cmpl	$12, %ecx
 	jb  	.Lfors_pkfromsig$34
-	movl	%r8d, %r11d
+	movl	%edi, %r11d
 	addl	$-12, %ecx
 	shrq	%cl, %r11
 	andq	$4095, %r11
 	movl	%r11d, 8(%rdx)
 	jmp 	.Lfors_pkfromsig$31
 .Lfors_pkfromsig$32:
-	shll	$8, %r8d
+	shll	$8, %edi
 	movzbl	(%rax,%rsi), %r11d
-	orl 	%r11d, %r8d
+	orl 	%r11d, %edi
 	incq	%rsi
 	addl	$8, %ecx
 .Lfors_pkfromsig$31:
 	cmpl	$12, %ecx
 	jb  	.Lfors_pkfromsig$32
-	movl	%r8d, %r11d
+	movl	%edi, %r11d
 	addl	$-12, %ecx
 	shrq	%cl, %r11
 	andq	$4095, %r11
 	movl	%r11d, 12(%rdx)
 	jmp 	.Lfors_pkfromsig$29
 .Lfors_pkfromsig$30:
-	shll	$8, %r8d
+	shll	$8, %edi
 	movzbl	(%rax,%rsi), %r11d
-	orl 	%r11d, %r8d
+	orl 	%r11d, %edi
 	incq	%rsi
 	addl	$8, %ecx
 .Lfors_pkfromsig$29:
 	cmpl	$12, %ecx
 	jb  	.Lfors_pkfromsig$30
-	movl	%r8d, %r11d
+	movl	%edi, %r11d
 	addl	$-12, %ecx
 	shrq	%cl, %r11
 	andq	$4095, %r11
 	movl	%r11d, 16(%rdx)
 	jmp 	.Lfors_pkfromsig$27
 .Lfors_pkfromsig$28:
-	shll	$8, %r8d
+	shll	$8, %edi
 	movzbl	(%rax,%rsi), %r11d
-	orl 	%r11d, %r8d
+	orl 	%r11d, %edi
 	incq	%rsi
 	addl	$8, %ecx
 .Lfors_pkfromsig$27:
 	cmpl	$12, %ecx
 	jb  	.Lfors_pkfromsig$28
-	movl	%r8d, %r11d
+	movl	%edi, %r11d
 	addl	$-12, %ecx
 	shrq	%cl, %r11
 	andq	$4095, %r11
 	movl	%r11d, 20(%rdx)
 	jmp 	.Lfors_pkfromsig$25
 .Lfors_pkfromsig$26:
-	shll	$8, %r8d
+	shll	$8, %edi
 	movzbl	(%rax,%rsi), %r11d
-	orl 	%r11d, %r8d
+	orl 	%r11d, %edi
 	incq	%rsi
 	addl	$8, %ecx
 .Lfors_pkfromsig$25:
 	cmpl	$12, %ecx
 	jb  	.Lfors_pkfromsig$26
-	movl	%r8d, %r11d
+	movl	%edi, %r11d
 	addl	$-12, %ecx
 	shrq	%cl, %r11
 	andq	$4095, %r11
 	movl	%r11d, 24(%rdx)
 	jmp 	.Lfors_pkfromsig$23
 .Lfors_pkfromsig$24:
-	shll	$8, %r8d
+	shll	$8, %edi
 	movzbl	(%rax,%rsi), %r11d
-	orl 	%r11d, %r8d
+	orl 	%r11d, %edi
 	incq	%rsi
 	addl	$8, %ecx
 .Lfors_pkfromsig$23:
 	cmpl	$12, %ecx
 	jb  	.Lfors_pkfromsig$24
-	movl	%r8d, %r11d
+	movl	%edi, %r11d
 	addl	$-12, %ecx
 	shrq	%cl, %r11
 	andq	$4095, %r11
 	movl	%r11d, 28(%rdx)
 	jmp 	.Lfors_pkfromsig$21
 .Lfors_pkfromsig$22:
-	shll	$8, %r8d
+	shll	$8, %edi
 	movzbl	(%rax,%rsi), %r11d
-	orl 	%r11d, %r8d
+	orl 	%r11d, %edi
 	incq	%rsi
 	addl	$8, %ecx
 .Lfors_pkfromsig$21:
 	cmpl	$12, %ecx
 	jb  	.Lfors_pkfromsig$22
-	movl	%r8d, %r11d
+	movl	%edi, %r11d
 	addl	$-12, %ecx
 	shrq	%cl, %r11
 	andq	$4095, %r11
 	movl	%r11d, 32(%rdx)
 	jmp 	.Lfors_pkfromsig$19
 .Lfors_pkfromsig$20:
-	shll	$8, %r8d
+	shll	$8, %edi
 	movzbl	(%rax,%rsi), %r11d
-	orl 	%r11d, %r8d
+	orl 	%r11d, %edi
 	incq	%rsi
 	addl	$8, %ecx
 .Lfors_pkfromsig$19:
 	cmpl	$12, %ecx
 	jb  	.Lfors_pkfromsig$20
-	movl	%r8d, %r11d
+	movl	%edi, %r11d
 	addl	$-12, %ecx
 	shrq	%cl, %r11
 	andq	$4095, %r11
 	movl	%r11d, 36(%rdx)
 	jmp 	.Lfors_pkfromsig$17
 .Lfors_pkfromsig$18:
-	shll	$8, %r8d
+	shll	$8, %edi
 	movzbl	(%rax,%rsi), %r11d
-	orl 	%r11d, %r8d
+	orl 	%r11d, %edi
 	incq	%rsi
 	addl	$8, %ecx
 .Lfors_pkfromsig$17:
 	cmpl	$12, %ecx
 	jb  	.Lfors_pkfromsig$18
-	movl	%r8d, %r11d
+	movl	%edi, %r11d
 	addl	$-12, %ecx
 	shrq	%cl, %r11
 	andq	$4095, %r11
 	movl	%r11d, 40(%rdx)
 	jmp 	.Lfors_pkfromsig$15
 .Lfors_pkfromsig$16:
-	shll	$8, %r8d
+	shll	$8, %edi
 	movzbl	(%rax,%rsi), %r11d
-	orl 	%r11d, %r8d
+	orl 	%r11d, %edi
 	incq	%rsi
 	addl	$8, %ecx
 .Lfors_pkfromsig$15:
 	cmpl	$12, %ecx
 	jb  	.Lfors_pkfromsig$16
-	movl	%r8d, %r11d
+	movl	%edi, %r11d
 	addl	$-12, %ecx
 	shrq	%cl, %r11
 	andq	$4095, %r11
 	movl	%r11d, 44(%rdx)
 	jmp 	.Lfors_pkfromsig$13
 .Lfors_pkfromsig$14:
-	shll	$8, %r8d
+	shll	$8, %edi
 	movzbl	(%rax,%rsi), %r11d
-	orl 	%r11d, %r8d
+	orl 	%r11d, %edi
 	incq	%rsi
 	addl	$8, %ecx
 .Lfors_pkfromsig$13:
 	cmpl	$12, %ecx
 	jb  	.Lfors_pkfromsig$14
-	movl	%r8d, %r11d
+	movl	%edi, %r11d
 	addl	$-12, %ecx
 	shrq	%cl, %r11
 	andq	$4095, %r11
 	movl	%r11d, 48(%rdx)
 	jmp 	.Lfors_pkfromsig$11
 .Lfors_pkfromsig$12:
-	shll	$8, %r8d
+	shll	$8, %edi
 	movzbl	(%rax,%rsi), %r11d
-	orl 	%r11d, %r8d
+	orl 	%r11d, %edi
 	incq	%rsi
 	addl	$8, %ecx
 .Lfors_pkfromsig$11:
 	cmpl	$12, %ecx
 	jb  	.Lfors_pkfromsig$12
-	movl	%r8d, %r11d
+	movl	%edi, %r11d
 	addl	$-12, %ecx
 	shrq	%cl, %r11
 	andq	$4095, %r11
 	movl	%r11d, 52(%rdx)
-	movq	$0, %rcx
-	movq	$0, %rdx
 	movq	$0, %rax
+	movq	$0, %rcx
+	movq	$0, %rdi
 	jmp 	.Lfors_pkfromsig$3
 .Lfors_pkfromsig$4:
-	movq	%rdx, 16(%rsp)
-	leaq	(%r10,%rcx), %rsi
+	movq	%rcx, 16(%rsp)
+	leaq	(%r10,%rax), %rcx
 	leaq	112(%rsp), %r11
-	movq	(%rsi), %rdx
+	movq	(%rcx), %rdx
 	movq	%rdx, (%r11)
-	movq	8(%rsi), %rdx
+	movq	8(%rcx), %rdx
 	movq	%rdx, 8(%r11)
-	movl	$0, %edx
-	movl	%edx, 24(%r9)
-	movl	%eax, %esi
-	shll	$12, %esi
-	addl	392(%rsp,%rax,4), %esi
-	movl	%esi, 28(%r9)
+	movl	$0, %ecx
+	movl	%ecx, 24(%r9)
+	movl	%edi, %edx
+	shll	$12, %edx
+	addl	392(%rsp,%rdi,4), %edx
+	lfence
+	movq	$0, %rcx
+	movl	%edx, 28(%r9)
 	movq	%r9, 24(%rsp)
 	movq	%r10, 32(%rsp)
-	movq	%rax, 40(%rsp)
-	movq	%rcx, 48(%rsp)
-	movq	%rdi, 56(%rsp)
-	leaq	112(%rsp), %rcx
-	movq	%r9, %r8
-	movq	%rdi, %rax
-	leaq	-88(%rsp), %rsp
+	movq	%rdi, 40(%rsp)
+	movq	%rax, 48(%rsp)
+	movq	%r8, 56(%rsp)
+	leaq	112(%rsp), %rdi
+	movq	%r9, %rsi
+	leaq	-72(%rsp), %rsp
 	call	.LF$1
 .Lfors_pkfromsig$10:
-	leaq	88(%rsp), %rsp
+	leaq	72(%rsp), %rsp
 	movq	24(%rsp), %r9
 	movq	32(%rsp), %r10
-	movq	40(%rsp), %rax
-	movq	48(%rsp), %rcx
-	movq	56(%rsp), %rdi
-	addq	$16, %rcx
-	movl	392(%rsp,%rax,4), %esi
+	movq	40(%rsp), %rdi
+	movq	48(%rsp), %rax
+	movq	56(%rsp), %r8
+	lfence
+	movq	$0, %rcx
+	addq	$16, %rax
+	movl	392(%rsp,%rdi,4), %edx
+	lfence
+	movq	$0, %rcx
 	movl	$0, %r11d
 	jmp 	.Lfors_pkfromsig$5
 .Lfors_pkfromsig$6:
-	movl	%r11d, %edx
-	incl	%edx
-	movl	%edx, 24(%r9)
-	movl	%esi, %edx
-	andl	$1, %edx
+	movl	%r11d, %ecx
+	incl	%ecx
+	movl	%ecx, 24(%r9)
+	movl	%edx, %ecx
+	andl	$1, %ecx
 	movl	%r11d, 384(%rsp)
-	movl	%esi, 388(%rsp)
-	cmpl	$0, %edx
+	movl	%edx, 388(%rsp)
+	cmpl	$0, %ecx
 	je  	.Lfors_pkfromsig$8
-	movl	28(%r9), %esi
-	decl	%esi
-	shrl	$1, %esi
-	movl	%esi, 28(%r9)
+	movl	28(%r9), %edx
+	decl	%edx
+	shrl	$1, %edx
+	movl	%edx, 28(%r9)
 	leaq	96(%rsp), %r11
-	leaq	(%r10,%rcx), %rsi
-	movq	(%rsi), %rdx
+	leaq	(%r10,%rax), %rcx
+	movq	(%rcx), %rdx
 	movq	%rdx, (%r11)
-	movq	8(%rsi), %rdx
+	movq	8(%rcx), %rdx
 	movq	%rdx, 8(%r11)
 	leaq	80(%rsp), %r11
-	leaq	112(%rsp), %rsi
-	movq	(%rsi), %rdx
+	leaq	112(%rsp), %rcx
+	movq	(%rcx), %rdx
 	movq	%rdx, (%r11)
-	movq	8(%rsi), %rdx
+	movq	8(%rcx), %rdx
 	movq	%rdx, 8(%r11)
 	jmp 	.Lfors_pkfromsig$9
 .Lfors_pkfromsig$8:
-	movl	28(%r9), %esi
-	shrl	$1, %esi
-	movl	%esi, 28(%r9)
+	movl	28(%r9), %edx
+	shrl	$1, %edx
+	movl	%edx, 28(%r9)
 	leaq	96(%rsp), %r11
-	leaq	112(%rsp), %rsi
-	movq	(%rsi), %rdx
+	leaq	112(%rsp), %rcx
+	movq	(%rcx), %rdx
 	movq	%rdx, (%r11)
-	movq	8(%rsi), %rdx
+	movq	8(%rcx), %rdx
 	movq	%rdx, 8(%r11)
 	leaq	80(%rsp), %r11
-	leaq	(%r10,%rcx), %rsi
-	movq	(%rsi), %rdx
+	leaq	(%r10,%rax), %rcx
+	movq	(%rcx), %rdx
 	movq	%rdx, (%r11)
-	movq	8(%rsi), %rdx
+	movq	8(%rcx), %rdx
 	movq	%rdx, 8(%r11)
 .Lfors_pkfromsig$9:
 	movq	%r9, 56(%rsp)
 	movq	%r10, 48(%rsp)
-	movq	%rax, 40(%rsp)
-	movq	%rcx, 32(%rsp)
-	movq	%rdi, 24(%rsp)
-	leaq	64(%rsp), %rcx
-	leaq	96(%rsp), %rsi
+	movq	%rdi, 40(%rsp)
+	movq	%rax, 32(%rsp)
+	movq	%r8, 24(%rsp)
+	leaq	64(%rsp), %rdi
+	leaq	96(%rsp), %rcx
 	leaq	80(%rsp), %rdx
-	movq	%r9, %r8
-	leaq	-104(%rsp), %rsp
+	movq	%r9, %rsi
+	leaq	-88(%rsp), %rsp
 	call	.LH$1
 .Lfors_pkfromsig$7:
-	leaq	104(%rsp), %rsp
+	leaq	88(%rsp), %rsp
 	movq	56(%rsp), %r9
 	movq	48(%rsp), %r10
-	movq	40(%rsp), %rax
-	movq	32(%rsp), %rcx
-	movq	24(%rsp), %rdi
+	movq	40(%rsp), %rdi
+	movq	32(%rsp), %rax
+	movq	24(%rsp), %r8
+	lfence
+	movq	$0, %rcx
 	leaq	112(%rsp), %r11
-	leaq	64(%rsp), %rsi
-	movq	(%rsi), %rdx
+	leaq	64(%rsp), %rcx
+	movq	(%rcx), %rdx
 	movq	%rdx, (%r11)
-	movq	8(%rsi), %rdx
+	movq	8(%rcx), %rdx
 	movq	%rdx, 8(%r11)
 	movl	384(%rsp), %r11d
-	movl	388(%rsp), %esi
-	shrl	$1, %esi
-	addq	$16, %rcx
+	movl	388(%rsp), %edx
+	lfence
+	movq	$0, %rcx
+	shrl	$1, %edx
+	addq	$16, %rax
 	incl	%r11d
 .Lfors_pkfromsig$5:
 	cmpl	$12, %r11d
 	jb  	.Lfors_pkfromsig$6
-	movq	16(%rsp), %rdx
-	leaq	160(%rsp,%rdx), %r11
+	movq	16(%rsp), %rcx
+	lfence
+	movq	$0, %rdx
+	leaq	160(%rsp,%rcx), %r11
 	leaq	112(%rsp), %rsi
-	movq	(%rsi), %r8
-	movq	%r8, (%r11)
-	movq	8(%rsi), %r8
-	movq	%r8, 8(%r11)
-	addq	$16, %rdx
-	incq	%rax
+	movq	(%rsi), %rdx
+	movq	%rdx, (%r11)
+	movq	8(%rsi), %rdx
+	movq	%rdx, 8(%r11)
+	addq	$16, %rcx
+	incq	%rdi
 .Lfors_pkfromsig$3:
-	cmpq	$14, %rax
+	cmpq	$14, %rdi
 	jb  	.Lfors_pkfromsig$4
 	leaq	128(%rsp), %rax
 	movq	(%r9), %rdx
@@ -900,299 +929,310 @@ slh_dsa_sha2128s_keygen:
 	movq	%rdx, 16(%rax)
 	movq	24(%r9), %rdx
 	movq	%rdx, 24(%rax)
-	leaq	128(%rsp), %r8
-	movq	$0, 16(%r8)
-	movq	$0, 24(%r8)
-	movl	$4, 16(%r8)
+	leaq	128(%rsp), %rsi
+	movq	$0, 16(%rsi)
+	movq	$0, 24(%rsi)
+	movl	$4, 16(%rsi)
 	movl	20(%r9), %edx
-	leaq	128(%rsp), %r8
-	movl	%edx, 20(%r8)
-	movq	8(%rsp), %rcx
-	leaq	128(%rsp), %r8
-	leaq	160(%rsp), %rax
-	movq	%rdi, %rdx
-	leaq	-296(%rsp), %rsp
+	leaq	128(%rsp), %rsi
+	movl	%edx, 20(%rsi)
+	movq	8(%rsp), %rax
+	lfence
+	movq	$0, %rcx
+	leaq	128(%rsp), %rsi
+	leaq	160(%rsp), %rcx
+	movq	%rax, %rdi
+	movq	%rcx, %rax
+	movq	%r8, %rdx
+	leaq	-280(%rsp), %rsp
 	call	.LT_k$1
 .Lfors_pkfromsig$2:
-	leaq	296(%rsp), %rsp
-	movq	%rcx, %rax
+	leaq	280(%rsp), %rsp
 	ret
 .Lfors_sign$1:
 	leaq	64(%rsp), %rdx
-	movq	$0, %rsi
+	movq	$0, %rdi
 	movl	$0, %ecx
-	movl	$0, %r8d
+	movl	$0, %r9d
 	jmp 	.Lfors_sign$34
 .Lfors_sign$35:
-	shll	$8, %r8d
-	movzbl	(%rax,%rsi), %r11d
-	orl 	%r11d, %r8d
-	incq	%rsi
+	shll	$8, %r9d
+	movzbl	(%rax,%rdi), %r11d
+	orl 	%r11d, %r9d
+	incq	%rdi
 	addl	$8, %ecx
 .Lfors_sign$34:
 	cmpl	$12, %ecx
 	jb  	.Lfors_sign$35
-	movl	%r8d, %r11d
+	movl	%r9d, %r11d
 	addl	$-12, %ecx
 	shrq	%cl, %r11
 	andq	$4095, %r11
 	movl	%r11d, (%rdx)
 	jmp 	.Lfors_sign$32
 .Lfors_sign$33:
-	shll	$8, %r8d
-	movzbl	(%rax,%rsi), %r11d
-	orl 	%r11d, %r8d
-	incq	%rsi
+	shll	$8, %r9d
+	movzbl	(%rax,%rdi), %r11d
+	orl 	%r11d, %r9d
+	incq	%rdi
 	addl	$8, %ecx
 .Lfors_sign$32:
 	cmpl	$12, %ecx
 	jb  	.Lfors_sign$33
-	movl	%r8d, %r11d
+	movl	%r9d, %r11d
 	addl	$-12, %ecx
 	shrq	%cl, %r11
 	andq	$4095, %r11
 	movl	%r11d, 4(%rdx)
 	jmp 	.Lfors_sign$30
 .Lfors_sign$31:
-	shll	$8, %r8d
-	movzbl	(%rax,%rsi), %r11d
-	orl 	%r11d, %r8d
-	incq	%rsi
+	shll	$8, %r9d
+	movzbl	(%rax,%rdi), %r11d
+	orl 	%r11d, %r9d
+	incq	%rdi
 	addl	$8, %ecx
 .Lfors_sign$30:
 	cmpl	$12, %ecx
 	jb  	.Lfors_sign$31
-	movl	%r8d, %r11d
+	movl	%r9d, %r11d
 	addl	$-12, %ecx
 	shrq	%cl, %r11
 	andq	$4095, %r11
 	movl	%r11d, 8(%rdx)
 	jmp 	.Lfors_sign$28
 .Lfors_sign$29:
-	shll	$8, %r8d
-	movzbl	(%rax,%rsi), %r11d
-	orl 	%r11d, %r8d
-	incq	%rsi
+	shll	$8, %r9d
+	movzbl	(%rax,%rdi), %r11d
+	orl 	%r11d, %r9d
+	incq	%rdi
 	addl	$8, %ecx
 .Lfors_sign$28:
 	cmpl	$12, %ecx
 	jb  	.Lfors_sign$29
-	movl	%r8d, %r11d
+	movl	%r9d, %r11d
 	addl	$-12, %ecx
 	shrq	%cl, %r11
 	andq	$4095, %r11
 	movl	%r11d, 12(%rdx)
 	jmp 	.Lfors_sign$26
 .Lfors_sign$27:
-	shll	$8, %r8d
-	movzbl	(%rax,%rsi), %r11d
-	orl 	%r11d, %r8d
-	incq	%rsi
+	shll	$8, %r9d
+	movzbl	(%rax,%rdi), %r11d
+	orl 	%r11d, %r9d
+	incq	%rdi
 	addl	$8, %ecx
 .Lfors_sign$26:
 	cmpl	$12, %ecx
 	jb  	.Lfors_sign$27
-	movl	%r8d, %r11d
+	movl	%r9d, %r11d
 	addl	$-12, %ecx
 	shrq	%cl, %r11
 	andq	$4095, %r11
 	movl	%r11d, 16(%rdx)
 	jmp 	.Lfors_sign$24
 .Lfors_sign$25:
-	shll	$8, %r8d
-	movzbl	(%rax,%rsi), %r11d
-	orl 	%r11d, %r8d
-	incq	%rsi
+	shll	$8, %r9d
+	movzbl	(%rax,%rdi), %r11d
+	orl 	%r11d, %r9d
+	incq	%rdi
 	addl	$8, %ecx
 .Lfors_sign$24:
 	cmpl	$12, %ecx
 	jb  	.Lfors_sign$25
-	movl	%r8d, %r11d
+	movl	%r9d, %r11d
 	addl	$-12, %ecx
 	shrq	%cl, %r11
 	andq	$4095, %r11
 	movl	%r11d, 20(%rdx)
 	jmp 	.Lfors_sign$22
 .Lfors_sign$23:
-	shll	$8, %r8d
-	movzbl	(%rax,%rsi), %r11d
-	orl 	%r11d, %r8d
-	incq	%rsi
+	shll	$8, %r9d
+	movzbl	(%rax,%rdi), %r11d
+	orl 	%r11d, %r9d
+	incq	%rdi
 	addl	$8, %ecx
 .Lfors_sign$22:
 	cmpl	$12, %ecx
 	jb  	.Lfors_sign$23
-	movl	%r8d, %r11d
+	movl	%r9d, %r11d
 	addl	$-12, %ecx
 	shrq	%cl, %r11
 	andq	$4095, %r11
 	movl	%r11d, 24(%rdx)
 	jmp 	.Lfors_sign$20
 .Lfors_sign$21:
-	shll	$8, %r8d
-	movzbl	(%rax,%rsi), %r11d
-	orl 	%r11d, %r8d
-	incq	%rsi
+	shll	$8, %r9d
+	movzbl	(%rax,%rdi), %r11d
+	orl 	%r11d, %r9d
+	incq	%rdi
 	addl	$8, %ecx
 .Lfors_sign$20:
 	cmpl	$12, %ecx
 	jb  	.Lfors_sign$21
-	movl	%r8d, %r11d
+	movl	%r9d, %r11d
 	addl	$-12, %ecx
 	shrq	%cl, %r11
 	andq	$4095, %r11
 	movl	%r11d, 28(%rdx)
 	jmp 	.Lfors_sign$18
 .Lfors_sign$19:
-	shll	$8, %r8d
-	movzbl	(%rax,%rsi), %r11d
-	orl 	%r11d, %r8d
-	incq	%rsi
+	shll	$8, %r9d
+	movzbl	(%rax,%rdi), %r11d
+	orl 	%r11d, %r9d
+	incq	%rdi
 	addl	$8, %ecx
 .Lfors_sign$18:
 	cmpl	$12, %ecx
 	jb  	.Lfors_sign$19
-	movl	%r8d, %r11d
+	movl	%r9d, %r11d
 	addl	$-12, %ecx
 	shrq	%cl, %r11
 	andq	$4095, %r11
 	movl	%r11d, 32(%rdx)
 	jmp 	.Lfors_sign$16
 .Lfors_sign$17:
-	shll	$8, %r8d
-	movzbl	(%rax,%rsi), %r11d
-	orl 	%r11d, %r8d
-	incq	%rsi
+	shll	$8, %r9d
+	movzbl	(%rax,%rdi), %r11d
+	orl 	%r11d, %r9d
+	incq	%rdi
 	addl	$8, %ecx
 .Lfors_sign$16:
 	cmpl	$12, %ecx
 	jb  	.Lfors_sign$17
-	movl	%r8d, %r11d
+	movl	%r9d, %r11d
 	addl	$-12, %ecx
 	shrq	%cl, %r11
 	andq	$4095, %r11
 	movl	%r11d, 36(%rdx)
 	jmp 	.Lfors_sign$14
 .Lfors_sign$15:
-	shll	$8, %r8d
-	movzbl	(%rax,%rsi), %r11d
-	orl 	%r11d, %r8d
-	incq	%rsi
+	shll	$8, %r9d
+	movzbl	(%rax,%rdi), %r11d
+	orl 	%r11d, %r9d
+	incq	%rdi
 	addl	$8, %ecx
 .Lfors_sign$14:
 	cmpl	$12, %ecx
 	jb  	.Lfors_sign$15
-	movl	%r8d, %r11d
+	movl	%r9d, %r11d
 	addl	$-12, %ecx
 	shrq	%cl, %r11
 	andq	$4095, %r11
 	movl	%r11d, 40(%rdx)
 	jmp 	.Lfors_sign$12
 .Lfors_sign$13:
-	shll	$8, %r8d
-	movzbl	(%rax,%rsi), %r11d
-	orl 	%r11d, %r8d
-	incq	%rsi
+	shll	$8, %r9d
+	movzbl	(%rax,%rdi), %r11d
+	orl 	%r11d, %r9d
+	incq	%rdi
 	addl	$8, %ecx
 .Lfors_sign$12:
 	cmpl	$12, %ecx
 	jb  	.Lfors_sign$13
-	movl	%r8d, %r11d
+	movl	%r9d, %r11d
 	addl	$-12, %ecx
 	shrq	%cl, %r11
 	andq	$4095, %r11
 	movl	%r11d, 44(%rdx)
 	jmp 	.Lfors_sign$10
 .Lfors_sign$11:
-	shll	$8, %r8d
-	movzbl	(%rax,%rsi), %r11d
-	orl 	%r11d, %r8d
-	incq	%rsi
+	shll	$8, %r9d
+	movzbl	(%rax,%rdi), %r11d
+	orl 	%r11d, %r9d
+	incq	%rdi
 	addl	$8, %ecx
 .Lfors_sign$10:
 	cmpl	$12, %ecx
 	jb  	.Lfors_sign$11
-	movl	%r8d, %r11d
+	movl	%r9d, %r11d
 	addl	$-12, %ecx
 	shrq	%cl, %r11
 	andq	$4095, %r11
 	movl	%r11d, 48(%rdx)
 	jmp 	.Lfors_sign$8
 .Lfors_sign$9:
-	shll	$8, %r8d
-	movzbl	(%rax,%rsi), %r11d
-	orl 	%r11d, %r8d
-	incq	%rsi
+	shll	$8, %r9d
+	movzbl	(%rax,%rdi), %r11d
+	orl 	%r11d, %r9d
+	incq	%rdi
 	addl	$8, %ecx
 .Lfors_sign$8:
 	cmpl	$12, %ecx
 	jb  	.Lfors_sign$9
-	movl	%r8d, %r11d
+	movl	%r9d, %r11d
 	addl	$-12, %ecx
 	shrq	%cl, %r11
 	andq	$4095, %r11
 	movl	%r11d, 52(%rdx)
-	movq	$0, %r8
+	movq	$0, %rax
 	movq	$0, %rdx
 	jmp 	.Lfors_sign$2
 .Lfors_sign$3:
-	movl	%edx, %esi
-	shll	$12, %esi
-	addl	64(%rsp,%rdx,4), %esi
-	leaq	(%r9,%r8), %rax
+	movl	%edx, %r9d
+	shll	$12, %r9d
+	addl	64(%rsp,%rdx,4), %r9d
+	lfence
+	movq	$0, %rcx
+	leaq	(%r10,%rax), %rcx
 	movq	%rbx, 8(%rsp)
-	movq	%r10, 16(%rsp)
-	movq	%r9, 24(%rsp)
+	movq	%rsi, 16(%rsp)
+	movq	%r10, 24(%rsp)
 	movq	%rdx, 32(%rsp)
-	movq	%r8, 40(%rsp)
-	movq	%rdi, 48(%rsp)
-	movq	%r10, %r8
+	movq	%rax, 40(%rsp)
+	movq	%r8, 48(%rsp)
+	movq	%rcx, %rax
 	leaq	-40(%rsp), %rsp
 	call	.Lfors_skgen$1
 .Lfors_sign$7:
 	leaq	40(%rsp), %rsp
 	movq	8(%rsp), %rbx
-	movq	16(%rsp), %r10
-	movq	24(%rsp), %r9
+	movq	16(%rsp), %rsi
+	movq	24(%rsp), %r10
 	movq	32(%rsp), %rdx
-	movq	40(%rsp), %r8
-	movq	48(%rsp), %rdi
-	addq	$16, %r8
-	movl	64(%rsp,%rdx,4), %eax
-	xorl	$1, %eax
+	movq	40(%rsp), %rax
+	movq	48(%rsp), %r8
+	lfence
+	movq	$0, %rcx
+	addq	$16, %rax
+	movl	64(%rsp,%rdx,4), %edi
+	lfence
+	movq	$0, %rcx
+	xorl	$1, %edi
 	movl	$0, %r11d
 	jmp 	.Lfors_sign$4
 .Lfors_sign$5:
 	movq	%rbx, 48(%rsp)
 	movq	%rdx, 40(%rsp)
 	movl	%r11d, 56(%rsp)
-	movq	%r8, 32(%rsp)
-	movl	%eax, 60(%rsp)
+	movq	%rax, 32(%rsp)
+	movl	%edi, 60(%rsp)
 	movl	$12, %ecx
 	subl	%r11d, %ecx
 	shlq	%cl, %rdx
-	addl	%eax, %edx
-	leaq	(%r9,%r8), %rcx
-	movq	%r9, 24(%rsp)
-	movq	%rdi, 16(%rsp)
-	movl	%edx, %r9d
+	addl	%edi, %edx
+	leaq	(%r10,%rax), %rcx
+	movq	%r10, 24(%rsp)
+	movq	%r8, 16(%rsp)
+	movl	%edx, %edi
 	movl	%r11d, %edx
-	movq	%r10, %r8
 	leaq	-133496(%rsp), %rsp
 	call	.Lfors_node$1
 .Lfors_sign$6:
 	leaq	133496(%rsp), %rsp
-	movq	%r8, %r10
-	movq	24(%rsp), %r9
-	movq	16(%rsp), %rdi
+	movq	24(%rsp), %r10
+	movq	16(%rsp), %r8
+	lfence
+	movq	$0, %rax
 	movq	48(%rsp), %rbx
 	movq	40(%rsp), %rdx
 	movl	56(%rsp), %r11d
-	movq	32(%rsp), %r8
-	movl	60(%rsp), %eax
-	shrl	$1, %eax
-	xorl	$1, %eax
-	addq	$16, %r8
+	movq	32(%rsp), %rax
+	movl	60(%rsp), %edi
+	lfence
+	movq	$0, %rcx
+	shrl	$1, %edi
+	xorl	$1, %edi
+	addq	$16, %rax
 	incl	%r11d
 .Lfors_sign$4:
 	cmpl	$12, %r11d
@@ -1204,6 +1244,7 @@ slh_dsa_sha2128s_keygen:
 	ret
 .Lfors_node$1:
 	movq	%rcx, 2336(%rsp)
+	movq	$0, %rax
 	movl	$0, %r11d
 	jmp 	.Lfors_node$2
 .Lfors_node$3:
@@ -1212,10 +1253,10 @@ slh_dsa_sha2128s_keygen:
 	subl	%r11d, %ecx
 	movq	$1, %rdx
 	shlq	%cl, %rdx
-	movl	%edx, %esi
+	movl	%edx, %r9d
 	movl	%edx, %r10d
-	imull	%r9d, %esi
-	addl	%esi, %r10d
+	imull	%edi, %r9d
+	addl	%r9d, %r10d
 	jmp 	.Lfors_node$4
 .Lfors_node$5:
 	movq	%rbx, 2344(%rsp)
@@ -1223,7 +1264,7 @@ slh_dsa_sha2128s_keygen:
 	cmpl	$0, %r11d
 	je  	.Lfors_node$6
 	movl	%r11d, 133480(%rsp)
-	movl	%esi, %eax
+	movl	%r9d, %eax
 	imull	$2, %eax, %eax
 	movl	%r11d, %edx
 	decl	%edx
@@ -1240,8 +1281,8 @@ slh_dsa_sha2128s_keygen:
 	divq	%rbp
 	addq	%rdx, %rbx
 	imulq	$16, %rbx, %rbx
-	movl	%r11d, 24(%r8)
-	movl	%esi, 28(%r8)
+	movl	%r11d, 24(%rsi)
+	movl	%r9d, 28(%rsi)
 	movl	$13, %ecx
 	movq	$1, %rdx
 	shlq	%cl, %rdx
@@ -1251,12 +1292,12 @@ slh_dsa_sha2128s_keygen:
 	shlq	%cl, %r11
 	subq	%r11, %rbp
 	shrq	$1, %r11
-	movl	%esi, %eax
+	movl	%r9d, %eax
 	xorl	%edx, %edx
 	divq	%r11
 	addq	%rdx, %rbp
 	imulq	$16, %rbp, %rax
-	subl	%esi, %r10d
+	subl	%r9d, %r10d
 	cmpl	$8, %r10d
 	jnb 	.Lfors_node$10
 	movq	%rbx, %rcx
@@ -1273,34 +1314,36 @@ slh_dsa_sha2128s_keygen:
 	movq	%rdx, (%r11)
 	movq	8(%rcx), %rdx
 	movq	%rdx, 8(%r11)
-	movq	%r8, 2376(%rsp)
-	movl	%r9d, 133484(%rsp)
-	movl	%esi, 133488(%rsp)
-	movq	%rdi, 2352(%rsp)
+	movq	%rsi, 2376(%rsp)
+	movl	%edi, 133484(%rsp)
+	movl	%r9d, 133488(%rsp)
+	movq	%r8, 2352(%rsp)
 	movq	%rax, 2368(%rsp)
-	leaq	2416(%rsp,%rax), %rcx
-	leaq	2400(%rsp), %rsi
+	leaq	2416(%rsp,%rax), %rdi
+	leaq	2400(%rsp), %rcx
 	leaq	2384(%rsp), %rdx
-	leaq	-104(%rsp), %rsp
+	leaq	-88(%rsp), %rsp
 	call	.LH$1
 .Lfors_node$15:
-	leaq	104(%rsp), %rsp
-	movq	2376(%rsp), %r8
-	movl	133484(%rsp), %r9d
-	movl	133488(%rsp), %esi
-	movq	2352(%rsp), %rdi
+	leaq	88(%rsp), %rsp
+	movq	2376(%rsp), %rsi
+	movl	133484(%rsp), %edi
+	movl	133488(%rsp), %r9d
+	movq	2352(%rsp), %r8
 	movq	2368(%rsp), %rax
-	incl	%esi
+	lfence
+	movq	$0, %rcx
+	incl	%r9d
 	jmp 	.Lfors_node$11
 .Lfors_node$10:
-	movq	%r8, 2352(%rsp)
-	movl	%esi, 133484(%rsp)
+	movq	%rsi, 2352(%rsp)
+	movl	%r9d, 133484(%rsp)
 	movq	%rbx, 2360(%rsp)
 	movq	%rax, 2368(%rsp)
-	movl	%r9d, 133488(%rsp)
-	movq	%rdi, 2376(%rsp)
+	movl	%edi, 133488(%rsp)
+	movq	%r8, 2376(%rsp)
 	movq	$0, %rdx
-	movq	$0, %r9
+	movq	$0, %rdi
 	leaq	32(%rsp), %rax
 	leaq	288(%rsp), %rcx
 	leaq	-536(%rsp), %rsp
@@ -1308,8 +1351,10 @@ slh_dsa_sha2128s_keygen:
 .Lfors_node$14:
 	leaq	536(%rsp), %rsp
 	movq	%rdx, %r13
-	movq	%r9, %rcx
+	movq	%rdi, %rcx
 	movq	2360(%rsp), %rdx
+	lfence
+	movq	$0, %rax
 	leaq	2416(%rsp,%rdx), %rax
 	leaq	32(%rsp), %r12
 	leaq	288(%rsp), %rbp
@@ -1319,6 +1364,8 @@ slh_dsa_sha2128s_keygen:
 .Lfors_node$13:
 	leaq	24(%rsp), %rsp
 	movq	2368(%rsp), %rax
+	lfence
+	movq	$0, %rdx
 	leaq	2416(%rsp,%rax), %rdx
 	leaq	32(%rsp), %r12
 	leaq	288(%rsp), %rbp
@@ -1327,18 +1374,24 @@ slh_dsa_sha2128s_keygen:
 	call	.LH_digests$1
 .Lfors_node$12:
 	leaq	280(%rsp), %rsp
-	movq	2352(%rsp), %r8
-	movl	133488(%rsp), %r9d
-	movq	2376(%rsp), %rdi
-	movl	133484(%rsp), %esi
-	addl	$8, %esi
+	movq	2352(%rsp), %rsi
+	movl	133488(%rsp), %edi
+	movq	2376(%rsp), %r8
+	lfence
+	movq	$0, %rcx
+	movl	133484(%rsp), %r9d
+	lfence
+	movq	$0, %rcx
+	addl	$8, %r9d
 .Lfors_node$11:
 	movl	133480(%rsp), %r11d
+	lfence
+	movq	$0, %rcx
 	jmp 	.Lfors_node$7
 .Lfors_node$6:
 	movl	%r11d, 133480(%rsp)
-	movl	%r11d, 24(%r8)
-	movl	%esi, 28(%r8)
+	movl	%r11d, 24(%rsi)
+	movl	%r9d, 28(%rsi)
 	movl	$13, %ecx
 	movq	$1, %rdx
 	shlq	%cl, %rdx
@@ -1348,125 +1401,134 @@ slh_dsa_sha2128s_keygen:
 	shlq	%cl, %r11
 	subq	%r11, %r10
 	shrq	$1, %r11
-	movl	%esi, %eax
+	movl	%r9d, %eax
 	xorl	%edx, %edx
 	divq	%r11
 	addq	%rdx, %r10
 	imulq	$16, %r10, %rax
-	movq	%r8, 2352(%rsp)
-	movl	%r9d, 133484(%rsp)
-	movl	%esi, 133488(%rsp)
+	movq	%rsi, 2352(%rsp)
+	movl	%edi, 133484(%rsp)
+	movl	%r9d, 133488(%rsp)
 	movq	%rax, 2360(%rsp)
-	movq	%rdi, 2368(%rsp)
+	movq	%r8, 2368(%rsp)
 	leaq	2416(%rsp,%rax), %rax
 	leaq	-40(%rsp), %rsp
 	call	.Lfors_skgen$1
 .Lfors_node$9:
 	leaq	40(%rsp), %rsp
-	movq	2352(%rsp), %r8
-	movl	133484(%rsp), %eax
-	movl	133488(%rsp), %esi
-	movq	2360(%rsp), %r10
-	movq	2368(%rsp), %rdx
-	movq	%r8, 2368(%rsp)
-	movl	%eax, 133488(%rsp)
-	movl	%esi, 133484(%rsp)
-	movq	%r10, 2360(%rsp)
-	movq	%rdx, 2352(%rsp)
-	leaq	2416(%rsp,%r10), %rcx
-	movq	%rdx, %rax
-	leaq	-88(%rsp), %rsp
+	movq	2352(%rsp), %rsi
+	movl	133484(%rsp), %ecx
+	movl	133488(%rsp), %r9d
+	movq	2360(%rsp), %rax
+	movq	2368(%rsp), %r8
+	lfence
+	movq	$0, %rdx
+	movq	%rsi, 2368(%rsp)
+	movl	%ecx, 133488(%rsp)
+	movl	%r9d, 133484(%rsp)
+	movq	%rax, 2360(%rsp)
+	movq	%r8, 2352(%rsp)
+	leaq	2416(%rsp,%rax), %rdi
+	leaq	-72(%rsp), %rsp
 	call	.LF$1
 .Lfors_node$8:
-	leaq	88(%rsp), %rsp
-	movq	2368(%rsp), %r8
-	movl	133488(%rsp), %r9d
-	movl	133484(%rsp), %esi
+	leaq	72(%rsp), %rsp
+	movq	2368(%rsp), %rsi
+	movl	133488(%rsp), %edi
+	movl	133484(%rsp), %r9d
 	movq	2360(%rsp), %rax
-	movq	2352(%rsp), %rdi
+	movq	2352(%rsp), %r8
+	lfence
+	movq	$0, %rcx
 	movl	133480(%rsp), %r11d
-	incl	%esi
+	lfence
+	movq	$0, %rcx
+	incl	%r9d
 .Lfors_node$7:
 	movq	2344(%rsp), %rbx
 	movl	133476(%rsp), %r10d
+	lfence
+	movq	$0, %rcx
 .Lfors_node$4:
-	cmpl	%r10d, %esi
+	cmpl	%r10d, %r9d
 	jb  	.Lfors_node$5
 	movl	133472(%rsp), %edx
+	lfence
+	movq	$0, %rcx
 	incl	%r11d
 .Lfors_node$2:
 	cmpl	%edx, %r11d
 	jbe 	.Lfors_node$3
 	movq	2336(%rsp), %rcx
+	lfence
+	movq	$0, %rdx
 	leaq	2416(%rsp,%rax), %rdx
-	movq	(%rdx), %rdi
-	movq	%rdi, (%rcx)
+	movq	(%rdx), %r8
+	movq	%r8, (%rcx)
 	movq	8(%rdx), %rdx
 	movq	%rdx, 8(%rcx)
 	ret
 .Lfors_skgen$1:
 	leaq	8(%rsp), %rcx
-	movq	(%r8), %rdx
+	movq	(%rsi), %rdx
 	movq	%rdx, (%rcx)
-	movq	8(%r8), %rdx
+	movq	8(%rsi), %rdx
 	movq	%rdx, 8(%rcx)
-	movq	16(%r8), %rdx
+	movq	16(%rsi), %rdx
 	movq	%rdx, 16(%rcx)
-	movq	24(%r8), %rdx
+	movq	24(%rsi), %rdx
 	movq	%rdx, 24(%rcx)
-	leaq	8(%rsp), %r9
-	movq	$0, 16(%r9)
-	movq	$0, 24(%r9)
-	movl	$6, 16(%r9)
-	movl	20(%r8), %edx
-	leaq	8(%rsp), %r8
-	movl	%edx, 20(%r8)
-	leaq	8(%rsp), %r8
-	movl	%esi, 28(%r8)
-	leaq	8(%rsp), %r8
-	movq	%rax, %rcx
+	leaq	8(%rsp), %r11
+	movq	$0, 16(%r11)
+	movq	$0, 24(%r11)
+	movl	$6, 16(%r11)
+	movl	20(%rsi), %edx
+	leaq	8(%rsp), %rsi
+	movl	%edx, 20(%rsi)
+	leaq	8(%rsp), %rsi
+	movl	%r9d, 28(%rsi)
+	leaq	8(%rsp), %rsi
+	movq	%rax, %rdi
 	movq	%rbx, %rdx
-	movq	%rdi, %rax
-	leaq	-88(%rsp), %rsp
+	leaq	-72(%rsp), %rsp
 	call	.LPRF$1
 .Lfors_skgen$2:
-	leaq	88(%rsp), %rsp
-	movq	%rcx, %rax
+	leaq	72(%rsp), %rsp
 	ret
 .Lht_verify$1:
 	movq	%r10, 8(%rsp)
-	movl	%edx, %esi
-	movl	(%r9), %edx
+	movl	%edx, %r9d
+	movl	(%rsi), %edx
 	movl	%edx, 108(%rsp)
-	movl	4(%r9), %edx
+	movl	4(%rsi), %edx
 	movl	%edx, 112(%rsp)
-	movl	8(%r9), %edx
+	movl	8(%rsi), %edx
 	movl	%edx, 116(%rsp)
-	leaq	72(%rsp), %r8
-	movq	$0, (%r8)
-	movq	$0, 8(%r8)
-	movq	$0, 16(%r8)
-	movq	$0, 24(%r8)
-	leaq	72(%rsp), %r8
+	leaq	72(%rsp), %rsi
+	movq	$0, (%rsi)
+	movq	$0, 8(%rsi)
+	movq	$0, 16(%rsi)
+	movq	$0, 24(%rsi)
+	leaq	72(%rsp), %rsi
 	movl	108(%rsp), %edx
-	movl	%edx, 4(%r8)
+	movl	%edx, 4(%rsi)
 	movl	112(%rsp), %edx
-	movl	%edx, 8(%r8)
+	movl	%edx, 8(%rsi)
 	movl	116(%rsp), %edx
-	movl	%edx, 12(%r8)
+	movl	%edx, 12(%rsi)
 	movq	%rcx, %rdx
 	movq	%rcx, 16(%rsp)
-	movq	%rdi, 24(%rsp)
+	movq	%r8, 24(%rsp)
 	leaq	40(%rsp), %rcx
-	leaq	72(%rsp), %r8
-	movq	%r8, %r9
-	movq	%rdi, %r8
+	leaq	72(%rsp), %rsi
 	leaq	-120(%rsp), %rsp
 	call	.Lxmss_pkfromsig$1
 .Lht_verify$5:
 	leaq	120(%rsp), %rsp
 	movq	16(%rsp), %rcx
-	movq	24(%rsp), %rdi
+	movq	24(%rsp), %r8
+	lfence
+	movq	$0, %rax
 	movq	$704, %rax
 	movl	$1, %r11d
 	jmp 	.Lht_verify$2
@@ -1474,54 +1536,58 @@ slh_dsa_sha2128s_keygen:
 	movl	%r11d, 104(%rsp)
 	movq	%rax, 24(%rsp)
 	leaq	108(%rsp), %rdx
-	movl	8(%rdx), %esi
-	andl	$511, %esi
+	movl	8(%rdx), %r9d
+	andl	$511, %r9d
 	shrl	$9, 8(%rdx)
-	movl	4(%rdx), %r8d
-	shll	$23, %r8d
-	orl 	%r8d, 8(%rdx)
+	movl	4(%rdx), %esi
+	shll	$23, %esi
+	orl 	%esi, 8(%rdx)
 	shrl	$9, 4(%rdx)
-	movl	(%rdx), %r8d
-	shll	$23, %r8d
-	orl 	%r8d, 4(%rdx)
+	movl	(%rdx), %esi
+	shll	$23, %esi
+	orl 	%esi, 4(%rdx)
 	shrl	$9, (%rdx)
-	leaq	72(%rsp), %r8
-	movl	%r11d, (%r8)
-	leaq	72(%rsp), %r8
+	leaq	72(%rsp), %rsi
+	movl	%r11d, (%rsi)
+	leaq	72(%rsp), %rsi
 	movl	108(%rsp), %edx
-	movl	%edx, 4(%r8)
+	movl	%edx, 4(%rsi)
 	movl	112(%rsp), %edx
-	movl	%edx, 8(%r8)
+	movl	%edx, 8(%rsi)
 	movl	116(%rsp), %edx
-	movl	%edx, 12(%r8)
-	leaq	56(%rsp), %r11
+	movl	%edx, 12(%rsi)
+	leaq	56(%rsp), %rdi
 	leaq	40(%rsp), %rdx
-	movq	(%rdx), %r8
-	movq	%r8, (%r11)
+	movq	(%rdx), %r10
+	movq	%r10, (%rdi)
 	movq	8(%rdx), %rdx
-	movq	%rdx, 8(%r11)
+	movq	%rdx, 8(%rdi)
 	leaq	(%rcx,%rax), %rdx
 	movq	%rcx, 16(%rsp)
-	movq	%rdi, 32(%rsp)
+	movq	%r8, 32(%rsp)
 	leaq	40(%rsp), %rcx
 	leaq	56(%rsp), %rax
-	leaq	72(%rsp), %r8
-	movq	%r8, %r9
-	movq	%rdi, %r8
+	leaq	72(%rsp), %rsi
 	leaq	-120(%rsp), %rsp
 	call	.Lxmss_pkfromsig$1
 .Lht_verify$4:
 	leaq	120(%rsp), %rsp
 	movq	16(%rsp), %rcx
-	movq	32(%rsp), %rdi
+	movq	32(%rsp), %r8
+	lfence
+	movq	$0, %rax
 	movl	104(%rsp), %r11d
 	movq	24(%rsp), %rax
+	lfence
+	movq	$0, %rdx
 	addq	$704, %rax
 	incl	%r11d
 .Lht_verify$2:
 	cmpl	$7, %r11d
 	jb  	.Lht_verify$3
 	movq	8(%rsp), %rax
+	lfence
+	movq	$0, %rcx
 	leaq	40(%rsp), %rsi
 	movb	$0, %cl
 	movb	(%rax), %r9b
@@ -1575,34 +1641,36 @@ slh_dsa_sha2128s_keygen:
 	movzbq	%cl, %rax
 	ret
 .Lht_sign$1:
-	movl	(%r9), %r8d
-	movl	%r8d, 112(%rsp)
-	movl	4(%r9), %r8d
-	movl	%r8d, 116(%rsp)
-	movl	8(%r9), %r8d
-	movl	%r8d, 120(%rsp)
-	leaq	72(%rsp), %r8
-	movq	$0, (%r8)
-	movq	$0, 8(%r8)
-	movq	$0, 16(%r8)
-	movq	$0, 24(%r8)
-	leaq	72(%rsp), %r8
+	movl	%esi, %r9d
+	movl	(%rdi), %r10d
+	movl	%r10d, 112(%rsp)
+	movl	4(%rdi), %r10d
+	movl	%r10d, 116(%rsp)
+	movl	8(%rdi), %r10d
+	movl	%r10d, 120(%rsp)
+	leaq	72(%rsp), %rsi
+	movq	$0, (%rsi)
+	movq	$0, 8(%rsi)
+	movq	$0, 16(%rsi)
+	movq	$0, 24(%rsi)
+	leaq	72(%rsp), %rsi
 	movl	112(%rsp), %r10d
-	movl	%r10d, 4(%r8)
+	movl	%r10d, 4(%rsi)
 	movl	116(%rsp), %r10d
-	movl	%r10d, 8(%r8)
+	movl	%r10d, 8(%rsi)
 	movl	120(%rsp), %r10d
-	movl	%r10d, 12(%r8)
-	movq	%rcx, %r8
+	movl	%r10d, 12(%rsi)
+	movq	%rcx, %rsi
 	movq	%rcx, 8(%rsp)
 	movq	%rdx, 16(%rsp)
 	movq	%rax, 24(%rsp)
-	movl	%esi, 104(%rsp)
-	movq	%rdi, 32(%rsp)
-	leaq	72(%rsp), %r9
-	movq	%r8, %rcx
-	movl	%esi, %r10d
-	movq	%r9, %r8
+	movl	%r9d, 104(%rsp)
+	movq	%r8, 32(%rsp)
+	leaq	72(%rsp), %r11
+	movq	%rsi, %rcx
+	movq	%rax, %rdi
+	movq	%r11, %rsi
+	movq	%r8, %rax
 	leaq	-56(%rsp), %rsp
 	call	.Lxmss_sign$1
 .Lht_sign$8:
@@ -1612,64 +1680,67 @@ slh_dsa_sha2128s_keygen:
 	movq	8(%rsp), %rcx
 	movq	16(%rsp), %rsi
 	movq	24(%rsp), %rax
-	movl	104(%rsp), %edi
+	movl	104(%rsp), %r9d
 	movq	32(%rsp), %r8
+	lfence
+	movq	$0, %rdi
 	movq	%rsi, 32(%rsp)
 	movq	%rcx, 24(%rsp)
 	movq	%r8, 16(%rsp)
 	leaq	40(%rsp), %rcx
-	leaq	72(%rsp), %r9
-	movl	%edi, %esi
+	leaq	72(%rsp), %rsi
 	leaq	-120(%rsp), %rsp
 	call	.Lxmss_pkfromsig$1
 .Lht_sign$7:
 	leaq	120(%rsp), %rsp
 	movq	32(%rsp), %rdx
 	movq	24(%rsp), %rcx
-	movq	16(%rsp), %rdi
+	movq	16(%rsp), %r8
+	lfence
+	movq	$0, %r9
 	movq	$704, %rax
 	movl	$1, %r11d
 	jmp 	.Lht_sign$2
 .Lht_sign$3:
 	movq	%rdx, 16(%rsp)
-	leaq	112(%rsp), %r8
-	movl	8(%r8), %esi
-	andl	$511, %esi
-	shrl	$9, 8(%r8)
-	movl	4(%r8), %r9d
-	shll	$23, %r9d
-	orl 	%r9d, 8(%r8)
-	shrl	$9, 4(%r8)
-	movl	(%r8), %r9d
-	shll	$23, %r9d
-	orl 	%r9d, 4(%r8)
-	shrl	$9, (%r8)
-	leaq	72(%rsp), %r8
-	movl	%r11d, (%r8)
-	leaq	72(%rsp), %r8
+	leaq	112(%rsp), %rsi
+	movl	8(%rsi), %r9d
+	andl	$511, %r9d
+	shrl	$9, 8(%rsi)
+	movl	4(%rsi), %edi
+	shll	$23, %edi
+	orl 	%edi, 8(%rsi)
+	shrl	$9, 4(%rsi)
+	movl	(%rsi), %edi
+	shll	$23, %edi
+	orl 	%edi, 4(%rsi)
+	shrl	$9, (%rsi)
+	leaq	72(%rsp), %rsi
+	movl	%r11d, (%rsi)
+	leaq	72(%rsp), %rsi
 	movl	112(%rsp), %r10d
-	movl	%r10d, 4(%r8)
+	movl	%r10d, 4(%rsi)
 	movl	116(%rsp), %r10d
-	movl	%r10d, 8(%r8)
+	movl	%r10d, 8(%rsi)
 	movl	120(%rsp), %r10d
-	movl	%r10d, 12(%r8)
-	leaq	56(%rsp), %r8
-	leaq	40(%rsp), %r9
-	movq	(%r9), %r10
-	movq	%r10, (%r8)
-	movq	8(%r9), %r10
-	movq	%r10, 8(%r8)
-	leaq	(%rcx,%rax), %r8
+	movl	%r10d, 12(%rsi)
+	leaq	56(%rsp), %rdi
+	leaq	40(%rsp), %rsi
+	movq	(%rsi), %r10
+	movq	%r10, (%rdi)
+	movq	8(%rsi), %r10
+	movq	%r10, 8(%rdi)
+	leaq	(%rcx,%rax), %rsi
 	movq	%rcx, 24(%rsp)
 	movl	%r11d, 104(%rsp)
 	movq	%rax, 32(%rsp)
-	movl	%esi, 108(%rsp)
-	movq	%rdi, 8(%rsp)
-	leaq	56(%rsp), %rax
-	leaq	72(%rsp), %r9
-	movq	%r8, %rcx
-	movl	%esi, %r10d
-	movq	%r9, %r8
+	movl	%r9d, 108(%rsp)
+	movq	%r8, 8(%rsp)
+	leaq	56(%rsp), %rdi
+	leaq	72(%rsp), %r11
+	movq	%rsi, %rcx
+	movq	%r11, %rsi
+	movq	%r8, %rax
 	leaq	-56(%rsp), %rsp
 	call	.Lxmss_sign$1
 .Lht_sign$6:
@@ -1679,18 +1750,19 @@ slh_dsa_sha2128s_keygen:
 	movq	24(%rsp), %rcx
 	movl	104(%rsp), %r11d
 	movq	32(%rsp), %rax
-	movl	108(%rsp), %esi
-	movq	8(%rsp), %rdi
+	movl	108(%rsp), %r9d
+	movq	8(%rsp), %r8
+	lfence
+	movq	$0, %rsi
 	cmpl	$6, %r11d
 	jnb 	.Lht_sign$4
 	movq	%rcx, 8(%rsp)
 	movl	%r11d, 108(%rsp)
 	movq	%rax, 32(%rsp)
-	movq	%rdi, 24(%rsp)
+	movq	%r8, 24(%rsp)
 	leaq	40(%rsp), %rcx
 	leaq	56(%rsp), %rax
-	leaq	72(%rsp), %r9
-	movq	%rdi, %r8
+	leaq	72(%rsp), %rsi
 	leaq	-120(%rsp), %rsp
 	call	.Lxmss_pkfromsig$1
 .Lht_sign$5:
@@ -1698,9 +1770,13 @@ slh_dsa_sha2128s_keygen:
 	movq	8(%rsp), %rcx
 	movl	108(%rsp), %r11d
 	movq	32(%rsp), %rax
-	movq	24(%rsp), %rdi
+	movq	24(%rsp), %r8
+	lfence
+	movq	$0, %rdx
 .Lht_sign$4:
 	movq	16(%rsp), %rdx
+	lfence
+	movq	$0, %rsi
 	addq	$704, %rax
 	incl	%r11d
 .Lht_sign$2:
@@ -1709,168 +1785,184 @@ slh_dsa_sha2128s_keygen:
 	ret
 .Lxmss_pkfromsig$1:
 	movq	%rcx, 8(%rsp)
-	movq	$0, 16(%r9)
-	movq	$0, 24(%r9)
-	movl	$0, 16(%r9)
-	movl	%esi, 20(%r9)
-	movq	%rdx, %r11
-	movl	%esi, 112(%rsp)
+	movq	$0, 16(%rsi)
+	movq	$0, 24(%rsi)
+	movl	$0, 16(%rsi)
+	movl	%r9d, 20(%rsi)
+	movq	%rdx, %rcx
+	movl	%r9d, 112(%rsp)
 	movq	%rdx, 16(%rsp)
 	movq	%r8, 24(%rsp)
-	leaq	48(%rsp), %rcx
-	movq	%r11, %rdx
-	movq	%r9, %r11
+	leaq	48(%rsp), %rdx
+	movq	%rdx, %rdi
+	movq	%rcx, %rdx
+	movq	%rsi, %r11
 	movq	%r8, %r10
 	leaq	-776(%rsp), %rsp
 	call	.Lwots_pkfromsig$1
 .Lxmss_pkfromsig$7:
 	leaq	776(%rsp), %rsp
-	movl	112(%rsp), %esi
+	movl	112(%rsp), %r9d
 	movq	16(%rsp), %rdx
-	movq	24(%rsp), %rdi
-	movq	$0, 16(%r8)
-	movq	$0, 24(%r8)
-	movl	$2, 16(%r8)
-	movl	%esi, 28(%r8)
+	movq	24(%rsp), %r8
+	lfence
+	movq	$0, %rax
+	movq	$0, 16(%rsi)
+	movq	$0, 24(%rsi)
+	movl	$2, 16(%rsi)
+	movl	%r9d, 28(%rsi)
 	movq	$560, %rax
-	movl	%esi, %r9d
-	movl	$0, %esi
+	movl	$0, %edi
 	jmp 	.Lxmss_pkfromsig$2
 .Lxmss_pkfromsig$3:
-	movl	%esi, %ecx
+	movl	%edi, %ecx
 	incl	%ecx
-	movl	%ecx, 24(%r8)
+	movl	%ecx, 24(%rsi)
 	movl	%r9d, %ecx
 	andl	$1, %ecx
-	movl	%esi, 112(%rsp)
+	movl	%edi, 112(%rsp)
 	movl	%r9d, 116(%rsp)
 	cmpl	$0, %ecx
 	je  	.Lxmss_pkfromsig$5
-	movl	28(%r8), %esi
-	decl	%esi
-	shrl	$1, %esi
-	movl	%esi, 28(%r8)
-	leaq	96(%rsp), %rcx
-	leaq	(%rdx,%rax), %rsi
-	movq	(%rsi), %r10
-	movq	%r10, (%rcx)
-	movq	8(%rsi), %r10
-	movq	%r10, 8(%rcx)
-	leaq	80(%rsp), %rcx
-	leaq	48(%rsp), %rsi
-	movq	(%rsi), %r10
-	movq	%r10, (%rcx)
-	movq	8(%rsi), %r10
-	movq	%r10, 8(%rcx)
+	movl	28(%rsi), %r9d
+	decl	%r9d
+	shrl	$1, %r9d
+	movl	%r9d, 28(%rsi)
+	leaq	96(%rsp), %rdi
+	leaq	(%rdx,%rax), %rcx
+	movq	(%rcx), %r10
+	movq	%r10, (%rdi)
+	movq	8(%rcx), %r10
+	movq	%r10, 8(%rdi)
+	leaq	80(%rsp), %rdi
+	leaq	48(%rsp), %rcx
+	movq	(%rcx), %r10
+	movq	%r10, (%rdi)
+	movq	8(%rcx), %r10
+	movq	%r10, 8(%rdi)
 	jmp 	.Lxmss_pkfromsig$6
 .Lxmss_pkfromsig$5:
-	movl	28(%r8), %esi
-	shrl	$1, %esi
-	movl	%esi, 28(%r8)
-	leaq	96(%rsp), %rcx
-	leaq	48(%rsp), %rsi
-	movq	(%rsi), %r10
-	movq	%r10, (%rcx)
-	movq	8(%rsi), %r10
-	movq	%r10, 8(%rcx)
-	leaq	80(%rsp), %rcx
-	leaq	(%rdx,%rax), %rsi
-	movq	(%rsi), %r10
-	movq	%r10, (%rcx)
-	movq	8(%rsi), %r10
-	movq	%r10, 8(%rcx)
+	movl	28(%rsi), %r9d
+	shrl	$1, %r9d
+	movl	%r9d, 28(%rsi)
+	leaq	96(%rsp), %rdi
+	leaq	48(%rsp), %rcx
+	movq	(%rcx), %r10
+	movq	%r10, (%rdi)
+	movq	8(%rcx), %r10
+	movq	%r10, 8(%rdi)
+	leaq	80(%rsp), %rdi
+	leaq	(%rdx,%rax), %rcx
+	movq	(%rcx), %r10
+	movq	%r10, (%rdi)
+	movq	8(%rcx), %r10
+	movq	%r10, 8(%rdi)
 .Lxmss_pkfromsig$6:
-	movq	%r8, 24(%rsp)
+	movq	%rsi, 24(%rsp)
 	movq	%rdx, 16(%rsp)
 	movq	%rax, 32(%rsp)
-	movq	%rdi, 40(%rsp)
-	leaq	64(%rsp), %rcx
-	leaq	96(%rsp), %rsi
+	movq	%r8, 40(%rsp)
+	leaq	64(%rsp), %rdi
+	leaq	96(%rsp), %rcx
 	leaq	80(%rsp), %rdx
-	leaq	-104(%rsp), %rsp
+	leaq	-88(%rsp), %rsp
 	call	.LH$1
 .Lxmss_pkfromsig$4:
-	leaq	104(%rsp), %rsp
-	movq	24(%rsp), %r8
+	leaq	88(%rsp), %rsp
+	movq	24(%rsp), %rsi
 	movq	16(%rsp), %rdx
 	movq	32(%rsp), %rax
-	movq	40(%rsp), %rdi
-	leaq	48(%rsp), %rcx
-	leaq	64(%rsp), %rsi
-	movq	(%rsi), %r10
-	movq	%r10, (%rcx)
-	movq	8(%rsi), %r10
-	movq	%r10, 8(%rcx)
-	movl	112(%rsp), %esi
+	movq	40(%rsp), %r8
+	lfence
+	movq	$0, %rcx
+	leaq	48(%rsp), %rdi
+	leaq	64(%rsp), %rcx
+	movq	(%rcx), %r10
+	movq	%r10, (%rdi)
+	movq	8(%rcx), %r10
+	movq	%r10, 8(%rdi)
+	movl	112(%rsp), %edi
 	movl	116(%rsp), %r9d
+	lfence
+	movq	$0, %rcx
 	shrl	$1, %r9d
 	addq	$16, %rax
-	incl	%esi
+	incl	%edi
 .Lxmss_pkfromsig$2:
-	cmpl	$9, %esi
+	cmpl	$9, %edi
 	jb  	.Lxmss_pkfromsig$3
 	movq	8(%rsp), %rcx
+	lfence
+	movq	$0, %rdx
 	leaq	48(%rsp), %rdx
-	movq	(%rdx), %rdi
-	movq	%rdi, (%rcx)
+	movq	(%rdx), %r8
+	movq	%r8, (%rcx)
 	movq	8(%rdx), %rdx
 	movq	%rdx, 8(%rcx)
 	ret
 .Lxmss_sign$1:
-	movq	%rax, 8(%rsp)
-	movq	$560, %rax
-	movl	%r10d, %esi
-	xorl	$1, %esi
+	movq	%rdi, 8(%rsp)
+	movq	$560, %r8
+	movl	%r9d, %edi
+	xorl	$1, %edi
 	movl	$0, %r11d
 	jmp 	.Lxmss_sign$3
 .Lxmss_sign$4:
 	movq	%rdx, 16(%rsp)
-	movl	%r10d, 48(%rsp)
+	movl	%r9d, 48(%rsp)
 	movl	%r11d, 52(%rsp)
-	movl	%esi, 56(%rsp)
-	movq	%rax, 24(%rsp)
-	leaq	(%rcx,%rax), %rax
+	movl	%edi, 56(%rsp)
+	movq	%r8, 24(%rsp)
+	leaq	(%rcx,%r8), %r8
 	movq	%rcx, 32(%rsp)
-	movq	%rdi, 40(%rsp)
-	movq	%rax, %rcx
+	movq	%rax, 40(%rsp)
+	movq	%r8, %rcx
 	movq	%rdx, %rbx
-	movl	%esi, %r9d
 	movl	%r11d, %edx
+	movq	%rax, %r8
 	leaq	-18808(%rsp), %rsp
 	call	.Lxmss_node$1
 .Lxmss_sign$5:
 	leaq	18808(%rsp), %rsp
 	movq	32(%rsp), %rcx
-	movq	40(%rsp), %rdi
+	movq	40(%rsp), %rax
+	lfence
+	movq	$0, %rdx
 	movq	16(%rsp), %rdx
-	movl	48(%rsp), %r10d
+	movl	48(%rsp), %r9d
 	movl	52(%rsp), %r11d
-	movl	56(%rsp), %esi
-	movq	24(%rsp), %rax
-	shrl	$1, %esi
-	xorl	$1, %esi
-	addq	$16, %rax
+	movl	56(%rsp), %edi
+	movq	24(%rsp), %r8
+	lfence
+	movq	$0, %r10
+	shrl	$1, %edi
+	xorl	$1, %edi
+	addq	$16, %r8
 	incl	%r11d
 .Lxmss_sign$3:
 	cmpl	$9, %r11d
 	jb  	.Lxmss_sign$4
-	movq	8(%rsp), %rax
-	movq	$0, 16(%r8)
-	movq	$0, 24(%r8)
-	movl	$0, 16(%r8)
-	movl	%r10d, 20(%r8)
-	movq	%rcx, %r11
+	movq	8(%rsp), %rdi
+	lfence
+	movq	$0, %r8
+	movq	$0, 16(%rsi)
+	movq	$0, 24(%rsi)
+	movl	$0, 16(%rsi)
+	movl	%r9d, 20(%rsi)
+	movq	%rcx, %rbx
 	movq	%rcx, 8(%rsp)
-	movq	%rdx, %r10
-	movq	%rdi, %rbx
+	movq	%rdx, %r11
 	leaq	-232(%rsp), %rsp
 	call	.Lwots_sign$1
 .Lxmss_sign$2:
 	leaq	232(%rsp), %rsp
 	movq	8(%rsp), %rcx
+	lfence
+	movq	$0, %rax
 	ret
 .Lxmss_node$1:
 	movq	%rcx, 2336(%rsp)
+	movq	$0, %rax
 	movl	$0, %r11d
 	jmp 	.Lxmss_node$2
 .Lxmss_node$3:
@@ -1879,85 +1971,89 @@ slh_dsa_sha2128s_keygen:
 	subl	%r11d, %ecx
 	movq	$1, %r10
 	shlq	%cl, %r10
-	movl	%r10d, %esi
-	imull	%r9d, %esi
-	addl	%esi, %r10d
+	movl	%r10d, %r9d
+	imull	%edi, %r9d
+	addl	%r9d, %r10d
 	jmp 	.Lxmss_node$4
 .Lxmss_node$5:
 	movq	%rbx, 2344(%rsp)
-	movl	%r9d, 18788(%rsp)
+	movl	%edi, 18788(%rsp)
 	movl	%edx, 18784(%rsp)
 	movl	%r11d, 18792(%rsp)
-	movl	%esi, 18796(%rsp)
+	movl	%r9d, 18796(%rsp)
 	movl	%r10d, 18800(%rsp)
-	movq	%rdi, 2352(%rsp)
+	movq	%r8, 2352(%rsp)
 	cmpl	$0, %r11d
 	je  	.Lxmss_node$6
-	movl	%esi, %eax
-	imull	$2, %eax, %eax
-	movl	%r11d, %edx
-	decl	%edx
+	movl	%r9d, %eax
+	imull	$2, %eax, %edx
+	movl	%r11d, %eax
+	decl	%eax
 	movl	$10, %ecx
-	movq	$1, %r9
-	shlq	%cl, %r9
-	subl	%edx, %ecx
-	movq	$1, %rdx
-	shlq	%cl, %rdx
-	subq	%rdx, %r9
-	movl	%eax, %eax
-	addq	%rax, %r9
-	imulq	$16, %r9, %rdx
-	movq	$0, 16(%r8)
-	movq	$0, 24(%r8)
-	movl	$2, 16(%r8)
-	movl	%r11d, 24(%r8)
-	movl	%esi, 28(%r8)
+	movq	$1, %rdi
+	shlq	%cl, %rdi
+	subl	%eax, %ecx
+	movq	$1, %rax
+	shlq	%cl, %rax
+	subq	%rax, %rdi
+	movl	%edx, %eax
+	addq	%rax, %rdi
+	imulq	$16, %rdi, %rdx
+	movq	$0, 16(%rsi)
+	movq	$0, 24(%rsi)
+	movl	$2, 16(%rsi)
+	movl	%r11d, 24(%rsi)
+	movl	%r9d, 28(%rsi)
 	movl	$10, %ecx
-	movq	$1, %r9
-	shlq	%cl, %r9
+	movq	$1, %rax
+	shlq	%cl, %rax
 	subl	%r11d, %ecx
-	movq	$1, %r11
-	shlq	%cl, %r11
-	subq	%r11, %r9
-	movl	%esi, %eax
-	addq	%rax, %r9
-	imulq	$16, %r9, %rax
-	subl	%esi, %r10d
+	movq	$1, %rdi
+	shlq	%cl, %rdi
+	subq	%rdi, %rax
+	movl	%r9d, %ecx
+	addq	%rcx, %rax
+	imulq	$16, %rax, %rax
+	subl	%r9d, %r10d
 	cmpl	$8, %r10d
 	jnb 	.Lxmss_node$9
 	movq	%rdx, %rcx
 	addq	$16, %rcx
-	leaq	2400(%rsp), %r11
+	leaq	2400(%rsp), %rdi
 	leaq	2416(%rsp,%rdx), %rdx
 	movq	(%rdx), %r10
-	movq	%r10, (%r11)
+	movq	%r10, (%rdi)
 	movq	8(%rdx), %rdx
-	movq	%rdx, 8(%r11)
-	leaq	2384(%rsp), %r11
+	movq	%rdx, 8(%rdi)
+	leaq	2384(%rsp), %rdi
 	leaq	2416(%rsp,%rcx), %rcx
 	movq	(%rcx), %rdx
-	movq	%rdx, (%r11)
+	movq	%rdx, (%rdi)
 	movq	8(%rcx), %rdx
-	movq	%rdx, 8(%r11)
-	movq	%r8, 2360(%rsp)
-	leaq	2416(%rsp,%rax), %rcx
-	leaq	2400(%rsp), %rsi
+	movq	%rdx, 8(%rdi)
+	movq	%rsi, 2360(%rsp)
+	leaq	2416(%rsp,%rax), %rdi
+	leaq	2400(%rsp), %rcx
 	leaq	2384(%rsp), %rdx
-	leaq	-104(%rsp), %rsp
+	leaq	-88(%rsp), %rsp
 	call	.LH$1
 .Lxmss_node$14:
-	leaq	104(%rsp), %rsp
-	movq	2360(%rsp), %r8
-	movl	18796(%rsp), %esi
-	incl	%esi
+	leaq	88(%rsp), %rsp
+	movq	2360(%rsp), %rsi
+	lfence
+	movq	$0, %rcx
+	movl	18796(%rsp), %r9d
+	lfence
+	movq	$0, %rcx
+	incl	%r9d
 	jmp 	.Lxmss_node$7
 .Lxmss_node$9:
-	movq	%r8, 2360(%rsp)
-	movl	%esi, 18804(%rsp)
+	movq	%rsi, 2360(%rsp)
+	movl	%r9d, 18804(%rsp)
 	movq	%rdx, 2368(%rsp)
 	movq	%rax, 2376(%rsp)
 	movq	$0, %rdx
-	movq	$0, %r9
+	movq	$0, %rdi
 	leaq	32(%rsp), %rax
 	leaq	288(%rsp), %rcx
 	leaq	-536(%rsp), %rsp
@@ -1965,8 +2061,10 @@ slh_dsa_sha2128s_keygen:
 .Lxmss_node$13:
 	leaq	536(%rsp), %rsp
 	movq	%rdx, %r13
-	movq	%r9, %rcx
+	movq	%rdi, %rcx
 	movq	2368(%rsp), %rdx
+	lfence
+	movq	$0, %rax
 	leaq	2416(%rsp,%rdx), %rax
 	leaq	32(%rsp), %r12
 	leaq	288(%rsp), %rbp
@@ -1976,6 +2074,8 @@ slh_dsa_sha2128s_keygen:
 .Lxmss_node$12:
 	leaq	24(%rsp), %rsp
 	movq	2376(%rsp), %rax
+	lfence
+	movq	$0, %rdx
 	leaq	2416(%rsp,%rax), %rdx
 	leaq	32(%rsp), %r12
 	leaq	288(%rsp), %rbp
@@ -1984,53 +2084,67 @@ slh_dsa_sha2128s_keygen:
 	call	.LH_digests$1
 .Lxmss_node$11:
 	leaq	280(%rsp), %rsp
-	movq	2360(%rsp), %r8
-	movl	18804(%rsp), %esi
-	addl	$8, %esi
+	movq	2360(%rsp), %rsi
+	lfence
+	movq	$0, %rcx
+	movl	18804(%rsp), %r9d
+	lfence
+	movq	$0, %rcx
+	addl	$8, %r9d
 .Lxmss_node$10:
 	jmp 	.Lxmss_node$7
 .Lxmss_node$6:
-	movq	$0, 16(%r8)
-	movq	$0, 24(%r8)
-	movl	$0, 16(%r8)
-	movl	%esi, 20(%r8)
-	movl	%esi, %eax
+	movq	$0, 16(%rsi)
+	movq	$0, 24(%rsi)
+	movl	$0, 16(%rsi)
+	movl	%r9d, 20(%rsi)
+	movl	%r9d, %eax
 	imulq	$16, %rax, %rax
 	leaq	2416(%rsp,%rax), %rcx
 	movq	%rax, 2360(%rsp)
 	movq	%rbx, %rdx
-	movq	%rdi, %r10
+	movq	%r8, %rax
 	leaq	-648(%rsp), %rsp
 	call	.Lwots_pkgen$1
 .Lxmss_node$8:
 	leaq	648(%rsp), %rsp
 	movq	2360(%rsp), %rax
-	movl	18796(%rsp), %esi
-	incl	%esi
+	lfence
+	movq	$0, %rcx
+	movl	18796(%rsp), %r9d
+	lfence
+	movq	$0, %rcx
+	incl	%r9d
 .Lxmss_node$7:
 	movq	2344(%rsp), %rbx
-	movl	18788(%rsp), %r9d
+	movl	18788(%rsp), %edi
 	movl	18784(%rsp), %edx
 	movl	18792(%rsp), %r11d
 	movl	18800(%rsp), %r10d
-	movq	2352(%rsp), %rdi
+	movq	2352(%rsp), %r8
+	lfence
+	movq	$0, %rcx
 .Lxmss_node$4:
-	cmpl	%r10d, %esi
+	cmpl	%r10d, %r9d
 	jb  	.Lxmss_node$5
 	movl	18784(%rsp), %edx
+	lfence
+	movq	$0, %rcx
 	incl	%r11d
 .Lxmss_node$2:
 	cmpl	%edx, %r11d
 	jbe 	.Lxmss_node$3
 	movq	2336(%rsp), %rcx
+	lfence
+	movq	$0, %rdx
 	leaq	2416(%rsp,%rax), %rdx
-	movq	(%rdx), %rdi
-	movq	%rdi, (%rcx)
+	movq	(%rdx), %r8
+	movq	%r8, (%rcx)
 	movq	8(%rdx), %rdx
 	movq	%rdx, 8(%rcx)
 	ret
 .Lwots_pkfromsig$1:
-	movq	%rcx, 8(%rsp)
+	movq	%rdi, 8(%rsp)
 	leaq	628(%rsp), %rsi
 	movq	%rsi, %rdi
 	movq	$0, %r8
@@ -2562,1199 +2676,1203 @@ slh_dsa_sha2128s_keygen:
 	leaq	768(%rsp), %rax
 	movq	$0, %rsi
 	movl	$0, %ecx
-	movl	$0, %r8d
+	movl	$0, %r9d
 	jmp 	.Lwots_pkfromsig$10
 .Lwots_pkfromsig$11:
-	shll	$8, %r8d
-	movzbl	(%rax,%rsi), %r9d
-	orl 	%r9d, %r8d
+	shll	$8, %r9d
+	movzbl	(%rax,%rsi), %r8d
+	orl 	%r8d, %r9d
 	incq	%rsi
 	addl	$8, %ecx
 .Lwots_pkfromsig$10:
 	cmpl	$4, %ecx
 	jb  	.Lwots_pkfromsig$11
-	movl	%r8d, %r9d
+	movl	%r9d, %r8d
 	addl	$-4, %ecx
-	shrq	%cl, %r9
-	andq	$15, %r9
-	movl	%r9d, (%rdi)
+	shrq	%cl, %r8
+	andq	$15, %r8
+	movl	%r8d, (%rdi)
 	jmp 	.Lwots_pkfromsig$8
 .Lwots_pkfromsig$9:
-	shll	$8, %r8d
-	movzbl	(%rax,%rsi), %r9d
-	orl 	%r9d, %r8d
+	shll	$8, %r9d
+	movzbl	(%rax,%rsi), %r8d
+	orl 	%r8d, %r9d
 	incq	%rsi
 	addl	$8, %ecx
 .Lwots_pkfromsig$8:
 	cmpl	$4, %ecx
 	jb  	.Lwots_pkfromsig$9
-	movl	%r8d, %r9d
+	movl	%r9d, %r8d
 	addl	$-4, %ecx
-	shrq	%cl, %r9
-	andq	$15, %r9
-	movl	%r9d, 4(%rdi)
+	shrq	%cl, %r8
+	andq	$15, %r8
+	movl	%r8d, 4(%rdi)
 	jmp 	.Lwots_pkfromsig$6
 .Lwots_pkfromsig$7:
-	shll	$8, %r8d
-	movzbl	(%rax,%rsi), %r9d
-	orl 	%r9d, %r8d
+	shll	$8, %r9d
+	movzbl	(%rax,%rsi), %r8d
+	orl 	%r8d, %r9d
 	incq	%rsi
 	addl	$8, %ecx
 .Lwots_pkfromsig$6:
 	cmpl	$4, %ecx
 	jb  	.Lwots_pkfromsig$7
-	movl	%r8d, %eax
+	movl	%r9d, %eax
 	addl	$-4, %ecx
 	shrq	%cl, %rax
 	andq	$15, %rax
 	movl	%eax, 8(%rdi)
-	movb	(%rdx), %dil
-	movb	%dil, 64(%rsp)
-	movb	1(%rdx), %dil
-	movb	%dil, 65(%rsp)
-	movb	2(%rdx), %dil
-	movb	%dil, 66(%rsp)
-	movb	3(%rdx), %dil
-	movb	%dil, 67(%rsp)
-	movb	4(%rdx), %dil
-	movb	%dil, 68(%rsp)
-	movb	5(%rdx), %dil
-	movb	%dil, 69(%rsp)
-	movb	6(%rdx), %dil
-	movb	%dil, 70(%rsp)
-	movb	7(%rdx), %dil
-	movb	%dil, 71(%rsp)
-	movb	8(%rdx), %dil
-	movb	%dil, 72(%rsp)
-	movb	9(%rdx), %dil
-	movb	%dil, 73(%rsp)
-	movb	10(%rdx), %dil
-	movb	%dil, 74(%rsp)
-	movb	11(%rdx), %dil
-	movb	%dil, 75(%rsp)
-	movb	12(%rdx), %dil
-	movb	%dil, 76(%rsp)
-	movb	13(%rdx), %dil
-	movb	%dil, 77(%rsp)
-	movb	14(%rdx), %dil
-	movb	%dil, 78(%rsp)
-	movb	15(%rdx), %dil
-	movb	%dil, 79(%rsp)
-	movb	16(%rdx), %dil
-	movb	%dil, 80(%rsp)
-	movb	17(%rdx), %dil
-	movb	%dil, 81(%rsp)
-	movb	18(%rdx), %dil
-	movb	%dil, 82(%rsp)
-	movb	19(%rdx), %dil
-	movb	%dil, 83(%rsp)
-	movb	20(%rdx), %dil
-	movb	%dil, 84(%rsp)
-	movb	21(%rdx), %dil
-	movb	%dil, 85(%rsp)
-	movb	22(%rdx), %dil
-	movb	%dil, 86(%rsp)
-	movb	23(%rdx), %dil
-	movb	%dil, 87(%rsp)
-	movb	24(%rdx), %dil
-	movb	%dil, 88(%rsp)
-	movb	25(%rdx), %dil
-	movb	%dil, 89(%rsp)
-	movb	26(%rdx), %dil
-	movb	%dil, 90(%rsp)
-	movb	27(%rdx), %dil
-	movb	%dil, 91(%rsp)
-	movb	28(%rdx), %dil
-	movb	%dil, 92(%rsp)
-	movb	29(%rdx), %dil
-	movb	%dil, 93(%rsp)
-	movb	30(%rdx), %dil
-	movb	%dil, 94(%rsp)
-	movb	31(%rdx), %dil
-	movb	%dil, 95(%rsp)
-	movb	32(%rdx), %dil
-	movb	%dil, 96(%rsp)
-	movb	33(%rdx), %dil
-	movb	%dil, 97(%rsp)
-	movb	34(%rdx), %dil
-	movb	%dil, 98(%rsp)
-	movb	35(%rdx), %dil
-	movb	%dil, 99(%rsp)
-	movb	36(%rdx), %dil
-	movb	%dil, 100(%rsp)
-	movb	37(%rdx), %dil
-	movb	%dil, 101(%rsp)
-	movb	38(%rdx), %dil
-	movb	%dil, 102(%rsp)
-	movb	39(%rdx), %dil
-	movb	%dil, 103(%rsp)
-	movb	40(%rdx), %dil
-	movb	%dil, 104(%rsp)
-	movb	41(%rdx), %dil
-	movb	%dil, 105(%rsp)
-	movb	42(%rdx), %dil
-	movb	%dil, 106(%rsp)
-	movb	43(%rdx), %dil
-	movb	%dil, 107(%rsp)
-	movb	44(%rdx), %dil
-	movb	%dil, 108(%rsp)
-	movb	45(%rdx), %dil
-	movb	%dil, 109(%rsp)
-	movb	46(%rdx), %dil
-	movb	%dil, 110(%rsp)
-	movb	47(%rdx), %dil
-	movb	%dil, 111(%rsp)
-	movb	48(%rdx), %dil
-	movb	%dil, 112(%rsp)
-	movb	49(%rdx), %dil
-	movb	%dil, 113(%rsp)
-	movb	50(%rdx), %dil
-	movb	%dil, 114(%rsp)
-	movb	51(%rdx), %dil
-	movb	%dil, 115(%rsp)
-	movb	52(%rdx), %dil
-	movb	%dil, 116(%rsp)
-	movb	53(%rdx), %dil
-	movb	%dil, 117(%rsp)
-	movb	54(%rdx), %dil
-	movb	%dil, 118(%rsp)
-	movb	55(%rdx), %dil
-	movb	%dil, 119(%rsp)
-	movb	56(%rdx), %dil
-	movb	%dil, 120(%rsp)
-	movb	57(%rdx), %dil
-	movb	%dil, 121(%rsp)
-	movb	58(%rdx), %dil
-	movb	%dil, 122(%rsp)
-	movb	59(%rdx), %dil
-	movb	%dil, 123(%rsp)
-	movb	60(%rdx), %dil
-	movb	%dil, 124(%rsp)
-	movb	61(%rdx), %dil
-	movb	%dil, 125(%rsp)
-	movb	62(%rdx), %dil
-	movb	%dil, 126(%rsp)
-	movb	63(%rdx), %dil
-	movb	%dil, 127(%rsp)
-	movb	64(%rdx), %dil
-	movb	%dil, 128(%rsp)
-	movb	65(%rdx), %dil
-	movb	%dil, 129(%rsp)
-	movb	66(%rdx), %dil
-	movb	%dil, 130(%rsp)
-	movb	67(%rdx), %dil
-	movb	%dil, 131(%rsp)
-	movb	68(%rdx), %dil
-	movb	%dil, 132(%rsp)
-	movb	69(%rdx), %dil
-	movb	%dil, 133(%rsp)
-	movb	70(%rdx), %dil
-	movb	%dil, 134(%rsp)
-	movb	71(%rdx), %dil
-	movb	%dil, 135(%rsp)
-	movb	72(%rdx), %dil
-	movb	%dil, 136(%rsp)
-	movb	73(%rdx), %dil
-	movb	%dil, 137(%rsp)
-	movb	74(%rdx), %dil
-	movb	%dil, 138(%rsp)
-	movb	75(%rdx), %dil
-	movb	%dil, 139(%rsp)
-	movb	76(%rdx), %dil
-	movb	%dil, 140(%rsp)
-	movb	77(%rdx), %dil
-	movb	%dil, 141(%rsp)
-	movb	78(%rdx), %dil
-	movb	%dil, 142(%rsp)
-	movb	79(%rdx), %dil
-	movb	%dil, 143(%rsp)
-	movb	80(%rdx), %dil
-	movb	%dil, 144(%rsp)
-	movb	81(%rdx), %dil
-	movb	%dil, 145(%rsp)
-	movb	82(%rdx), %dil
-	movb	%dil, 146(%rsp)
-	movb	83(%rdx), %dil
-	movb	%dil, 147(%rsp)
-	movb	84(%rdx), %dil
-	movb	%dil, 148(%rsp)
-	movb	85(%rdx), %dil
-	movb	%dil, 149(%rsp)
-	movb	86(%rdx), %dil
-	movb	%dil, 150(%rsp)
-	movb	87(%rdx), %dil
-	movb	%dil, 151(%rsp)
-	movb	88(%rdx), %dil
-	movb	%dil, 152(%rsp)
-	movb	89(%rdx), %dil
-	movb	%dil, 153(%rsp)
-	movb	90(%rdx), %dil
-	movb	%dil, 154(%rsp)
-	movb	91(%rdx), %dil
-	movb	%dil, 155(%rsp)
-	movb	92(%rdx), %dil
-	movb	%dil, 156(%rsp)
-	movb	93(%rdx), %dil
-	movb	%dil, 157(%rsp)
-	movb	94(%rdx), %dil
-	movb	%dil, 158(%rsp)
-	movb	95(%rdx), %dil
-	movb	%dil, 159(%rsp)
-	movb	96(%rdx), %dil
-	movb	%dil, 160(%rsp)
-	movb	97(%rdx), %dil
-	movb	%dil, 161(%rsp)
-	movb	98(%rdx), %dil
-	movb	%dil, 162(%rsp)
-	movb	99(%rdx), %dil
-	movb	%dil, 163(%rsp)
-	movb	100(%rdx), %dil
-	movb	%dil, 164(%rsp)
-	movb	101(%rdx), %dil
-	movb	%dil, 165(%rsp)
-	movb	102(%rdx), %dil
-	movb	%dil, 166(%rsp)
-	movb	103(%rdx), %dil
-	movb	%dil, 167(%rsp)
-	movb	104(%rdx), %dil
-	movb	%dil, 168(%rsp)
-	movb	105(%rdx), %dil
-	movb	%dil, 169(%rsp)
-	movb	106(%rdx), %dil
-	movb	%dil, 170(%rsp)
-	movb	107(%rdx), %dil
-	movb	%dil, 171(%rsp)
-	movb	108(%rdx), %dil
-	movb	%dil, 172(%rsp)
-	movb	109(%rdx), %dil
-	movb	%dil, 173(%rsp)
-	movb	110(%rdx), %dil
-	movb	%dil, 174(%rsp)
-	movb	111(%rdx), %dil
-	movb	%dil, 175(%rsp)
-	movb	112(%rdx), %dil
-	movb	%dil, 176(%rsp)
-	movb	113(%rdx), %dil
-	movb	%dil, 177(%rsp)
-	movb	114(%rdx), %dil
-	movb	%dil, 178(%rsp)
-	movb	115(%rdx), %dil
-	movb	%dil, 179(%rsp)
-	movb	116(%rdx), %dil
-	movb	%dil, 180(%rsp)
-	movb	117(%rdx), %dil
-	movb	%dil, 181(%rsp)
-	movb	118(%rdx), %dil
-	movb	%dil, 182(%rsp)
-	movb	119(%rdx), %dil
-	movb	%dil, 183(%rsp)
-	movb	120(%rdx), %dil
-	movb	%dil, 184(%rsp)
-	movb	121(%rdx), %dil
-	movb	%dil, 185(%rsp)
-	movb	122(%rdx), %dil
-	movb	%dil, 186(%rsp)
-	movb	123(%rdx), %dil
-	movb	%dil, 187(%rsp)
-	movb	124(%rdx), %dil
-	movb	%dil, 188(%rsp)
-	movb	125(%rdx), %dil
-	movb	%dil, 189(%rsp)
-	movb	126(%rdx), %dil
-	movb	%dil, 190(%rsp)
-	movb	127(%rdx), %dil
-	movb	%dil, 191(%rsp)
-	movb	128(%rdx), %dil
-	movb	%dil, 192(%rsp)
-	movb	129(%rdx), %dil
-	movb	%dil, 193(%rsp)
-	movb	130(%rdx), %dil
-	movb	%dil, 194(%rsp)
-	movb	131(%rdx), %dil
-	movb	%dil, 195(%rsp)
-	movb	132(%rdx), %dil
-	movb	%dil, 196(%rsp)
-	movb	133(%rdx), %dil
-	movb	%dil, 197(%rsp)
-	movb	134(%rdx), %dil
-	movb	%dil, 198(%rsp)
-	movb	135(%rdx), %dil
-	movb	%dil, 199(%rsp)
-	movb	136(%rdx), %dil
-	movb	%dil, 200(%rsp)
-	movb	137(%rdx), %dil
-	movb	%dil, 201(%rsp)
-	movb	138(%rdx), %dil
-	movb	%dil, 202(%rsp)
-	movb	139(%rdx), %dil
-	movb	%dil, 203(%rsp)
-	movb	140(%rdx), %dil
-	movb	%dil, 204(%rsp)
-	movb	141(%rdx), %dil
-	movb	%dil, 205(%rsp)
-	movb	142(%rdx), %dil
-	movb	%dil, 206(%rsp)
-	movb	143(%rdx), %dil
-	movb	%dil, 207(%rsp)
-	movb	144(%rdx), %dil
-	movb	%dil, 208(%rsp)
-	movb	145(%rdx), %dil
-	movb	%dil, 209(%rsp)
-	movb	146(%rdx), %dil
-	movb	%dil, 210(%rsp)
-	movb	147(%rdx), %dil
-	movb	%dil, 211(%rsp)
-	movb	148(%rdx), %dil
-	movb	%dil, 212(%rsp)
-	movb	149(%rdx), %dil
-	movb	%dil, 213(%rsp)
-	movb	150(%rdx), %dil
-	movb	%dil, 214(%rsp)
-	movb	151(%rdx), %dil
-	movb	%dil, 215(%rsp)
-	movb	152(%rdx), %dil
-	movb	%dil, 216(%rsp)
-	movb	153(%rdx), %dil
-	movb	%dil, 217(%rsp)
-	movb	154(%rdx), %dil
-	movb	%dil, 218(%rsp)
-	movb	155(%rdx), %dil
-	movb	%dil, 219(%rsp)
-	movb	156(%rdx), %dil
-	movb	%dil, 220(%rsp)
-	movb	157(%rdx), %dil
-	movb	%dil, 221(%rsp)
-	movb	158(%rdx), %dil
-	movb	%dil, 222(%rsp)
-	movb	159(%rdx), %dil
-	movb	%dil, 223(%rsp)
-	movb	160(%rdx), %dil
-	movb	%dil, 224(%rsp)
-	movb	161(%rdx), %dil
-	movb	%dil, 225(%rsp)
-	movb	162(%rdx), %dil
-	movb	%dil, 226(%rsp)
-	movb	163(%rdx), %dil
-	movb	%dil, 227(%rsp)
-	movb	164(%rdx), %dil
-	movb	%dil, 228(%rsp)
-	movb	165(%rdx), %dil
-	movb	%dil, 229(%rsp)
-	movb	166(%rdx), %dil
-	movb	%dil, 230(%rsp)
-	movb	167(%rdx), %dil
-	movb	%dil, 231(%rsp)
-	movb	168(%rdx), %dil
-	movb	%dil, 232(%rsp)
-	movb	169(%rdx), %dil
-	movb	%dil, 233(%rsp)
-	movb	170(%rdx), %dil
-	movb	%dil, 234(%rsp)
-	movb	171(%rdx), %dil
-	movb	%dil, 235(%rsp)
-	movb	172(%rdx), %dil
-	movb	%dil, 236(%rsp)
-	movb	173(%rdx), %dil
-	movb	%dil, 237(%rsp)
-	movb	174(%rdx), %dil
-	movb	%dil, 238(%rsp)
-	movb	175(%rdx), %dil
-	movb	%dil, 239(%rsp)
-	movb	176(%rdx), %dil
-	movb	%dil, 240(%rsp)
-	movb	177(%rdx), %dil
-	movb	%dil, 241(%rsp)
-	movb	178(%rdx), %dil
-	movb	%dil, 242(%rsp)
-	movb	179(%rdx), %dil
-	movb	%dil, 243(%rsp)
-	movb	180(%rdx), %dil
-	movb	%dil, 244(%rsp)
-	movb	181(%rdx), %dil
-	movb	%dil, 245(%rsp)
-	movb	182(%rdx), %dil
-	movb	%dil, 246(%rsp)
-	movb	183(%rdx), %dil
-	movb	%dil, 247(%rsp)
-	movb	184(%rdx), %dil
-	movb	%dil, 248(%rsp)
-	movb	185(%rdx), %dil
-	movb	%dil, 249(%rsp)
-	movb	186(%rdx), %dil
-	movb	%dil, 250(%rsp)
-	movb	187(%rdx), %dil
-	movb	%dil, 251(%rsp)
-	movb	188(%rdx), %dil
-	movb	%dil, 252(%rsp)
-	movb	189(%rdx), %dil
-	movb	%dil, 253(%rsp)
-	movb	190(%rdx), %dil
-	movb	%dil, 254(%rsp)
-	movb	191(%rdx), %dil
-	movb	%dil, 255(%rsp)
-	movb	192(%rdx), %dil
-	movb	%dil, 256(%rsp)
-	movb	193(%rdx), %dil
-	movb	%dil, 257(%rsp)
-	movb	194(%rdx), %dil
-	movb	%dil, 258(%rsp)
-	movb	195(%rdx), %dil
-	movb	%dil, 259(%rsp)
-	movb	196(%rdx), %dil
-	movb	%dil, 260(%rsp)
-	movb	197(%rdx), %dil
-	movb	%dil, 261(%rsp)
-	movb	198(%rdx), %dil
-	movb	%dil, 262(%rsp)
-	movb	199(%rdx), %dil
-	movb	%dil, 263(%rsp)
-	movb	200(%rdx), %dil
-	movb	%dil, 264(%rsp)
-	movb	201(%rdx), %dil
-	movb	%dil, 265(%rsp)
-	movb	202(%rdx), %dil
-	movb	%dil, 266(%rsp)
-	movb	203(%rdx), %dil
-	movb	%dil, 267(%rsp)
-	movb	204(%rdx), %dil
-	movb	%dil, 268(%rsp)
-	movb	205(%rdx), %dil
-	movb	%dil, 269(%rsp)
-	movb	206(%rdx), %dil
-	movb	%dil, 270(%rsp)
-	movb	207(%rdx), %dil
-	movb	%dil, 271(%rsp)
-	movb	208(%rdx), %dil
-	movb	%dil, 272(%rsp)
-	movb	209(%rdx), %dil
-	movb	%dil, 273(%rsp)
-	movb	210(%rdx), %dil
-	movb	%dil, 274(%rsp)
-	movb	211(%rdx), %dil
-	movb	%dil, 275(%rsp)
-	movb	212(%rdx), %dil
-	movb	%dil, 276(%rsp)
-	movb	213(%rdx), %dil
-	movb	%dil, 277(%rsp)
-	movb	214(%rdx), %dil
-	movb	%dil, 278(%rsp)
-	movb	215(%rdx), %dil
-	movb	%dil, 279(%rsp)
-	movb	216(%rdx), %dil
-	movb	%dil, 280(%rsp)
-	movb	217(%rdx), %dil
-	movb	%dil, 281(%rsp)
-	movb	218(%rdx), %dil
-	movb	%dil, 282(%rsp)
-	movb	219(%rdx), %dil
-	movb	%dil, 283(%rsp)
-	movb	220(%rdx), %dil
-	movb	%dil, 284(%rsp)
-	movb	221(%rdx), %dil
-	movb	%dil, 285(%rsp)
-	movb	222(%rdx), %dil
-	movb	%dil, 286(%rsp)
-	movb	223(%rdx), %dil
-	movb	%dil, 287(%rsp)
-	movb	224(%rdx), %dil
-	movb	%dil, 288(%rsp)
-	movb	225(%rdx), %dil
-	movb	%dil, 289(%rsp)
-	movb	226(%rdx), %dil
-	movb	%dil, 290(%rsp)
-	movb	227(%rdx), %dil
-	movb	%dil, 291(%rsp)
-	movb	228(%rdx), %dil
-	movb	%dil, 292(%rsp)
-	movb	229(%rdx), %dil
-	movb	%dil, 293(%rsp)
-	movb	230(%rdx), %dil
-	movb	%dil, 294(%rsp)
-	movb	231(%rdx), %dil
-	movb	%dil, 295(%rsp)
-	movb	232(%rdx), %dil
-	movb	%dil, 296(%rsp)
-	movb	233(%rdx), %dil
-	movb	%dil, 297(%rsp)
-	movb	234(%rdx), %dil
-	movb	%dil, 298(%rsp)
-	movb	235(%rdx), %dil
-	movb	%dil, 299(%rsp)
-	movb	236(%rdx), %dil
-	movb	%dil, 300(%rsp)
-	movb	237(%rdx), %dil
-	movb	%dil, 301(%rsp)
-	movb	238(%rdx), %dil
-	movb	%dil, 302(%rsp)
-	movb	239(%rdx), %dil
-	movb	%dil, 303(%rsp)
-	movb	240(%rdx), %dil
-	movb	%dil, 304(%rsp)
-	movb	241(%rdx), %dil
-	movb	%dil, 305(%rsp)
-	movb	242(%rdx), %dil
-	movb	%dil, 306(%rsp)
-	movb	243(%rdx), %dil
-	movb	%dil, 307(%rsp)
-	movb	244(%rdx), %dil
-	movb	%dil, 308(%rsp)
-	movb	245(%rdx), %dil
-	movb	%dil, 309(%rsp)
-	movb	246(%rdx), %dil
-	movb	%dil, 310(%rsp)
-	movb	247(%rdx), %dil
-	movb	%dil, 311(%rsp)
-	movb	248(%rdx), %dil
-	movb	%dil, 312(%rsp)
-	movb	249(%rdx), %dil
-	movb	%dil, 313(%rsp)
-	movb	250(%rdx), %dil
-	movb	%dil, 314(%rsp)
-	movb	251(%rdx), %dil
-	movb	%dil, 315(%rsp)
-	movb	252(%rdx), %dil
-	movb	%dil, 316(%rsp)
-	movb	253(%rdx), %dil
-	movb	%dil, 317(%rsp)
-	movb	254(%rdx), %dil
-	movb	%dil, 318(%rsp)
-	movb	255(%rdx), %dil
-	movb	%dil, 319(%rsp)
-	movb	256(%rdx), %dil
-	movb	%dil, 320(%rsp)
-	movb	257(%rdx), %dil
-	movb	%dil, 321(%rsp)
-	movb	258(%rdx), %dil
-	movb	%dil, 322(%rsp)
-	movb	259(%rdx), %dil
-	movb	%dil, 323(%rsp)
-	movb	260(%rdx), %dil
-	movb	%dil, 324(%rsp)
-	movb	261(%rdx), %dil
-	movb	%dil, 325(%rsp)
-	movb	262(%rdx), %dil
-	movb	%dil, 326(%rsp)
-	movb	263(%rdx), %dil
-	movb	%dil, 327(%rsp)
-	movb	264(%rdx), %dil
-	movb	%dil, 328(%rsp)
-	movb	265(%rdx), %dil
-	movb	%dil, 329(%rsp)
-	movb	266(%rdx), %dil
-	movb	%dil, 330(%rsp)
-	movb	267(%rdx), %dil
-	movb	%dil, 331(%rsp)
-	movb	268(%rdx), %dil
-	movb	%dil, 332(%rsp)
-	movb	269(%rdx), %dil
-	movb	%dil, 333(%rsp)
-	movb	270(%rdx), %dil
-	movb	%dil, 334(%rsp)
-	movb	271(%rdx), %dil
-	movb	%dil, 335(%rsp)
-	movb	272(%rdx), %dil
-	movb	%dil, 336(%rsp)
-	movb	273(%rdx), %dil
-	movb	%dil, 337(%rsp)
-	movb	274(%rdx), %dil
-	movb	%dil, 338(%rsp)
-	movb	275(%rdx), %dil
-	movb	%dil, 339(%rsp)
-	movb	276(%rdx), %dil
-	movb	%dil, 340(%rsp)
-	movb	277(%rdx), %dil
-	movb	%dil, 341(%rsp)
-	movb	278(%rdx), %dil
-	movb	%dil, 342(%rsp)
-	movb	279(%rdx), %dil
-	movb	%dil, 343(%rsp)
-	movb	280(%rdx), %dil
-	movb	%dil, 344(%rsp)
-	movb	281(%rdx), %dil
-	movb	%dil, 345(%rsp)
-	movb	282(%rdx), %dil
-	movb	%dil, 346(%rsp)
-	movb	283(%rdx), %dil
-	movb	%dil, 347(%rsp)
-	movb	284(%rdx), %dil
-	movb	%dil, 348(%rsp)
-	movb	285(%rdx), %dil
-	movb	%dil, 349(%rsp)
-	movb	286(%rdx), %dil
-	movb	%dil, 350(%rsp)
-	movb	287(%rdx), %dil
-	movb	%dil, 351(%rsp)
-	movb	288(%rdx), %dil
-	movb	%dil, 352(%rsp)
-	movb	289(%rdx), %dil
-	movb	%dil, 353(%rsp)
-	movb	290(%rdx), %dil
-	movb	%dil, 354(%rsp)
-	movb	291(%rdx), %dil
-	movb	%dil, 355(%rsp)
-	movb	292(%rdx), %dil
-	movb	%dil, 356(%rsp)
-	movb	293(%rdx), %dil
-	movb	%dil, 357(%rsp)
-	movb	294(%rdx), %dil
-	movb	%dil, 358(%rsp)
-	movb	295(%rdx), %dil
-	movb	%dil, 359(%rsp)
-	movb	296(%rdx), %dil
-	movb	%dil, 360(%rsp)
-	movb	297(%rdx), %dil
-	movb	%dil, 361(%rsp)
-	movb	298(%rdx), %dil
-	movb	%dil, 362(%rsp)
-	movb	299(%rdx), %dil
-	movb	%dil, 363(%rsp)
-	movb	300(%rdx), %dil
-	movb	%dil, 364(%rsp)
-	movb	301(%rdx), %dil
-	movb	%dil, 365(%rsp)
-	movb	302(%rdx), %dil
-	movb	%dil, 366(%rsp)
-	movb	303(%rdx), %dil
-	movb	%dil, 367(%rsp)
-	movb	304(%rdx), %dil
-	movb	%dil, 368(%rsp)
-	movb	305(%rdx), %dil
-	movb	%dil, 369(%rsp)
-	movb	306(%rdx), %dil
-	movb	%dil, 370(%rsp)
-	movb	307(%rdx), %dil
-	movb	%dil, 371(%rsp)
-	movb	308(%rdx), %dil
-	movb	%dil, 372(%rsp)
-	movb	309(%rdx), %dil
-	movb	%dil, 373(%rsp)
-	movb	310(%rdx), %dil
-	movb	%dil, 374(%rsp)
-	movb	311(%rdx), %dil
-	movb	%dil, 375(%rsp)
-	movb	312(%rdx), %dil
-	movb	%dil, 376(%rsp)
-	movb	313(%rdx), %dil
-	movb	%dil, 377(%rsp)
-	movb	314(%rdx), %dil
-	movb	%dil, 378(%rsp)
-	movb	315(%rdx), %dil
-	movb	%dil, 379(%rsp)
-	movb	316(%rdx), %dil
-	movb	%dil, 380(%rsp)
-	movb	317(%rdx), %dil
-	movb	%dil, 381(%rsp)
-	movb	318(%rdx), %dil
-	movb	%dil, 382(%rsp)
-	movb	319(%rdx), %dil
-	movb	%dil, 383(%rsp)
-	movb	320(%rdx), %dil
-	movb	%dil, 384(%rsp)
-	movb	321(%rdx), %dil
-	movb	%dil, 385(%rsp)
-	movb	322(%rdx), %dil
-	movb	%dil, 386(%rsp)
-	movb	323(%rdx), %dil
-	movb	%dil, 387(%rsp)
-	movb	324(%rdx), %dil
-	movb	%dil, 388(%rsp)
-	movb	325(%rdx), %dil
-	movb	%dil, 389(%rsp)
-	movb	326(%rdx), %dil
-	movb	%dil, 390(%rsp)
-	movb	327(%rdx), %dil
-	movb	%dil, 391(%rsp)
-	movb	328(%rdx), %dil
-	movb	%dil, 392(%rsp)
-	movb	329(%rdx), %dil
-	movb	%dil, 393(%rsp)
-	movb	330(%rdx), %dil
-	movb	%dil, 394(%rsp)
-	movb	331(%rdx), %dil
-	movb	%dil, 395(%rsp)
-	movb	332(%rdx), %dil
-	movb	%dil, 396(%rsp)
-	movb	333(%rdx), %dil
-	movb	%dil, 397(%rsp)
-	movb	334(%rdx), %dil
-	movb	%dil, 398(%rsp)
-	movb	335(%rdx), %dil
-	movb	%dil, 399(%rsp)
-	movb	336(%rdx), %dil
-	movb	%dil, 400(%rsp)
-	movb	337(%rdx), %dil
-	movb	%dil, 401(%rsp)
-	movb	338(%rdx), %dil
-	movb	%dil, 402(%rsp)
-	movb	339(%rdx), %dil
-	movb	%dil, 403(%rsp)
-	movb	340(%rdx), %dil
-	movb	%dil, 404(%rsp)
-	movb	341(%rdx), %dil
-	movb	%dil, 405(%rsp)
-	movb	342(%rdx), %dil
-	movb	%dil, 406(%rsp)
-	movb	343(%rdx), %dil
-	movb	%dil, 407(%rsp)
-	movb	344(%rdx), %dil
-	movb	%dil, 408(%rsp)
-	movb	345(%rdx), %dil
-	movb	%dil, 409(%rsp)
-	movb	346(%rdx), %dil
-	movb	%dil, 410(%rsp)
-	movb	347(%rdx), %dil
-	movb	%dil, 411(%rsp)
-	movb	348(%rdx), %dil
-	movb	%dil, 412(%rsp)
-	movb	349(%rdx), %dil
-	movb	%dil, 413(%rsp)
-	movb	350(%rdx), %dil
-	movb	%dil, 414(%rsp)
-	movb	351(%rdx), %dil
-	movb	%dil, 415(%rsp)
-	movb	352(%rdx), %dil
-	movb	%dil, 416(%rsp)
-	movb	353(%rdx), %dil
-	movb	%dil, 417(%rsp)
-	movb	354(%rdx), %dil
-	movb	%dil, 418(%rsp)
-	movb	355(%rdx), %dil
-	movb	%dil, 419(%rsp)
-	movb	356(%rdx), %dil
-	movb	%dil, 420(%rsp)
-	movb	357(%rdx), %dil
-	movb	%dil, 421(%rsp)
-	movb	358(%rdx), %dil
-	movb	%dil, 422(%rsp)
-	movb	359(%rdx), %dil
-	movb	%dil, 423(%rsp)
-	movb	360(%rdx), %dil
-	movb	%dil, 424(%rsp)
-	movb	361(%rdx), %dil
-	movb	%dil, 425(%rsp)
-	movb	362(%rdx), %dil
-	movb	%dil, 426(%rsp)
-	movb	363(%rdx), %dil
-	movb	%dil, 427(%rsp)
-	movb	364(%rdx), %dil
-	movb	%dil, 428(%rsp)
-	movb	365(%rdx), %dil
-	movb	%dil, 429(%rsp)
-	movb	366(%rdx), %dil
-	movb	%dil, 430(%rsp)
-	movb	367(%rdx), %dil
-	movb	%dil, 431(%rsp)
-	movb	368(%rdx), %dil
-	movb	%dil, 432(%rsp)
-	movb	369(%rdx), %dil
-	movb	%dil, 433(%rsp)
-	movb	370(%rdx), %dil
-	movb	%dil, 434(%rsp)
-	movb	371(%rdx), %dil
-	movb	%dil, 435(%rsp)
-	movb	372(%rdx), %dil
-	movb	%dil, 436(%rsp)
-	movb	373(%rdx), %dil
-	movb	%dil, 437(%rsp)
-	movb	374(%rdx), %dil
-	movb	%dil, 438(%rsp)
-	movb	375(%rdx), %dil
-	movb	%dil, 439(%rsp)
-	movb	376(%rdx), %dil
-	movb	%dil, 440(%rsp)
-	movb	377(%rdx), %dil
-	movb	%dil, 441(%rsp)
-	movb	378(%rdx), %dil
-	movb	%dil, 442(%rsp)
-	movb	379(%rdx), %dil
-	movb	%dil, 443(%rsp)
-	movb	380(%rdx), %dil
-	movb	%dil, 444(%rsp)
-	movb	381(%rdx), %dil
-	movb	%dil, 445(%rsp)
-	movb	382(%rdx), %dil
-	movb	%dil, 446(%rsp)
-	movb	383(%rdx), %dil
-	movb	%dil, 447(%rsp)
-	movb	384(%rdx), %dil
-	movb	%dil, 448(%rsp)
-	movb	385(%rdx), %dil
-	movb	%dil, 449(%rsp)
-	movb	386(%rdx), %dil
-	movb	%dil, 450(%rsp)
-	movb	387(%rdx), %dil
-	movb	%dil, 451(%rsp)
-	movb	388(%rdx), %dil
-	movb	%dil, 452(%rsp)
-	movb	389(%rdx), %dil
-	movb	%dil, 453(%rsp)
-	movb	390(%rdx), %dil
-	movb	%dil, 454(%rsp)
-	movb	391(%rdx), %dil
-	movb	%dil, 455(%rsp)
-	movb	392(%rdx), %dil
-	movb	%dil, 456(%rsp)
-	movb	393(%rdx), %dil
-	movb	%dil, 457(%rsp)
-	movb	394(%rdx), %dil
-	movb	%dil, 458(%rsp)
-	movb	395(%rdx), %dil
-	movb	%dil, 459(%rsp)
-	movb	396(%rdx), %dil
-	movb	%dil, 460(%rsp)
-	movb	397(%rdx), %dil
-	movb	%dil, 461(%rsp)
-	movb	398(%rdx), %dil
-	movb	%dil, 462(%rsp)
-	movb	399(%rdx), %dil
-	movb	%dil, 463(%rsp)
-	movb	400(%rdx), %dil
-	movb	%dil, 464(%rsp)
-	movb	401(%rdx), %dil
-	movb	%dil, 465(%rsp)
-	movb	402(%rdx), %dil
-	movb	%dil, 466(%rsp)
-	movb	403(%rdx), %dil
-	movb	%dil, 467(%rsp)
-	movb	404(%rdx), %dil
-	movb	%dil, 468(%rsp)
-	movb	405(%rdx), %dil
-	movb	%dil, 469(%rsp)
-	movb	406(%rdx), %dil
-	movb	%dil, 470(%rsp)
-	movb	407(%rdx), %dil
-	movb	%dil, 471(%rsp)
-	movb	408(%rdx), %dil
-	movb	%dil, 472(%rsp)
-	movb	409(%rdx), %dil
-	movb	%dil, 473(%rsp)
-	movb	410(%rdx), %dil
-	movb	%dil, 474(%rsp)
-	movb	411(%rdx), %dil
-	movb	%dil, 475(%rsp)
-	movb	412(%rdx), %dil
-	movb	%dil, 476(%rsp)
-	movb	413(%rdx), %dil
-	movb	%dil, 477(%rsp)
-	movb	414(%rdx), %dil
-	movb	%dil, 478(%rsp)
-	movb	415(%rdx), %dil
-	movb	%dil, 479(%rsp)
-	movb	416(%rdx), %dil
-	movb	%dil, 480(%rsp)
-	movb	417(%rdx), %dil
-	movb	%dil, 481(%rsp)
-	movb	418(%rdx), %dil
-	movb	%dil, 482(%rsp)
-	movb	419(%rdx), %dil
-	movb	%dil, 483(%rsp)
-	movb	420(%rdx), %dil
-	movb	%dil, 484(%rsp)
-	movb	421(%rdx), %dil
-	movb	%dil, 485(%rsp)
-	movb	422(%rdx), %dil
-	movb	%dil, 486(%rsp)
-	movb	423(%rdx), %dil
-	movb	%dil, 487(%rsp)
-	movb	424(%rdx), %dil
-	movb	%dil, 488(%rsp)
-	movb	425(%rdx), %dil
-	movb	%dil, 489(%rsp)
-	movb	426(%rdx), %dil
-	movb	%dil, 490(%rsp)
-	movb	427(%rdx), %dil
-	movb	%dil, 491(%rsp)
-	movb	428(%rdx), %dil
-	movb	%dil, 492(%rsp)
-	movb	429(%rdx), %dil
-	movb	%dil, 493(%rsp)
-	movb	430(%rdx), %dil
-	movb	%dil, 494(%rsp)
-	movb	431(%rdx), %dil
-	movb	%dil, 495(%rsp)
-	movb	432(%rdx), %dil
-	movb	%dil, 496(%rsp)
-	movb	433(%rdx), %dil
-	movb	%dil, 497(%rsp)
-	movb	434(%rdx), %dil
-	movb	%dil, 498(%rsp)
-	movb	435(%rdx), %dil
-	movb	%dil, 499(%rsp)
-	movb	436(%rdx), %dil
-	movb	%dil, 500(%rsp)
-	movb	437(%rdx), %dil
-	movb	%dil, 501(%rsp)
-	movb	438(%rdx), %dil
-	movb	%dil, 502(%rsp)
-	movb	439(%rdx), %dil
-	movb	%dil, 503(%rsp)
-	movb	440(%rdx), %dil
-	movb	%dil, 504(%rsp)
-	movb	441(%rdx), %dil
-	movb	%dil, 505(%rsp)
-	movb	442(%rdx), %dil
-	movb	%dil, 506(%rsp)
-	movb	443(%rdx), %dil
-	movb	%dil, 507(%rsp)
-	movb	444(%rdx), %dil
-	movb	%dil, 508(%rsp)
-	movb	445(%rdx), %dil
-	movb	%dil, 509(%rsp)
-	movb	446(%rdx), %dil
-	movb	%dil, 510(%rsp)
-	movb	447(%rdx), %dil
-	movb	%dil, 511(%rsp)
-	movb	448(%rdx), %dil
-	movb	%dil, 512(%rsp)
-	movb	449(%rdx), %dil
-	movb	%dil, 513(%rsp)
-	movb	450(%rdx), %dil
-	movb	%dil, 514(%rsp)
-	movb	451(%rdx), %dil
-	movb	%dil, 515(%rsp)
-	movb	452(%rdx), %dil
-	movb	%dil, 516(%rsp)
-	movb	453(%rdx), %dil
-	movb	%dil, 517(%rsp)
-	movb	454(%rdx), %dil
-	movb	%dil, 518(%rsp)
-	movb	455(%rdx), %dil
-	movb	%dil, 519(%rsp)
-	movb	456(%rdx), %dil
-	movb	%dil, 520(%rsp)
-	movb	457(%rdx), %dil
-	movb	%dil, 521(%rsp)
-	movb	458(%rdx), %dil
-	movb	%dil, 522(%rsp)
-	movb	459(%rdx), %dil
-	movb	%dil, 523(%rsp)
-	movb	460(%rdx), %dil
-	movb	%dil, 524(%rsp)
-	movb	461(%rdx), %dil
-	movb	%dil, 525(%rsp)
-	movb	462(%rdx), %dil
-	movb	%dil, 526(%rsp)
-	movb	463(%rdx), %dil
-	movb	%dil, 527(%rsp)
-	movb	464(%rdx), %dil
-	movb	%dil, 528(%rsp)
-	movb	465(%rdx), %dil
-	movb	%dil, 529(%rsp)
-	movb	466(%rdx), %dil
-	movb	%dil, 530(%rsp)
-	movb	467(%rdx), %dil
-	movb	%dil, 531(%rsp)
-	movb	468(%rdx), %dil
-	movb	%dil, 532(%rsp)
-	movb	469(%rdx), %dil
-	movb	%dil, 533(%rsp)
-	movb	470(%rdx), %dil
-	movb	%dil, 534(%rsp)
-	movb	471(%rdx), %dil
-	movb	%dil, 535(%rsp)
-	movb	472(%rdx), %dil
-	movb	%dil, 536(%rsp)
-	movb	473(%rdx), %dil
-	movb	%dil, 537(%rsp)
-	movb	474(%rdx), %dil
-	movb	%dil, 538(%rsp)
-	movb	475(%rdx), %dil
-	movb	%dil, 539(%rsp)
-	movb	476(%rdx), %dil
-	movb	%dil, 540(%rsp)
-	movb	477(%rdx), %dil
-	movb	%dil, 541(%rsp)
-	movb	478(%rdx), %dil
-	movb	%dil, 542(%rsp)
-	movb	479(%rdx), %dil
-	movb	%dil, 543(%rsp)
-	movb	480(%rdx), %dil
-	movb	%dil, 544(%rsp)
-	movb	481(%rdx), %dil
-	movb	%dil, 545(%rsp)
-	movb	482(%rdx), %dil
-	movb	%dil, 546(%rsp)
-	movb	483(%rdx), %dil
-	movb	%dil, 547(%rsp)
-	movb	484(%rdx), %dil
-	movb	%dil, 548(%rsp)
-	movb	485(%rdx), %dil
-	movb	%dil, 549(%rsp)
-	movb	486(%rdx), %dil
-	movb	%dil, 550(%rsp)
-	movb	487(%rdx), %dil
-	movb	%dil, 551(%rsp)
-	movb	488(%rdx), %dil
-	movb	%dil, 552(%rsp)
-	movb	489(%rdx), %dil
-	movb	%dil, 553(%rsp)
-	movb	490(%rdx), %dil
-	movb	%dil, 554(%rsp)
-	movb	491(%rdx), %dil
-	movb	%dil, 555(%rsp)
-	movb	492(%rdx), %dil
-	movb	%dil, 556(%rsp)
-	movb	493(%rdx), %dil
-	movb	%dil, 557(%rsp)
-	movb	494(%rdx), %dil
-	movb	%dil, 558(%rsp)
-	movb	495(%rdx), %dil
-	movb	%dil, 559(%rsp)
-	movb	496(%rdx), %dil
-	movb	%dil, 560(%rsp)
-	movb	497(%rdx), %dil
-	movb	%dil, 561(%rsp)
-	movb	498(%rdx), %dil
-	movb	%dil, 562(%rsp)
-	movb	499(%rdx), %dil
-	movb	%dil, 563(%rsp)
-	movb	500(%rdx), %dil
-	movb	%dil, 564(%rsp)
-	movb	501(%rdx), %dil
-	movb	%dil, 565(%rsp)
-	movb	502(%rdx), %dil
-	movb	%dil, 566(%rsp)
-	movb	503(%rdx), %dil
-	movb	%dil, 567(%rsp)
-	movb	504(%rdx), %dil
-	movb	%dil, 568(%rsp)
-	movb	505(%rdx), %dil
-	movb	%dil, 569(%rsp)
-	movb	506(%rdx), %dil
-	movb	%dil, 570(%rsp)
-	movb	507(%rdx), %dil
-	movb	%dil, 571(%rsp)
-	movb	508(%rdx), %dil
-	movb	%dil, 572(%rsp)
-	movb	509(%rdx), %dil
-	movb	%dil, 573(%rsp)
-	movb	510(%rdx), %dil
-	movb	%dil, 574(%rsp)
-	movb	511(%rdx), %dil
-	movb	%dil, 575(%rsp)
-	movb	512(%rdx), %dil
-	movb	%dil, 576(%rsp)
-	movb	513(%rdx), %dil
-	movb	%dil, 577(%rsp)
-	movb	514(%rdx), %dil
-	movb	%dil, 578(%rsp)
-	movb	515(%rdx), %dil
-	movb	%dil, 579(%rsp)
-	movb	516(%rdx), %dil
-	movb	%dil, 580(%rsp)
-	movb	517(%rdx), %dil
-	movb	%dil, 581(%rsp)
-	movb	518(%rdx), %dil
-	movb	%dil, 582(%rsp)
-	movb	519(%rdx), %dil
-	movb	%dil, 583(%rsp)
-	movb	520(%rdx), %dil
-	movb	%dil, 584(%rsp)
-	movb	521(%rdx), %dil
-	movb	%dil, 585(%rsp)
-	movb	522(%rdx), %dil
-	movb	%dil, 586(%rsp)
-	movb	523(%rdx), %dil
-	movb	%dil, 587(%rsp)
-	movb	524(%rdx), %dil
-	movb	%dil, 588(%rsp)
-	movb	525(%rdx), %dil
-	movb	%dil, 589(%rsp)
-	movb	526(%rdx), %dil
-	movb	%dil, 590(%rsp)
-	movb	527(%rdx), %dil
-	movb	%dil, 591(%rsp)
-	movb	528(%rdx), %dil
-	movb	%dil, 592(%rsp)
-	movb	529(%rdx), %dil
-	movb	%dil, 593(%rsp)
-	movb	530(%rdx), %dil
-	movb	%dil, 594(%rsp)
-	movb	531(%rdx), %dil
-	movb	%dil, 595(%rsp)
-	movb	532(%rdx), %dil
-	movb	%dil, 596(%rsp)
-	movb	533(%rdx), %dil
-	movb	%dil, 597(%rsp)
-	movb	534(%rdx), %dil
-	movb	%dil, 598(%rsp)
-	movb	535(%rdx), %dil
-	movb	%dil, 599(%rsp)
-	movb	536(%rdx), %dil
-	movb	%dil, 600(%rsp)
-	movb	537(%rdx), %dil
-	movb	%dil, 601(%rsp)
-	movb	538(%rdx), %dil
-	movb	%dil, 602(%rsp)
-	movb	539(%rdx), %dil
-	movb	%dil, 603(%rsp)
-	movb	540(%rdx), %dil
-	movb	%dil, 604(%rsp)
-	movb	541(%rdx), %dil
-	movb	%dil, 605(%rsp)
-	movb	542(%rdx), %dil
-	movb	%dil, 606(%rsp)
-	movb	543(%rdx), %dil
-	movb	%dil, 607(%rsp)
-	movb	544(%rdx), %dil
-	movb	%dil, 608(%rsp)
-	movb	545(%rdx), %dil
-	movb	%dil, 609(%rsp)
-	movb	546(%rdx), %dil
-	movb	%dil, 610(%rsp)
-	movb	547(%rdx), %dil
-	movb	%dil, 611(%rsp)
-	movb	548(%rdx), %dil
-	movb	%dil, 612(%rsp)
-	movb	549(%rdx), %dil
-	movb	%dil, 613(%rsp)
-	movb	550(%rdx), %dil
-	movb	%dil, 614(%rsp)
-	movb	551(%rdx), %dil
-	movb	%dil, 615(%rsp)
-	movb	552(%rdx), %dil
-	movb	%dil, 616(%rsp)
-	movb	553(%rdx), %dil
-	movb	%dil, 617(%rsp)
-	movb	554(%rdx), %dil
-	movb	%dil, 618(%rsp)
-	movb	555(%rdx), %dil
-	movb	%dil, 619(%rsp)
-	movb	556(%rdx), %dil
-	movb	%dil, 620(%rsp)
-	movb	557(%rdx), %dil
-	movb	%dil, 621(%rsp)
-	movb	558(%rdx), %dil
-	movb	%dil, 622(%rsp)
+	movb	(%rdx), %r8b
+	movb	%r8b, 64(%rsp)
+	movb	1(%rdx), %r8b
+	movb	%r8b, 65(%rsp)
+	movb	2(%rdx), %r8b
+	movb	%r8b, 66(%rsp)
+	movb	3(%rdx), %r8b
+	movb	%r8b, 67(%rsp)
+	movb	4(%rdx), %r8b
+	movb	%r8b, 68(%rsp)
+	movb	5(%rdx), %r8b
+	movb	%r8b, 69(%rsp)
+	movb	6(%rdx), %r8b
+	movb	%r8b, 70(%rsp)
+	movb	7(%rdx), %r8b
+	movb	%r8b, 71(%rsp)
+	movb	8(%rdx), %r8b
+	movb	%r8b, 72(%rsp)
+	movb	9(%rdx), %r8b
+	movb	%r8b, 73(%rsp)
+	movb	10(%rdx), %r8b
+	movb	%r8b, 74(%rsp)
+	movb	11(%rdx), %r8b
+	movb	%r8b, 75(%rsp)
+	movb	12(%rdx), %r8b
+	movb	%r8b, 76(%rsp)
+	movb	13(%rdx), %r8b
+	movb	%r8b, 77(%rsp)
+	movb	14(%rdx), %r8b
+	movb	%r8b, 78(%rsp)
+	movb	15(%rdx), %r8b
+	movb	%r8b, 79(%rsp)
+	movb	16(%rdx), %r8b
+	movb	%r8b, 80(%rsp)
+	movb	17(%rdx), %r8b
+	movb	%r8b, 81(%rsp)
+	movb	18(%rdx), %r8b
+	movb	%r8b, 82(%rsp)
+	movb	19(%rdx), %r8b
+	movb	%r8b, 83(%rsp)
+	movb	20(%rdx), %r8b
+	movb	%r8b, 84(%rsp)
+	movb	21(%rdx), %r8b
+	movb	%r8b, 85(%rsp)
+	movb	22(%rdx), %r8b
+	movb	%r8b, 86(%rsp)
+	movb	23(%rdx), %r8b
+	movb	%r8b, 87(%rsp)
+	movb	24(%rdx), %r8b
+	movb	%r8b, 88(%rsp)
+	movb	25(%rdx), %r8b
+	movb	%r8b, 89(%rsp)
+	movb	26(%rdx), %r8b
+	movb	%r8b, 90(%rsp)
+	movb	27(%rdx), %r8b
+	movb	%r8b, 91(%rsp)
+	movb	28(%rdx), %r8b
+	movb	%r8b, 92(%rsp)
+	movb	29(%rdx), %r8b
+	movb	%r8b, 93(%rsp)
+	movb	30(%rdx), %r8b
+	movb	%r8b, 94(%rsp)
+	movb	31(%rdx), %r8b
+	movb	%r8b, 95(%rsp)
+	movb	32(%rdx), %r8b
+	movb	%r8b, 96(%rsp)
+	movb	33(%rdx), %r8b
+	movb	%r8b, 97(%rsp)
+	movb	34(%rdx), %r8b
+	movb	%r8b, 98(%rsp)
+	movb	35(%rdx), %r8b
+	movb	%r8b, 99(%rsp)
+	movb	36(%rdx), %r8b
+	movb	%r8b, 100(%rsp)
+	movb	37(%rdx), %r8b
+	movb	%r8b, 101(%rsp)
+	movb	38(%rdx), %r8b
+	movb	%r8b, 102(%rsp)
+	movb	39(%rdx), %r8b
+	movb	%r8b, 103(%rsp)
+	movb	40(%rdx), %r8b
+	movb	%r8b, 104(%rsp)
+	movb	41(%rdx), %r8b
+	movb	%r8b, 105(%rsp)
+	movb	42(%rdx), %r8b
+	movb	%r8b, 106(%rsp)
+	movb	43(%rdx), %r8b
+	movb	%r8b, 107(%rsp)
+	movb	44(%rdx), %r8b
+	movb	%r8b, 108(%rsp)
+	movb	45(%rdx), %r8b
+	movb	%r8b, 109(%rsp)
+	movb	46(%rdx), %r8b
+	movb	%r8b, 110(%rsp)
+	movb	47(%rdx), %r8b
+	movb	%r8b, 111(%rsp)
+	movb	48(%rdx), %r8b
+	movb	%r8b, 112(%rsp)
+	movb	49(%rdx), %r8b
+	movb	%r8b, 113(%rsp)
+	movb	50(%rdx), %r8b
+	movb	%r8b, 114(%rsp)
+	movb	51(%rdx), %r8b
+	movb	%r8b, 115(%rsp)
+	movb	52(%rdx), %r8b
+	movb	%r8b, 116(%rsp)
+	movb	53(%rdx), %r8b
+	movb	%r8b, 117(%rsp)
+	movb	54(%rdx), %r8b
+	movb	%r8b, 118(%rsp)
+	movb	55(%rdx), %r8b
+	movb	%r8b, 119(%rsp)
+	movb	56(%rdx), %r8b
+	movb	%r8b, 120(%rsp)
+	movb	57(%rdx), %r8b
+	movb	%r8b, 121(%rsp)
+	movb	58(%rdx), %r8b
+	movb	%r8b, 122(%rsp)
+	movb	59(%rdx), %r8b
+	movb	%r8b, 123(%rsp)
+	movb	60(%rdx), %r8b
+	movb	%r8b, 124(%rsp)
+	movb	61(%rdx), %r8b
+	movb	%r8b, 125(%rsp)
+	movb	62(%rdx), %r8b
+	movb	%r8b, 126(%rsp)
+	movb	63(%rdx), %r8b
+	movb	%r8b, 127(%rsp)
+	movb	64(%rdx), %r8b
+	movb	%r8b, 128(%rsp)
+	movb	65(%rdx), %r8b
+	movb	%r8b, 129(%rsp)
+	movb	66(%rdx), %r8b
+	movb	%r8b, 130(%rsp)
+	movb	67(%rdx), %r8b
+	movb	%r8b, 131(%rsp)
+	movb	68(%rdx), %r8b
+	movb	%r8b, 132(%rsp)
+	movb	69(%rdx), %r8b
+	movb	%r8b, 133(%rsp)
+	movb	70(%rdx), %r8b
+	movb	%r8b, 134(%rsp)
+	movb	71(%rdx), %r8b
+	movb	%r8b, 135(%rsp)
+	movb	72(%rdx), %r8b
+	movb	%r8b, 136(%rsp)
+	movb	73(%rdx), %r8b
+	movb	%r8b, 137(%rsp)
+	movb	74(%rdx), %r8b
+	movb	%r8b, 138(%rsp)
+	movb	75(%rdx), %r8b
+	movb	%r8b, 139(%rsp)
+	movb	76(%rdx), %r8b
+	movb	%r8b, 140(%rsp)
+	movb	77(%rdx), %r8b
+	movb	%r8b, 141(%rsp)
+	movb	78(%rdx), %r8b
+	movb	%r8b, 142(%rsp)
+	movb	79(%rdx), %r8b
+	movb	%r8b, 143(%rsp)
+	movb	80(%rdx), %r8b
+	movb	%r8b, 144(%rsp)
+	movb	81(%rdx), %r8b
+	movb	%r8b, 145(%rsp)
+	movb	82(%rdx), %r8b
+	movb	%r8b, 146(%rsp)
+	movb	83(%rdx), %r8b
+	movb	%r8b, 147(%rsp)
+	movb	84(%rdx), %r8b
+	movb	%r8b, 148(%rsp)
+	movb	85(%rdx), %r8b
+	movb	%r8b, 149(%rsp)
+	movb	86(%rdx), %r8b
+	movb	%r8b, 150(%rsp)
+	movb	87(%rdx), %r8b
+	movb	%r8b, 151(%rsp)
+	movb	88(%rdx), %r8b
+	movb	%r8b, 152(%rsp)
+	movb	89(%rdx), %r8b
+	movb	%r8b, 153(%rsp)
+	movb	90(%rdx), %r8b
+	movb	%r8b, 154(%rsp)
+	movb	91(%rdx), %r8b
+	movb	%r8b, 155(%rsp)
+	movb	92(%rdx), %r8b
+	movb	%r8b, 156(%rsp)
+	movb	93(%rdx), %r8b
+	movb	%r8b, 157(%rsp)
+	movb	94(%rdx), %r8b
+	movb	%r8b, 158(%rsp)
+	movb	95(%rdx), %r8b
+	movb	%r8b, 159(%rsp)
+	movb	96(%rdx), %r8b
+	movb	%r8b, 160(%rsp)
+	movb	97(%rdx), %r8b
+	movb	%r8b, 161(%rsp)
+	movb	98(%rdx), %r8b
+	movb	%r8b, 162(%rsp)
+	movb	99(%rdx), %r8b
+	movb	%r8b, 163(%rsp)
+	movb	100(%rdx), %r8b
+	movb	%r8b, 164(%rsp)
+	movb	101(%rdx), %r8b
+	movb	%r8b, 165(%rsp)
+	movb	102(%rdx), %r8b
+	movb	%r8b, 166(%rsp)
+	movb	103(%rdx), %r8b
+	movb	%r8b, 167(%rsp)
+	movb	104(%rdx), %r8b
+	movb	%r8b, 168(%rsp)
+	movb	105(%rdx), %r8b
+	movb	%r8b, 169(%rsp)
+	movb	106(%rdx), %r8b
+	movb	%r8b, 170(%rsp)
+	movb	107(%rdx), %r8b
+	movb	%r8b, 171(%rsp)
+	movb	108(%rdx), %r8b
+	movb	%r8b, 172(%rsp)
+	movb	109(%rdx), %r8b
+	movb	%r8b, 173(%rsp)
+	movb	110(%rdx), %r8b
+	movb	%r8b, 174(%rsp)
+	movb	111(%rdx), %r8b
+	movb	%r8b, 175(%rsp)
+	movb	112(%rdx), %r8b
+	movb	%r8b, 176(%rsp)
+	movb	113(%rdx), %r8b
+	movb	%r8b, 177(%rsp)
+	movb	114(%rdx), %r8b
+	movb	%r8b, 178(%rsp)
+	movb	115(%rdx), %r8b
+	movb	%r8b, 179(%rsp)
+	movb	116(%rdx), %r8b
+	movb	%r8b, 180(%rsp)
+	movb	117(%rdx), %r8b
+	movb	%r8b, 181(%rsp)
+	movb	118(%rdx), %r8b
+	movb	%r8b, 182(%rsp)
+	movb	119(%rdx), %r8b
+	movb	%r8b, 183(%rsp)
+	movb	120(%rdx), %r8b
+	movb	%r8b, 184(%rsp)
+	movb	121(%rdx), %r8b
+	movb	%r8b, 185(%rsp)
+	movb	122(%rdx), %r8b
+	movb	%r8b, 186(%rsp)
+	movb	123(%rdx), %r8b
+	movb	%r8b, 187(%rsp)
+	movb	124(%rdx), %r8b
+	movb	%r8b, 188(%rsp)
+	movb	125(%rdx), %r8b
+	movb	%r8b, 189(%rsp)
+	movb	126(%rdx), %r8b
+	movb	%r8b, 190(%rsp)
+	movb	127(%rdx), %r8b
+	movb	%r8b, 191(%rsp)
+	movb	128(%rdx), %r8b
+	movb	%r8b, 192(%rsp)
+	movb	129(%rdx), %r8b
+	movb	%r8b, 193(%rsp)
+	movb	130(%rdx), %r8b
+	movb	%r8b, 194(%rsp)
+	movb	131(%rdx), %r8b
+	movb	%r8b, 195(%rsp)
+	movb	132(%rdx), %r8b
+	movb	%r8b, 196(%rsp)
+	movb	133(%rdx), %r8b
+	movb	%r8b, 197(%rsp)
+	movb	134(%rdx), %r8b
+	movb	%r8b, 198(%rsp)
+	movb	135(%rdx), %r8b
+	movb	%r8b, 199(%rsp)
+	movb	136(%rdx), %r8b
+	movb	%r8b, 200(%rsp)
+	movb	137(%rdx), %r8b
+	movb	%r8b, 201(%rsp)
+	movb	138(%rdx), %r8b
+	movb	%r8b, 202(%rsp)
+	movb	139(%rdx), %r8b
+	movb	%r8b, 203(%rsp)
+	movb	140(%rdx), %r8b
+	movb	%r8b, 204(%rsp)
+	movb	141(%rdx), %r8b
+	movb	%r8b, 205(%rsp)
+	movb	142(%rdx), %r8b
+	movb	%r8b, 206(%rsp)
+	movb	143(%rdx), %r8b
+	movb	%r8b, 207(%rsp)
+	movb	144(%rdx), %r8b
+	movb	%r8b, 208(%rsp)
+	movb	145(%rdx), %r8b
+	movb	%r8b, 209(%rsp)
+	movb	146(%rdx), %r8b
+	movb	%r8b, 210(%rsp)
+	movb	147(%rdx), %r8b
+	movb	%r8b, 211(%rsp)
+	movb	148(%rdx), %r8b
+	movb	%r8b, 212(%rsp)
+	movb	149(%rdx), %r8b
+	movb	%r8b, 213(%rsp)
+	movb	150(%rdx), %r8b
+	movb	%r8b, 214(%rsp)
+	movb	151(%rdx), %r8b
+	movb	%r8b, 215(%rsp)
+	movb	152(%rdx), %r8b
+	movb	%r8b, 216(%rsp)
+	movb	153(%rdx), %r8b
+	movb	%r8b, 217(%rsp)
+	movb	154(%rdx), %r8b
+	movb	%r8b, 218(%rsp)
+	movb	155(%rdx), %r8b
+	movb	%r8b, 219(%rsp)
+	movb	156(%rdx), %r8b
+	movb	%r8b, 220(%rsp)
+	movb	157(%rdx), %r8b
+	movb	%r8b, 221(%rsp)
+	movb	158(%rdx), %r8b
+	movb	%r8b, 222(%rsp)
+	movb	159(%rdx), %r8b
+	movb	%r8b, 223(%rsp)
+	movb	160(%rdx), %r8b
+	movb	%r8b, 224(%rsp)
+	movb	161(%rdx), %r8b
+	movb	%r8b, 225(%rsp)
+	movb	162(%rdx), %r8b
+	movb	%r8b, 226(%rsp)
+	movb	163(%rdx), %r8b
+	movb	%r8b, 227(%rsp)
+	movb	164(%rdx), %r8b
+	movb	%r8b, 228(%rsp)
+	movb	165(%rdx), %r8b
+	movb	%r8b, 229(%rsp)
+	movb	166(%rdx), %r8b
+	movb	%r8b, 230(%rsp)
+	movb	167(%rdx), %r8b
+	movb	%r8b, 231(%rsp)
+	movb	168(%rdx), %r8b
+	movb	%r8b, 232(%rsp)
+	movb	169(%rdx), %r8b
+	movb	%r8b, 233(%rsp)
+	movb	170(%rdx), %r8b
+	movb	%r8b, 234(%rsp)
+	movb	171(%rdx), %r8b
+	movb	%r8b, 235(%rsp)
+	movb	172(%rdx), %r8b
+	movb	%r8b, 236(%rsp)
+	movb	173(%rdx), %r8b
+	movb	%r8b, 237(%rsp)
+	movb	174(%rdx), %r8b
+	movb	%r8b, 238(%rsp)
+	movb	175(%rdx), %r8b
+	movb	%r8b, 239(%rsp)
+	movb	176(%rdx), %r8b
+	movb	%r8b, 240(%rsp)
+	movb	177(%rdx), %r8b
+	movb	%r8b, 241(%rsp)
+	movb	178(%rdx), %r8b
+	movb	%r8b, 242(%rsp)
+	movb	179(%rdx), %r8b
+	movb	%r8b, 243(%rsp)
+	movb	180(%rdx), %r8b
+	movb	%r8b, 244(%rsp)
+	movb	181(%rdx), %r8b
+	movb	%r8b, 245(%rsp)
+	movb	182(%rdx), %r8b
+	movb	%r8b, 246(%rsp)
+	movb	183(%rdx), %r8b
+	movb	%r8b, 247(%rsp)
+	movb	184(%rdx), %r8b
+	movb	%r8b, 248(%rsp)
+	movb	185(%rdx), %r8b
+	movb	%r8b, 249(%rsp)
+	movb	186(%rdx), %r8b
+	movb	%r8b, 250(%rsp)
+	movb	187(%rdx), %r8b
+	movb	%r8b, 251(%rsp)
+	movb	188(%rdx), %r8b
+	movb	%r8b, 252(%rsp)
+	movb	189(%rdx), %r8b
+	movb	%r8b, 253(%rsp)
+	movb	190(%rdx), %r8b
+	movb	%r8b, 254(%rsp)
+	movb	191(%rdx), %r8b
+	movb	%r8b, 255(%rsp)
+	movb	192(%rdx), %r8b
+	movb	%r8b, 256(%rsp)
+	movb	193(%rdx), %r8b
+	movb	%r8b, 257(%rsp)
+	movb	194(%rdx), %r8b
+	movb	%r8b, 258(%rsp)
+	movb	195(%rdx), %r8b
+	movb	%r8b, 259(%rsp)
+	movb	196(%rdx), %r8b
+	movb	%r8b, 260(%rsp)
+	movb	197(%rdx), %r8b
+	movb	%r8b, 261(%rsp)
+	movb	198(%rdx), %r8b
+	movb	%r8b, 262(%rsp)
+	movb	199(%rdx), %r8b
+	movb	%r8b, 263(%rsp)
+	movb	200(%rdx), %r8b
+	movb	%r8b, 264(%rsp)
+	movb	201(%rdx), %r8b
+	movb	%r8b, 265(%rsp)
+	movb	202(%rdx), %r8b
+	movb	%r8b, 266(%rsp)
+	movb	203(%rdx), %r8b
+	movb	%r8b, 267(%rsp)
+	movb	204(%rdx), %r8b
+	movb	%r8b, 268(%rsp)
+	movb	205(%rdx), %r8b
+	movb	%r8b, 269(%rsp)
+	movb	206(%rdx), %r8b
+	movb	%r8b, 270(%rsp)
+	movb	207(%rdx), %r8b
+	movb	%r8b, 271(%rsp)
+	movb	208(%rdx), %r8b
+	movb	%r8b, 272(%rsp)
+	movb	209(%rdx), %r8b
+	movb	%r8b, 273(%rsp)
+	movb	210(%rdx), %r8b
+	movb	%r8b, 274(%rsp)
+	movb	211(%rdx), %r8b
+	movb	%r8b, 275(%rsp)
+	movb	212(%rdx), %r8b
+	movb	%r8b, 276(%rsp)
+	movb	213(%rdx), %r8b
+	movb	%r8b, 277(%rsp)
+	movb	214(%rdx), %r8b
+	movb	%r8b, 278(%rsp)
+	movb	215(%rdx), %r8b
+	movb	%r8b, 279(%rsp)
+	movb	216(%rdx), %r8b
+	movb	%r8b, 280(%rsp)
+	movb	217(%rdx), %r8b
+	movb	%r8b, 281(%rsp)
+	movb	218(%rdx), %r8b
+	movb	%r8b, 282(%rsp)
+	movb	219(%rdx), %r8b
+	movb	%r8b, 283(%rsp)
+	movb	220(%rdx), %r8b
+	movb	%r8b, 284(%rsp)
+	movb	221(%rdx), %r8b
+	movb	%r8b, 285(%rsp)
+	movb	222(%rdx), %r8b
+	movb	%r8b, 286(%rsp)
+	movb	223(%rdx), %r8b
+	movb	%r8b, 287(%rsp)
+	movb	224(%rdx), %r8b
+	movb	%r8b, 288(%rsp)
+	movb	225(%rdx), %r8b
+	movb	%r8b, 289(%rsp)
+	movb	226(%rdx), %r8b
+	movb	%r8b, 290(%rsp)
+	movb	227(%rdx), %r8b
+	movb	%r8b, 291(%rsp)
+	movb	228(%rdx), %r8b
+	movb	%r8b, 292(%rsp)
+	movb	229(%rdx), %r8b
+	movb	%r8b, 293(%rsp)
+	movb	230(%rdx), %r8b
+	movb	%r8b, 294(%rsp)
+	movb	231(%rdx), %r8b
+	movb	%r8b, 295(%rsp)
+	movb	232(%rdx), %r8b
+	movb	%r8b, 296(%rsp)
+	movb	233(%rdx), %r8b
+	movb	%r8b, 297(%rsp)
+	movb	234(%rdx), %r8b
+	movb	%r8b, 298(%rsp)
+	movb	235(%rdx), %r8b
+	movb	%r8b, 299(%rsp)
+	movb	236(%rdx), %r8b
+	movb	%r8b, 300(%rsp)
+	movb	237(%rdx), %r8b
+	movb	%r8b, 301(%rsp)
+	movb	238(%rdx), %r8b
+	movb	%r8b, 302(%rsp)
+	movb	239(%rdx), %r8b
+	movb	%r8b, 303(%rsp)
+	movb	240(%rdx), %r8b
+	movb	%r8b, 304(%rsp)
+	movb	241(%rdx), %r8b
+	movb	%r8b, 305(%rsp)
+	movb	242(%rdx), %r8b
+	movb	%r8b, 306(%rsp)
+	movb	243(%rdx), %r8b
+	movb	%r8b, 307(%rsp)
+	movb	244(%rdx), %r8b
+	movb	%r8b, 308(%rsp)
+	movb	245(%rdx), %r8b
+	movb	%r8b, 309(%rsp)
+	movb	246(%rdx), %r8b
+	movb	%r8b, 310(%rsp)
+	movb	247(%rdx), %r8b
+	movb	%r8b, 311(%rsp)
+	movb	248(%rdx), %r8b
+	movb	%r8b, 312(%rsp)
+	movb	249(%rdx), %r8b
+	movb	%r8b, 313(%rsp)
+	movb	250(%rdx), %r8b
+	movb	%r8b, 314(%rsp)
+	movb	251(%rdx), %r8b
+	movb	%r8b, 315(%rsp)
+	movb	252(%rdx), %r8b
+	movb	%r8b, 316(%rsp)
+	movb	253(%rdx), %r8b
+	movb	%r8b, 317(%rsp)
+	movb	254(%rdx), %r8b
+	movb	%r8b, 318(%rsp)
+	movb	255(%rdx), %r8b
+	movb	%r8b, 319(%rsp)
+	movb	256(%rdx), %r8b
+	movb	%r8b, 320(%rsp)
+	movb	257(%rdx), %r8b
+	movb	%r8b, 321(%rsp)
+	movb	258(%rdx), %r8b
+	movb	%r8b, 322(%rsp)
+	movb	259(%rdx), %r8b
+	movb	%r8b, 323(%rsp)
+	movb	260(%rdx), %r8b
+	movb	%r8b, 324(%rsp)
+	movb	261(%rdx), %r8b
+	movb	%r8b, 325(%rsp)
+	movb	262(%rdx), %r8b
+	movb	%r8b, 326(%rsp)
+	movb	263(%rdx), %r8b
+	movb	%r8b, 327(%rsp)
+	movb	264(%rdx), %r8b
+	movb	%r8b, 328(%rsp)
+	movb	265(%rdx), %r8b
+	movb	%r8b, 329(%rsp)
+	movb	266(%rdx), %r8b
+	movb	%r8b, 330(%rsp)
+	movb	267(%rdx), %r8b
+	movb	%r8b, 331(%rsp)
+	movb	268(%rdx), %r8b
+	movb	%r8b, 332(%rsp)
+	movb	269(%rdx), %r8b
+	movb	%r8b, 333(%rsp)
+	movb	270(%rdx), %r8b
+	movb	%r8b, 334(%rsp)
+	movb	271(%rdx), %r8b
+	movb	%r8b, 335(%rsp)
+	movb	272(%rdx), %r8b
+	movb	%r8b, 336(%rsp)
+	movb	273(%rdx), %r8b
+	movb	%r8b, 337(%rsp)
+	movb	274(%rdx), %r8b
+	movb	%r8b, 338(%rsp)
+	movb	275(%rdx), %r8b
+	movb	%r8b, 339(%rsp)
+	movb	276(%rdx), %r8b
+	movb	%r8b, 340(%rsp)
+	movb	277(%rdx), %r8b
+	movb	%r8b, 341(%rsp)
+	movb	278(%rdx), %r8b
+	movb	%r8b, 342(%rsp)
+	movb	279(%rdx), %r8b
+	movb	%r8b, 343(%rsp)
+	movb	280(%rdx), %r8b
+	movb	%r8b, 344(%rsp)
+	movb	281(%rdx), %r8b
+	movb	%r8b, 345(%rsp)
+	movb	282(%rdx), %r8b
+	movb	%r8b, 346(%rsp)
+	movb	283(%rdx), %r8b
+	movb	%r8b, 347(%rsp)
+	movb	284(%rdx), %r8b
+	movb	%r8b, 348(%rsp)
+	movb	285(%rdx), %r8b
+	movb	%r8b, 349(%rsp)
+	movb	286(%rdx), %r8b
+	movb	%r8b, 350(%rsp)
+	movb	287(%rdx), %r8b
+	movb	%r8b, 351(%rsp)
+	movb	288(%rdx), %r8b
+	movb	%r8b, 352(%rsp)
+	movb	289(%rdx), %r8b
+	movb	%r8b, 353(%rsp)
+	movb	290(%rdx), %r8b
+	movb	%r8b, 354(%rsp)
+	movb	291(%rdx), %r8b
+	movb	%r8b, 355(%rsp)
+	movb	292(%rdx), %r8b
+	movb	%r8b, 356(%rsp)
+	movb	293(%rdx), %r8b
+	movb	%r8b, 357(%rsp)
+	movb	294(%rdx), %r8b
+	movb	%r8b, 358(%rsp)
+	movb	295(%rdx), %r8b
+	movb	%r8b, 359(%rsp)
+	movb	296(%rdx), %r8b
+	movb	%r8b, 360(%rsp)
+	movb	297(%rdx), %r8b
+	movb	%r8b, 361(%rsp)
+	movb	298(%rdx), %r8b
+	movb	%r8b, 362(%rsp)
+	movb	299(%rdx), %r8b
+	movb	%r8b, 363(%rsp)
+	movb	300(%rdx), %r8b
+	movb	%r8b, 364(%rsp)
+	movb	301(%rdx), %r8b
+	movb	%r8b, 365(%rsp)
+	movb	302(%rdx), %r8b
+	movb	%r8b, 366(%rsp)
+	movb	303(%rdx), %r8b
+	movb	%r8b, 367(%rsp)
+	movb	304(%rdx), %r8b
+	movb	%r8b, 368(%rsp)
+	movb	305(%rdx), %r8b
+	movb	%r8b, 369(%rsp)
+	movb	306(%rdx), %r8b
+	movb	%r8b, 370(%rsp)
+	movb	307(%rdx), %r8b
+	movb	%r8b, 371(%rsp)
+	movb	308(%rdx), %r8b
+	movb	%r8b, 372(%rsp)
+	movb	309(%rdx), %r8b
+	movb	%r8b, 373(%rsp)
+	movb	310(%rdx), %r8b
+	movb	%r8b, 374(%rsp)
+	movb	311(%rdx), %r8b
+	movb	%r8b, 375(%rsp)
+	movb	312(%rdx), %r8b
+	movb	%r8b, 376(%rsp)
+	movb	313(%rdx), %r8b
+	movb	%r8b, 377(%rsp)
+	movb	314(%rdx), %r8b
+	movb	%r8b, 378(%rsp)
+	movb	315(%rdx), %r8b
+	movb	%r8b, 379(%rsp)
+	movb	316(%rdx), %r8b
+	movb	%r8b, 380(%rsp)
+	movb	317(%rdx), %r8b
+	movb	%r8b, 381(%rsp)
+	movb	318(%rdx), %r8b
+	movb	%r8b, 382(%rsp)
+	movb	319(%rdx), %r8b
+	movb	%r8b, 383(%rsp)
+	movb	320(%rdx), %r8b
+	movb	%r8b, 384(%rsp)
+	movb	321(%rdx), %r8b
+	movb	%r8b, 385(%rsp)
+	movb	322(%rdx), %r8b
+	movb	%r8b, 386(%rsp)
+	movb	323(%rdx), %r8b
+	movb	%r8b, 387(%rsp)
+	movb	324(%rdx), %r8b
+	movb	%r8b, 388(%rsp)
+	movb	325(%rdx), %r8b
+	movb	%r8b, 389(%rsp)
+	movb	326(%rdx), %r8b
+	movb	%r8b, 390(%rsp)
+	movb	327(%rdx), %r8b
+	movb	%r8b, 391(%rsp)
+	movb	328(%rdx), %r8b
+	movb	%r8b, 392(%rsp)
+	movb	329(%rdx), %r8b
+	movb	%r8b, 393(%rsp)
+	movb	330(%rdx), %r8b
+	movb	%r8b, 394(%rsp)
+	movb	331(%rdx), %r8b
+	movb	%r8b, 395(%rsp)
+	movb	332(%rdx), %r8b
+	movb	%r8b, 396(%rsp)
+	movb	333(%rdx), %r8b
+	movb	%r8b, 397(%rsp)
+	movb	334(%rdx), %r8b
+	movb	%r8b, 398(%rsp)
+	movb	335(%rdx), %r8b
+	movb	%r8b, 399(%rsp)
+	movb	336(%rdx), %r8b
+	movb	%r8b, 400(%rsp)
+	movb	337(%rdx), %r8b
+	movb	%r8b, 401(%rsp)
+	movb	338(%rdx), %r8b
+	movb	%r8b, 402(%rsp)
+	movb	339(%rdx), %r8b
+	movb	%r8b, 403(%rsp)
+	movb	340(%rdx), %r8b
+	movb	%r8b, 404(%rsp)
+	movb	341(%rdx), %r8b
+	movb	%r8b, 405(%rsp)
+	movb	342(%rdx), %r8b
+	movb	%r8b, 406(%rsp)
+	movb	343(%rdx), %r8b
+	movb	%r8b, 407(%rsp)
+	movb	344(%rdx), %r8b
+	movb	%r8b, 408(%rsp)
+	movb	345(%rdx), %r8b
+	movb	%r8b, 409(%rsp)
+	movb	346(%rdx), %r8b
+	movb	%r8b, 410(%rsp)
+	movb	347(%rdx), %r8b
+	movb	%r8b, 411(%rsp)
+	movb	348(%rdx), %r8b
+	movb	%r8b, 412(%rsp)
+	movb	349(%rdx), %r8b
+	movb	%r8b, 413(%rsp)
+	movb	350(%rdx), %r8b
+	movb	%r8b, 414(%rsp)
+	movb	351(%rdx), %r8b
+	movb	%r8b, 415(%rsp)
+	movb	352(%rdx), %r8b
+	movb	%r8b, 416(%rsp)
+	movb	353(%rdx), %r8b
+	movb	%r8b, 417(%rsp)
+	movb	354(%rdx), %r8b
+	movb	%r8b, 418(%rsp)
+	movb	355(%rdx), %r8b
+	movb	%r8b, 419(%rsp)
+	movb	356(%rdx), %r8b
+	movb	%r8b, 420(%rsp)
+	movb	357(%rdx), %r8b
+	movb	%r8b, 421(%rsp)
+	movb	358(%rdx), %r8b
+	movb	%r8b, 422(%rsp)
+	movb	359(%rdx), %r8b
+	movb	%r8b, 423(%rsp)
+	movb	360(%rdx), %r8b
+	movb	%r8b, 424(%rsp)
+	movb	361(%rdx), %r8b
+	movb	%r8b, 425(%rsp)
+	movb	362(%rdx), %r8b
+	movb	%r8b, 426(%rsp)
+	movb	363(%rdx), %r8b
+	movb	%r8b, 427(%rsp)
+	movb	364(%rdx), %r8b
+	movb	%r8b, 428(%rsp)
+	movb	365(%rdx), %r8b
+	movb	%r8b, 429(%rsp)
+	movb	366(%rdx), %r8b
+	movb	%r8b, 430(%rsp)
+	movb	367(%rdx), %r8b
+	movb	%r8b, 431(%rsp)
+	movb	368(%rdx), %r8b
+	movb	%r8b, 432(%rsp)
+	movb	369(%rdx), %r8b
+	movb	%r8b, 433(%rsp)
+	movb	370(%rdx), %r8b
+	movb	%r8b, 434(%rsp)
+	movb	371(%rdx), %r8b
+	movb	%r8b, 435(%rsp)
+	movb	372(%rdx), %r8b
+	movb	%r8b, 436(%rsp)
+	movb	373(%rdx), %r8b
+	movb	%r8b, 437(%rsp)
+	movb	374(%rdx), %r8b
+	movb	%r8b, 438(%rsp)
+	movb	375(%rdx), %r8b
+	movb	%r8b, 439(%rsp)
+	movb	376(%rdx), %r8b
+	movb	%r8b, 440(%rsp)
+	movb	377(%rdx), %r8b
+	movb	%r8b, 441(%rsp)
+	movb	378(%rdx), %r8b
+	movb	%r8b, 442(%rsp)
+	movb	379(%rdx), %r8b
+	movb	%r8b, 443(%rsp)
+	movb	380(%rdx), %r8b
+	movb	%r8b, 444(%rsp)
+	movb	381(%rdx), %r8b
+	movb	%r8b, 445(%rsp)
+	movb	382(%rdx), %r8b
+	movb	%r8b, 446(%rsp)
+	movb	383(%rdx), %r8b
+	movb	%r8b, 447(%rsp)
+	movb	384(%rdx), %r8b
+	movb	%r8b, 448(%rsp)
+	movb	385(%rdx), %r8b
+	movb	%r8b, 449(%rsp)
+	movb	386(%rdx), %r8b
+	movb	%r8b, 450(%rsp)
+	movb	387(%rdx), %r8b
+	movb	%r8b, 451(%rsp)
+	movb	388(%rdx), %r8b
+	movb	%r8b, 452(%rsp)
+	movb	389(%rdx), %r8b
+	movb	%r8b, 453(%rsp)
+	movb	390(%rdx), %r8b
+	movb	%r8b, 454(%rsp)
+	movb	391(%rdx), %r8b
+	movb	%r8b, 455(%rsp)
+	movb	392(%rdx), %r8b
+	movb	%r8b, 456(%rsp)
+	movb	393(%rdx), %r8b
+	movb	%r8b, 457(%rsp)
+	movb	394(%rdx), %r8b
+	movb	%r8b, 458(%rsp)
+	movb	395(%rdx), %r8b
+	movb	%r8b, 459(%rsp)
+	movb	396(%rdx), %r8b
+	movb	%r8b, 460(%rsp)
+	movb	397(%rdx), %r8b
+	movb	%r8b, 461(%rsp)
+	movb	398(%rdx), %r8b
+	movb	%r8b, 462(%rsp)
+	movb	399(%rdx), %r8b
+	movb	%r8b, 463(%rsp)
+	movb	400(%rdx), %r8b
+	movb	%r8b, 464(%rsp)
+	movb	401(%rdx), %r8b
+	movb	%r8b, 465(%rsp)
+	movb	402(%rdx), %r8b
+	movb	%r8b, 466(%rsp)
+	movb	403(%rdx), %r8b
+	movb	%r8b, 467(%rsp)
+	movb	404(%rdx), %r8b
+	movb	%r8b, 468(%rsp)
+	movb	405(%rdx), %r8b
+	movb	%r8b, 469(%rsp)
+	movb	406(%rdx), %r8b
+	movb	%r8b, 470(%rsp)
+	movb	407(%rdx), %r8b
+	movb	%r8b, 471(%rsp)
+	movb	408(%rdx), %r8b
+	movb	%r8b, 472(%rsp)
+	movb	409(%rdx), %r8b
+	movb	%r8b, 473(%rsp)
+	movb	410(%rdx), %r8b
+	movb	%r8b, 474(%rsp)
+	movb	411(%rdx), %r8b
+	movb	%r8b, 475(%rsp)
+	movb	412(%rdx), %r8b
+	movb	%r8b, 476(%rsp)
+	movb	413(%rdx), %r8b
+	movb	%r8b, 477(%rsp)
+	movb	414(%rdx), %r8b
+	movb	%r8b, 478(%rsp)
+	movb	415(%rdx), %r8b
+	movb	%r8b, 479(%rsp)
+	movb	416(%rdx), %r8b
+	movb	%r8b, 480(%rsp)
+	movb	417(%rdx), %r8b
+	movb	%r8b, 481(%rsp)
+	movb	418(%rdx), %r8b
+	movb	%r8b, 482(%rsp)
+	movb	419(%rdx), %r8b
+	movb	%r8b, 483(%rsp)
+	movb	420(%rdx), %r8b
+	movb	%r8b, 484(%rsp)
+	movb	421(%rdx), %r8b
+	movb	%r8b, 485(%rsp)
+	movb	422(%rdx), %r8b
+	movb	%r8b, 486(%rsp)
+	movb	423(%rdx), %r8b
+	movb	%r8b, 487(%rsp)
+	movb	424(%rdx), %r8b
+	movb	%r8b, 488(%rsp)
+	movb	425(%rdx), %r8b
+	movb	%r8b, 489(%rsp)
+	movb	426(%rdx), %r8b
+	movb	%r8b, 490(%rsp)
+	movb	427(%rdx), %r8b
+	movb	%r8b, 491(%rsp)
+	movb	428(%rdx), %r8b
+	movb	%r8b, 492(%rsp)
+	movb	429(%rdx), %r8b
+	movb	%r8b, 493(%rsp)
+	movb	430(%rdx), %r8b
+	movb	%r8b, 494(%rsp)
+	movb	431(%rdx), %r8b
+	movb	%r8b, 495(%rsp)
+	movb	432(%rdx), %r8b
+	movb	%r8b, 496(%rsp)
+	movb	433(%rdx), %r8b
+	movb	%r8b, 497(%rsp)
+	movb	434(%rdx), %r8b
+	movb	%r8b, 498(%rsp)
+	movb	435(%rdx), %r8b
+	movb	%r8b, 499(%rsp)
+	movb	436(%rdx), %r8b
+	movb	%r8b, 500(%rsp)
+	movb	437(%rdx), %r8b
+	movb	%r8b, 501(%rsp)
+	movb	438(%rdx), %r8b
+	movb	%r8b, 502(%rsp)
+	movb	439(%rdx), %r8b
+	movb	%r8b, 503(%rsp)
+	movb	440(%rdx), %r8b
+	movb	%r8b, 504(%rsp)
+	movb	441(%rdx), %r8b
+	movb	%r8b, 505(%rsp)
+	movb	442(%rdx), %r8b
+	movb	%r8b, 506(%rsp)
+	movb	443(%rdx), %r8b
+	movb	%r8b, 507(%rsp)
+	movb	444(%rdx), %r8b
+	movb	%r8b, 508(%rsp)
+	movb	445(%rdx), %r8b
+	movb	%r8b, 509(%rsp)
+	movb	446(%rdx), %r8b
+	movb	%r8b, 510(%rsp)
+	movb	447(%rdx), %r8b
+	movb	%r8b, 511(%rsp)
+	movb	448(%rdx), %r8b
+	movb	%r8b, 512(%rsp)
+	movb	449(%rdx), %r8b
+	movb	%r8b, 513(%rsp)
+	movb	450(%rdx), %r8b
+	movb	%r8b, 514(%rsp)
+	movb	451(%rdx), %r8b
+	movb	%r8b, 515(%rsp)
+	movb	452(%rdx), %r8b
+	movb	%r8b, 516(%rsp)
+	movb	453(%rdx), %r8b
+	movb	%r8b, 517(%rsp)
+	movb	454(%rdx), %r8b
+	movb	%r8b, 518(%rsp)
+	movb	455(%rdx), %r8b
+	movb	%r8b, 519(%rsp)
+	movb	456(%rdx), %r8b
+	movb	%r8b, 520(%rsp)
+	movb	457(%rdx), %r8b
+	movb	%r8b, 521(%rsp)
+	movb	458(%rdx), %r8b
+	movb	%r8b, 522(%rsp)
+	movb	459(%rdx), %r8b
+	movb	%r8b, 523(%rsp)
+	movb	460(%rdx), %r8b
+	movb	%r8b, 524(%rsp)
+	movb	461(%rdx), %r8b
+	movb	%r8b, 525(%rsp)
+	movb	462(%rdx), %r8b
+	movb	%r8b, 526(%rsp)
+	movb	463(%rdx), %r8b
+	movb	%r8b, 527(%rsp)
+	movb	464(%rdx), %r8b
+	movb	%r8b, 528(%rsp)
+	movb	465(%rdx), %r8b
+	movb	%r8b, 529(%rsp)
+	movb	466(%rdx), %r8b
+	movb	%r8b, 530(%rsp)
+	movb	467(%rdx), %r8b
+	movb	%r8b, 531(%rsp)
+	movb	468(%rdx), %r8b
+	movb	%r8b, 532(%rsp)
+	movb	469(%rdx), %r8b
+	movb	%r8b, 533(%rsp)
+	movb	470(%rdx), %r8b
+	movb	%r8b, 534(%rsp)
+	movb	471(%rdx), %r8b
+	movb	%r8b, 535(%rsp)
+	movb	472(%rdx), %r8b
+	movb	%r8b, 536(%rsp)
+	movb	473(%rdx), %r8b
+	movb	%r8b, 537(%rsp)
+	movb	474(%rdx), %r8b
+	movb	%r8b, 538(%rsp)
+	movb	475(%rdx), %r8b
+	movb	%r8b, 539(%rsp)
+	movb	476(%rdx), %r8b
+	movb	%r8b, 540(%rsp)
+	movb	477(%rdx), %r8b
+	movb	%r8b, 541(%rsp)
+	movb	478(%rdx), %r8b
+	movb	%r8b, 542(%rsp)
+	movb	479(%rdx), %r8b
+	movb	%r8b, 543(%rsp)
+	movb	480(%rdx), %r8b
+	movb	%r8b, 544(%rsp)
+	movb	481(%rdx), %r8b
+	movb	%r8b, 545(%rsp)
+	movb	482(%rdx), %r8b
+	movb	%r8b, 546(%rsp)
+	movb	483(%rdx), %r8b
+	movb	%r8b, 547(%rsp)
+	movb	484(%rdx), %r8b
+	movb	%r8b, 548(%rsp)
+	movb	485(%rdx), %r8b
+	movb	%r8b, 549(%rsp)
+	movb	486(%rdx), %r8b
+	movb	%r8b, 550(%rsp)
+	movb	487(%rdx), %r8b
+	movb	%r8b, 551(%rsp)
+	movb	488(%rdx), %r8b
+	movb	%r8b, 552(%rsp)
+	movb	489(%rdx), %r8b
+	movb	%r8b, 553(%rsp)
+	movb	490(%rdx), %r8b
+	movb	%r8b, 554(%rsp)
+	movb	491(%rdx), %r8b
+	movb	%r8b, 555(%rsp)
+	movb	492(%rdx), %r8b
+	movb	%r8b, 556(%rsp)
+	movb	493(%rdx), %r8b
+	movb	%r8b, 557(%rsp)
+	movb	494(%rdx), %r8b
+	movb	%r8b, 558(%rsp)
+	movb	495(%rdx), %r8b
+	movb	%r8b, 559(%rsp)
+	movb	496(%rdx), %r8b
+	movb	%r8b, 560(%rsp)
+	movb	497(%rdx), %r8b
+	movb	%r8b, 561(%rsp)
+	movb	498(%rdx), %r8b
+	movb	%r8b, 562(%rsp)
+	movb	499(%rdx), %r8b
+	movb	%r8b, 563(%rsp)
+	movb	500(%rdx), %r8b
+	movb	%r8b, 564(%rsp)
+	movb	501(%rdx), %r8b
+	movb	%r8b, 565(%rsp)
+	movb	502(%rdx), %r8b
+	movb	%r8b, 566(%rsp)
+	movb	503(%rdx), %r8b
+	movb	%r8b, 567(%rsp)
+	movb	504(%rdx), %r8b
+	movb	%r8b, 568(%rsp)
+	movb	505(%rdx), %r8b
+	movb	%r8b, 569(%rsp)
+	movb	506(%rdx), %r8b
+	movb	%r8b, 570(%rsp)
+	movb	507(%rdx), %r8b
+	movb	%r8b, 571(%rsp)
+	movb	508(%rdx), %r8b
+	movb	%r8b, 572(%rsp)
+	movb	509(%rdx), %r8b
+	movb	%r8b, 573(%rsp)
+	movb	510(%rdx), %r8b
+	movb	%r8b, 574(%rsp)
+	movb	511(%rdx), %r8b
+	movb	%r8b, 575(%rsp)
+	movb	512(%rdx), %r8b
+	movb	%r8b, 576(%rsp)
+	movb	513(%rdx), %r8b
+	movb	%r8b, 577(%rsp)
+	movb	514(%rdx), %r8b
+	movb	%r8b, 578(%rsp)
+	movb	515(%rdx), %r8b
+	movb	%r8b, 579(%rsp)
+	movb	516(%rdx), %r8b
+	movb	%r8b, 580(%rsp)
+	movb	517(%rdx), %r8b
+	movb	%r8b, 581(%rsp)
+	movb	518(%rdx), %r8b
+	movb	%r8b, 582(%rsp)
+	movb	519(%rdx), %r8b
+	movb	%r8b, 583(%rsp)
+	movb	520(%rdx), %r8b
+	movb	%r8b, 584(%rsp)
+	movb	521(%rdx), %r8b
+	movb	%r8b, 585(%rsp)
+	movb	522(%rdx), %r8b
+	movb	%r8b, 586(%rsp)
+	movb	523(%rdx), %r8b
+	movb	%r8b, 587(%rsp)
+	movb	524(%rdx), %r8b
+	movb	%r8b, 588(%rsp)
+	movb	525(%rdx), %r8b
+	movb	%r8b, 589(%rsp)
+	movb	526(%rdx), %r8b
+	movb	%r8b, 590(%rsp)
+	movb	527(%rdx), %r8b
+	movb	%r8b, 591(%rsp)
+	movb	528(%rdx), %r8b
+	movb	%r8b, 592(%rsp)
+	movb	529(%rdx), %r8b
+	movb	%r8b, 593(%rsp)
+	movb	530(%rdx), %r8b
+	movb	%r8b, 594(%rsp)
+	movb	531(%rdx), %r8b
+	movb	%r8b, 595(%rsp)
+	movb	532(%rdx), %r8b
+	movb	%r8b, 596(%rsp)
+	movb	533(%rdx), %r8b
+	movb	%r8b, 597(%rsp)
+	movb	534(%rdx), %r8b
+	movb	%r8b, 598(%rsp)
+	movb	535(%rdx), %r8b
+	movb	%r8b, 599(%rsp)
+	movb	536(%rdx), %r8b
+	movb	%r8b, 600(%rsp)
+	movb	537(%rdx), %r8b
+	movb	%r8b, 601(%rsp)
+	movb	538(%rdx), %r8b
+	movb	%r8b, 602(%rsp)
+	movb	539(%rdx), %r8b
+	movb	%r8b, 603(%rsp)
+	movb	540(%rdx), %r8b
+	movb	%r8b, 604(%rsp)
+	movb	541(%rdx), %r8b
+	movb	%r8b, 605(%rsp)
+	movb	542(%rdx), %r8b
+	movb	%r8b, 606(%rsp)
+	movb	543(%rdx), %r8b
+	movb	%r8b, 607(%rsp)
+	movb	544(%rdx), %r8b
+	movb	%r8b, 608(%rsp)
+	movb	545(%rdx), %r8b
+	movb	%r8b, 609(%rsp)
+	movb	546(%rdx), %r8b
+	movb	%r8b, 610(%rsp)
+	movb	547(%rdx), %r8b
+	movb	%r8b, 611(%rsp)
+	movb	548(%rdx), %r8b
+	movb	%r8b, 612(%rsp)
+	movb	549(%rdx), %r8b
+	movb	%r8b, 613(%rsp)
+	movb	550(%rdx), %r8b
+	movb	%r8b, 614(%rsp)
+	movb	551(%rdx), %r8b
+	movb	%r8b, 615(%rsp)
+	movb	552(%rdx), %r8b
+	movb	%r8b, 616(%rsp)
+	movb	553(%rdx), %r8b
+	movb	%r8b, 617(%rsp)
+	movb	554(%rdx), %r8b
+	movb	%r8b, 618(%rsp)
+	movb	555(%rdx), %r8b
+	movb	%r8b, 619(%rsp)
+	movb	556(%rdx), %r8b
+	movb	%r8b, 620(%rsp)
+	movb	557(%rdx), %r8b
+	movb	%r8b, 621(%rsp)
+	movb	558(%rdx), %r8b
+	movb	%r8b, 622(%rsp)
 	movb	559(%rdx), %dl
 	movb	%dl, 623(%rsp)
-	movq	$0, %rsi
+	movq	$0, %rdx
 	movl	$0, %ecx
 	jmp 	.Lwots_pkfromsig$3
 .Lwots_pkfromsig$4:
 	movl	%ecx, 624(%rsp)
-	movq	%rsi, 16(%rsp)
+	movq	%rdx, 16(%rsp)
 	movq	%r10, 24(%rsp)
 	movl	%ecx, %eax
 	movl	%eax, 24(%r11)
 	movl	%ecx, %eax
-	movl	628(%rsp,%rax,4), %eax
-	movl	$15, %edx
-	subl	%eax, %edx
-	leaq	64(%rsp,%rsi), %rcx
-	movl	%eax, %esi
-	movq	%r11, %r8
-	movq	%r10, %rax
+	movl	628(%rsp,%rax,4), %ecx
+	lfence
+	movq	$0, %rax
+	movl	$15, %eax
+	subl	%ecx, %eax
+	leaq	64(%rsp,%rdx), %rdi
+	movl	%eax, %edx
+	movq	%r11, %rsi
+	movq	%r10, %r8
 	leaq	-24(%rsp), %rsp
 	call	.Lchain$1
 .Lwots_pkfromsig$5:
 	leaq	24(%rsp), %rsp
-	movq	%r8, %r11
+	movq	%rsi, %r11
 	movl	624(%rsp), %ecx
-	movq	16(%rsp), %rsi
+	movq	16(%rsp), %rdx
 	movq	24(%rsp), %r10
+	lfence
+	movq	$0, %rax
 	incl	%ecx
-	addq	$16, %rsi
+	addq	$16, %rdx
 .Lwots_pkfromsig$3:
 	cmpl	$35, %ecx
 	jb  	.Lwots_pkfromsig$4
@@ -3767,752 +3885,770 @@ slh_dsa_sha2128s_keygen:
 	movq	%rdx, 16(%rax)
 	movq	24(%r11), %rdx
 	movq	%rdx, 24(%rax)
-	leaq	32(%rsp), %r8
-	movq	$0, 16(%r8)
-	movq	$0, 24(%r8)
-	movl	$1, 16(%r8)
+	leaq	32(%rsp), %rsi
+	movq	$0, 16(%rsi)
+	movq	$0, 24(%rsi)
+	movl	$1, 16(%rsi)
 	movl	20(%r11), %edx
-	leaq	32(%rsp), %r8
-	movl	%edx, 20(%r8)
-	movq	8(%rsp), %rcx
+	leaq	32(%rsp), %rsi
+	movl	%edx, 20(%rsi)
+	movq	8(%rsp), %rax
+	lfence
+	movq	$0, %rcx
 	movq	%r11, 8(%rsp)
-	leaq	32(%rsp), %r8
-	leaq	64(%rsp), %rax
+	leaq	32(%rsp), %rsi
+	leaq	64(%rsp), %rcx
+	movq	%rax, %rdi
 	movq	%r10, %rdx
-	leaq	-632(%rsp), %rsp
+	leaq	-616(%rsp), %rsp
 	call	.LT_len$1
 .Lwots_pkfromsig$2:
-	leaq	632(%rsp), %rsp
-	movq	8(%rsp), %r8
+	leaq	616(%rsp), %rsp
+	movq	%rax, %rdx
+	movq	8(%rsp), %rsi
+	lfence
+	movq	$0, %rax
 	ret
 .Lwots_sign$1:
-	leaq	84(%rsp), %rsi
-	movq	%rsi, %rdx
-	movq	$0, %rdi
+	leaq	84(%rsp), %rdx
+	movq	%rdx, %r8
+	movq	$0, %r9
 	movl	$0, %ecx
-	movl	$0, %r9d
+	movl	$0, %r10d
 	jmp 	.Lwots_sign$76
 .Lwots_sign$77:
-	shll	$8, %r9d
-	movzbl	(%rax,%rdi), %ebp
-	orl 	%ebp, %r9d
-	incq	%rdi
+	shll	$8, %r10d
+	movzbl	(%rdi,%r9), %ebp
+	orl 	%ebp, %r10d
+	incq	%r9
 	addl	$8, %ecx
 .Lwots_sign$76:
 	cmpl	$4, %ecx
 	jb  	.Lwots_sign$77
-	movl	%r9d, %ebp
+	movl	%r10d, %ebp
 	addl	$-4, %ecx
 	shrq	%cl, %rbp
 	andq	$15, %rbp
-	movl	%ebp, (%rdx)
+	movl	%ebp, (%r8)
 	jmp 	.Lwots_sign$74
 .Lwots_sign$75:
-	shll	$8, %r9d
-	movzbl	(%rax,%rdi), %ebp
-	orl 	%ebp, %r9d
-	incq	%rdi
+	shll	$8, %r10d
+	movzbl	(%rdi,%r9), %ebp
+	orl 	%ebp, %r10d
+	incq	%r9
 	addl	$8, %ecx
 .Lwots_sign$74:
 	cmpl	$4, %ecx
 	jb  	.Lwots_sign$75
-	movl	%r9d, %ebp
+	movl	%r10d, %ebp
 	addl	$-4, %ecx
 	shrq	%cl, %rbp
 	andq	$15, %rbp
-	movl	%ebp, 4(%rdx)
+	movl	%ebp, 4(%r8)
 	jmp 	.Lwots_sign$72
 .Lwots_sign$73:
-	shll	$8, %r9d
-	movzbl	(%rax,%rdi), %ebp
-	orl 	%ebp, %r9d
-	incq	%rdi
+	shll	$8, %r10d
+	movzbl	(%rdi,%r9), %ebp
+	orl 	%ebp, %r10d
+	incq	%r9
 	addl	$8, %ecx
 .Lwots_sign$72:
 	cmpl	$4, %ecx
 	jb  	.Lwots_sign$73
-	movl	%r9d, %ebp
+	movl	%r10d, %ebp
 	addl	$-4, %ecx
 	shrq	%cl, %rbp
 	andq	$15, %rbp
-	movl	%ebp, 8(%rdx)
+	movl	%ebp, 8(%r8)
 	jmp 	.Lwots_sign$70
 .Lwots_sign$71:
-	shll	$8, %r9d
-	movzbl	(%rax,%rdi), %ebp
-	orl 	%ebp, %r9d
-	incq	%rdi
+	shll	$8, %r10d
+	movzbl	(%rdi,%r9), %ebp
+	orl 	%ebp, %r10d
+	incq	%r9
 	addl	$8, %ecx
 .Lwots_sign$70:
 	cmpl	$4, %ecx
 	jb  	.Lwots_sign$71
-	movl	%r9d, %ebp
+	movl	%r10d, %ebp
 	addl	$-4, %ecx
 	shrq	%cl, %rbp
 	andq	$15, %rbp
-	movl	%ebp, 12(%rdx)
+	movl	%ebp, 12(%r8)
 	jmp 	.Lwots_sign$68
 .Lwots_sign$69:
-	shll	$8, %r9d
-	movzbl	(%rax,%rdi), %ebp
-	orl 	%ebp, %r9d
-	incq	%rdi
+	shll	$8, %r10d
+	movzbl	(%rdi,%r9), %ebp
+	orl 	%ebp, %r10d
+	incq	%r9
 	addl	$8, %ecx
 .Lwots_sign$68:
 	cmpl	$4, %ecx
 	jb  	.Lwots_sign$69
-	movl	%r9d, %ebp
+	movl	%r10d, %ebp
 	addl	$-4, %ecx
 	shrq	%cl, %rbp
 	andq	$15, %rbp
-	movl	%ebp, 16(%rdx)
+	movl	%ebp, 16(%r8)
 	jmp 	.Lwots_sign$66
 .Lwots_sign$67:
-	shll	$8, %r9d
-	movzbl	(%rax,%rdi), %ebp
-	orl 	%ebp, %r9d
-	incq	%rdi
+	shll	$8, %r10d
+	movzbl	(%rdi,%r9), %ebp
+	orl 	%ebp, %r10d
+	incq	%r9
 	addl	$8, %ecx
 .Lwots_sign$66:
 	cmpl	$4, %ecx
 	jb  	.Lwots_sign$67
-	movl	%r9d, %ebp
+	movl	%r10d, %ebp
 	addl	$-4, %ecx
 	shrq	%cl, %rbp
 	andq	$15, %rbp
-	movl	%ebp, 20(%rdx)
+	movl	%ebp, 20(%r8)
 	jmp 	.Lwots_sign$64
 .Lwots_sign$65:
-	shll	$8, %r9d
-	movzbl	(%rax,%rdi), %ebp
-	orl 	%ebp, %r9d
-	incq	%rdi
+	shll	$8, %r10d
+	movzbl	(%rdi,%r9), %ebp
+	orl 	%ebp, %r10d
+	incq	%r9
 	addl	$8, %ecx
 .Lwots_sign$64:
 	cmpl	$4, %ecx
 	jb  	.Lwots_sign$65
-	movl	%r9d, %ebp
+	movl	%r10d, %ebp
 	addl	$-4, %ecx
 	shrq	%cl, %rbp
 	andq	$15, %rbp
-	movl	%ebp, 24(%rdx)
+	movl	%ebp, 24(%r8)
 	jmp 	.Lwots_sign$62
 .Lwots_sign$63:
-	shll	$8, %r9d
-	movzbl	(%rax,%rdi), %ebp
-	orl 	%ebp, %r9d
-	incq	%rdi
+	shll	$8, %r10d
+	movzbl	(%rdi,%r9), %ebp
+	orl 	%ebp, %r10d
+	incq	%r9
 	addl	$8, %ecx
 .Lwots_sign$62:
 	cmpl	$4, %ecx
 	jb  	.Lwots_sign$63
-	movl	%r9d, %ebp
+	movl	%r10d, %ebp
 	addl	$-4, %ecx
 	shrq	%cl, %rbp
 	andq	$15, %rbp
-	movl	%ebp, 28(%rdx)
+	movl	%ebp, 28(%r8)
 	jmp 	.Lwots_sign$60
 .Lwots_sign$61:
-	shll	$8, %r9d
-	movzbl	(%rax,%rdi), %ebp
-	orl 	%ebp, %r9d
-	incq	%rdi
+	shll	$8, %r10d
+	movzbl	(%rdi,%r9), %ebp
+	orl 	%ebp, %r10d
+	incq	%r9
 	addl	$8, %ecx
 .Lwots_sign$60:
 	cmpl	$4, %ecx
 	jb  	.Lwots_sign$61
-	movl	%r9d, %ebp
+	movl	%r10d, %ebp
 	addl	$-4, %ecx
 	shrq	%cl, %rbp
 	andq	$15, %rbp
-	movl	%ebp, 32(%rdx)
+	movl	%ebp, 32(%r8)
 	jmp 	.Lwots_sign$58
 .Lwots_sign$59:
-	shll	$8, %r9d
-	movzbl	(%rax,%rdi), %ebp
-	orl 	%ebp, %r9d
-	incq	%rdi
+	shll	$8, %r10d
+	movzbl	(%rdi,%r9), %ebp
+	orl 	%ebp, %r10d
+	incq	%r9
 	addl	$8, %ecx
 .Lwots_sign$58:
 	cmpl	$4, %ecx
 	jb  	.Lwots_sign$59
-	movl	%r9d, %ebp
+	movl	%r10d, %ebp
 	addl	$-4, %ecx
 	shrq	%cl, %rbp
 	andq	$15, %rbp
-	movl	%ebp, 36(%rdx)
+	movl	%ebp, 36(%r8)
 	jmp 	.Lwots_sign$56
 .Lwots_sign$57:
-	shll	$8, %r9d
-	movzbl	(%rax,%rdi), %ebp
-	orl 	%ebp, %r9d
-	incq	%rdi
+	shll	$8, %r10d
+	movzbl	(%rdi,%r9), %ebp
+	orl 	%ebp, %r10d
+	incq	%r9
 	addl	$8, %ecx
 .Lwots_sign$56:
 	cmpl	$4, %ecx
 	jb  	.Lwots_sign$57
-	movl	%r9d, %ebp
+	movl	%r10d, %ebp
 	addl	$-4, %ecx
 	shrq	%cl, %rbp
 	andq	$15, %rbp
-	movl	%ebp, 40(%rdx)
+	movl	%ebp, 40(%r8)
 	jmp 	.Lwots_sign$54
 .Lwots_sign$55:
-	shll	$8, %r9d
-	movzbl	(%rax,%rdi), %ebp
-	orl 	%ebp, %r9d
-	incq	%rdi
+	shll	$8, %r10d
+	movzbl	(%rdi,%r9), %ebp
+	orl 	%ebp, %r10d
+	incq	%r9
 	addl	$8, %ecx
 .Lwots_sign$54:
 	cmpl	$4, %ecx
 	jb  	.Lwots_sign$55
-	movl	%r9d, %ebp
+	movl	%r10d, %ebp
 	addl	$-4, %ecx
 	shrq	%cl, %rbp
 	andq	$15, %rbp
-	movl	%ebp, 44(%rdx)
+	movl	%ebp, 44(%r8)
 	jmp 	.Lwots_sign$52
 .Lwots_sign$53:
-	shll	$8, %r9d
-	movzbl	(%rax,%rdi), %ebp
-	orl 	%ebp, %r9d
-	incq	%rdi
+	shll	$8, %r10d
+	movzbl	(%rdi,%r9), %ebp
+	orl 	%ebp, %r10d
+	incq	%r9
 	addl	$8, %ecx
 .Lwots_sign$52:
 	cmpl	$4, %ecx
 	jb  	.Lwots_sign$53
-	movl	%r9d, %ebp
+	movl	%r10d, %ebp
 	addl	$-4, %ecx
 	shrq	%cl, %rbp
 	andq	$15, %rbp
-	movl	%ebp, 48(%rdx)
+	movl	%ebp, 48(%r8)
 	jmp 	.Lwots_sign$50
 .Lwots_sign$51:
-	shll	$8, %r9d
-	movzbl	(%rax,%rdi), %ebp
-	orl 	%ebp, %r9d
-	incq	%rdi
+	shll	$8, %r10d
+	movzbl	(%rdi,%r9), %ebp
+	orl 	%ebp, %r10d
+	incq	%r9
 	addl	$8, %ecx
 .Lwots_sign$50:
 	cmpl	$4, %ecx
 	jb  	.Lwots_sign$51
-	movl	%r9d, %ebp
+	movl	%r10d, %ebp
 	addl	$-4, %ecx
 	shrq	%cl, %rbp
 	andq	$15, %rbp
-	movl	%ebp, 52(%rdx)
+	movl	%ebp, 52(%r8)
 	jmp 	.Lwots_sign$48
 .Lwots_sign$49:
-	shll	$8, %r9d
-	movzbl	(%rax,%rdi), %ebp
-	orl 	%ebp, %r9d
-	incq	%rdi
+	shll	$8, %r10d
+	movzbl	(%rdi,%r9), %ebp
+	orl 	%ebp, %r10d
+	incq	%r9
 	addl	$8, %ecx
 .Lwots_sign$48:
 	cmpl	$4, %ecx
 	jb  	.Lwots_sign$49
-	movl	%r9d, %ebp
+	movl	%r10d, %ebp
 	addl	$-4, %ecx
 	shrq	%cl, %rbp
 	andq	$15, %rbp
-	movl	%ebp, 56(%rdx)
+	movl	%ebp, 56(%r8)
 	jmp 	.Lwots_sign$46
 .Lwots_sign$47:
-	shll	$8, %r9d
-	movzbl	(%rax,%rdi), %ebp
-	orl 	%ebp, %r9d
-	incq	%rdi
+	shll	$8, %r10d
+	movzbl	(%rdi,%r9), %ebp
+	orl 	%ebp, %r10d
+	incq	%r9
 	addl	$8, %ecx
 .Lwots_sign$46:
 	cmpl	$4, %ecx
 	jb  	.Lwots_sign$47
-	movl	%r9d, %ebp
+	movl	%r10d, %ebp
 	addl	$-4, %ecx
 	shrq	%cl, %rbp
 	andq	$15, %rbp
-	movl	%ebp, 60(%rdx)
+	movl	%ebp, 60(%r8)
 	jmp 	.Lwots_sign$44
 .Lwots_sign$45:
-	shll	$8, %r9d
-	movzbl	(%rax,%rdi), %ebp
-	orl 	%ebp, %r9d
-	incq	%rdi
+	shll	$8, %r10d
+	movzbl	(%rdi,%r9), %ebp
+	orl 	%ebp, %r10d
+	incq	%r9
 	addl	$8, %ecx
 .Lwots_sign$44:
 	cmpl	$4, %ecx
 	jb  	.Lwots_sign$45
-	movl	%r9d, %ebp
+	movl	%r10d, %ebp
 	addl	$-4, %ecx
 	shrq	%cl, %rbp
 	andq	$15, %rbp
-	movl	%ebp, 64(%rdx)
+	movl	%ebp, 64(%r8)
 	jmp 	.Lwots_sign$42
 .Lwots_sign$43:
-	shll	$8, %r9d
-	movzbl	(%rax,%rdi), %ebp
-	orl 	%ebp, %r9d
-	incq	%rdi
+	shll	$8, %r10d
+	movzbl	(%rdi,%r9), %ebp
+	orl 	%ebp, %r10d
+	incq	%r9
 	addl	$8, %ecx
 .Lwots_sign$42:
 	cmpl	$4, %ecx
 	jb  	.Lwots_sign$43
-	movl	%r9d, %ebp
+	movl	%r10d, %ebp
 	addl	$-4, %ecx
 	shrq	%cl, %rbp
 	andq	$15, %rbp
-	movl	%ebp, 68(%rdx)
+	movl	%ebp, 68(%r8)
 	jmp 	.Lwots_sign$40
 .Lwots_sign$41:
-	shll	$8, %r9d
-	movzbl	(%rax,%rdi), %ebp
-	orl 	%ebp, %r9d
-	incq	%rdi
+	shll	$8, %r10d
+	movzbl	(%rdi,%r9), %ebp
+	orl 	%ebp, %r10d
+	incq	%r9
 	addl	$8, %ecx
 .Lwots_sign$40:
 	cmpl	$4, %ecx
 	jb  	.Lwots_sign$41
-	movl	%r9d, %ebp
+	movl	%r10d, %ebp
 	addl	$-4, %ecx
 	shrq	%cl, %rbp
 	andq	$15, %rbp
-	movl	%ebp, 72(%rdx)
+	movl	%ebp, 72(%r8)
 	jmp 	.Lwots_sign$38
 .Lwots_sign$39:
-	shll	$8, %r9d
-	movzbl	(%rax,%rdi), %ebp
-	orl 	%ebp, %r9d
-	incq	%rdi
+	shll	$8, %r10d
+	movzbl	(%rdi,%r9), %ebp
+	orl 	%ebp, %r10d
+	incq	%r9
 	addl	$8, %ecx
 .Lwots_sign$38:
 	cmpl	$4, %ecx
 	jb  	.Lwots_sign$39
-	movl	%r9d, %ebp
+	movl	%r10d, %ebp
 	addl	$-4, %ecx
 	shrq	%cl, %rbp
 	andq	$15, %rbp
-	movl	%ebp, 76(%rdx)
+	movl	%ebp, 76(%r8)
 	jmp 	.Lwots_sign$36
 .Lwots_sign$37:
-	shll	$8, %r9d
-	movzbl	(%rax,%rdi), %ebp
-	orl 	%ebp, %r9d
-	incq	%rdi
+	shll	$8, %r10d
+	movzbl	(%rdi,%r9), %ebp
+	orl 	%ebp, %r10d
+	incq	%r9
 	addl	$8, %ecx
 .Lwots_sign$36:
 	cmpl	$4, %ecx
 	jb  	.Lwots_sign$37
-	movl	%r9d, %ebp
+	movl	%r10d, %ebp
 	addl	$-4, %ecx
 	shrq	%cl, %rbp
 	andq	$15, %rbp
-	movl	%ebp, 80(%rdx)
+	movl	%ebp, 80(%r8)
 	jmp 	.Lwots_sign$34
 .Lwots_sign$35:
-	shll	$8, %r9d
-	movzbl	(%rax,%rdi), %ebp
-	orl 	%ebp, %r9d
-	incq	%rdi
+	shll	$8, %r10d
+	movzbl	(%rdi,%r9), %ebp
+	orl 	%ebp, %r10d
+	incq	%r9
 	addl	$8, %ecx
 .Lwots_sign$34:
 	cmpl	$4, %ecx
 	jb  	.Lwots_sign$35
-	movl	%r9d, %ebp
+	movl	%r10d, %ebp
 	addl	$-4, %ecx
 	shrq	%cl, %rbp
 	andq	$15, %rbp
-	movl	%ebp, 84(%rdx)
+	movl	%ebp, 84(%r8)
 	jmp 	.Lwots_sign$32
 .Lwots_sign$33:
-	shll	$8, %r9d
-	movzbl	(%rax,%rdi), %ebp
-	orl 	%ebp, %r9d
-	incq	%rdi
+	shll	$8, %r10d
+	movzbl	(%rdi,%r9), %ebp
+	orl 	%ebp, %r10d
+	incq	%r9
 	addl	$8, %ecx
 .Lwots_sign$32:
 	cmpl	$4, %ecx
 	jb  	.Lwots_sign$33
-	movl	%r9d, %ebp
+	movl	%r10d, %ebp
 	addl	$-4, %ecx
 	shrq	%cl, %rbp
 	andq	$15, %rbp
-	movl	%ebp, 88(%rdx)
+	movl	%ebp, 88(%r8)
 	jmp 	.Lwots_sign$30
 .Lwots_sign$31:
-	shll	$8, %r9d
-	movzbl	(%rax,%rdi), %ebp
-	orl 	%ebp, %r9d
-	incq	%rdi
+	shll	$8, %r10d
+	movzbl	(%rdi,%r9), %ebp
+	orl 	%ebp, %r10d
+	incq	%r9
 	addl	$8, %ecx
 .Lwots_sign$30:
 	cmpl	$4, %ecx
 	jb  	.Lwots_sign$31
-	movl	%r9d, %ebp
+	movl	%r10d, %ebp
 	addl	$-4, %ecx
 	shrq	%cl, %rbp
 	andq	$15, %rbp
-	movl	%ebp, 92(%rdx)
+	movl	%ebp, 92(%r8)
 	jmp 	.Lwots_sign$28
 .Lwots_sign$29:
-	shll	$8, %r9d
-	movzbl	(%rax,%rdi), %ebp
-	orl 	%ebp, %r9d
-	incq	%rdi
+	shll	$8, %r10d
+	movzbl	(%rdi,%r9), %ebp
+	orl 	%ebp, %r10d
+	incq	%r9
 	addl	$8, %ecx
 .Lwots_sign$28:
 	cmpl	$4, %ecx
 	jb  	.Lwots_sign$29
-	movl	%r9d, %ebp
+	movl	%r10d, %ebp
 	addl	$-4, %ecx
 	shrq	%cl, %rbp
 	andq	$15, %rbp
-	movl	%ebp, 96(%rdx)
+	movl	%ebp, 96(%r8)
 	jmp 	.Lwots_sign$26
 .Lwots_sign$27:
-	shll	$8, %r9d
-	movzbl	(%rax,%rdi), %ebp
-	orl 	%ebp, %r9d
-	incq	%rdi
+	shll	$8, %r10d
+	movzbl	(%rdi,%r9), %ebp
+	orl 	%ebp, %r10d
+	incq	%r9
 	addl	$8, %ecx
 .Lwots_sign$26:
 	cmpl	$4, %ecx
 	jb  	.Lwots_sign$27
-	movl	%r9d, %ebp
+	movl	%r10d, %ebp
 	addl	$-4, %ecx
 	shrq	%cl, %rbp
 	andq	$15, %rbp
-	movl	%ebp, 100(%rdx)
+	movl	%ebp, 100(%r8)
 	jmp 	.Lwots_sign$24
 .Lwots_sign$25:
-	shll	$8, %r9d
-	movzbl	(%rax,%rdi), %ebp
-	orl 	%ebp, %r9d
-	incq	%rdi
+	shll	$8, %r10d
+	movzbl	(%rdi,%r9), %ebp
+	orl 	%ebp, %r10d
+	incq	%r9
 	addl	$8, %ecx
 .Lwots_sign$24:
 	cmpl	$4, %ecx
 	jb  	.Lwots_sign$25
-	movl	%r9d, %ebp
+	movl	%r10d, %ebp
 	addl	$-4, %ecx
 	shrq	%cl, %rbp
 	andq	$15, %rbp
-	movl	%ebp, 104(%rdx)
+	movl	%ebp, 104(%r8)
 	jmp 	.Lwots_sign$22
 .Lwots_sign$23:
-	shll	$8, %r9d
-	movzbl	(%rax,%rdi), %ebp
-	orl 	%ebp, %r9d
-	incq	%rdi
+	shll	$8, %r10d
+	movzbl	(%rdi,%r9), %ebp
+	orl 	%ebp, %r10d
+	incq	%r9
 	addl	$8, %ecx
 .Lwots_sign$22:
 	cmpl	$4, %ecx
 	jb  	.Lwots_sign$23
-	movl	%r9d, %ebp
+	movl	%r10d, %ebp
 	addl	$-4, %ecx
 	shrq	%cl, %rbp
 	andq	$15, %rbp
-	movl	%ebp, 108(%rdx)
+	movl	%ebp, 108(%r8)
 	jmp 	.Lwots_sign$20
 .Lwots_sign$21:
-	shll	$8, %r9d
-	movzbl	(%rax,%rdi), %ebp
-	orl 	%ebp, %r9d
-	incq	%rdi
+	shll	$8, %r10d
+	movzbl	(%rdi,%r9), %ebp
+	orl 	%ebp, %r10d
+	incq	%r9
 	addl	$8, %ecx
 .Lwots_sign$20:
 	cmpl	$4, %ecx
 	jb  	.Lwots_sign$21
-	movl	%r9d, %ebp
+	movl	%r10d, %ebp
 	addl	$-4, %ecx
 	shrq	%cl, %rbp
 	andq	$15, %rbp
-	movl	%ebp, 112(%rdx)
+	movl	%ebp, 112(%r8)
 	jmp 	.Lwots_sign$18
 .Lwots_sign$19:
-	shll	$8, %r9d
-	movzbl	(%rax,%rdi), %ebp
-	orl 	%ebp, %r9d
-	incq	%rdi
+	shll	$8, %r10d
+	movzbl	(%rdi,%r9), %ebp
+	orl 	%ebp, %r10d
+	incq	%r9
 	addl	$8, %ecx
 .Lwots_sign$18:
 	cmpl	$4, %ecx
 	jb  	.Lwots_sign$19
-	movl	%r9d, %ebp
+	movl	%r10d, %ebp
 	addl	$-4, %ecx
 	shrq	%cl, %rbp
 	andq	$15, %rbp
-	movl	%ebp, 116(%rdx)
+	movl	%ebp, 116(%r8)
 	jmp 	.Lwots_sign$16
 .Lwots_sign$17:
-	shll	$8, %r9d
-	movzbl	(%rax,%rdi), %ebp
-	orl 	%ebp, %r9d
-	incq	%rdi
+	shll	$8, %r10d
+	movzbl	(%rdi,%r9), %ebp
+	orl 	%ebp, %r10d
+	incq	%r9
 	addl	$8, %ecx
 .Lwots_sign$16:
 	cmpl	$4, %ecx
 	jb  	.Lwots_sign$17
-	movl	%r9d, %ebp
+	movl	%r10d, %ebp
 	addl	$-4, %ecx
 	shrq	%cl, %rbp
 	andq	$15, %rbp
-	movl	%ebp, 120(%rdx)
+	movl	%ebp, 120(%r8)
 	jmp 	.Lwots_sign$14
 .Lwots_sign$15:
-	shll	$8, %r9d
-	movzbl	(%rax,%rdi), %ebp
-	orl 	%ebp, %r9d
-	incq	%rdi
+	shll	$8, %r10d
+	movzbl	(%rdi,%r9), %ebp
+	orl 	%ebp, %r10d
+	incq	%r9
 	addl	$8, %ecx
 .Lwots_sign$14:
 	cmpl	$4, %ecx
 	jb  	.Lwots_sign$15
-	movl	%r9d, %eax
+	movl	%r10d, %edi
 	addl	$-4, %ecx
-	shrq	%cl, %rax
-	andq	$15, %rax
-	movl	%eax, 124(%rdx)
-	movq	%rsi, %rax
-	movl	$480, %ecx
-	subl	(%rax), %ecx
-	subl	4(%rax), %ecx
-	subl	8(%rax), %ecx
-	subl	12(%rax), %ecx
-	subl	16(%rax), %ecx
-	subl	20(%rax), %ecx
-	subl	24(%rax), %ecx
-	subl	28(%rax), %ecx
-	subl	32(%rax), %ecx
-	subl	36(%rax), %ecx
-	subl	40(%rax), %ecx
-	subl	44(%rax), %ecx
-	subl	48(%rax), %ecx
-	subl	52(%rax), %ecx
-	subl	56(%rax), %ecx
-	subl	60(%rax), %ecx
-	subl	64(%rax), %ecx
-	subl	68(%rax), %ecx
-	subl	72(%rax), %ecx
-	subl	76(%rax), %ecx
-	subl	80(%rax), %ecx
-	subl	84(%rax), %ecx
-	subl	88(%rax), %ecx
-	subl	92(%rax), %ecx
-	subl	96(%rax), %ecx
-	subl	100(%rax), %ecx
-	subl	104(%rax), %ecx
-	subl	108(%rax), %ecx
-	subl	112(%rax), %ecx
-	subl	116(%rax), %ecx
-	subl	120(%rax), %ecx
-	subl	124(%rax), %ecx
-	shll	$4, %ecx
-	movl	%ecx, %eax
-	shrl	$0, %eax
-	andl	$255, %eax
-	movb	%al, 225(%rsp)
-	shrl	$8, %ecx
+	shrq	%cl, %rdi
+	andq	$15, %rdi
+	movl	%edi, 124(%r8)
+	movq	%rdx, %rcx
+	movl	$480, %edi
+	subl	(%rcx), %edi
+	subl	4(%rcx), %edi
+	subl	8(%rcx), %edi
+	subl	12(%rcx), %edi
+	subl	16(%rcx), %edi
+	subl	20(%rcx), %edi
+	subl	24(%rcx), %edi
+	subl	28(%rcx), %edi
+	subl	32(%rcx), %edi
+	subl	36(%rcx), %edi
+	subl	40(%rcx), %edi
+	subl	44(%rcx), %edi
+	subl	48(%rcx), %edi
+	subl	52(%rcx), %edi
+	subl	56(%rcx), %edi
+	subl	60(%rcx), %edi
+	subl	64(%rcx), %edi
+	subl	68(%rcx), %edi
+	subl	72(%rcx), %edi
+	subl	76(%rcx), %edi
+	subl	80(%rcx), %edi
+	subl	84(%rcx), %edi
+	subl	88(%rcx), %edi
+	subl	92(%rcx), %edi
+	subl	96(%rcx), %edi
+	subl	100(%rcx), %edi
+	subl	104(%rcx), %edi
+	subl	108(%rcx), %edi
+	subl	112(%rcx), %edi
+	subl	116(%rcx), %edi
+	subl	120(%rcx), %edi
+	subl	124(%rcx), %edi
+	shll	$4, %edi
+	movl	%edi, %ecx
+	shrl	$0, %ecx
 	andl	$255, %ecx
-	movb	%cl, 224(%rsp)
-	leaq	128(%rsi), %rdx
-	leaq	224(%rsp), %rax
-	movq	$0, %rsi
+	movb	%cl, 225(%rsp)
+	shrl	$8, %edi
+	andl	$255, %edi
+	movb	%dil, 224(%rsp)
+	leaq	128(%rdx), %rdx
+	leaq	224(%rsp), %rdi
+	movq	$0, %r8
 	movl	$0, %ecx
 	movl	$0, %r9d
 	jmp 	.Lwots_sign$12
 .Lwots_sign$13:
 	shll	$8, %r9d
-	movzbl	(%rax,%rsi), %edi
-	orl 	%edi, %r9d
-	incq	%rsi
+	movzbl	(%rdi,%r8), %r10d
+	orl 	%r10d, %r9d
+	incq	%r8
 	addl	$8, %ecx
 .Lwots_sign$12:
 	cmpl	$4, %ecx
 	jb  	.Lwots_sign$13
-	movl	%r9d, %edi
+	movl	%r9d, %r10d
 	addl	$-4, %ecx
-	shrq	%cl, %rdi
-	andq	$15, %rdi
-	movl	%edi, (%rdx)
+	shrq	%cl, %r10
+	andq	$15, %r10
+	movl	%r10d, (%rdx)
 	jmp 	.Lwots_sign$10
 .Lwots_sign$11:
 	shll	$8, %r9d
-	movzbl	(%rax,%rsi), %edi
-	orl 	%edi, %r9d
-	incq	%rsi
+	movzbl	(%rdi,%r8), %r10d
+	orl 	%r10d, %r9d
+	incq	%r8
 	addl	$8, %ecx
 .Lwots_sign$10:
 	cmpl	$4, %ecx
 	jb  	.Lwots_sign$11
-	movl	%r9d, %edi
+	movl	%r9d, %r10d
 	addl	$-4, %ecx
-	shrq	%cl, %rdi
-	andq	$15, %rdi
-	movl	%edi, 4(%rdx)
+	shrq	%cl, %r10
+	andq	$15, %r10
+	movl	%r10d, 4(%rdx)
 	jmp 	.Lwots_sign$8
 .Lwots_sign$9:
 	shll	$8, %r9d
-	movzbl	(%rax,%rsi), %edi
-	orl 	%edi, %r9d
-	incq	%rsi
+	movzbl	(%rdi,%r8), %r10d
+	orl 	%r10d, %r9d
+	incq	%r8
 	addl	$8, %ecx
 .Lwots_sign$8:
 	cmpl	$4, %ecx
 	jb  	.Lwots_sign$9
-	movl	%r9d, %eax
+	movl	%r9d, %edi
 	addl	$-4, %ecx
-	shrq	%cl, %rax
-	andq	$15, %rax
-	movl	%eax, 8(%rdx)
-	leaq	48(%rsp), %rax
-	movq	(%r8), %rdx
-	movq	%rdx, (%rax)
-	movq	8(%r8), %rdx
-	movq	%rdx, 8(%rax)
-	movq	16(%r8), %rdx
-	movq	%rdx, 16(%rax)
-	movq	24(%r8), %rdx
-	movq	%rdx, 24(%rax)
+	shrq	%cl, %rdi
+	andq	$15, %rdi
+	movl	%edi, 8(%rdx)
+	leaq	48(%rsp), %rcx
+	movq	(%rsi), %rdx
+	movq	%rdx, (%rcx)
+	movq	8(%rsi), %rdx
+	movq	%rdx, 8(%rcx)
+	movq	16(%rsi), %rdx
+	movq	%rdx, 16(%rcx)
+	movq	24(%rsi), %rdx
+	movq	%rdx, 24(%rcx)
 	leaq	48(%rsp), %r9
 	movq	$0, 16(%r9)
 	movq	$0, 24(%r9)
 	movl	$5, 16(%r9)
-	movl	20(%r8), %edx
+	movl	20(%rsi), %edx
 	leaq	48(%rsp), %r9
 	movl	%edx, 20(%r9)
-	movq	%r8, 8(%rsp)
-	movq	$0, %rsi
+	movq	%rsi, 8(%rsp)
+	movq	$0, %rdx
 	movl	$0, %ecx
 	jmp 	.Lwots_sign$5
 .Lwots_sign$6:
-	movq	%r10, 16(%rsp)
+	movq	%r11, 16(%rsp)
 	movl	%ecx, 80(%rsp)
-	movq	%rsi, 24(%rsp)
-	movl	%ecx, %eax
-	leaq	48(%rsp), %r8
-	movl	%eax, 24(%r8)
-	leaq	(%r11,%rsi), %rax
-	movq	%r11, 32(%rsp)
-	movq	%rbx, 40(%rsp)
-	leaq	48(%rsp), %r8
-	movq	%rax, %rcx
-	movq	%r10, %rdx
-	movq	%rbx, %rax
-	leaq	-88(%rsp), %rsp
+	movq	%rdx, 24(%rsp)
+	leaq	48(%rsp), %rsi
+	movl	%ecx, 24(%rsi)
+	leaq	(%rbx,%rdx), %rdi
+	movq	%rbx, 32(%rsp)
+	movq	%rax, 40(%rsp)
+	leaq	48(%rsp), %rsi
+	movq	%r11, %rdx
+	movq	%rax, %r8
+	leaq	-72(%rsp), %rsp
 	call	.LPRF$1
 .Lwots_sign$7:
-	leaq	88(%rsp), %rsp
-	movq	32(%rsp), %r11
-	movq	40(%rsp), %rbx
-	movq	16(%rsp), %r10
+	leaq	72(%rsp), %rsp
+	movq	32(%rsp), %rbx
+	movq	40(%rsp), %rax
+	lfence
+	movq	$0, %rcx
+	movq	16(%rsp), %r11
 	movl	80(%rsp), %ecx
-	movq	24(%rsp), %rsi
+	movq	24(%rsp), %rdx
+	lfence
+	movq	$0, %rsi
 	incl	%ecx
-	addq	$16, %rsi
+	addq	$16, %rdx
 .Lwots_sign$5:
 	cmpl	$35, %ecx
 	jb  	.Lwots_sign$6
-	movq	8(%rsp), %r8
-	movq	$0, %rsi
-	movl	$0, %ecx
+	movq	8(%rsp), %rsi
+	lfence
+	movq	$0, %rcx
+	movq	$0, %r8
+	movl	$0, %edx
 	jmp 	.Lwots_sign$2
 .Lwots_sign$3:
-	movl	%ecx, 80(%rsp)
-	movq	%rsi, 8(%rsp)
-	movl	%ecx, %eax
-	movl	%eax, 24(%r8)
-	movl	$0, %eax
-	movl	%ecx, %ecx
-	movl	84(%rsp,%rcx,4), %edx
-	leaq	(%r11,%rsi), %rcx
-	movq	%r11, 24(%rsp)
-	movq	%rbx, 16(%rsp)
-	movl	%eax, %esi
-	movq	%rbx, %rax
+	movl	%edx, 80(%rsp)
+	movq	%r8, 8(%rsp)
+	movl	%edx, %ecx
+	movl	%ecx, 24(%rsi)
+	movl	$0, %ecx
+	movl	%edx, %edx
+	movl	84(%rsp,%rdx,4), %edx
+	lfence
+	movq	$0, %rdi
+	leaq	(%rbx,%r8), %rdi
+	movq	%rbx, 24(%rsp)
+	movq	%rax, 16(%rsp)
+	movq	%rax, %r8
 	leaq	-24(%rsp), %rsp
 	call	.Lchain$1
 .Lwots_sign$4:
 	leaq	24(%rsp), %rsp
-	movq	24(%rsp), %r11
-	movq	16(%rsp), %rbx
-	movl	80(%rsp), %ecx
-	movq	8(%rsp), %rsi
-	incl	%ecx
-	addq	$16, %rsi
+	movq	24(%rsp), %rbx
+	movq	16(%rsp), %rax
+	lfence
+	movq	$0, %rcx
+	movl	80(%rsp), %edx
+	movq	8(%rsp), %r8
+	lfence
+	movq	$0, %rcx
+	incl	%edx
+	addq	$16, %r8
 .Lwots_sign$2:
-	cmpl	$35, %ecx
+	cmpl	$35, %edx
 	jb  	.Lwots_sign$3
 	ret
 .Lwots_pkgen$1:
 	movq	%rcx, 8(%rsp)
-	leaq	48(%rsp), %rax
-	movq	(%r8), %rdi
-	movq	%rdi, (%rax)
-	movq	8(%r8), %rdi
-	movq	%rdi, 8(%rax)
-	movq	16(%r8), %rdi
-	movq	%rdi, 16(%rax)
-	movq	24(%r8), %rdi
-	movq	%rdi, 24(%rax)
+	leaq	48(%rsp), %rcx
+	movq	(%rsi), %r8
+	movq	%r8, (%rcx)
+	movq	8(%rsi), %r8
+	movq	%r8, 8(%rcx)
+	movq	16(%rsi), %r8
+	movq	%r8, 16(%rcx)
+	movq	24(%rsi), %r8
+	movq	%r8, 24(%rcx)
 	leaq	48(%rsp), %r9
 	movq	$0, 16(%r9)
 	movq	$0, 24(%r9)
 	movl	$5, 16(%r9)
-	movl	20(%r8), %esi
-	leaq	48(%rsp), %r9
-	movl	%esi, 20(%r9)
-	movl	%esi, 640(%rsp)
-	movq	%r8, 16(%rsp)
-	movq	$0, %rsi
+	movl	20(%rsi), %r9d
+	leaq	48(%rsp), %r11
+	movl	%r9d, 20(%r11)
+	movl	%r9d, 640(%rsp)
+	movq	%rsi, 16(%rsp)
+	movq	$0, %r8
 	movl	$0, %ecx
 	jmp 	.Lwots_pkgen$6
 .Lwots_pkgen$7:
 	movq	%rdx, 24(%rsp)
 	movl	%ecx, 644(%rsp)
-	movq	%rsi, 32(%rsp)
-	movq	%r10, 40(%rsp)
-	movl	%ecx, %eax
-	leaq	48(%rsp), %r8
-	movl	%eax, 24(%r8)
-	leaq	80(%rsp,%rsi), %rcx
-	leaq	48(%rsp), %r8
-	movq	%r10, %rax
-	leaq	-88(%rsp), %rsp
+	movq	%r8, 32(%rsp)
+	movq	%rax, 40(%rsp)
+	leaq	48(%rsp), %rsi
+	movl	%ecx, 24(%rsi)
+	leaq	80(%rsp,%r8), %rdi
+	leaq	48(%rsp), %rsi
+	movq	%rax, %r8
+	leaq	-72(%rsp), %rsp
 	call	.LPRF$1
 .Lwots_pkgen$8:
-	leaq	88(%rsp), %rsp
+	leaq	72(%rsp), %rsp
 	movq	24(%rsp), %rdx
 	movl	644(%rsp), %ecx
-	movq	32(%rsp), %rsi
-	movq	40(%rsp), %r10
+	movq	32(%rsp), %r8
+	movq	40(%rsp), %rax
+	lfence
+	movq	$0, %rdi
 	incl	%ecx
-	addq	$16, %rsi
+	addq	$16, %r8
 .Lwots_pkgen$6:
 	cmpl	$35, %ecx
 	jb  	.Lwots_pkgen$7
-	movq	16(%rsp), %r8
-	movq	$0, %rsi
+	movq	16(%rsp), %rsi
+	lfence
+	movq	$0, %rcx
+	movq	$0, %r8
 	movl	$0, %ecx
 	jmp 	.Lwots_pkgen$3
 .Lwots_pkgen$4:
 	movl	%ecx, 644(%rsp)
-	movq	%rsi, 16(%rsp)
-	movq	%r10, 40(%rsp)
-	movl	%ecx, %eax
-	movl	%eax, 24(%r8)
-	movl	$0, %eax
+	movq	%r8, 16(%rsp)
+	movq	%rax, 40(%rsp)
+	movl	%ecx, 24(%rsi)
+	movl	$0, %ecx
 	movl	$15, %edx
-	leaq	80(%rsp,%rsi), %rcx
-	movl	%eax, %esi
-	movq	%r10, %rax
+	leaq	80(%rsp,%r8), %rdi
+	movq	%rax, %r8
 	leaq	-24(%rsp), %rsp
 	call	.Lchain$1
 .Lwots_pkgen$5:
 	leaq	24(%rsp), %rsp
 	movl	644(%rsp), %ecx
-	movq	16(%rsp), %rsi
-	movq	40(%rsp), %r10
+	movq	16(%rsp), %r8
+	movq	40(%rsp), %rax
+	lfence
+	movq	$0, %rdx
 	incl	%ecx
-	addq	$16, %rsi
+	addq	$16, %r8
 .Lwots_pkgen$3:
 	cmpl	$35, %ecx
 	jb  	.Lwots_pkgen$4
@@ -4521,41 +4657,50 @@ slh_dsa_sha2128s_keygen:
 	movq	$0, 24(%r9)
 	movl	$1, 16(%r9)
 	movl	640(%rsp), %edx
+	lfence
+	movq	$0, %rcx
 	leaq	48(%rsp), %r9
 	movl	%edx, 20(%r9)
-	movq	8(%rsp), %rcx
-	movq	%r8, 8(%rsp)
-	leaq	48(%rsp), %r8
-	leaq	80(%rsp), %rax
-	movq	%r10, %rdx
-	leaq	-632(%rsp), %rsp
+	movq	8(%rsp), %rdi
+	lfence
+	movq	$0, %rcx
+	movq	%rsi, 8(%rsp)
+	leaq	48(%rsp), %rsi
+	leaq	80(%rsp), %rcx
+	movq	%rax, %rdx
+	leaq	-616(%rsp), %rsp
 	call	.LT_len$1
 .Lwots_pkgen$2:
-	leaq	632(%rsp), %rsp
-	movq	%rcx, %rax
-	movq	8(%rsp), %r8
+	leaq	616(%rsp), %rsp
+	movq	%rax, %rcx
+	movq	8(%rsp), %rsi
+	lfence
+	movq	$0, %rax
 	ret
 .Lchain$1:
-	movl	%esi, %r9d
+	movl	%ecx, %r9d
 	addl	%edx, %r9d
 	jmp 	.Lchain$2
 .Lchain$3:
-	movl	%esi, 28(%r8)
-	movq	%r8, 8(%rsp)
-	movl	%esi, 24(%rsp)
+	movl	%ecx, 28(%rsi)
+	movq	%rsi, 8(%rsp)
+	movl	%ecx, 24(%rsp)
 	movl	%r9d, 28(%rsp)
-	movq	%rax, 16(%rsp)
-	leaq	-88(%rsp), %rsp
+	movq	%r8, 16(%rsp)
+	leaq	-72(%rsp), %rsp
 	call	.LF$1
 .Lchain$4:
-	leaq	88(%rsp), %rsp
-	movq	8(%rsp), %r8
-	movl	24(%rsp), %esi
+	leaq	72(%rsp), %rsp
+	movq	%rax, %rdi
+	movq	8(%rsp), %rsi
+	movl	24(%rsp), %ecx
 	movl	28(%rsp), %r9d
-	movq	16(%rsp), %rax
-	incl	%esi
+	movq	16(%rsp), %r8
+	lfence
+	movq	$0, %rdx
+	incl	%ecx
 .Lchain$2:
-	cmpl	%r9d, %esi
+	cmpl	%r9d, %ecx
 	jb  	.Lchain$3
 	ret
 .Linit_cache$1:
@@ -4573,38 +4718,38 @@ slh_dsa_sha2128s_keygen:
 	movq	$0, 88(%rsp)
 	movq	$0, 96(%rsp)
 	movq	$0, 104(%rsp)
-	movb	(%r9), %dil
-	movb	%dil, 48(%rsp)
-	movb	1(%r9), %dil
-	movb	%dil, 49(%rsp)
-	movb	2(%r9), %dil
-	movb	%dil, 50(%rsp)
-	movb	3(%r9), %dil
-	movb	%dil, 51(%rsp)
-	movb	4(%r9), %dil
-	movb	%dil, 52(%rsp)
-	movb	5(%r9), %dil
-	movb	%dil, 53(%rsp)
-	movb	6(%r9), %dil
-	movb	%dil, 54(%rsp)
-	movb	7(%r9), %dil
-	movb	%dil, 55(%rsp)
-	movb	8(%r9), %dil
-	movb	%dil, 56(%rsp)
-	movb	9(%r9), %dil
-	movb	%dil, 57(%rsp)
-	movb	10(%r9), %dil
-	movb	%dil, 58(%rsp)
-	movb	11(%r9), %dil
-	movb	%dil, 59(%rsp)
-	movb	12(%r9), %dil
-	movb	%dil, 60(%rsp)
-	movb	13(%r9), %dil
-	movb	%dil, 61(%rsp)
-	movb	14(%r9), %dil
-	movb	%dil, 62(%rsp)
-	movb	15(%r9), %dil
-	movb	%dil, 63(%rsp)
+	movb	(%r9), %r8b
+	movb	%r8b, 48(%rsp)
+	movb	1(%r9), %r8b
+	movb	%r8b, 49(%rsp)
+	movb	2(%r9), %r8b
+	movb	%r8b, 50(%rsp)
+	movb	3(%r9), %r8b
+	movb	%r8b, 51(%rsp)
+	movb	4(%r9), %r8b
+	movb	%r8b, 52(%rsp)
+	movb	5(%r9), %r8b
+	movb	%r8b, 53(%rsp)
+	movb	6(%r9), %r8b
+	movb	%r8b, 54(%rsp)
+	movb	7(%r9), %r8b
+	movb	%r8b, 55(%rsp)
+	movb	8(%r9), %r8b
+	movb	%r8b, 56(%rsp)
+	movb	9(%r9), %r8b
+	movb	%r8b, 57(%rsp)
+	movb	10(%r9), %r8b
+	movb	%r8b, 58(%rsp)
+	movb	11(%r9), %r8b
+	movb	%r8b, 59(%rsp)
+	movb	12(%r9), %r8b
+	movb	%r8b, 60(%rsp)
+	movb	13(%r9), %r8b
+	movb	%r8b, 61(%rsp)
+	movb	14(%r9), %r8b
+	movb	%r8b, 62(%rsp)
+	movb	15(%r9), %r8b
+	movb	%r8b, 63(%rsp)
 	movl	$1779033703, 16(%rsp)
 	movl	$-1150833019, 20(%rsp)
 	movl	$1013904242, 24(%rsp)
@@ -4619,109 +4764,111 @@ slh_dsa_sha2128s_keygen:
 	call	.Lsha256_firstblock___blocks_0_ref_array$1
 .Lsha256_firstblock__sha256_initH_cache$2:
 	leaq	88(%rsp), %rsp
-	movl	(%rcx), %edi
-	movl	%edi, (%rdx)
-	movl	4(%rcx), %edi
-	movl	%edi, 4(%rdx)
-	movl	8(%rcx), %edi
-	movl	%edi, 8(%rdx)
-	movl	12(%rcx), %edi
-	movl	%edi, 12(%rdx)
-	movl	16(%rcx), %edi
-	movl	%edi, 16(%rdx)
-	movl	20(%rcx), %edi
-	movl	%edi, 20(%rdx)
-	movl	24(%rcx), %edi
-	movl	%edi, 24(%rdx)
-	movl	28(%rcx), %edi
-	movl	%edi, 28(%rdx)
+	movl	(%rcx), %r8d
+	movl	%r8d, (%rdx)
+	movl	4(%rcx), %r8d
+	movl	%r8d, 4(%rdx)
+	movl	8(%rcx), %r8d
+	movl	%r8d, 8(%rdx)
+	movl	12(%rcx), %r8d
+	movl	%r8d, 12(%rdx)
+	movl	16(%rcx), %r8d
+	movl	%r8d, 16(%rdx)
+	movl	20(%rcx), %r8d
+	movl	%r8d, 20(%rdx)
+	movl	24(%rcx), %r8d
+	movl	%r8d, 24(%rdx)
+	movl	28(%rcx), %r8d
+	movl	%r8d, 28(%rdx)
 	ret
 .Lsha256_firstblock___blocks_0_ref_array$1:
 	movq	$0, %r8
 	movq	%rcx, 80(%rsp)
 	movq	80(%rsp), %rcx
-	movq	(%rsi,%r8), %rdi
-	movq	%rdi, 16(%rsp)
-	movq	8(%rsi,%r8), %rdi
-	movq	%rdi, 24(%rsp)
-	movq	16(%rsi,%r8), %rdi
-	movq	%rdi, 32(%rsp)
-	movq	24(%rsi,%r8), %rdi
-	movq	%rdi, 40(%rsp)
-	movq	32(%rsi,%r8), %rdi
-	movq	%rdi, 48(%rsp)
-	movq	40(%rsi,%r8), %rdi
-	movq	%rdi, 56(%rsp)
-	movq	48(%rsi,%r8), %rdi
-	movq	%rdi, 64(%rsp)
-	movq	56(%rsi,%r8), %rdi
-	movq	%rdi, 72(%rsp)
+	movq	(%rsi,%r8), %r10
+	movq	%r10, 16(%rsp)
+	movq	8(%rsi,%r8), %r10
+	movq	%r10, 24(%rsp)
+	movq	16(%rsi,%r8), %r10
+	movq	%r10, 32(%rsp)
+	movq	24(%rsi,%r8), %r10
+	movq	%r10, 40(%rsp)
+	movq	32(%rsi,%r8), %r10
+	movq	%r10, 48(%rsp)
+	movq	40(%rsi,%r8), %r10
+	movq	%r10, 56(%rsp)
+	movq	48(%rsi,%r8), %r10
+	movq	%r10, 64(%rsp)
+	movq	56(%rsi,%r8), %r10
+	movq	%r10, 72(%rsp)
 	movq	%r8, 80(%rsp)
 	leaq	16(%rsp), %rsi
 	leaq	-104(%rsp), %rsp
 	call	.Lsha256_avx__sha256_compress_avx$1
 .Lsha256_firstblock___blocks_0_ref_array$2:
 	leaq	104(%rsp), %rsp
+	lfence
+	movq	$0, %rdi
 	ret
 .LH_digests$1:
-	movq	%rdx, 8(%rsp)
-	leaq	240(%rsp), %rcx
-	leaq	208(%rsp), %rdx
-	leaq	176(%rsp), %rsi
-	leaq	144(%rsp), %rdi
-	leaq	112(%rsp), %r8
-	leaq	80(%rsp), %r9
-	leaq	48(%rsp), %r10
-	leaq	16(%rsp), %r11
+	movq	%rdx, %mm0
+	leaq	232(%rsp), %rcx
+	leaq	200(%rsp), %rdx
+	leaq	168(%rsp), %rsi
+	leaq	136(%rsp), %rdi
+	leaq	104(%rsp), %r8
+	leaq	72(%rsp), %r9
+	leaq	40(%rsp), %r10
+	leaq	8(%rsp), %r11
 	leaq	-312(%rsp), %rsp
 	call	.Lsha256_parallel__finalise$1
 .LH_digests$2:
 	leaq	312(%rsp), %rsp
-	movq	8(%rsp), %rcx
+	movq	%mm0, %rcx
 	movq	%rcx, %rdi
-	leaq	240(%rsp), %rdx
+	leaq	232(%rsp), %rdx
 	movq	(%rdx), %r8
 	movq	%r8, (%rdi)
 	movq	8(%rdx), %rdx
 	movq	%rdx, 8(%rdi)
 	leaq	16(%rcx), %rdi
-	leaq	208(%rsp), %rdx
+	leaq	200(%rsp), %rdx
 	movq	(%rdx), %r8
 	movq	%r8, (%rdi)
 	movq	8(%rdx), %rdx
 	movq	%rdx, 8(%rdi)
 	leaq	32(%rcx), %rdi
-	leaq	176(%rsp), %rdx
+	leaq	168(%rsp), %rdx
 	movq	(%rdx), %r8
 	movq	%r8, (%rdi)
 	movq	8(%rdx), %rdx
 	movq	%rdx, 8(%rdi)
 	leaq	48(%rcx), %rdi
-	leaq	144(%rsp), %rdx
+	leaq	136(%rsp), %rdx
 	movq	(%rdx), %r8
 	movq	%r8, (%rdi)
 	movq	8(%rdx), %rdx
 	movq	%rdx, 8(%rdi)
 	leaq	64(%rcx), %rdi
-	leaq	112(%rsp), %rdx
+	leaq	104(%rsp), %rdx
 	movq	(%rdx), %r8
 	movq	%r8, (%rdi)
 	movq	8(%rdx), %rdx
 	movq	%rdx, 8(%rdi)
 	leaq	80(%rcx), %rdi
-	leaq	80(%rsp), %rdx
+	leaq	72(%rsp), %rdx
 	movq	(%rdx), %r8
 	movq	%r8, (%rdi)
 	movq	8(%rdx), %rdx
 	movq	%rdx, 8(%rdi)
 	leaq	96(%rcx), %rdi
-	leaq	48(%rsp), %rdx
+	leaq	40(%rsp), %rdx
 	movq	(%rdx), %r8
 	movq	%r8, (%rdi)
 	movq	8(%rdx), %rdx
 	movq	%rdx, 8(%rdi)
 	leaq	112(%rcx), %rdi
-	leaq	16(%rsp), %rdx
+	leaq	8(%rsp), %rdx
 	movq	(%rdx), %r8
 	movq	%r8, (%rdi)
 	movq	8(%rdx), %rdx
@@ -4736,12 +4883,12 @@ slh_dsa_sha2128s_keygen:
 	leaq	160(%rbx), %r10
 	leaq	192(%rbx), %r11
 	leaq	224(%rbx), %rax
-	movq	%rbx, 8(%rsp)
+	movq	%rbx, %mm0
 	leaq	-344(%rsp), %rsp
 	call	.Lsha256_parallel_n__absorb_fixed$1
 .LH_children$3:
 	leaq	344(%rsp), %rsp
-	movq	8(%rsp), %rax
+	movq	%mm0, %rax
 	leaq	16(%rax), %rdx
 	leaq	48(%rax), %rsi
 	leaq	80(%rax), %rdi
@@ -4756,36 +4903,36 @@ slh_dsa_sha2128s_keygen:
 	leaq	344(%rsp), %rsp
 	ret
 .LH_adrs$1:
-	movl	(%rdi), %r10d
+	movl	(%r8), %r10d
 	movl	%r10d, 288(%rsp)
 	vpbroadcastd	288(%rsp), %ymm0
 	vmovdqu	%ymm0, 32(%rsp)
-	movl	4(%rdi), %r10d
+	movl	4(%r8), %r10d
 	movl	%r10d, 288(%rsp)
 	vpbroadcastd	288(%rsp), %ymm0
 	vmovdqu	%ymm0, 64(%rsp)
-	movl	8(%rdi), %r10d
+	movl	8(%r8), %r10d
 	movl	%r10d, 288(%rsp)
 	vpbroadcastd	288(%rsp), %ymm0
 	vmovdqu	%ymm0, 96(%rsp)
-	movl	12(%rdi), %r10d
+	movl	12(%r8), %r10d
 	movl	%r10d, 288(%rsp)
 	vpbroadcastd	288(%rsp), %ymm0
 	vmovdqu	%ymm0, 128(%rsp)
-	movl	16(%rdi), %r10d
+	movl	16(%r8), %r10d
 	movl	%r10d, 288(%rsp)
 	vpbroadcastd	288(%rsp), %ymm0
 	vmovdqu	%ymm0, 160(%rsp)
-	movl	20(%rdi), %r10d
+	movl	20(%r8), %r10d
 	movl	%r10d, 288(%rsp)
 	vpbroadcastd	288(%rsp), %ymm0
 	vmovdqu	%ymm0, 192(%rsp)
-	movl	24(%rdi), %r10d
+	movl	24(%r8), %r10d
 	movl	%r10d, 288(%rsp)
 	vpbroadcastd	288(%rsp), %ymm0
 	vmovdqu	%ymm0, 224(%rsp)
-	movl	28(%rdi), %edi
-	movl	%edi, 288(%rsp)
+	movl	28(%r8), %r8d
+	movl	%r8d, 288(%rsp)
 	vpbroadcastd	288(%rsp), %ymm0
 	vmovdqu	%ymm0, 256(%rsp)
 	movq	$512, %r12
@@ -4794,30 +4941,30 @@ slh_dsa_sha2128s_keygen:
 .LH_adrs$3:
 	leaq	292(%rsp), %rdi
 	leaq	484(%rsp), %rdx
-	movl	(%r8), %r9d
-	bswapl	%r9d
-	movl	%r9d, (%rdx)
-	movl	4(%r8), %r9d
-	bswapl	%r9d
-	movl	%r9d, 4(%rdx)
-	movl	8(%r8), %r9d
-	bswapl	%r9d
-	movl	%r9d, 8(%rdx)
-	movl	12(%r8), %r9d
-	bswapl	%r9d
-	movl	%r9d, 12(%rdx)
-	movl	16(%r8), %r9d
-	bswapl	%r9d
-	movl	%r9d, 16(%rdx)
-	movl	20(%r8), %r9d
-	bswapl	%r9d
-	movl	%r9d, 20(%rdx)
-	movl	24(%r8), %r9d
-	bswapl	%r9d
-	movl	%r9d, 24(%rdx)
-	movl	28(%r8), %r9d
-	bswapl	%r9d
-	movl	%r9d, 28(%rdx)
+	movl	(%rsi), %r8d
+	bswapl	%r8d
+	movl	%r8d, (%rdx)
+	movl	4(%rsi), %r8d
+	bswapl	%r8d
+	movl	%r8d, 4(%rdx)
+	movl	8(%rsi), %r8d
+	bswapl	%r8d
+	movl	%r8d, 8(%rdx)
+	movl	12(%rsi), %r8d
+	bswapl	%r8d
+	movl	%r8d, 12(%rdx)
+	movl	16(%rsi), %r8d
+	bswapl	%r8d
+	movl	%r8d, 16(%rdx)
+	movl	20(%rsi), %r8d
+	bswapl	%r8d
+	movl	%r8d, 20(%rdx)
+	movl	24(%rsi), %r8d
+	bswapl	%r8d
+	movl	%r8d, 24(%rdx)
+	movl	28(%rsi), %r8d
+	bswapl	%r8d
+	movl	%r8d, 28(%rdx)
 	movb	487(%rsp), %dl
 	movb	%dl, (%rdi)
 	movb	492(%rsp), %dl
@@ -4932,40 +5079,40 @@ slh_dsa_sha2128s_keygen:
 	movl	%edx, 356(%rsp)
 	movl	308(%rsp), %edx
 	movl	%edx, 332(%rsp)
-	incl	%esi
+	incl	%r9d
 	leaq	460(%rsp), %rdx
-	movl	%esi, %edi
-	bswapl	%edi
-	movl	%edi, 18(%rdx)
-	incl	%esi
-	leaq	436(%rsp), %rdx
-	movl	%esi, %edi
-	bswapl	%edi
-	movl	%edi, 18(%rdx)
-	incl	%esi
-	leaq	412(%rsp), %rdx
-	movl	%esi, %edi
-	bswapl	%edi
-	movl	%edi, 18(%rdx)
-	incl	%esi
-	leaq	388(%rsp), %rdx
-	movl	%esi, %edi
-	bswapl	%edi
-	movl	%edi, 18(%rdx)
-	incl	%esi
-	leaq	364(%rsp), %rdx
-	movl	%esi, %edi
-	bswapl	%edi
-	movl	%edi, 18(%rdx)
-	incl	%esi
-	leaq	340(%rsp), %rdx
-	movl	%esi, %edi
-	bswapl	%edi
-	movl	%edi, 18(%rdx)
-	incl	%esi
-	leaq	316(%rsp), %rdx
+	movl	%r9d, %esi
 	bswapl	%esi
 	movl	%esi, 18(%rdx)
+	incl	%r9d
+	leaq	436(%rsp), %rdx
+	movl	%r9d, %esi
+	bswapl	%esi
+	movl	%esi, 18(%rdx)
+	incl	%r9d
+	leaq	412(%rsp), %rdx
+	movl	%r9d, %esi
+	bswapl	%esi
+	movl	%esi, 18(%rdx)
+	incl	%r9d
+	leaq	388(%rsp), %rdx
+	movl	%r9d, %esi
+	bswapl	%esi
+	movl	%esi, 18(%rdx)
+	incl	%r9d
+	leaq	364(%rsp), %rdx
+	movl	%r9d, %esi
+	bswapl	%esi
+	movl	%esi, 18(%rdx)
+	incl	%r9d
+	leaq	340(%rsp), %rdx
+	movl	%r9d, %esi
+	bswapl	%esi
+	movl	%esi, 18(%rdx)
+	incl	%r9d
+	leaq	316(%rsp), %rdx
+	bswapl	%r9d
+	movl	%r9d, 18(%rdx)
 	leaq	292(%rsp), %rdx
 	leaq	460(%rsp), %rsi
 	leaq	436(%rsp), %rdi
@@ -4980,751 +5127,759 @@ slh_dsa_sha2128s_keygen:
 	leaq	344(%rsp), %rsp
 	ret
 .LT_k$1:
-	movq	%rcx, 8(%rsp)
-	leaq	48(%rsp), %rcx
-	leaq	16(%rsp), %rsi
-	movl	(%r8), %r9d
-	bswapl	%r9d
-	movl	%r9d, (%rsi)
-	movl	4(%r8), %r9d
-	bswapl	%r9d
-	movl	%r9d, 4(%rsi)
-	movl	8(%r8), %r9d
-	bswapl	%r9d
-	movl	%r9d, 8(%rsi)
-	movl	12(%r8), %r9d
-	bswapl	%r9d
-	movl	%r9d, 12(%rsi)
-	movl	16(%r8), %r9d
-	bswapl	%r9d
-	movl	%r9d, 16(%rsi)
-	movl	20(%r8), %r9d
-	bswapl	%r9d
-	movl	%r9d, 20(%rsi)
-	movl	24(%r8), %r9d
-	bswapl	%r9d
-	movl	%r9d, 24(%rsi)
-	movl	28(%r8), %r9d
-	bswapl	%r9d
-	movl	%r9d, 28(%rsi)
-	movb	19(%rsp), %dil
-	movb	%dil, (%rcx)
-	movb	24(%rsp), %dil
-	movb	%dil, 1(%rcx)
-	movb	25(%rsp), %dil
-	movb	%dil, 2(%rcx)
-	movb	26(%rsp), %dil
-	movb	%dil, 3(%rcx)
-	movb	27(%rsp), %dil
-	movb	%dil, 4(%rcx)
-	movb	28(%rsp), %dil
-	movb	%dil, 5(%rcx)
-	movb	29(%rsp), %dil
-	movb	%dil, 6(%rcx)
-	movb	30(%rsp), %dil
-	movb	%dil, 7(%rcx)
-	movb	31(%rsp), %dil
-	movb	%dil, 8(%rcx)
-	movb	35(%rsp), %dil
-	movb	%dil, 9(%rcx)
-	movb	36(%rsp), %dil
-	movb	%dil, 10(%rcx)
-	movb	37(%rsp), %dil
-	movb	%dil, 11(%rcx)
-	movb	38(%rsp), %dil
-	movb	%dil, 12(%rcx)
-	movb	39(%rsp), %dil
-	movb	%dil, 13(%rcx)
-	movb	40(%rsp), %dil
-	movb	%dil, 14(%rcx)
-	movb	41(%rsp), %dil
-	movb	%dil, 15(%rcx)
-	movb	42(%rsp), %dil
-	movb	%dil, 16(%rcx)
-	movb	43(%rsp), %dil
-	movb	%dil, 17(%rcx)
-	movb	44(%rsp), %dil
-	movb	%dil, 18(%rcx)
-	movb	45(%rsp), %dil
-	movb	%dil, 19(%rcx)
-	movb	46(%rsp), %dil
-	movb	%dil, 20(%rcx)
-	movb	47(%rsp), %dil
-	movb	%dil, 21(%rcx)
-	leaq	70(%rsp), %rcx
-	movq	%rax, %rsi
-	movq	(%rsi), %rdi
-	movq	%rdi, (%rcx)
-	movq	8(%rsi), %rdi
-	movq	%rdi, 8(%rcx)
-	leaq	86(%rsp), %rcx
-	leaq	16(%rax), %rsi
-	movq	(%rsi), %rdi
-	movq	%rdi, (%rcx)
-	movq	8(%rsi), %rdi
-	movq	%rdi, 8(%rcx)
-	leaq	102(%rsp), %rcx
-	leaq	32(%rax), %rsi
-	movq	(%rsi), %rdi
-	movq	%rdi, (%rcx)
-	movq	8(%rsi), %rdi
-	movq	%rdi, 8(%rcx)
-	leaq	118(%rsp), %rcx
-	leaq	48(%rax), %rsi
-	movq	(%rsi), %rdi
-	movq	%rdi, (%rcx)
-	movq	8(%rsi), %rdi
-	movq	%rdi, 8(%rcx)
-	leaq	134(%rsp), %rcx
-	leaq	64(%rax), %rsi
-	movq	(%rsi), %rdi
-	movq	%rdi, (%rcx)
-	movq	8(%rsi), %rdi
-	movq	%rdi, 8(%rcx)
-	leaq	150(%rsp), %rcx
-	leaq	80(%rax), %rsi
-	movq	(%rsi), %rdi
-	movq	%rdi, (%rcx)
-	movq	8(%rsi), %rdi
-	movq	%rdi, 8(%rcx)
-	leaq	166(%rsp), %rcx
-	leaq	96(%rax), %rsi
-	movq	(%rsi), %rdi
-	movq	%rdi, (%rcx)
-	movq	8(%rsi), %rdi
-	movq	%rdi, 8(%rcx)
-	leaq	182(%rsp), %rcx
-	leaq	112(%rax), %rsi
-	movq	(%rsi), %rdi
-	movq	%rdi, (%rcx)
-	movq	8(%rsi), %rdi
-	movq	%rdi, 8(%rcx)
-	leaq	198(%rsp), %rcx
-	leaq	128(%rax), %rsi
-	movq	(%rsi), %rdi
-	movq	%rdi, (%rcx)
-	movq	8(%rsi), %rdi
-	movq	%rdi, 8(%rcx)
-	leaq	214(%rsp), %rcx
-	leaq	144(%rax), %rsi
-	movq	(%rsi), %rdi
-	movq	%rdi, (%rcx)
-	movq	8(%rsi), %rdi
-	movq	%rdi, 8(%rcx)
-	leaq	230(%rsp), %rcx
-	leaq	160(%rax), %rsi
-	movq	(%rsi), %rdi
-	movq	%rdi, (%rcx)
-	movq	8(%rsi), %rdi
-	movq	%rdi, 8(%rcx)
-	leaq	246(%rsp), %rcx
-	leaq	176(%rax), %rsi
-	movq	(%rsi), %rdi
-	movq	%rdi, (%rcx)
-	movq	8(%rsi), %rdi
-	movq	%rdi, 8(%rcx)
-	leaq	262(%rsp), %rcx
-	leaq	192(%rax), %rsi
-	movq	(%rsi), %rdi
-	movq	%rdi, (%rcx)
-	movq	8(%rsi), %rdi
-	movq	%rdi, 8(%rcx)
-	leaq	278(%rsp), %rcx
-	leaq	208(%rax), %rsi
-	movq	(%rsi), %rdi
-	movq	%rdi, (%rcx)
-	movq	8(%rsi), %rdi
-	movq	%rdi, 8(%rcx)
-	leaq	16(%rsp), %rcx
-	leaq	48(%rsp), %rsi
-	leaq	-200(%rsp), %rsp
+	movq	%rdi, %mm0
+	leaq	40(%rsp), %rdi
+	leaq	8(%rsp), %rcx
+	movl	(%rsi), %r8d
+	bswapl	%r8d
+	movl	%r8d, (%rcx)
+	movl	4(%rsi), %r8d
+	bswapl	%r8d
+	movl	%r8d, 4(%rcx)
+	movl	8(%rsi), %r8d
+	bswapl	%r8d
+	movl	%r8d, 8(%rcx)
+	movl	12(%rsi), %r8d
+	bswapl	%r8d
+	movl	%r8d, 12(%rcx)
+	movl	16(%rsi), %r8d
+	bswapl	%r8d
+	movl	%r8d, 16(%rcx)
+	movl	20(%rsi), %r8d
+	bswapl	%r8d
+	movl	%r8d, 20(%rcx)
+	movl	24(%rsi), %r8d
+	bswapl	%r8d
+	movl	%r8d, 24(%rcx)
+	movl	28(%rsi), %r8d
+	bswapl	%r8d
+	movl	%r8d, 28(%rcx)
+	movb	11(%rsp), %r8b
+	movb	%r8b, (%rdi)
+	movb	16(%rsp), %r8b
+	movb	%r8b, 1(%rdi)
+	movb	17(%rsp), %r8b
+	movb	%r8b, 2(%rdi)
+	movb	18(%rsp), %r8b
+	movb	%r8b, 3(%rdi)
+	movb	19(%rsp), %r8b
+	movb	%r8b, 4(%rdi)
+	movb	20(%rsp), %r8b
+	movb	%r8b, 5(%rdi)
+	movb	21(%rsp), %r8b
+	movb	%r8b, 6(%rdi)
+	movb	22(%rsp), %r8b
+	movb	%r8b, 7(%rdi)
+	movb	23(%rsp), %r8b
+	movb	%r8b, 8(%rdi)
+	movb	27(%rsp), %r8b
+	movb	%r8b, 9(%rdi)
+	movb	28(%rsp), %r8b
+	movb	%r8b, 10(%rdi)
+	movb	29(%rsp), %r8b
+	movb	%r8b, 11(%rdi)
+	movb	30(%rsp), %r8b
+	movb	%r8b, 12(%rdi)
+	movb	31(%rsp), %r8b
+	movb	%r8b, 13(%rdi)
+	movb	32(%rsp), %r8b
+	movb	%r8b, 14(%rdi)
+	movb	33(%rsp), %r8b
+	movb	%r8b, 15(%rdi)
+	movb	34(%rsp), %r8b
+	movb	%r8b, 16(%rdi)
+	movb	35(%rsp), %r8b
+	movb	%r8b, 17(%rdi)
+	movb	36(%rsp), %r8b
+	movb	%r8b, 18(%rdi)
+	movb	37(%rsp), %r8b
+	movb	%r8b, 19(%rdi)
+	movb	38(%rsp), %r8b
+	movb	%r8b, 20(%rdi)
+	movb	39(%rsp), %r8b
+	movb	%r8b, 21(%rdi)
+	leaq	62(%rsp), %rdi
+	movq	%rax, %rcx
+	movq	(%rcx), %r8
+	movq	%r8, (%rdi)
+	movq	8(%rcx), %r8
+	movq	%r8, 8(%rdi)
+	leaq	78(%rsp), %rdi
+	leaq	16(%rax), %rcx
+	movq	(%rcx), %r8
+	movq	%r8, (%rdi)
+	movq	8(%rcx), %r8
+	movq	%r8, 8(%rdi)
+	leaq	94(%rsp), %rdi
+	leaq	32(%rax), %rcx
+	movq	(%rcx), %r8
+	movq	%r8, (%rdi)
+	movq	8(%rcx), %r8
+	movq	%r8, 8(%rdi)
+	leaq	110(%rsp), %rdi
+	leaq	48(%rax), %rcx
+	movq	(%rcx), %r8
+	movq	%r8, (%rdi)
+	movq	8(%rcx), %r8
+	movq	%r8, 8(%rdi)
+	leaq	126(%rsp), %rdi
+	leaq	64(%rax), %rcx
+	movq	(%rcx), %r8
+	movq	%r8, (%rdi)
+	movq	8(%rcx), %r8
+	movq	%r8, 8(%rdi)
+	leaq	142(%rsp), %rdi
+	leaq	80(%rax), %rcx
+	movq	(%rcx), %r8
+	movq	%r8, (%rdi)
+	movq	8(%rcx), %r8
+	movq	%r8, 8(%rdi)
+	leaq	158(%rsp), %rdi
+	leaq	96(%rax), %rcx
+	movq	(%rcx), %r8
+	movq	%r8, (%rdi)
+	movq	8(%rcx), %r8
+	movq	%r8, 8(%rdi)
+	leaq	174(%rsp), %rdi
+	leaq	112(%rax), %rcx
+	movq	(%rcx), %r8
+	movq	%r8, (%rdi)
+	movq	8(%rcx), %r8
+	movq	%r8, 8(%rdi)
+	leaq	190(%rsp), %rdi
+	leaq	128(%rax), %rcx
+	movq	(%rcx), %r8
+	movq	%r8, (%rdi)
+	movq	8(%rcx), %r8
+	movq	%r8, 8(%rdi)
+	leaq	206(%rsp), %rdi
+	leaq	144(%rax), %rcx
+	movq	(%rcx), %r8
+	movq	%r8, (%rdi)
+	movq	8(%rcx), %r8
+	movq	%r8, 8(%rdi)
+	leaq	222(%rsp), %rdi
+	leaq	160(%rax), %rcx
+	movq	(%rcx), %r8
+	movq	%r8, (%rdi)
+	movq	8(%rcx), %r8
+	movq	%r8, 8(%rdi)
+	leaq	238(%rsp), %rdi
+	leaq	176(%rax), %rcx
+	movq	(%rcx), %r8
+	movq	%r8, (%rdi)
+	movq	8(%rcx), %r8
+	movq	%r8, 8(%rdi)
+	leaq	254(%rsp), %rdi
+	leaq	192(%rax), %rcx
+	movq	(%rcx), %r8
+	movq	%r8, (%rdi)
+	movq	8(%rcx), %r8
+	movq	%r8, 8(%rdi)
+	leaq	270(%rsp), %rdi
+	leaq	208(%rax), %rcx
+	movq	(%rcx), %r8
+	movq	%r8, (%rdi)
+	movq	8(%rcx), %r8
+	movq	%r8, 8(%rdi)
+	leaq	8(%rsp), %rax
+	leaq	40(%rsp), %rsi
+	leaq	-168(%rsp), %rsp
 	call	.Lsha256_compress_fors__sha256_cached$1
 .LT_k$2:
-	leaq	200(%rsp), %rsp
-	movq	8(%rsp), %rcx
-	leaq	16(%rsp), %rdx
-	movq	(%rdx), %rdi
-	movq	%rdi, (%rcx)
-	movq	8(%rdx), %rdx
-	movq	%rdx, 8(%rcx)
+	leaq	168(%rsp), %rsp
+	movq	%mm0, %rax
+	leaq	8(%rsp), %rcx
+	movq	(%rcx), %rdx
+	movq	%rdx, (%rax)
+	movq	8(%rcx), %rdx
+	movq	%rdx, 8(%rax)
 	ret
 .LT_len$1:
-	movq	%rcx, 8(%rsp)
-	leaq	48(%rsp), %rcx
-	leaq	16(%rsp), %rsi
-	movl	(%r8), %r9d
-	bswapl	%r9d
-	movl	%r9d, (%rsi)
-	movl	4(%r8), %r9d
-	bswapl	%r9d
-	movl	%r9d, 4(%rsi)
-	movl	8(%r8), %r9d
-	bswapl	%r9d
-	movl	%r9d, 8(%rsi)
-	movl	12(%r8), %r9d
-	bswapl	%r9d
-	movl	%r9d, 12(%rsi)
-	movl	16(%r8), %r9d
-	bswapl	%r9d
-	movl	%r9d, 16(%rsi)
-	movl	20(%r8), %r9d
-	bswapl	%r9d
-	movl	%r9d, 20(%rsi)
-	movl	24(%r8), %r9d
-	bswapl	%r9d
-	movl	%r9d, 24(%rsi)
-	movl	28(%r8), %r9d
-	bswapl	%r9d
-	movl	%r9d, 28(%rsi)
-	movb	19(%rsp), %dil
-	movb	%dil, (%rcx)
-	movb	24(%rsp), %dil
-	movb	%dil, 1(%rcx)
-	movb	25(%rsp), %dil
-	movb	%dil, 2(%rcx)
-	movb	26(%rsp), %dil
-	movb	%dil, 3(%rcx)
-	movb	27(%rsp), %dil
-	movb	%dil, 4(%rcx)
-	movb	28(%rsp), %dil
-	movb	%dil, 5(%rcx)
-	movb	29(%rsp), %dil
-	movb	%dil, 6(%rcx)
-	movb	30(%rsp), %dil
-	movb	%dil, 7(%rcx)
-	movb	31(%rsp), %dil
-	movb	%dil, 8(%rcx)
-	movb	35(%rsp), %dil
-	movb	%dil, 9(%rcx)
-	movb	36(%rsp), %dil
-	movb	%dil, 10(%rcx)
-	movb	37(%rsp), %dil
-	movb	%dil, 11(%rcx)
-	movb	38(%rsp), %dil
-	movb	%dil, 12(%rcx)
-	movb	39(%rsp), %dil
-	movb	%dil, 13(%rcx)
-	movb	40(%rsp), %dil
-	movb	%dil, 14(%rcx)
-	movb	41(%rsp), %dil
-	movb	%dil, 15(%rcx)
-	movb	42(%rsp), %dil
-	movb	%dil, 16(%rcx)
-	movb	43(%rsp), %dil
-	movb	%dil, 17(%rcx)
-	movb	44(%rsp), %dil
-	movb	%dil, 18(%rcx)
-	movb	45(%rsp), %dil
-	movb	%dil, 19(%rcx)
-	movb	46(%rsp), %dil
-	movb	%dil, 20(%rcx)
-	movb	47(%rsp), %dil
-	movb	%dil, 21(%rcx)
-	leaq	70(%rsp), %rcx
-	movq	%rax, %rsi
-	movq	(%rsi), %rdi
-	movq	%rdi, (%rcx)
-	movq	8(%rsi), %rdi
-	movq	%rdi, 8(%rcx)
-	leaq	86(%rsp), %rcx
-	leaq	16(%rax), %rsi
-	movq	(%rsi), %rdi
-	movq	%rdi, (%rcx)
-	movq	8(%rsi), %rdi
-	movq	%rdi, 8(%rcx)
-	leaq	102(%rsp), %rcx
-	leaq	32(%rax), %rsi
-	movq	(%rsi), %rdi
-	movq	%rdi, (%rcx)
-	movq	8(%rsi), %rdi
-	movq	%rdi, 8(%rcx)
-	leaq	118(%rsp), %rcx
-	leaq	48(%rax), %rsi
-	movq	(%rsi), %rdi
-	movq	%rdi, (%rcx)
-	movq	8(%rsi), %rdi
-	movq	%rdi, 8(%rcx)
-	leaq	134(%rsp), %rcx
-	leaq	64(%rax), %rsi
-	movq	(%rsi), %rdi
-	movq	%rdi, (%rcx)
-	movq	8(%rsi), %rdi
-	movq	%rdi, 8(%rcx)
-	leaq	150(%rsp), %rcx
-	leaq	80(%rax), %rsi
-	movq	(%rsi), %rdi
-	movq	%rdi, (%rcx)
-	movq	8(%rsi), %rdi
-	movq	%rdi, 8(%rcx)
-	leaq	166(%rsp), %rcx
-	leaq	96(%rax), %rsi
-	movq	(%rsi), %rdi
-	movq	%rdi, (%rcx)
-	movq	8(%rsi), %rdi
-	movq	%rdi, 8(%rcx)
-	leaq	182(%rsp), %rcx
-	leaq	112(%rax), %rsi
-	movq	(%rsi), %rdi
-	movq	%rdi, (%rcx)
-	movq	8(%rsi), %rdi
-	movq	%rdi, 8(%rcx)
-	leaq	198(%rsp), %rcx
-	leaq	128(%rax), %rsi
-	movq	(%rsi), %rdi
-	movq	%rdi, (%rcx)
-	movq	8(%rsi), %rdi
-	movq	%rdi, 8(%rcx)
-	leaq	214(%rsp), %rcx
-	leaq	144(%rax), %rsi
-	movq	(%rsi), %rdi
-	movq	%rdi, (%rcx)
-	movq	8(%rsi), %rdi
-	movq	%rdi, 8(%rcx)
-	leaq	230(%rsp), %rcx
-	leaq	160(%rax), %rsi
-	movq	(%rsi), %rdi
-	movq	%rdi, (%rcx)
-	movq	8(%rsi), %rdi
-	movq	%rdi, 8(%rcx)
-	leaq	246(%rsp), %rcx
-	leaq	176(%rax), %rsi
-	movq	(%rsi), %rdi
-	movq	%rdi, (%rcx)
-	movq	8(%rsi), %rdi
-	movq	%rdi, 8(%rcx)
-	leaq	262(%rsp), %rcx
-	leaq	192(%rax), %rsi
-	movq	(%rsi), %rdi
-	movq	%rdi, (%rcx)
-	movq	8(%rsi), %rdi
-	movq	%rdi, 8(%rcx)
-	leaq	278(%rsp), %rcx
-	leaq	208(%rax), %rsi
-	movq	(%rsi), %rdi
-	movq	%rdi, (%rcx)
-	movq	8(%rsi), %rdi
-	movq	%rdi, 8(%rcx)
-	leaq	294(%rsp), %rcx
-	leaq	224(%rax), %rsi
-	movq	(%rsi), %rdi
-	movq	%rdi, (%rcx)
-	movq	8(%rsi), %rdi
-	movq	%rdi, 8(%rcx)
-	leaq	310(%rsp), %rcx
-	leaq	240(%rax), %rsi
-	movq	(%rsi), %rdi
-	movq	%rdi, (%rcx)
-	movq	8(%rsi), %rdi
-	movq	%rdi, 8(%rcx)
-	leaq	326(%rsp), %rcx
-	leaq	256(%rax), %rsi
-	movq	(%rsi), %rdi
-	movq	%rdi, (%rcx)
-	movq	8(%rsi), %rdi
-	movq	%rdi, 8(%rcx)
-	leaq	342(%rsp), %rcx
-	leaq	272(%rax), %rsi
-	movq	(%rsi), %rdi
-	movq	%rdi, (%rcx)
-	movq	8(%rsi), %rdi
-	movq	%rdi, 8(%rcx)
-	leaq	358(%rsp), %rcx
-	leaq	288(%rax), %rsi
-	movq	(%rsi), %rdi
-	movq	%rdi, (%rcx)
-	movq	8(%rsi), %rdi
-	movq	%rdi, 8(%rcx)
-	leaq	374(%rsp), %rcx
-	leaq	304(%rax), %rsi
-	movq	(%rsi), %rdi
-	movq	%rdi, (%rcx)
-	movq	8(%rsi), %rdi
-	movq	%rdi, 8(%rcx)
-	leaq	390(%rsp), %rcx
-	leaq	320(%rax), %rsi
-	movq	(%rsi), %rdi
-	movq	%rdi, (%rcx)
-	movq	8(%rsi), %rdi
-	movq	%rdi, 8(%rcx)
-	leaq	406(%rsp), %rcx
-	leaq	336(%rax), %rsi
-	movq	(%rsi), %rdi
-	movq	%rdi, (%rcx)
-	movq	8(%rsi), %rdi
-	movq	%rdi, 8(%rcx)
-	leaq	422(%rsp), %rcx
-	leaq	352(%rax), %rsi
-	movq	(%rsi), %rdi
-	movq	%rdi, (%rcx)
-	movq	8(%rsi), %rdi
-	movq	%rdi, 8(%rcx)
-	leaq	438(%rsp), %rcx
-	leaq	368(%rax), %rsi
-	movq	(%rsi), %rdi
-	movq	%rdi, (%rcx)
-	movq	8(%rsi), %rdi
-	movq	%rdi, 8(%rcx)
-	leaq	454(%rsp), %rcx
-	leaq	384(%rax), %rsi
-	movq	(%rsi), %rdi
-	movq	%rdi, (%rcx)
-	movq	8(%rsi), %rdi
-	movq	%rdi, 8(%rcx)
-	leaq	470(%rsp), %rcx
-	leaq	400(%rax), %rsi
-	movq	(%rsi), %rdi
-	movq	%rdi, (%rcx)
-	movq	8(%rsi), %rdi
-	movq	%rdi, 8(%rcx)
-	leaq	486(%rsp), %rcx
-	leaq	416(%rax), %rsi
-	movq	(%rsi), %rdi
-	movq	%rdi, (%rcx)
-	movq	8(%rsi), %rdi
-	movq	%rdi, 8(%rcx)
-	leaq	502(%rsp), %rcx
-	leaq	432(%rax), %rsi
-	movq	(%rsi), %rdi
-	movq	%rdi, (%rcx)
-	movq	8(%rsi), %rdi
-	movq	%rdi, 8(%rcx)
-	leaq	518(%rsp), %rcx
-	leaq	448(%rax), %rsi
-	movq	(%rsi), %rdi
-	movq	%rdi, (%rcx)
-	movq	8(%rsi), %rdi
-	movq	%rdi, 8(%rcx)
-	leaq	534(%rsp), %rcx
-	leaq	464(%rax), %rsi
-	movq	(%rsi), %rdi
-	movq	%rdi, (%rcx)
-	movq	8(%rsi), %rdi
-	movq	%rdi, 8(%rcx)
-	leaq	550(%rsp), %rcx
-	leaq	480(%rax), %rsi
-	movq	(%rsi), %rdi
-	movq	%rdi, (%rcx)
-	movq	8(%rsi), %rdi
-	movq	%rdi, 8(%rcx)
-	leaq	566(%rsp), %rcx
-	leaq	496(%rax), %rsi
-	movq	(%rsi), %rdi
-	movq	%rdi, (%rcx)
-	movq	8(%rsi), %rdi
-	movq	%rdi, 8(%rcx)
-	leaq	582(%rsp), %rcx
-	leaq	512(%rax), %rsi
-	movq	(%rsi), %rdi
-	movq	%rdi, (%rcx)
-	movq	8(%rsi), %rdi
-	movq	%rdi, 8(%rcx)
-	leaq	598(%rsp), %rcx
-	leaq	528(%rax), %rsi
-	movq	(%rsi), %rdi
-	movq	%rdi, (%rcx)
-	movq	8(%rsi), %rdi
-	movq	%rdi, 8(%rcx)
-	leaq	614(%rsp), %rcx
-	leaq	544(%rax), %rsi
-	movq	(%rsi), %rdi
-	movq	%rdi, (%rcx)
-	movq	8(%rsi), %rdi
-	movq	%rdi, 8(%rcx)
-	leaq	16(%rsp), %rcx
-	leaq	48(%rsp), %rsi
-	leaq	-200(%rsp), %rsp
+	movq	%rdi, %mm0
+	leaq	40(%rsp), %rdi
+	leaq	8(%rsp), %rax
+	movl	(%rsi), %r8d
+	bswapl	%r8d
+	movl	%r8d, (%rax)
+	movl	4(%rsi), %r8d
+	bswapl	%r8d
+	movl	%r8d, 4(%rax)
+	movl	8(%rsi), %r8d
+	bswapl	%r8d
+	movl	%r8d, 8(%rax)
+	movl	12(%rsi), %r8d
+	bswapl	%r8d
+	movl	%r8d, 12(%rax)
+	movl	16(%rsi), %r8d
+	bswapl	%r8d
+	movl	%r8d, 16(%rax)
+	movl	20(%rsi), %r8d
+	bswapl	%r8d
+	movl	%r8d, 20(%rax)
+	movl	24(%rsi), %r8d
+	bswapl	%r8d
+	movl	%r8d, 24(%rax)
+	movl	28(%rsi), %r8d
+	bswapl	%r8d
+	movl	%r8d, 28(%rax)
+	movb	11(%rsp), %r8b
+	movb	%r8b, (%rdi)
+	movb	16(%rsp), %r8b
+	movb	%r8b, 1(%rdi)
+	movb	17(%rsp), %r8b
+	movb	%r8b, 2(%rdi)
+	movb	18(%rsp), %r8b
+	movb	%r8b, 3(%rdi)
+	movb	19(%rsp), %r8b
+	movb	%r8b, 4(%rdi)
+	movb	20(%rsp), %r8b
+	movb	%r8b, 5(%rdi)
+	movb	21(%rsp), %r8b
+	movb	%r8b, 6(%rdi)
+	movb	22(%rsp), %r8b
+	movb	%r8b, 7(%rdi)
+	movb	23(%rsp), %r8b
+	movb	%r8b, 8(%rdi)
+	movb	27(%rsp), %r8b
+	movb	%r8b, 9(%rdi)
+	movb	28(%rsp), %r8b
+	movb	%r8b, 10(%rdi)
+	movb	29(%rsp), %r8b
+	movb	%r8b, 11(%rdi)
+	movb	30(%rsp), %r8b
+	movb	%r8b, 12(%rdi)
+	movb	31(%rsp), %r8b
+	movb	%r8b, 13(%rdi)
+	movb	32(%rsp), %r8b
+	movb	%r8b, 14(%rdi)
+	movb	33(%rsp), %r8b
+	movb	%r8b, 15(%rdi)
+	movb	34(%rsp), %r8b
+	movb	%r8b, 16(%rdi)
+	movb	35(%rsp), %r8b
+	movb	%r8b, 17(%rdi)
+	movb	36(%rsp), %r8b
+	movb	%r8b, 18(%rdi)
+	movb	37(%rsp), %r8b
+	movb	%r8b, 19(%rdi)
+	movb	38(%rsp), %r8b
+	movb	%r8b, 20(%rdi)
+	movb	39(%rsp), %r8b
+	movb	%r8b, 21(%rdi)
+	leaq	62(%rsp), %rax
+	movq	%rcx, %rsi
+	movq	(%rsi), %r8
+	movq	%r8, (%rax)
+	movq	8(%rsi), %r8
+	movq	%r8, 8(%rax)
+	leaq	78(%rsp), %rax
+	leaq	16(%rcx), %rsi
+	movq	(%rsi), %r8
+	movq	%r8, (%rax)
+	movq	8(%rsi), %r8
+	movq	%r8, 8(%rax)
+	leaq	94(%rsp), %rax
+	leaq	32(%rcx), %rsi
+	movq	(%rsi), %r8
+	movq	%r8, (%rax)
+	movq	8(%rsi), %r8
+	movq	%r8, 8(%rax)
+	leaq	110(%rsp), %rax
+	leaq	48(%rcx), %rsi
+	movq	(%rsi), %r8
+	movq	%r8, (%rax)
+	movq	8(%rsi), %r8
+	movq	%r8, 8(%rax)
+	leaq	126(%rsp), %rax
+	leaq	64(%rcx), %rsi
+	movq	(%rsi), %r8
+	movq	%r8, (%rax)
+	movq	8(%rsi), %r8
+	movq	%r8, 8(%rax)
+	leaq	142(%rsp), %rax
+	leaq	80(%rcx), %rsi
+	movq	(%rsi), %r8
+	movq	%r8, (%rax)
+	movq	8(%rsi), %r8
+	movq	%r8, 8(%rax)
+	leaq	158(%rsp), %rax
+	leaq	96(%rcx), %rsi
+	movq	(%rsi), %r8
+	movq	%r8, (%rax)
+	movq	8(%rsi), %r8
+	movq	%r8, 8(%rax)
+	leaq	174(%rsp), %rax
+	leaq	112(%rcx), %rsi
+	movq	(%rsi), %r8
+	movq	%r8, (%rax)
+	movq	8(%rsi), %r8
+	movq	%r8, 8(%rax)
+	leaq	190(%rsp), %rax
+	leaq	128(%rcx), %rsi
+	movq	(%rsi), %r8
+	movq	%r8, (%rax)
+	movq	8(%rsi), %r8
+	movq	%r8, 8(%rax)
+	leaq	206(%rsp), %rax
+	leaq	144(%rcx), %rsi
+	movq	(%rsi), %r8
+	movq	%r8, (%rax)
+	movq	8(%rsi), %r8
+	movq	%r8, 8(%rax)
+	leaq	222(%rsp), %rax
+	leaq	160(%rcx), %rsi
+	movq	(%rsi), %r8
+	movq	%r8, (%rax)
+	movq	8(%rsi), %r8
+	movq	%r8, 8(%rax)
+	leaq	238(%rsp), %rax
+	leaq	176(%rcx), %rsi
+	movq	(%rsi), %r8
+	movq	%r8, (%rax)
+	movq	8(%rsi), %r8
+	movq	%r8, 8(%rax)
+	leaq	254(%rsp), %rax
+	leaq	192(%rcx), %rsi
+	movq	(%rsi), %r8
+	movq	%r8, (%rax)
+	movq	8(%rsi), %r8
+	movq	%r8, 8(%rax)
+	leaq	270(%rsp), %rax
+	leaq	208(%rcx), %rsi
+	movq	(%rsi), %r8
+	movq	%r8, (%rax)
+	movq	8(%rsi), %r8
+	movq	%r8, 8(%rax)
+	leaq	286(%rsp), %rax
+	leaq	224(%rcx), %rsi
+	movq	(%rsi), %r8
+	movq	%r8, (%rax)
+	movq	8(%rsi), %r8
+	movq	%r8, 8(%rax)
+	leaq	302(%rsp), %rax
+	leaq	240(%rcx), %rsi
+	movq	(%rsi), %r8
+	movq	%r8, (%rax)
+	movq	8(%rsi), %r8
+	movq	%r8, 8(%rax)
+	leaq	318(%rsp), %rax
+	leaq	256(%rcx), %rsi
+	movq	(%rsi), %r8
+	movq	%r8, (%rax)
+	movq	8(%rsi), %r8
+	movq	%r8, 8(%rax)
+	leaq	334(%rsp), %rax
+	leaq	272(%rcx), %rsi
+	movq	(%rsi), %r8
+	movq	%r8, (%rax)
+	movq	8(%rsi), %r8
+	movq	%r8, 8(%rax)
+	leaq	350(%rsp), %rax
+	leaq	288(%rcx), %rsi
+	movq	(%rsi), %r8
+	movq	%r8, (%rax)
+	movq	8(%rsi), %r8
+	movq	%r8, 8(%rax)
+	leaq	366(%rsp), %rax
+	leaq	304(%rcx), %rsi
+	movq	(%rsi), %r8
+	movq	%r8, (%rax)
+	movq	8(%rsi), %r8
+	movq	%r8, 8(%rax)
+	leaq	382(%rsp), %rax
+	leaq	320(%rcx), %rsi
+	movq	(%rsi), %r8
+	movq	%r8, (%rax)
+	movq	8(%rsi), %r8
+	movq	%r8, 8(%rax)
+	leaq	398(%rsp), %rax
+	leaq	336(%rcx), %rsi
+	movq	(%rsi), %r8
+	movq	%r8, (%rax)
+	movq	8(%rsi), %r8
+	movq	%r8, 8(%rax)
+	leaq	414(%rsp), %rax
+	leaq	352(%rcx), %rsi
+	movq	(%rsi), %r8
+	movq	%r8, (%rax)
+	movq	8(%rsi), %r8
+	movq	%r8, 8(%rax)
+	leaq	430(%rsp), %rax
+	leaq	368(%rcx), %rsi
+	movq	(%rsi), %r8
+	movq	%r8, (%rax)
+	movq	8(%rsi), %r8
+	movq	%r8, 8(%rax)
+	leaq	446(%rsp), %rax
+	leaq	384(%rcx), %rsi
+	movq	(%rsi), %r8
+	movq	%r8, (%rax)
+	movq	8(%rsi), %r8
+	movq	%r8, 8(%rax)
+	leaq	462(%rsp), %rax
+	leaq	400(%rcx), %rsi
+	movq	(%rsi), %r8
+	movq	%r8, (%rax)
+	movq	8(%rsi), %r8
+	movq	%r8, 8(%rax)
+	leaq	478(%rsp), %rax
+	leaq	416(%rcx), %rsi
+	movq	(%rsi), %r8
+	movq	%r8, (%rax)
+	movq	8(%rsi), %r8
+	movq	%r8, 8(%rax)
+	leaq	494(%rsp), %rax
+	leaq	432(%rcx), %rsi
+	movq	(%rsi), %r8
+	movq	%r8, (%rax)
+	movq	8(%rsi), %r8
+	movq	%r8, 8(%rax)
+	leaq	510(%rsp), %rax
+	leaq	448(%rcx), %rsi
+	movq	(%rsi), %r8
+	movq	%r8, (%rax)
+	movq	8(%rsi), %r8
+	movq	%r8, 8(%rax)
+	leaq	526(%rsp), %rax
+	leaq	464(%rcx), %rsi
+	movq	(%rsi), %r8
+	movq	%r8, (%rax)
+	movq	8(%rsi), %r8
+	movq	%r8, 8(%rax)
+	leaq	542(%rsp), %rax
+	leaq	480(%rcx), %rsi
+	movq	(%rsi), %r8
+	movq	%r8, (%rax)
+	movq	8(%rsi), %r8
+	movq	%r8, 8(%rax)
+	leaq	558(%rsp), %rax
+	leaq	496(%rcx), %rsi
+	movq	(%rsi), %r8
+	movq	%r8, (%rax)
+	movq	8(%rsi), %r8
+	movq	%r8, 8(%rax)
+	leaq	574(%rsp), %rax
+	leaq	512(%rcx), %rsi
+	movq	(%rsi), %r8
+	movq	%r8, (%rax)
+	movq	8(%rsi), %r8
+	movq	%r8, 8(%rax)
+	leaq	590(%rsp), %rax
+	leaq	528(%rcx), %rsi
+	movq	(%rsi), %r8
+	movq	%r8, (%rax)
+	movq	8(%rsi), %r8
+	movq	%r8, 8(%rax)
+	leaq	606(%rsp), %rax
+	leaq	544(%rcx), %rcx
+	movq	(%rcx), %r8
+	movq	%r8, (%rax)
+	movq	8(%rcx), %r8
+	movq	%r8, 8(%rax)
+	leaq	8(%rsp), %rax
+	leaq	40(%rsp), %rsi
+	leaq	-168(%rsp), %rsp
 	call	.Lsha256_compress_wots__sha256_cached$1
 .LT_len$2:
-	leaq	200(%rsp), %rsp
-	movq	8(%rsp), %rcx
-	leaq	16(%rsp), %rdx
-	movq	(%rdx), %rdi
-	movq	%rdi, (%rcx)
-	movq	8(%rdx), %rdx
-	movq	%rdx, 8(%rcx)
+	leaq	168(%rsp), %rsp
+	movq	%mm0, %rax
+	leaq	8(%rsp), %rcx
+	movq	(%rcx), %rdx
+	movq	%rdx, (%rax)
+	movq	8(%rcx), %rdx
+	movq	%rdx, 8(%rax)
 	ret
 .LH$1:
-	movq	%rcx, 8(%rsp)
-	leaq	48(%rsp), %rcx
-	leaq	16(%rsp), %r9
-	movl	(%r8), %r10d
+	movq	%rdi, %mm0
+	leaq	40(%rsp), %rdi
+	leaq	8(%rsp), %r9
+	movl	(%rsi), %r10d
 	bswapl	%r10d
 	movl	%r10d, (%r9)
-	movl	4(%r8), %r10d
+	movl	4(%rsi), %r10d
 	bswapl	%r10d
 	movl	%r10d, 4(%r9)
-	movl	8(%r8), %r10d
+	movl	8(%rsi), %r10d
 	bswapl	%r10d
 	movl	%r10d, 8(%r9)
-	movl	12(%r8), %r10d
+	movl	12(%rsi), %r10d
 	bswapl	%r10d
 	movl	%r10d, 12(%r9)
-	movl	16(%r8), %r10d
+	movl	16(%rsi), %r10d
 	bswapl	%r10d
 	movl	%r10d, 16(%r9)
-	movl	20(%r8), %r10d
+	movl	20(%rsi), %r10d
 	bswapl	%r10d
 	movl	%r10d, 20(%r9)
-	movl	24(%r8), %r10d
+	movl	24(%rsi), %r10d
 	bswapl	%r10d
 	movl	%r10d, 24(%r9)
-	movl	28(%r8), %r10d
+	movl	28(%rsi), %r10d
 	bswapl	%r10d
 	movl	%r10d, 28(%r9)
-	movb	19(%rsp), %r8b
-	movb	%r8b, (%rcx)
-	movb	24(%rsp), %r8b
-	movb	%r8b, 1(%rcx)
-	movb	25(%rsp), %r8b
-	movb	%r8b, 2(%rcx)
-	movb	26(%rsp), %r8b
-	movb	%r8b, 3(%rcx)
-	movb	27(%rsp), %r8b
-	movb	%r8b, 4(%rcx)
-	movb	28(%rsp), %r8b
-	movb	%r8b, 5(%rcx)
-	movb	29(%rsp), %r8b
-	movb	%r8b, 6(%rcx)
-	movb	30(%rsp), %r8b
-	movb	%r8b, 7(%rcx)
-	movb	31(%rsp), %r8b
-	movb	%r8b, 8(%rcx)
-	movb	35(%rsp), %r8b
-	movb	%r8b, 9(%rcx)
-	movb	36(%rsp), %r8b
-	movb	%r8b, 10(%rcx)
-	movb	37(%rsp), %r8b
-	movb	%r8b, 11(%rcx)
-	movb	38(%rsp), %r8b
-	movb	%r8b, 12(%rcx)
-	movb	39(%rsp), %r8b
-	movb	%r8b, 13(%rcx)
-	movb	40(%rsp), %r8b
-	movb	%r8b, 14(%rcx)
-	movb	41(%rsp), %r8b
-	movb	%r8b, 15(%rcx)
-	movb	42(%rsp), %r8b
-	movb	%r8b, 16(%rcx)
-	movb	43(%rsp), %r8b
-	movb	%r8b, 17(%rcx)
-	movb	44(%rsp), %r8b
-	movb	%r8b, 18(%rcx)
-	movb	45(%rsp), %r8b
-	movb	%r8b, 19(%rcx)
-	movb	46(%rsp), %r8b
-	movb	%r8b, 20(%rcx)
-	movb	47(%rsp), %r8b
-	movb	%r8b, 21(%rcx)
-	leaq	70(%rsp), %rcx
-	movq	(%rsi), %r8
-	movq	%r8, (%rcx)
-	movq	8(%rsi), %r8
-	movq	%r8, 8(%rcx)
-	leaq	86(%rsp), %rcx
-	movq	(%rdx), %r8
-	movq	%r8, (%rcx)
+	movb	11(%rsp), %r10b
+	movb	%r10b, (%rdi)
+	movb	16(%rsp), %r10b
+	movb	%r10b, 1(%rdi)
+	movb	17(%rsp), %r10b
+	movb	%r10b, 2(%rdi)
+	movb	18(%rsp), %r10b
+	movb	%r10b, 3(%rdi)
+	movb	19(%rsp), %r10b
+	movb	%r10b, 4(%rdi)
+	movb	20(%rsp), %r10b
+	movb	%r10b, 5(%rdi)
+	movb	21(%rsp), %r10b
+	movb	%r10b, 6(%rdi)
+	movb	22(%rsp), %r10b
+	movb	%r10b, 7(%rdi)
+	movb	23(%rsp), %r10b
+	movb	%r10b, 8(%rdi)
+	movb	27(%rsp), %r10b
+	movb	%r10b, 9(%rdi)
+	movb	28(%rsp), %r10b
+	movb	%r10b, 10(%rdi)
+	movb	29(%rsp), %r10b
+	movb	%r10b, 11(%rdi)
+	movb	30(%rsp), %r10b
+	movb	%r10b, 12(%rdi)
+	movb	31(%rsp), %r10b
+	movb	%r10b, 13(%rdi)
+	movb	32(%rsp), %r10b
+	movb	%r10b, 14(%rdi)
+	movb	33(%rsp), %r10b
+	movb	%r10b, 15(%rdi)
+	movb	34(%rsp), %r10b
+	movb	%r10b, 16(%rdi)
+	movb	35(%rsp), %r10b
+	movb	%r10b, 17(%rdi)
+	movb	36(%rsp), %r10b
+	movb	%r10b, 18(%rdi)
+	movb	37(%rsp), %r10b
+	movb	%r10b, 19(%rdi)
+	movb	38(%rsp), %r10b
+	movb	%r10b, 20(%rdi)
+	movb	39(%rsp), %r10b
+	movb	%r10b, 21(%rdi)
+	leaq	62(%rsp), %rdi
+	movq	(%rcx), %r10
+	movq	%r10, (%rdi)
+	movq	8(%rcx), %r10
+	movq	%r10, 8(%rdi)
+	leaq	78(%rsp), %rdi
+	movq	(%rdx), %r10
+	movq	%r10, (%rdi)
 	movq	8(%rdx), %rdx
-	movq	%rdx, 8(%rcx)
-	leaq	16(%rsp), %rcx
-	leaq	48(%rsp), %rsi
-	leaq	-200(%rsp), %rsp
+	movq	%rdx, 8(%rdi)
+	leaq	8(%rsp), %rdi
+	leaq	40(%rsp), %rsi
+	leaq	-168(%rsp), %rsp
 	call	.Lsha256_tl_2n__sha256_cached$1
 .LH$2:
-	leaq	200(%rsp), %rsp
-	movq	8(%rsp), %rcx
-	leaq	16(%rsp), %rdx
-	movq	(%rdx), %rdi
-	movq	%rdi, (%rcx)
-	movq	8(%rdx), %rdx
-	movq	%rdx, 8(%rcx)
-	ret
-.LF$1:
-	leaq	48(%rsp), %rdi
-	leaq	16(%rsp), %rdx
-	movl	(%r8), %r9d
-	bswapl	%r9d
-	movl	%r9d, (%rdx)
-	movl	4(%r8), %r9d
-	bswapl	%r9d
-	movl	%r9d, 4(%rdx)
-	movl	8(%r8), %r9d
-	bswapl	%r9d
-	movl	%r9d, 8(%rdx)
-	movl	12(%r8), %r9d
-	bswapl	%r9d
-	movl	%r9d, 12(%rdx)
-	movl	16(%r8), %r9d
-	bswapl	%r9d
-	movl	%r9d, 16(%rdx)
-	movl	20(%r8), %r9d
-	bswapl	%r9d
-	movl	%r9d, 20(%rdx)
-	movl	24(%r8), %r9d
-	bswapl	%r9d
-	movl	%r9d, 24(%rdx)
-	movl	28(%r8), %r9d
-	bswapl	%r9d
-	movl	%r9d, 28(%rdx)
-	movb	19(%rsp), %dl
-	movb	%dl, (%rdi)
-	movb	24(%rsp), %dl
-	movb	%dl, 1(%rdi)
-	movb	25(%rsp), %dl
-	movb	%dl, 2(%rdi)
-	movb	26(%rsp), %dl
-	movb	%dl, 3(%rdi)
-	movb	27(%rsp), %dl
-	movb	%dl, 4(%rdi)
-	movb	28(%rsp), %dl
-	movb	%dl, 5(%rdi)
-	movb	29(%rsp), %dl
-	movb	%dl, 6(%rdi)
-	movb	30(%rsp), %dl
-	movb	%dl, 7(%rdi)
-	movb	31(%rsp), %dl
-	movb	%dl, 8(%rdi)
-	movb	35(%rsp), %dl
-	movb	%dl, 9(%rdi)
-	movb	36(%rsp), %dl
-	movb	%dl, 10(%rdi)
-	movb	37(%rsp), %dl
-	movb	%dl, 11(%rdi)
-	movb	38(%rsp), %dl
-	movb	%dl, 12(%rdi)
-	movb	39(%rsp), %dl
-	movb	%dl, 13(%rdi)
-	movb	40(%rsp), %dl
-	movb	%dl, 14(%rdi)
-	movb	41(%rsp), %dl
-	movb	%dl, 15(%rdi)
-	movb	42(%rsp), %dl
-	movb	%dl, 16(%rdi)
-	movb	43(%rsp), %dl
-	movb	%dl, 17(%rdi)
-	movb	44(%rsp), %dl
-	movb	%dl, 18(%rdi)
-	movb	45(%rsp), %dl
-	movb	%dl, 19(%rdi)
-	movb	46(%rsp), %dl
-	movb	%dl, 20(%rdi)
-	movb	47(%rsp), %dl
-	movb	%dl, 21(%rdi)
-	leaq	70(%rsp), %rdi
+	leaq	168(%rsp), %rsp
+	movq	%mm0, %rdi
+	leaq	8(%rsp), %rcx
 	movq	(%rcx), %rdx
 	movq	%rdx, (%rdi)
 	movq	8(%rcx), %rdx
 	movq	%rdx, 8(%rdi)
-	movq	%rcx, 8(%rsp)
-	leaq	16(%rsp), %rcx
-	leaq	48(%rsp), %rsi
-	leaq	-200(%rsp), %rsp
+	ret
+.LF$1:
+	leaq	40(%rsp), %rax
+	leaq	8(%rsp), %rcx
+	movl	(%rsi), %r10d
+	bswapl	%r10d
+	movl	%r10d, (%rcx)
+	movl	4(%rsi), %r10d
+	bswapl	%r10d
+	movl	%r10d, 4(%rcx)
+	movl	8(%rsi), %r10d
+	bswapl	%r10d
+	movl	%r10d, 8(%rcx)
+	movl	12(%rsi), %r10d
+	bswapl	%r10d
+	movl	%r10d, 12(%rcx)
+	movl	16(%rsi), %r10d
+	bswapl	%r10d
+	movl	%r10d, 16(%rcx)
+	movl	20(%rsi), %r10d
+	bswapl	%r10d
+	movl	%r10d, 20(%rcx)
+	movl	24(%rsi), %r10d
+	bswapl	%r10d
+	movl	%r10d, 24(%rcx)
+	movl	28(%rsi), %r10d
+	bswapl	%r10d
+	movl	%r10d, 28(%rcx)
+	movb	11(%rsp), %dl
+	movb	%dl, (%rax)
+	movb	16(%rsp), %dl
+	movb	%dl, 1(%rax)
+	movb	17(%rsp), %dl
+	movb	%dl, 2(%rax)
+	movb	18(%rsp), %dl
+	movb	%dl, 3(%rax)
+	movb	19(%rsp), %dl
+	movb	%dl, 4(%rax)
+	movb	20(%rsp), %dl
+	movb	%dl, 5(%rax)
+	movb	21(%rsp), %dl
+	movb	%dl, 6(%rax)
+	movb	22(%rsp), %dl
+	movb	%dl, 7(%rax)
+	movb	23(%rsp), %dl
+	movb	%dl, 8(%rax)
+	movb	27(%rsp), %dl
+	movb	%dl, 9(%rax)
+	movb	28(%rsp), %dl
+	movb	%dl, 10(%rax)
+	movb	29(%rsp), %dl
+	movb	%dl, 11(%rax)
+	movb	30(%rsp), %dl
+	movb	%dl, 12(%rax)
+	movb	31(%rsp), %dl
+	movb	%dl, 13(%rax)
+	movb	32(%rsp), %dl
+	movb	%dl, 14(%rax)
+	movb	33(%rsp), %dl
+	movb	%dl, 15(%rax)
+	movb	34(%rsp), %dl
+	movb	%dl, 16(%rax)
+	movb	35(%rsp), %dl
+	movb	%dl, 17(%rax)
+	movb	36(%rsp), %dl
+	movb	%dl, 18(%rax)
+	movb	37(%rsp), %dl
+	movb	%dl, 19(%rax)
+	movb	38(%rsp), %dl
+	movb	%dl, 20(%rax)
+	movb	39(%rsp), %dl
+	movb	%dl, 21(%rax)
+	leaq	62(%rsp), %rax
+	movq	(%rdi), %rdx
+	movq	%rdx, (%rax)
+	movq	8(%rdi), %rdx
+	movq	%rdx, 8(%rax)
+	movq	%rdi, %mm0
+	leaq	8(%rsp), %rax
+	leaq	40(%rsp), %rsi
+	leaq	-168(%rsp), %rsp
 	call	.Lsha256_tl_1n__sha256_cached$1
 .LF$2:
-	leaq	200(%rsp), %rsp
-	movq	8(%rsp), %rcx
-	leaq	16(%rsp), %rdx
-	movq	(%rdx), %rdi
-	movq	%rdi, (%rcx)
-	movq	8(%rdx), %rdx
-	movq	%rdx, 8(%rcx)
+	leaq	168(%rsp), %rsp
+	movq	%mm0, %rax
+	leaq	8(%rsp), %rcx
+	movq	(%rcx), %rdx
+	movq	%rdx, (%rax)
+	movq	8(%rcx), %rdx
+	movq	%rdx, 8(%rax)
 	ret
 .LPRF$1:
-	movq	%rcx, 8(%rsp)
-	leaq	48(%rsp), %rcx
-	leaq	16(%rsp), %rsi
-	movl	(%r8), %r9d
-	bswapl	%r9d
-	movl	%r9d, (%rsi)
-	movl	4(%r8), %r9d
-	bswapl	%r9d
-	movl	%r9d, 4(%rsi)
-	movl	8(%r8), %r9d
-	bswapl	%r9d
-	movl	%r9d, 8(%rsi)
-	movl	12(%r8), %r9d
-	bswapl	%r9d
-	movl	%r9d, 12(%rsi)
-	movl	16(%r8), %r9d
-	bswapl	%r9d
-	movl	%r9d, 16(%rsi)
-	movl	20(%r8), %r9d
-	bswapl	%r9d
-	movl	%r9d, 20(%rsi)
-	movl	24(%r8), %r9d
-	bswapl	%r9d
-	movl	%r9d, 24(%rsi)
-	movl	28(%r8), %r9d
-	bswapl	%r9d
-	movl	%r9d, 28(%rsi)
-	movb	19(%rsp), %dil
-	movb	%dil, (%rcx)
-	movb	24(%rsp), %dil
-	movb	%dil, 1(%rcx)
-	movb	25(%rsp), %dil
-	movb	%dil, 2(%rcx)
-	movb	26(%rsp), %dil
-	movb	%dil, 3(%rcx)
-	movb	27(%rsp), %dil
-	movb	%dil, 4(%rcx)
-	movb	28(%rsp), %dil
-	movb	%dil, 5(%rcx)
-	movb	29(%rsp), %dil
-	movb	%dil, 6(%rcx)
-	movb	30(%rsp), %dil
-	movb	%dil, 7(%rcx)
-	movb	31(%rsp), %dil
-	movb	%dil, 8(%rcx)
-	movb	35(%rsp), %dil
-	movb	%dil, 9(%rcx)
-	movb	36(%rsp), %dil
-	movb	%dil, 10(%rcx)
-	movb	37(%rsp), %dil
-	movb	%dil, 11(%rcx)
-	movb	38(%rsp), %dil
-	movb	%dil, 12(%rcx)
-	movb	39(%rsp), %dil
-	movb	%dil, 13(%rcx)
-	movb	40(%rsp), %dil
-	movb	%dil, 14(%rcx)
-	movb	41(%rsp), %dil
-	movb	%dil, 15(%rcx)
-	movb	42(%rsp), %dil
-	movb	%dil, 16(%rcx)
-	movb	43(%rsp), %dil
-	movb	%dil, 17(%rcx)
-	movb	44(%rsp), %dil
-	movb	%dil, 18(%rcx)
-	movb	45(%rsp), %dil
-	movb	%dil, 19(%rcx)
-	movb	46(%rsp), %dil
-	movb	%dil, 20(%rcx)
-	movb	47(%rsp), %dil
-	movb	%dil, 21(%rcx)
-	leaq	70(%rsp), %rcx
-	movq	(%rdx), %rdi
-	movq	%rdi, (%rcx)
+	movq	%rdi, %mm0
+	leaq	40(%rsp), %rax
+	leaq	8(%rsp), %rcx
+	movl	(%rsi), %r10d
+	bswapl	%r10d
+	movl	%r10d, (%rcx)
+	movl	4(%rsi), %r10d
+	bswapl	%r10d
+	movl	%r10d, 4(%rcx)
+	movl	8(%rsi), %r10d
+	bswapl	%r10d
+	movl	%r10d, 8(%rcx)
+	movl	12(%rsi), %r10d
+	bswapl	%r10d
+	movl	%r10d, 12(%rcx)
+	movl	16(%rsi), %r10d
+	bswapl	%r10d
+	movl	%r10d, 16(%rcx)
+	movl	20(%rsi), %r10d
+	bswapl	%r10d
+	movl	%r10d, 20(%rcx)
+	movl	24(%rsi), %r10d
+	bswapl	%r10d
+	movl	%r10d, 24(%rcx)
+	movl	28(%rsi), %r10d
+	bswapl	%r10d
+	movl	%r10d, 28(%rcx)
+	movb	11(%rsp), %r10b
+	movb	%r10b, (%rax)
+	movb	16(%rsp), %r10b
+	movb	%r10b, 1(%rax)
+	movb	17(%rsp), %r10b
+	movb	%r10b, 2(%rax)
+	movb	18(%rsp), %r10b
+	movb	%r10b, 3(%rax)
+	movb	19(%rsp), %r10b
+	movb	%r10b, 4(%rax)
+	movb	20(%rsp), %r10b
+	movb	%r10b, 5(%rax)
+	movb	21(%rsp), %r10b
+	movb	%r10b, 6(%rax)
+	movb	22(%rsp), %r10b
+	movb	%r10b, 7(%rax)
+	movb	23(%rsp), %r10b
+	movb	%r10b, 8(%rax)
+	movb	27(%rsp), %r10b
+	movb	%r10b, 9(%rax)
+	movb	28(%rsp), %r10b
+	movb	%r10b, 10(%rax)
+	movb	29(%rsp), %r10b
+	movb	%r10b, 11(%rax)
+	movb	30(%rsp), %r10b
+	movb	%r10b, 12(%rax)
+	movb	31(%rsp), %r10b
+	movb	%r10b, 13(%rax)
+	movb	32(%rsp), %r10b
+	movb	%r10b, 14(%rax)
+	movb	33(%rsp), %r10b
+	movb	%r10b, 15(%rax)
+	movb	34(%rsp), %r10b
+	movb	%r10b, 16(%rax)
+	movb	35(%rsp), %r10b
+	movb	%r10b, 17(%rax)
+	movb	36(%rsp), %r10b
+	movb	%r10b, 18(%rax)
+	movb	37(%rsp), %r10b
+	movb	%r10b, 19(%rax)
+	movb	38(%rsp), %r10b
+	movb	%r10b, 20(%rax)
+	movb	39(%rsp), %r10b
+	movb	%r10b, 21(%rax)
+	leaq	62(%rsp), %rax
+	movq	(%rdx), %r10
+	movq	%r10, (%rax)
 	movq	8(%rdx), %rdx
-	movq	%rdx, 8(%rcx)
-	leaq	16(%rsp), %rcx
-	leaq	48(%rsp), %rsi
-	leaq	-200(%rsp), %rsp
+	movq	%rdx, 8(%rax)
+	leaq	8(%rsp), %rax
+	leaq	40(%rsp), %rsi
+	leaq	-168(%rsp), %rsp
 	call	.Lsha256_tl_1n__sha256_cached$1
 .LPRF$2:
-	leaq	200(%rsp), %rsp
-	movq	8(%rsp), %rcx
-	leaq	16(%rsp), %rdx
-	movq	(%rdx), %rdi
-	movq	%rdi, (%rcx)
-	movq	8(%rdx), %rdx
-	movq	%rdx, 8(%rcx)
+	leaq	168(%rsp), %rsp
+	movq	%mm0, %rax
+	leaq	8(%rsp), %rcx
+	movq	(%rcx), %rdx
+	movq	%rdx, (%rax)
+	movq	8(%rcx), %rdx
+	movq	%rdx, 8(%rax)
 	ret
 .LPRF_msg$1:
-	movq	%r11, 112(%rsp)
-	leaq	152(%rsp), %r8
+	movq	%r11, %mm0
+	leaq	144(%rsp), %rdi
 	movq	(%r10), %r9
-	movq	%r9, (%r8)
+	movq	%r9, (%rdi)
 	movq	8(%r10), %r9
-	movq	%r9, 8(%r8)
+	movq	%r9, 8(%rdi)
+	movb	$0, 160(%rsp)
+	movb	$0, 161(%rsp)
+	movb	$0, 162(%rsp)
+	movb	$0, 163(%rsp)
+	movb	$0, 164(%rsp)
+	movb	$0, 165(%rsp)
+	movb	$0, 166(%rsp)
+	movb	$0, 167(%rsp)
 	movb	$0, 168(%rsp)
 	movb	$0, 169(%rsp)
 	movb	$0, 170(%rsp)
@@ -5765,115 +5920,107 @@ slh_dsa_sha2128s_keygen:
 	movb	$0, 205(%rsp)
 	movb	$0, 206(%rsp)
 	movb	$0, 207(%rsp)
-	movb	$0, 208(%rsp)
-	movb	$0, 209(%rsp)
-	movb	$0, 210(%rsp)
-	movb	$0, 211(%rsp)
-	movb	$0, 212(%rsp)
-	movb	$0, 213(%rsp)
-	movb	$0, 214(%rsp)
-	movb	$0, 215(%rsp)
-	movq	$3906369333256140342, %r8
-	xorq	152(%rsp), %r8
-	movq	%r8, 216(%rsp)
-	movq	$3906369333256140342, %r8
-	xorq	160(%rsp), %r8
-	movq	%r8, 224(%rsp)
-	movq	$3906369333256140342, %r8
-	xorq	168(%rsp), %r8
-	movq	%r8, 232(%rsp)
-	movq	$3906369333256140342, %r8
-	xorq	176(%rsp), %r8
-	movq	%r8, 240(%rsp)
-	movq	$3906369333256140342, %r8
-	xorq	184(%rsp), %r8
-	movq	%r8, 248(%rsp)
-	movq	$3906369333256140342, %r8
-	xorq	192(%rsp), %r8
-	movq	%r8, 256(%rsp)
-	movq	$3906369333256140342, %r8
-	xorq	200(%rsp), %r8
-	movq	%r8, 264(%rsp)
-	movq	$3906369333256140342, %r8
-	xorq	208(%rsp), %r8
-	movq	%r8, 272(%rsp)
-	movq	$6655295901103053916, %r8
-	xorq	152(%rsp), %r8
-	movq	%r8, 16(%rsp)
-	movq	$6655295901103053916, %r8
-	xorq	160(%rsp), %r8
-	movq	%r8, 24(%rsp)
-	movq	$6655295901103053916, %r8
-	xorq	168(%rsp), %r8
-	movq	%r8, 32(%rsp)
-	movq	$6655295901103053916, %r8
-	xorq	176(%rsp), %r8
-	movq	%r8, 40(%rsp)
-	movq	$6655295901103053916, %r8
-	xorq	184(%rsp), %r8
-	movq	%r8, 48(%rsp)
-	movq	$6655295901103053916, %r8
-	xorq	192(%rsp), %r8
-	movq	%r8, 56(%rsp)
-	movq	$6655295901103053916, %r8
-	xorq	200(%rsp), %r8
-	movq	%r8, 64(%rsp)
-	movq	$6655295901103053916, %r8
-	xorq	208(%rsp), %r8
-	movq	%r8, 72(%rsp)
-	leaq	280(%rsp), %r8
-	movq	(%rax), %r9
-	movq	%r9, (%r8)
-	movq	8(%rax), %r9
-	movq	%r9, 8(%r8)
+	movq	$3906369333256140342, %r9
+	xorq	144(%rsp), %r9
+	movq	%r9, 208(%rsp)
+	movq	$3906369333256140342, %r9
+	xorq	152(%rsp), %r9
+	movq	%r9, 216(%rsp)
+	movq	$3906369333256140342, %r9
+	xorq	160(%rsp), %r9
+	movq	%r9, 224(%rsp)
+	movq	$3906369333256140342, %r9
+	xorq	168(%rsp), %r9
+	movq	%r9, 232(%rsp)
+	movq	$3906369333256140342, %r9
+	xorq	176(%rsp), %r9
+	movq	%r9, 240(%rsp)
+	movq	$3906369333256140342, %r9
+	xorq	184(%rsp), %r9
+	movq	%r9, 248(%rsp)
+	movq	$3906369333256140342, %r9
+	xorq	192(%rsp), %r9
+	movq	%r9, 256(%rsp)
+	movq	$3906369333256140342, %r9
+	xorq	200(%rsp), %r9
+	movq	%r9, 264(%rsp)
+	movq	$6655295901103053916, %r9
+	xorq	144(%rsp), %r9
+	movq	%r9, 16(%rsp)
+	movq	$6655295901103053916, %r9
+	xorq	152(%rsp), %r9
+	movq	%r9, 24(%rsp)
+	movq	$6655295901103053916, %r9
+	xorq	160(%rsp), %r9
+	movq	%r9, 32(%rsp)
+	movq	$6655295901103053916, %r9
+	xorq	168(%rsp), %r9
+	movq	%r9, 40(%rsp)
+	movq	$6655295901103053916, %r9
+	xorq	176(%rsp), %r9
+	movq	%r9, 48(%rsp)
+	movq	$6655295901103053916, %r9
+	xorq	184(%rsp), %r9
+	movq	%r9, 56(%rsp)
+	movq	$6655295901103053916, %r9
+	xorq	192(%rsp), %r9
+	movq	%r9, 64(%rsp)
+	movq	$6655295901103053916, %r9
+	xorq	200(%rsp), %r9
+	movq	%r9, 72(%rsp)
+	leaq	272(%rsp), %rdi
+	movq	(%rsi), %r9
+	movq	%r9, (%rdi)
+	movq	8(%rsi), %r9
+	movq	%r9, 8(%rdi)
 	leaq	80(%rsp), %r11
-	leaq	216(%rsp), %r8
+	leaq	208(%rsp), %rdi
 	leaq	-336(%rsp), %rsp
 	call	.Lsha256_hmac_inner__sha256_absorb$1
 .LPRF_msg$3:
 	leaq	336(%rsp), %rsp
-	leaq	120(%rsp), %rcx
+	leaq	112(%rsp), %rax
 	leaq	16(%rsp), %rdx
 	leaq	-200(%rsp), %rsp
 	call	.Lsha256_hmac_outer__sha256$1
 .LPRF_msg$2:
 	leaq	200(%rsp), %rsp
-	movq	112(%rsp), %rcx
-	leaq	120(%rsp), %rdx
-	movq	(%rdx), %rdi
-	movq	%rdi, (%rcx)
-	movq	8(%rdx), %rdx
-	movq	%rdx, 8(%rcx)
+	movq	%mm0, %rax
+	leaq	112(%rsp), %rcx
+	movq	(%rcx), %rdx
+	movq	%rdx, (%rax)
+	movq	8(%rcx), %rdx
+	movq	%rdx, 8(%rax)
 	ret
 .LH_msg$1:
-	movq	%rdi, 88(%rsp)
-	leaq	96(%rsp), %rdi
-	movq	(%r8), %rsi
-	movq	%rsi, (%rdi)
-	movq	8(%r8), %rsi
-	movq	%rsi, 8(%rdi)
+	movq	%rdi, %mm0
+	leaq	88(%rsp), %rdi
+	movq	(%r8), %r11
+	movq	%r11, (%rdi)
+	movq	8(%r8), %r11
+	movq	%r11, 8(%rdi)
 	leaq	16(%rsp), %rdi
-	movq	(%r8), %rsi
-	movq	%rsi, (%rdi)
-	movq	8(%r8), %rsi
-	movq	%rsi, 8(%rdi)
-	leaq	112(%rsp), %rdi
-	movq	(%r9), %rsi
-	movq	%rsi, (%rdi)
-	movq	8(%r9), %rsi
-	movq	%rsi, 8(%rdi)
+	movq	(%r8), %r11
+	movq	%r11, (%rdi)
+	movq	8(%r8), %r8
+	movq	%r8, 8(%rdi)
+	leaq	104(%rsp), %rdi
+	movq	(%r9), %r8
+	movq	%r8, (%rdi)
+	movq	8(%r9), %r8
+	movq	%r8, 8(%rdi)
 	leaq	32(%rsp), %rdi
-	movq	(%r9), %rsi
-	movq	%rsi, (%rdi)
-	movq	8(%r9), %rsi
-	movq	%rsi, 8(%rdi)
-	leaq	128(%rsp), %rdi
-	movq	(%r10), %rsi
-	movq	%rsi, (%rdi)
-	movq	8(%r10), %rsi
-	movq	%rsi, 8(%rdi)
-	leaq	48(%rsp), %rdi
-	leaq	96(%rsp), %rsi
+	movq	(%r9), %r8
+	movq	%r8, (%rdi)
+	movq	8(%r9), %r8
+	movq	%r8, 8(%rdi)
+	leaq	120(%rsp), %rdi
+	movq	(%r10), %r8
+	movq	%r8, (%rdi)
+	movq	8(%r10), %r8
+	movq	%r8, 8(%rdi)
+	leaq	48(%rsp), %r11
+	leaq	88(%rsp), %rdi
 	leaq	-336(%rsp), %rsp
 	call	.Lsha256_mgf1_msg__sha256_absorb$1
 .LH_msg$3:
@@ -5882,73 +6029,73 @@ slh_dsa_sha2128s_keygen:
 	movb	$0, 81(%rsp)
 	movb	$0, 82(%rsp)
 	movb	$0, 83(%rsp)
-	leaq	144(%rsp), %rcx
+	leaq	136(%rsp), %rax
 	leaq	16(%rsp), %rdx
 	leaq	-200(%rsp), %rsp
 	call	.Lsha256_mgf1_seed__sha256$1
 .LH_msg$2:
 	leaq	200(%rsp), %rsp
-	movq	88(%rsp), %rcx
+	movq	%mm0, %rax
+	movb	136(%rsp), %dl
+	movb	%dl, (%rax)
+	movb	137(%rsp), %dl
+	movb	%dl, 1(%rax)
+	movb	138(%rsp), %dl
+	movb	%dl, 2(%rax)
+	movb	139(%rsp), %dl
+	movb	%dl, 3(%rax)
+	movb	140(%rsp), %dl
+	movb	%dl, 4(%rax)
+	movb	141(%rsp), %dl
+	movb	%dl, 5(%rax)
+	movb	142(%rsp), %dl
+	movb	%dl, 6(%rax)
+	movb	143(%rsp), %dl
+	movb	%dl, 7(%rax)
 	movb	144(%rsp), %dl
-	movb	%dl, (%rcx)
+	movb	%dl, 8(%rax)
 	movb	145(%rsp), %dl
-	movb	%dl, 1(%rcx)
+	movb	%dl, 9(%rax)
 	movb	146(%rsp), %dl
-	movb	%dl, 2(%rcx)
+	movb	%dl, 10(%rax)
 	movb	147(%rsp), %dl
-	movb	%dl, 3(%rcx)
+	movb	%dl, 11(%rax)
 	movb	148(%rsp), %dl
-	movb	%dl, 4(%rcx)
+	movb	%dl, 12(%rax)
 	movb	149(%rsp), %dl
-	movb	%dl, 5(%rcx)
+	movb	%dl, 13(%rax)
 	movb	150(%rsp), %dl
-	movb	%dl, 6(%rcx)
+	movb	%dl, 14(%rax)
 	movb	151(%rsp), %dl
-	movb	%dl, 7(%rcx)
+	movb	%dl, 15(%rax)
 	movb	152(%rsp), %dl
-	movb	%dl, 8(%rcx)
+	movb	%dl, 16(%rax)
 	movb	153(%rsp), %dl
-	movb	%dl, 9(%rcx)
+	movb	%dl, 17(%rax)
 	movb	154(%rsp), %dl
-	movb	%dl, 10(%rcx)
+	movb	%dl, 18(%rax)
 	movb	155(%rsp), %dl
-	movb	%dl, 11(%rcx)
+	movb	%dl, 19(%rax)
 	movb	156(%rsp), %dl
-	movb	%dl, 12(%rcx)
+	movb	%dl, 20(%rax)
 	movb	157(%rsp), %dl
-	movb	%dl, 13(%rcx)
+	movb	%dl, 21(%rax)
 	movb	158(%rsp), %dl
-	movb	%dl, 14(%rcx)
+	movb	%dl, 22(%rax)
 	movb	159(%rsp), %dl
-	movb	%dl, 15(%rcx)
+	movb	%dl, 23(%rax)
 	movb	160(%rsp), %dl
-	movb	%dl, 16(%rcx)
+	movb	%dl, 24(%rax)
 	movb	161(%rsp), %dl
-	movb	%dl, 17(%rcx)
+	movb	%dl, 25(%rax)
 	movb	162(%rsp), %dl
-	movb	%dl, 18(%rcx)
+	movb	%dl, 26(%rax)
 	movb	163(%rsp), %dl
-	movb	%dl, 19(%rcx)
+	movb	%dl, 27(%rax)
 	movb	164(%rsp), %dl
-	movb	%dl, 20(%rcx)
+	movb	%dl, 28(%rax)
 	movb	165(%rsp), %dl
-	movb	%dl, 21(%rcx)
-	movb	166(%rsp), %dl
-	movb	%dl, 22(%rcx)
-	movb	167(%rsp), %dl
-	movb	%dl, 23(%rcx)
-	movb	168(%rsp), %dl
-	movb	%dl, 24(%rcx)
-	movb	169(%rsp), %dl
-	movb	%dl, 25(%rcx)
-	movb	170(%rsp), %dl
-	movb	%dl, 26(%rcx)
-	movb	171(%rsp), %dl
-	movb	%dl, 27(%rcx)
-	movb	172(%rsp), %dl
-	movb	%dl, 28(%rcx)
-	movb	173(%rsp), %dl
-	movb	%dl, 29(%rcx)
+	movb	%dl, 29(%rax)
 	ret
 .Lsha256_parallel_n__absorb_fixed$1:
 	vmovdqu	(%r12), %ymm2
@@ -6002,6 +6149,8 @@ slh_dsa_sha2128s_keygen:
 	vmovdqu	%xmm9, %xmm9
 	vinserti128	$1, %xmm10, %ymm9, %ymm9
 	movq	328(%rsp), %rbp
+	lfence
+	movq	$0, %r15
 	cmpq	$0, %rbp
 	je  	.Lsha256_parallel_n__absorb_fixed$30
 	cmpq	$1, %rbp
@@ -6025,6 +6174,8 @@ slh_dsa_sha2128s_keygen:
 	cmpq	$4, %r13
 	jb  	.Lsha256_parallel_n__absorb_fixed$29
 	movq	320(%rsp), %rbp
+	lfence
+	movq	$0, %r13
 	vmovdqu	%ymm8, (%rbp,%r12)
 	incq	%r14
 .Lsha256_parallel_n__absorb_fixed$27:
@@ -11165,6 +11316,8 @@ slh_dsa_sha2128s_keygen:
 	vmovdqu	%ymm8, 448(%rbp)
 	vmovdqu	%ymm8, 480(%rbp)
 	movq	312(%rsp), %r12
+	lfence
+	movq	$0, %r13
 	subq	%rbx, %r12
 	jmp 	.Lsha256_parallel_n__absorb_fixed$23
 .Lsha256_parallel_n__absorb_fixed$24:
@@ -14814,8 +14967,8 @@ slh_dsa_sha2128s_keygen:
 	vpslld	$18, %ymm11, %ymm11
 	vpsrld	$14, %ymm10, %ymm10
 	vpor	%ymm11, %ymm10, %ymm7
-	vpxor	%ymm7, %ymm9, %ymm7
-	vpaddd	%ymm7, %ymm1, %ymm7
+	vpxor	%ymm7, %ymm9, %ymm9
+	vpaddd	%ymm9, %ymm1, %ymm7
 	vpaddd	%ymm7, %ymm4, %ymm1
 	vmovdqu	%ymm5, %ymm10
 	vpand	%ymm6, %ymm10, %ymm10
@@ -16748,6 +16901,8 @@ slh_dsa_sha2128s_keygen:
 	vmovdqu	%ymm8, 448(%rbp)
 	vmovdqu	%ymm8, 480(%rbp)
 	movq	312(%rsp), %r12
+	lfence
+	movq	$0, %rbx
 	addq	$-64, %r12
 .Lsha256_parallel_n__absorb_fixed$23:
 	cmpq	$64, %r12
@@ -16791,6 +16946,8 @@ slh_dsa_sha2128s_keygen:
 	vmovdqu	%xmm9, %xmm9
 	vinserti128	$1, %xmm10, %ymm9, %ymm9
 	movq	320(%rsp), %r12
+	lfence
+	movq	$0, %r15
 	cmpq	$0, %r12
 	je  	.Lsha256_parallel_n__absorb_fixed$17
 	cmpq	$1, %r12
@@ -16809,6 +16966,8 @@ slh_dsa_sha2128s_keygen:
 .Lsha256_parallel_n__absorb_fixed$18:
 	vpxor	%ymm9, %ymm8, %ymm8
 	movq	312(%rsp), %r12
+	lfence
+	movq	$0, %r15
 	decq	%r12
 	incq	%rcx
 	incq	%r13
@@ -16854,6 +17013,8 @@ slh_dsa_sha2128s_keygen:
 	shlq	$5, %rbx
 	vmovdqu	%ymm8, (%rbp,%rbx)
 	movq	312(%rsp), %r12
+	lfence
+	movq	$0, %rbx
 	addq	$-4, %r12
 	addq	$4, %rcx
 	incq	%r14
@@ -16892,6 +17053,8 @@ slh_dsa_sha2128s_keygen:
 	vmovdqu	%xmm9, %xmm9
 	vinserti128	$1, %xmm10, %ymm9, %ymm9
 	movq	312(%rsp), %r12
+	lfence
+	movq	$0, %r15
 	cmpq	$0, %r12
 	je  	.Lsha256_parallel_n__absorb_fixed$6
 	cmpq	$1, %r12
@@ -16919,12 +17082,18 @@ slh_dsa_sha2128s_keygen:
 .Lsha256_parallel_n__absorb_fixed$3:
 .Lsha256_parallel_n__absorb_fixed$2:
 	movq	288(%rsp), %rcx
+	lfence
+	movq	$0, %rax
 	movq	$128, %rax
 	addq	%rax, %rcx
 	movq	296(%rsp), %r13
+	lfence
+	movq	$0, %rax
 	addq	$16, %r13
 	andq	$63, %r13
 	movq	304(%rsp), %r12
+	lfence
+	movq	$0, %rax
 	vmovdqu	%ymm2, (%r12)
 	vmovdqu	%ymm3, 32(%r12)
 	vmovdqu	%ymm4, 64(%r12)
@@ -16986,6 +17155,8 @@ slh_dsa_sha2128s_keygen:
 	vmovdqu	%xmm9, %xmm9
 	vinserti128	$1, %xmm10, %ymm9, %ymm9
 	movq	328(%rsp), %rcx
+	lfence
+	movq	$0, %r15
 	cmpq	$0, %rcx
 	je  	.Lsha256_parallel_adrsc__absorb_fixed$30
 	cmpq	$1, %rcx
@@ -17009,6 +17180,8 @@ slh_dsa_sha2128s_keygen:
 	cmpq	$4, %rbp
 	jb  	.Lsha256_parallel_adrsc__absorb_fixed$29
 	movq	320(%rsp), %rcx
+	lfence
+	movq	$0, %rbp
 	vmovdqu	%ymm8, (%rcx,%r13)
 	incq	%r14
 .Lsha256_parallel_adrsc__absorb_fixed$27:
@@ -19961,12 +20134,12 @@ slh_dsa_sha2128s_keygen:
 	vmovdqu	%ymm10, %ymm11
 	vpslld	$19, %ymm11, %ymm11
 	vpsrld	$13, %ymm10, %ymm10
-	vpor	%ymm11, %ymm10, %ymm10
-	vpxor	%ymm10, %ymm9, %ymm9
-	vmovdqu	%ymm10, %ymm11
-	vpslld	$23, %ymm11, %ymm11
-	vpsrld	$9, %ymm10, %ymm10
 	vpor	%ymm11, %ymm10, %ymm7
+	vpxor	%ymm7, %ymm9, %ymm9
+	vmovdqu	%ymm7, %ymm10
+	vpslld	$23, %ymm10, %ymm10
+	vpsrld	$9, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm7
 	vpxor	%ymm7, %ymm9, %ymm7
 	vpaddd	%ymm7, %ymm5, %ymm5
 	vmovdqu	800(%rcx), %ymm7
@@ -19980,21 +20153,21 @@ slh_dsa_sha2128s_keygen:
 	vpand	%ymm3, %ymm7, %ymm7
 	vpxor	%ymm7, %ymm10, %ymm7
 	vpaddd	%ymm7, %ymm1, %ymm1
-	vmovdqu	%ymm0, %ymm9
-	vmovdqu	%ymm9, %ymm10
+	vmovdqu	%ymm0, %ymm7
+	vmovdqu	%ymm7, %ymm10
 	vpslld	$26, %ymm10, %ymm10
-	vpsrld	$6, %ymm9, %ymm9
-	vpor	%ymm10, %ymm9, %ymm9
-	vmovdqu	%ymm0, %ymm10
-	vmovdqu	%ymm10, %ymm11
-	vpslld	$21, %ymm11, %ymm11
-	vpsrld	$11, %ymm10, %ymm10
-	vpor	%ymm11, %ymm10, %ymm10
-	vpxor	%ymm10, %ymm9, %ymm9
-	vmovdqu	%ymm10, %ymm11
-	vpslld	$18, %ymm11, %ymm11
-	vpsrld	$14, %ymm10, %ymm10
-	vpor	%ymm11, %ymm10, %ymm7
+	vpsrld	$6, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm9
+	vmovdqu	%ymm0, %ymm7
+	vmovdqu	%ymm7, %ymm10
+	vpslld	$21, %ymm10, %ymm10
+	vpsrld	$11, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm7
+	vpxor	%ymm7, %ymm9, %ymm9
+	vmovdqu	%ymm7, %ymm10
+	vpslld	$18, %ymm10, %ymm10
+	vpsrld	$14, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm7
 	vpxor	%ymm7, %ymm9, %ymm7
 	vpaddd	%ymm7, %ymm1, %ymm7
 	vpaddd	%ymm7, %ymm4, %ymm1
@@ -20007,21 +20180,21 @@ slh_dsa_sha2128s_keygen:
 	vpand	%ymm8, %ymm4, %ymm4
 	vpxor	%ymm4, %ymm10, %ymm4
 	vpaddd	%ymm4, %ymm7, %ymm4
-	vmovdqu	%ymm5, %ymm9
-	vmovdqu	%ymm9, %ymm10
+	vmovdqu	%ymm5, %ymm7
+	vmovdqu	%ymm7, %ymm10
 	vpslld	$30, %ymm10, %ymm10
-	vpsrld	$2, %ymm9, %ymm9
-	vpor	%ymm10, %ymm9, %ymm9
-	vmovdqu	%ymm5, %ymm10
-	vmovdqu	%ymm10, %ymm11
-	vpslld	$19, %ymm11, %ymm11
-	vpsrld	$13, %ymm10, %ymm10
-	vpor	%ymm11, %ymm10, %ymm10
-	vpxor	%ymm10, %ymm9, %ymm9
-	vmovdqu	%ymm10, %ymm11
-	vpslld	$23, %ymm11, %ymm11
-	vpsrld	$9, %ymm10, %ymm10
-	vpor	%ymm11, %ymm10, %ymm7
+	vpsrld	$2, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm9
+	vmovdqu	%ymm5, %ymm7
+	vmovdqu	%ymm7, %ymm10
+	vpslld	$19, %ymm10, %ymm10
+	vpsrld	$13, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm7
+	vpxor	%ymm7, %ymm9, %ymm9
+	vmovdqu	%ymm7, %ymm10
+	vpslld	$23, %ymm10, %ymm10
+	vpsrld	$9, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm7
 	vpxor	%ymm7, %ymm9, %ymm7
 	vpaddd	%ymm7, %ymm4, %ymm4
 	vmovdqu	832(%rcx), %ymm7
@@ -20117,21 +20290,21 @@ slh_dsa_sha2128s_keygen:
 	vpand	%ymm5, %ymm6, %ymm6
 	vpxor	%ymm6, %ymm10, %ymm6
 	vpaddd	%ymm6, %ymm7, %ymm6
-	vmovdqu	%ymm8, %ymm9
-	vmovdqu	%ymm9, %ymm10
+	vmovdqu	%ymm8, %ymm7
+	vmovdqu	%ymm7, %ymm10
 	vpslld	$30, %ymm10, %ymm10
-	vpsrld	$2, %ymm9, %ymm9
-	vpor	%ymm10, %ymm9, %ymm9
-	vmovdqu	%ymm8, %ymm10
-	vmovdqu	%ymm10, %ymm11
-	vpslld	$19, %ymm11, %ymm11
-	vpsrld	$13, %ymm10, %ymm10
-	vpor	%ymm11, %ymm10, %ymm10
-	vpxor	%ymm10, %ymm9, %ymm9
-	vmovdqu	%ymm10, %ymm11
-	vpslld	$23, %ymm11, %ymm11
-	vpsrld	$9, %ymm10, %ymm10
-	vpor	%ymm11, %ymm10, %ymm7
+	vpsrld	$2, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm9
+	vmovdqu	%ymm8, %ymm7
+	vmovdqu	%ymm7, %ymm10
+	vpslld	$19, %ymm10, %ymm10
+	vpsrld	$13, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm7
+	vpxor	%ymm7, %ymm9, %ymm9
+	vmovdqu	%ymm7, %ymm10
+	vpslld	$23, %ymm10, %ymm10
+	vpsrld	$9, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm7
 	vpxor	%ymm7, %ymm9, %ymm7
 	vpaddd	%ymm7, %ymm6, %ymm6
 	vmovdqu	896(%rcx), %ymm7
@@ -20145,21 +20318,21 @@ slh_dsa_sha2128s_keygen:
 	vpand	%ymm1, %ymm7, %ymm7
 	vpxor	%ymm7, %ymm10, %ymm7
 	vpaddd	%ymm7, %ymm0, %ymm0
-	vmovdqu	%ymm2, %ymm9
-	vmovdqu	%ymm9, %ymm10
+	vmovdqu	%ymm2, %ymm7
+	vmovdqu	%ymm7, %ymm10
 	vpslld	$26, %ymm10, %ymm10
-	vpsrld	$6, %ymm9, %ymm9
-	vpor	%ymm10, %ymm9, %ymm9
-	vmovdqu	%ymm2, %ymm10
-	vmovdqu	%ymm10, %ymm11
-	vpslld	$21, %ymm11, %ymm11
-	vpsrld	$11, %ymm10, %ymm10
-	vpor	%ymm11, %ymm10, %ymm10
-	vpxor	%ymm10, %ymm9, %ymm9
-	vmovdqu	%ymm10, %ymm11
-	vpslld	$18, %ymm11, %ymm11
-	vpsrld	$14, %ymm10, %ymm10
-	vpor	%ymm11, %ymm10, %ymm7
+	vpsrld	$6, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm9
+	vmovdqu	%ymm2, %ymm7
+	vmovdqu	%ymm7, %ymm10
+	vpslld	$21, %ymm10, %ymm10
+	vpsrld	$11, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm7
+	vpxor	%ymm7, %ymm9, %ymm9
+	vmovdqu	%ymm7, %ymm10
+	vpslld	$18, %ymm10, %ymm10
+	vpsrld	$14, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm7
 	vpxor	%ymm7, %ymm9, %ymm7
 	vpaddd	%ymm7, %ymm0, %ymm7
 	vpaddd	%ymm7, %ymm5, %ymm0
@@ -20172,21 +20345,21 @@ slh_dsa_sha2128s_keygen:
 	vpand	%ymm4, %ymm5, %ymm5
 	vpxor	%ymm5, %ymm10, %ymm5
 	vpaddd	%ymm5, %ymm7, %ymm5
-	vmovdqu	%ymm6, %ymm9
-	vmovdqu	%ymm9, %ymm10
+	vmovdqu	%ymm6, %ymm7
+	vmovdqu	%ymm7, %ymm10
 	vpslld	$30, %ymm10, %ymm10
-	vpsrld	$2, %ymm9, %ymm9
-	vpor	%ymm10, %ymm9, %ymm9
-	vmovdqu	%ymm6, %ymm10
-	vmovdqu	%ymm10, %ymm11
-	vpslld	$19, %ymm11, %ymm11
-	vpsrld	$13, %ymm10, %ymm10
-	vpor	%ymm11, %ymm10, %ymm10
-	vpxor	%ymm10, %ymm9, %ymm9
-	vmovdqu	%ymm10, %ymm11
-	vpslld	$23, %ymm11, %ymm11
-	vpsrld	$9, %ymm10, %ymm10
-	vpor	%ymm11, %ymm10, %ymm7
+	vpsrld	$2, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm9
+	vmovdqu	%ymm6, %ymm7
+	vmovdqu	%ymm7, %ymm10
+	vpslld	$19, %ymm10, %ymm10
+	vpsrld	$13, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm7
+	vpxor	%ymm7, %ymm9, %ymm9
+	vmovdqu	%ymm7, %ymm10
+	vpslld	$23, %ymm10, %ymm10
+	vpsrld	$9, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm7
 	vpxor	%ymm7, %ymm9, %ymm7
 	vpaddd	%ymm7, %ymm5, %ymm5
 	vmovdqu	928(%rcx), %ymm7
@@ -20200,21 +20373,21 @@ slh_dsa_sha2128s_keygen:
 	vpand	%ymm3, %ymm7, %ymm7
 	vpxor	%ymm7, %ymm10, %ymm7
 	vpaddd	%ymm7, %ymm1, %ymm1
-	vmovdqu	%ymm0, %ymm9
-	vmovdqu	%ymm9, %ymm10
+	vmovdqu	%ymm0, %ymm7
+	vmovdqu	%ymm7, %ymm10
 	vpslld	$26, %ymm10, %ymm10
-	vpsrld	$6, %ymm9, %ymm9
-	vpor	%ymm10, %ymm9, %ymm9
-	vmovdqu	%ymm0, %ymm10
-	vmovdqu	%ymm10, %ymm11
-	vpslld	$21, %ymm11, %ymm11
-	vpsrld	$11, %ymm10, %ymm10
-	vpor	%ymm11, %ymm10, %ymm10
-	vpxor	%ymm10, %ymm9, %ymm9
-	vmovdqu	%ymm10, %ymm11
-	vpslld	$18, %ymm11, %ymm11
-	vpsrld	$14, %ymm10, %ymm10
-	vpor	%ymm11, %ymm10, %ymm7
+	vpsrld	$6, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm9
+	vmovdqu	%ymm0, %ymm7
+	vmovdqu	%ymm7, %ymm10
+	vpslld	$21, %ymm10, %ymm10
+	vpsrld	$11, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm7
+	vpxor	%ymm7, %ymm9, %ymm9
+	vmovdqu	%ymm7, %ymm10
+	vpslld	$18, %ymm10, %ymm10
+	vpsrld	$14, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm7
 	vpxor	%ymm7, %ymm9, %ymm7
 	vpaddd	%ymm7, %ymm1, %ymm7
 	vpaddd	%ymm7, %ymm4, %ymm1
@@ -20227,21 +20400,21 @@ slh_dsa_sha2128s_keygen:
 	vpand	%ymm8, %ymm4, %ymm4
 	vpxor	%ymm4, %ymm10, %ymm4
 	vpaddd	%ymm4, %ymm7, %ymm4
-	vmovdqu	%ymm5, %ymm9
-	vmovdqu	%ymm9, %ymm10
+	vmovdqu	%ymm5, %ymm7
+	vmovdqu	%ymm7, %ymm10
 	vpslld	$30, %ymm10, %ymm10
-	vpsrld	$2, %ymm9, %ymm9
-	vpor	%ymm10, %ymm9, %ymm9
-	vmovdqu	%ymm5, %ymm10
-	vmovdqu	%ymm10, %ymm11
-	vpslld	$19, %ymm11, %ymm11
-	vpsrld	$13, %ymm10, %ymm10
-	vpor	%ymm11, %ymm10, %ymm10
-	vpxor	%ymm10, %ymm9, %ymm9
-	vmovdqu	%ymm10, %ymm11
-	vpslld	$23, %ymm11, %ymm11
-	vpsrld	$9, %ymm10, %ymm10
-	vpor	%ymm11, %ymm10, %ymm7
+	vpsrld	$2, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm9
+	vmovdqu	%ymm5, %ymm7
+	vmovdqu	%ymm7, %ymm10
+	vpslld	$19, %ymm10, %ymm10
+	vpsrld	$13, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm7
+	vpxor	%ymm7, %ymm9, %ymm9
+	vmovdqu	%ymm7, %ymm10
+	vpslld	$23, %ymm10, %ymm10
+	vpsrld	$9, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm7
 	vpxor	%ymm7, %ymm9, %ymm7
 	vpaddd	%ymm7, %ymm4, %ymm4
 	vmovdqu	960(%rcx), %ymm7
@@ -20337,21 +20510,21 @@ slh_dsa_sha2128s_keygen:
 	vpand	%ymm5, %ymm6, %ymm6
 	vpxor	%ymm6, %ymm10, %ymm6
 	vpaddd	%ymm6, %ymm7, %ymm6
-	vmovdqu	%ymm8, %ymm9
-	vmovdqu	%ymm9, %ymm10
+	vmovdqu	%ymm8, %ymm7
+	vmovdqu	%ymm7, %ymm10
 	vpslld	$30, %ymm10, %ymm10
-	vpsrld	$2, %ymm9, %ymm9
-	vpor	%ymm10, %ymm9, %ymm9
-	vmovdqu	%ymm8, %ymm10
-	vmovdqu	%ymm10, %ymm11
-	vpslld	$19, %ymm11, %ymm11
-	vpsrld	$13, %ymm10, %ymm10
-	vpor	%ymm11, %ymm10, %ymm10
-	vpxor	%ymm10, %ymm9, %ymm9
-	vmovdqu	%ymm10, %ymm11
-	vpslld	$23, %ymm11, %ymm11
-	vpsrld	$9, %ymm10, %ymm10
-	vpor	%ymm11, %ymm10, %ymm7
+	vpsrld	$2, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm9
+	vmovdqu	%ymm8, %ymm7
+	vmovdqu	%ymm7, %ymm10
+	vpslld	$19, %ymm10, %ymm10
+	vpsrld	$13, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm7
+	vpxor	%ymm7, %ymm9, %ymm9
+	vmovdqu	%ymm7, %ymm10
+	vpslld	$23, %ymm10, %ymm10
+	vpsrld	$9, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm7
 	vpxor	%ymm7, %ymm9, %ymm7
 	vpaddd	%ymm7, %ymm6, %ymm6
 	vmovdqu	1024(%rcx), %ymm7
@@ -20365,21 +20538,21 @@ slh_dsa_sha2128s_keygen:
 	vpand	%ymm1, %ymm7, %ymm7
 	vpxor	%ymm7, %ymm10, %ymm7
 	vpaddd	%ymm7, %ymm0, %ymm0
-	vmovdqu	%ymm2, %ymm9
-	vmovdqu	%ymm9, %ymm10
+	vmovdqu	%ymm2, %ymm7
+	vmovdqu	%ymm7, %ymm10
 	vpslld	$26, %ymm10, %ymm10
-	vpsrld	$6, %ymm9, %ymm9
-	vpor	%ymm10, %ymm9, %ymm9
-	vmovdqu	%ymm2, %ymm10
-	vmovdqu	%ymm10, %ymm11
-	vpslld	$21, %ymm11, %ymm11
-	vpsrld	$11, %ymm10, %ymm10
-	vpor	%ymm11, %ymm10, %ymm10
-	vpxor	%ymm10, %ymm9, %ymm9
-	vmovdqu	%ymm10, %ymm11
-	vpslld	$18, %ymm11, %ymm11
-	vpsrld	$14, %ymm10, %ymm10
-	vpor	%ymm11, %ymm10, %ymm7
+	vpsrld	$6, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm9
+	vmovdqu	%ymm2, %ymm7
+	vmovdqu	%ymm7, %ymm10
+	vpslld	$21, %ymm10, %ymm10
+	vpsrld	$11, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm7
+	vpxor	%ymm7, %ymm9, %ymm9
+	vmovdqu	%ymm7, %ymm10
+	vpslld	$18, %ymm10, %ymm10
+	vpsrld	$14, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm7
 	vpxor	%ymm7, %ymm9, %ymm7
 	vpaddd	%ymm7, %ymm0, %ymm7
 	vpaddd	%ymm7, %ymm5, %ymm0
@@ -20392,21 +20565,21 @@ slh_dsa_sha2128s_keygen:
 	vpand	%ymm4, %ymm5, %ymm5
 	vpxor	%ymm5, %ymm10, %ymm5
 	vpaddd	%ymm5, %ymm7, %ymm5
-	vmovdqu	%ymm6, %ymm9
-	vmovdqu	%ymm9, %ymm10
+	vmovdqu	%ymm6, %ymm7
+	vmovdqu	%ymm7, %ymm10
 	vpslld	$30, %ymm10, %ymm10
-	vpsrld	$2, %ymm9, %ymm9
-	vpor	%ymm10, %ymm9, %ymm9
-	vmovdqu	%ymm6, %ymm10
-	vmovdqu	%ymm10, %ymm11
-	vpslld	$19, %ymm11, %ymm11
-	vpsrld	$13, %ymm10, %ymm10
-	vpor	%ymm11, %ymm10, %ymm10
-	vpxor	%ymm10, %ymm9, %ymm9
-	vmovdqu	%ymm10, %ymm11
-	vpslld	$23, %ymm11, %ymm11
-	vpsrld	$9, %ymm10, %ymm10
-	vpor	%ymm11, %ymm10, %ymm7
+	vpsrld	$2, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm9
+	vmovdqu	%ymm6, %ymm7
+	vmovdqu	%ymm7, %ymm10
+	vpslld	$19, %ymm10, %ymm10
+	vpsrld	$13, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm7
+	vpxor	%ymm7, %ymm9, %ymm9
+	vmovdqu	%ymm7, %ymm10
+	vpslld	$23, %ymm10, %ymm10
+	vpsrld	$9, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm7
 	vpxor	%ymm7, %ymm9, %ymm7
 	vpaddd	%ymm7, %ymm5, %ymm5
 	vmovdqu	1056(%rcx), %ymm7
@@ -20420,21 +20593,21 @@ slh_dsa_sha2128s_keygen:
 	vpand	%ymm3, %ymm7, %ymm7
 	vpxor	%ymm7, %ymm10, %ymm7
 	vpaddd	%ymm7, %ymm1, %ymm1
-	vmovdqu	%ymm0, %ymm9
-	vmovdqu	%ymm9, %ymm10
+	vmovdqu	%ymm0, %ymm7
+	vmovdqu	%ymm7, %ymm10
 	vpslld	$26, %ymm10, %ymm10
-	vpsrld	$6, %ymm9, %ymm9
-	vpor	%ymm10, %ymm9, %ymm9
-	vmovdqu	%ymm0, %ymm10
-	vmovdqu	%ymm10, %ymm11
-	vpslld	$21, %ymm11, %ymm11
-	vpsrld	$11, %ymm10, %ymm10
-	vpor	%ymm11, %ymm10, %ymm10
-	vpxor	%ymm10, %ymm9, %ymm9
-	vmovdqu	%ymm10, %ymm11
-	vpslld	$18, %ymm11, %ymm11
-	vpsrld	$14, %ymm10, %ymm10
-	vpor	%ymm11, %ymm10, %ymm7
+	vpsrld	$6, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm9
+	vmovdqu	%ymm0, %ymm7
+	vmovdqu	%ymm7, %ymm10
+	vpslld	$21, %ymm10, %ymm10
+	vpsrld	$11, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm7
+	vpxor	%ymm7, %ymm9, %ymm9
+	vmovdqu	%ymm7, %ymm10
+	vpslld	$18, %ymm10, %ymm10
+	vpsrld	$14, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm7
 	vpxor	%ymm7, %ymm9, %ymm7
 	vpaddd	%ymm7, %ymm1, %ymm7
 	vpaddd	%ymm7, %ymm4, %ymm1
@@ -20447,21 +20620,21 @@ slh_dsa_sha2128s_keygen:
 	vpand	%ymm8, %ymm4, %ymm4
 	vpxor	%ymm4, %ymm10, %ymm4
 	vpaddd	%ymm4, %ymm7, %ymm4
-	vmovdqu	%ymm5, %ymm9
-	vmovdqu	%ymm9, %ymm10
+	vmovdqu	%ymm5, %ymm7
+	vmovdqu	%ymm7, %ymm10
 	vpslld	$30, %ymm10, %ymm10
-	vpsrld	$2, %ymm9, %ymm9
-	vpor	%ymm10, %ymm9, %ymm9
-	vmovdqu	%ymm5, %ymm10
-	vmovdqu	%ymm10, %ymm11
-	vpslld	$19, %ymm11, %ymm11
-	vpsrld	$13, %ymm10, %ymm10
-	vpor	%ymm11, %ymm10, %ymm10
-	vpxor	%ymm10, %ymm9, %ymm9
-	vmovdqu	%ymm10, %ymm11
-	vpslld	$23, %ymm11, %ymm11
-	vpsrld	$9, %ymm10, %ymm10
-	vpor	%ymm11, %ymm10, %ymm7
+	vpsrld	$2, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm9
+	vmovdqu	%ymm5, %ymm7
+	vmovdqu	%ymm7, %ymm10
+	vpslld	$19, %ymm10, %ymm10
+	vpsrld	$13, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm7
+	vpxor	%ymm7, %ymm9, %ymm9
+	vmovdqu	%ymm7, %ymm10
+	vpslld	$23, %ymm10, %ymm10
+	vpsrld	$9, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm7
 	vpxor	%ymm7, %ymm9, %ymm7
 	vpaddd	%ymm7, %ymm4, %ymm4
 	vmovdqu	1088(%rcx), %ymm7
@@ -20518,210 +20691,210 @@ slh_dsa_sha2128s_keygen:
 	vpsrld	$9, %ymm8, %ymm8
 	vpor	%ymm10, %ymm8, %ymm8
 	vpxor	%ymm8, %ymm9, %ymm8
-	vpaddd	%ymm8, %ymm7, %ymm8
-	vmovdqu	1120(%rcx), %ymm7
-	vpaddd	%ymm7, %ymm2, %ymm2
-	vmovdqu	glob_data + 1632(%rip), %ymm7
-	vpaddd	%ymm7, %ymm2, %ymm2
+	vpaddd	%ymm8, %ymm7, %ymm7
+	vmovdqu	1120(%rcx), %ymm8
+	vpaddd	%ymm8, %ymm2, %ymm2
+	vmovdqu	glob_data + 1632(%rip), %ymm8
+	vpaddd	%ymm8, %ymm2, %ymm2
 	vmovdqu	%ymm3, %ymm10
 	vpand	%ymm1, %ymm10, %ymm10
-	vmovdqu	glob_data + 448(%rip), %ymm7
-	vpxor	%ymm3, %ymm7, %ymm7
-	vpand	%ymm0, %ymm7, %ymm7
-	vpxor	%ymm7, %ymm10, %ymm7
-	vpaddd	%ymm7, %ymm2, %ymm7
-	vmovdqu	%ymm3, %ymm2
-	vmovdqu	%ymm2, %ymm10
-	vpslld	$26, %ymm10, %ymm10
-	vpsrld	$6, %ymm2, %ymm2
-	vpor	%ymm10, %ymm2, %ymm9
-	vmovdqu	%ymm3, %ymm2
-	vmovdqu	%ymm2, %ymm10
-	vpslld	$21, %ymm10, %ymm10
-	vpsrld	$11, %ymm2, %ymm2
-	vpor	%ymm10, %ymm2, %ymm2
-	vpxor	%ymm2, %ymm9, %ymm9
-	vmovdqu	%ymm2, %ymm10
-	vpslld	$18, %ymm10, %ymm10
-	vpsrld	$14, %ymm2, %ymm2
-	vpor	%ymm10, %ymm2, %ymm2
-	vpxor	%ymm2, %ymm9, %ymm2
-	vpaddd	%ymm2, %ymm7, %ymm7
-	vpaddd	%ymm7, %ymm6, %ymm2
+	vmovdqu	glob_data + 448(%rip), %ymm8
+	vpxor	%ymm3, %ymm8, %ymm8
+	vpand	%ymm0, %ymm8, %ymm8
+	vpxor	%ymm8, %ymm10, %ymm8
+	vpaddd	%ymm8, %ymm2, %ymm2
+	vmovdqu	%ymm3, %ymm8
 	vmovdqu	%ymm8, %ymm10
+	vpslld	$26, %ymm10, %ymm10
+	vpsrld	$6, %ymm8, %ymm8
+	vpor	%ymm10, %ymm8, %ymm9
+	vmovdqu	%ymm3, %ymm8
+	vmovdqu	%ymm8, %ymm10
+	vpslld	$21, %ymm10, %ymm10
+	vpsrld	$11, %ymm8, %ymm8
+	vpor	%ymm10, %ymm8, %ymm8
+	vpxor	%ymm8, %ymm9, %ymm9
+	vmovdqu	%ymm8, %ymm10
+	vpslld	$18, %ymm10, %ymm10
+	vpsrld	$14, %ymm8, %ymm8
+	vpor	%ymm10, %ymm8, %ymm8
+	vpxor	%ymm8, %ymm9, %ymm8
+	vpaddd	%ymm8, %ymm2, %ymm8
+	vpaddd	%ymm8, %ymm6, %ymm2
+	vmovdqu	%ymm7, %ymm10
 	vpand	%ymm4, %ymm10, %ymm10
-	vmovdqu	%ymm8, %ymm6
+	vmovdqu	%ymm7, %ymm6
 	vpand	%ymm5, %ymm6, %ymm6
 	vpxor	%ymm6, %ymm10, %ymm10
 	vmovdqu	%ymm4, %ymm6
 	vpand	%ymm5, %ymm6, %ymm6
 	vpxor	%ymm6, %ymm10, %ymm6
-	vpaddd	%ymm6, %ymm7, %ymm6
-	vmovdqu	%ymm8, %ymm9
-	vmovdqu	%ymm9, %ymm10
-	vpslld	$30, %ymm10, %ymm10
-	vpsrld	$2, %ymm9, %ymm9
-	vpor	%ymm10, %ymm9, %ymm9
+	vpaddd	%ymm6, %ymm8, %ymm6
+	vmovdqu	%ymm7, %ymm8
 	vmovdqu	%ymm8, %ymm10
-	vmovdqu	%ymm10, %ymm11
-	vpslld	$19, %ymm11, %ymm11
-	vpsrld	$13, %ymm10, %ymm10
-	vpor	%ymm11, %ymm10, %ymm10
-	vpxor	%ymm10, %ymm9, %ymm9
-	vmovdqu	%ymm10, %ymm11
-	vpslld	$23, %ymm11, %ymm11
-	vpsrld	$9, %ymm10, %ymm10
-	vpor	%ymm11, %ymm10, %ymm7
-	vpxor	%ymm7, %ymm9, %ymm7
-	vpaddd	%ymm7, %ymm6, %ymm6
-	vmovdqu	1152(%rcx), %ymm7
-	vpaddd	%ymm7, %ymm0, %ymm0
-	vmovdqu	glob_data + 1664(%rip), %ymm7
-	vpaddd	%ymm7, %ymm0, %ymm0
+	vpslld	$30, %ymm10, %ymm10
+	vpsrld	$2, %ymm8, %ymm8
+	vpor	%ymm10, %ymm8, %ymm9
+	vmovdqu	%ymm7, %ymm8
+	vmovdqu	%ymm8, %ymm10
+	vpslld	$19, %ymm10, %ymm10
+	vpsrld	$13, %ymm8, %ymm8
+	vpor	%ymm10, %ymm8, %ymm8
+	vpxor	%ymm8, %ymm9, %ymm9
+	vmovdqu	%ymm8, %ymm10
+	vpslld	$23, %ymm10, %ymm10
+	vpsrld	$9, %ymm8, %ymm8
+	vpor	%ymm10, %ymm8, %ymm8
+	vpxor	%ymm8, %ymm9, %ymm8
+	vpaddd	%ymm8, %ymm6, %ymm6
+	vmovdqu	1152(%rcx), %ymm8
+	vpaddd	%ymm8, %ymm0, %ymm0
+	vmovdqu	glob_data + 1664(%rip), %ymm8
+	vpaddd	%ymm8, %ymm0, %ymm0
 	vmovdqu	%ymm2, %ymm10
 	vpand	%ymm3, %ymm10, %ymm10
-	vmovdqu	glob_data + 448(%rip), %ymm7
-	vpxor	%ymm2, %ymm7, %ymm7
-	vpand	%ymm1, %ymm7, %ymm7
-	vpxor	%ymm7, %ymm10, %ymm7
-	vpaddd	%ymm7, %ymm0, %ymm0
-	vmovdqu	%ymm2, %ymm9
-	vmovdqu	%ymm9, %ymm10
+	vmovdqu	glob_data + 448(%rip), %ymm8
+	vpxor	%ymm2, %ymm8, %ymm8
+	vpand	%ymm1, %ymm8, %ymm8
+	vpxor	%ymm8, %ymm10, %ymm8
+	vpaddd	%ymm8, %ymm0, %ymm0
+	vmovdqu	%ymm2, %ymm8
+	vmovdqu	%ymm8, %ymm10
 	vpslld	$26, %ymm10, %ymm10
-	vpsrld	$6, %ymm9, %ymm9
-	vpor	%ymm10, %ymm9, %ymm9
-	vmovdqu	%ymm2, %ymm10
-	vmovdqu	%ymm10, %ymm11
-	vpslld	$21, %ymm11, %ymm11
-	vpsrld	$11, %ymm10, %ymm10
-	vpor	%ymm11, %ymm10, %ymm10
-	vpxor	%ymm10, %ymm9, %ymm9
-	vmovdqu	%ymm10, %ymm11
-	vpslld	$18, %ymm11, %ymm11
-	vpsrld	$14, %ymm10, %ymm10
-	vpor	%ymm11, %ymm10, %ymm7
-	vpxor	%ymm7, %ymm9, %ymm7
-	vpaddd	%ymm7, %ymm0, %ymm7
-	vpaddd	%ymm7, %ymm5, %ymm0
+	vpsrld	$6, %ymm8, %ymm8
+	vpor	%ymm10, %ymm8, %ymm9
+	vmovdqu	%ymm2, %ymm8
+	vmovdqu	%ymm8, %ymm10
+	vpslld	$21, %ymm10, %ymm10
+	vpsrld	$11, %ymm8, %ymm8
+	vpor	%ymm10, %ymm8, %ymm8
+	vpxor	%ymm8, %ymm9, %ymm9
+	vmovdqu	%ymm8, %ymm10
+	vpslld	$18, %ymm10, %ymm10
+	vpsrld	$14, %ymm8, %ymm8
+	vpor	%ymm10, %ymm8, %ymm8
+	vpxor	%ymm8, %ymm9, %ymm8
+	vpaddd	%ymm8, %ymm0, %ymm8
+	vpaddd	%ymm8, %ymm5, %ymm0
 	vmovdqu	%ymm6, %ymm10
-	vpand	%ymm8, %ymm10, %ymm10
+	vpand	%ymm7, %ymm10, %ymm10
 	vmovdqu	%ymm6, %ymm5
 	vpand	%ymm4, %ymm5, %ymm5
 	vpxor	%ymm5, %ymm10, %ymm10
-	vmovdqu	%ymm8, %ymm5
+	vmovdqu	%ymm7, %ymm5
 	vpand	%ymm4, %ymm5, %ymm5
 	vpxor	%ymm5, %ymm10, %ymm5
-	vpaddd	%ymm5, %ymm7, %ymm5
-	vmovdqu	%ymm6, %ymm9
-	vmovdqu	%ymm9, %ymm10
+	vpaddd	%ymm5, %ymm8, %ymm5
+	vmovdqu	%ymm6, %ymm8
+	vmovdqu	%ymm8, %ymm10
 	vpslld	$30, %ymm10, %ymm10
-	vpsrld	$2, %ymm9, %ymm9
-	vpor	%ymm10, %ymm9, %ymm9
-	vmovdqu	%ymm6, %ymm10
-	vmovdqu	%ymm10, %ymm11
-	vpslld	$19, %ymm11, %ymm11
-	vpsrld	$13, %ymm10, %ymm10
-	vpor	%ymm11, %ymm10, %ymm10
-	vpxor	%ymm10, %ymm9, %ymm9
-	vmovdqu	%ymm10, %ymm11
-	vpslld	$23, %ymm11, %ymm11
-	vpsrld	$9, %ymm10, %ymm10
-	vpor	%ymm11, %ymm10, %ymm7
-	vpxor	%ymm7, %ymm9, %ymm7
-	vpaddd	%ymm7, %ymm5, %ymm5
-	vmovdqu	1184(%rcx), %ymm7
-	vpaddd	%ymm7, %ymm1, %ymm1
-	vmovdqu	glob_data + 1696(%rip), %ymm7
-	vpaddd	%ymm7, %ymm1, %ymm1
+	vpsrld	$2, %ymm8, %ymm8
+	vpor	%ymm10, %ymm8, %ymm9
+	vmovdqu	%ymm6, %ymm8
+	vmovdqu	%ymm8, %ymm10
+	vpslld	$19, %ymm10, %ymm10
+	vpsrld	$13, %ymm8, %ymm8
+	vpor	%ymm10, %ymm8, %ymm8
+	vpxor	%ymm8, %ymm9, %ymm9
+	vmovdqu	%ymm8, %ymm10
+	vpslld	$23, %ymm10, %ymm10
+	vpsrld	$9, %ymm8, %ymm8
+	vpor	%ymm10, %ymm8, %ymm8
+	vpxor	%ymm8, %ymm9, %ymm8
+	vpaddd	%ymm8, %ymm5, %ymm5
+	vmovdqu	1184(%rcx), %ymm8
+	vpaddd	%ymm8, %ymm1, %ymm1
+	vmovdqu	glob_data + 1696(%rip), %ymm8
+	vpaddd	%ymm8, %ymm1, %ymm1
 	vmovdqu	%ymm0, %ymm10
 	vpand	%ymm2, %ymm10, %ymm10
-	vmovdqu	glob_data + 448(%rip), %ymm7
-	vpxor	%ymm0, %ymm7, %ymm7
-	vpand	%ymm3, %ymm7, %ymm7
-	vpxor	%ymm7, %ymm10, %ymm7
-	vpaddd	%ymm7, %ymm1, %ymm1
-	vmovdqu	%ymm0, %ymm9
-	vmovdqu	%ymm9, %ymm10
+	vmovdqu	glob_data + 448(%rip), %ymm8
+	vpxor	%ymm0, %ymm8, %ymm8
+	vpand	%ymm3, %ymm8, %ymm8
+	vpxor	%ymm8, %ymm10, %ymm8
+	vpaddd	%ymm8, %ymm1, %ymm1
+	vmovdqu	%ymm0, %ymm8
+	vmovdqu	%ymm8, %ymm10
 	vpslld	$26, %ymm10, %ymm10
-	vpsrld	$6, %ymm9, %ymm9
-	vpor	%ymm10, %ymm9, %ymm9
-	vmovdqu	%ymm0, %ymm10
-	vmovdqu	%ymm10, %ymm11
-	vpslld	$21, %ymm11, %ymm11
-	vpsrld	$11, %ymm10, %ymm10
-	vpor	%ymm11, %ymm10, %ymm10
-	vpxor	%ymm10, %ymm9, %ymm9
-	vmovdqu	%ymm10, %ymm11
-	vpslld	$18, %ymm11, %ymm11
-	vpsrld	$14, %ymm10, %ymm10
-	vpor	%ymm11, %ymm10, %ymm7
-	vpxor	%ymm7, %ymm9, %ymm7
-	vpaddd	%ymm7, %ymm1, %ymm7
-	vpaddd	%ymm7, %ymm4, %ymm1
+	vpsrld	$6, %ymm8, %ymm8
+	vpor	%ymm10, %ymm8, %ymm9
+	vmovdqu	%ymm0, %ymm8
+	vmovdqu	%ymm8, %ymm10
+	vpslld	$21, %ymm10, %ymm10
+	vpsrld	$11, %ymm8, %ymm8
+	vpor	%ymm10, %ymm8, %ymm8
+	vpxor	%ymm8, %ymm9, %ymm9
+	vmovdqu	%ymm8, %ymm10
+	vpslld	$18, %ymm10, %ymm10
+	vpsrld	$14, %ymm8, %ymm8
+	vpor	%ymm10, %ymm8, %ymm8
+	vpxor	%ymm8, %ymm9, %ymm8
+	vpaddd	%ymm8, %ymm1, %ymm8
+	vpaddd	%ymm8, %ymm4, %ymm1
 	vmovdqu	%ymm5, %ymm10
 	vpand	%ymm6, %ymm10, %ymm10
 	vmovdqu	%ymm5, %ymm4
-	vpand	%ymm8, %ymm4, %ymm4
+	vpand	%ymm7, %ymm4, %ymm4
 	vpxor	%ymm4, %ymm10, %ymm10
 	vmovdqu	%ymm6, %ymm4
-	vpand	%ymm8, %ymm4, %ymm4
+	vpand	%ymm7, %ymm4, %ymm4
 	vpxor	%ymm4, %ymm10, %ymm4
-	vpaddd	%ymm4, %ymm7, %ymm4
-	vmovdqu	%ymm5, %ymm9
-	vmovdqu	%ymm9, %ymm10
+	vpaddd	%ymm4, %ymm8, %ymm4
+	vmovdqu	%ymm5, %ymm8
+	vmovdqu	%ymm8, %ymm10
 	vpslld	$30, %ymm10, %ymm10
-	vpsrld	$2, %ymm9, %ymm9
-	vpor	%ymm10, %ymm9, %ymm9
-	vmovdqu	%ymm5, %ymm10
-	vmovdqu	%ymm10, %ymm11
-	vpslld	$19, %ymm11, %ymm11
-	vpsrld	$13, %ymm10, %ymm10
-	vpor	%ymm11, %ymm10, %ymm10
-	vpxor	%ymm10, %ymm9, %ymm9
-	vmovdqu	%ymm10, %ymm11
-	vpslld	$23, %ymm11, %ymm11
-	vpsrld	$9, %ymm10, %ymm10
-	vpor	%ymm11, %ymm10, %ymm7
-	vpxor	%ymm7, %ymm9, %ymm7
-	vpaddd	%ymm7, %ymm4, %ymm4
-	vmovdqu	1216(%rcx), %ymm7
-	vpaddd	%ymm7, %ymm3, %ymm3
-	vmovdqu	glob_data + 1728(%rip), %ymm7
-	vpaddd	%ymm7, %ymm3, %ymm3
+	vpsrld	$2, %ymm8, %ymm8
+	vpor	%ymm10, %ymm8, %ymm9
+	vmovdqu	%ymm5, %ymm8
+	vmovdqu	%ymm8, %ymm10
+	vpslld	$19, %ymm10, %ymm10
+	vpsrld	$13, %ymm8, %ymm8
+	vpor	%ymm10, %ymm8, %ymm8
+	vpxor	%ymm8, %ymm9, %ymm9
+	vmovdqu	%ymm8, %ymm10
+	vpslld	$23, %ymm10, %ymm10
+	vpsrld	$9, %ymm8, %ymm8
+	vpor	%ymm10, %ymm8, %ymm8
+	vpxor	%ymm8, %ymm9, %ymm8
+	vpaddd	%ymm8, %ymm4, %ymm4
+	vmovdqu	1216(%rcx), %ymm8
+	vpaddd	%ymm8, %ymm3, %ymm3
+	vmovdqu	glob_data + 1728(%rip), %ymm8
+	vpaddd	%ymm8, %ymm3, %ymm3
 	vmovdqu	%ymm1, %ymm10
 	vpand	%ymm0, %ymm10, %ymm10
-	vmovdqu	glob_data + 448(%rip), %ymm7
-	vpxor	%ymm1, %ymm7, %ymm7
-	vpand	%ymm2, %ymm7, %ymm7
-	vpxor	%ymm7, %ymm10, %ymm7
-	vpaddd	%ymm7, %ymm3, %ymm7
-	vmovdqu	%ymm1, %ymm3
-	vmovdqu	%ymm3, %ymm10
+	vmovdqu	glob_data + 448(%rip), %ymm8
+	vpxor	%ymm1, %ymm8, %ymm8
+	vpand	%ymm2, %ymm8, %ymm8
+	vpxor	%ymm8, %ymm10, %ymm8
+	vpaddd	%ymm8, %ymm3, %ymm3
+	vmovdqu	%ymm1, %ymm8
+	vmovdqu	%ymm8, %ymm10
 	vpslld	$26, %ymm10, %ymm10
-	vpsrld	$6, %ymm3, %ymm3
-	vpor	%ymm10, %ymm3, %ymm9
-	vmovdqu	%ymm1, %ymm3
-	vmovdqu	%ymm3, %ymm10
+	vpsrld	$6, %ymm8, %ymm8
+	vpor	%ymm10, %ymm8, %ymm9
+	vmovdqu	%ymm1, %ymm8
+	vmovdqu	%ymm8, %ymm10
 	vpslld	$21, %ymm10, %ymm10
-	vpsrld	$11, %ymm3, %ymm3
-	vpor	%ymm10, %ymm3, %ymm3
-	vpxor	%ymm3, %ymm9, %ymm9
-	vmovdqu	%ymm3, %ymm10
+	vpsrld	$11, %ymm8, %ymm8
+	vpor	%ymm10, %ymm8, %ymm8
+	vpxor	%ymm8, %ymm9, %ymm9
+	vmovdqu	%ymm8, %ymm10
 	vpslld	$18, %ymm10, %ymm10
-	vpsrld	$14, %ymm3, %ymm3
-	vpor	%ymm10, %ymm3, %ymm3
-	vpxor	%ymm3, %ymm9, %ymm3
-	vpaddd	%ymm3, %ymm7, %ymm7
-	vpaddd	%ymm7, %ymm8, %ymm3
+	vpsrld	$14, %ymm8, %ymm8
+	vpor	%ymm10, %ymm8, %ymm8
+	vpxor	%ymm8, %ymm9, %ymm8
+	vpaddd	%ymm8, %ymm3, %ymm8
+	vpaddd	%ymm8, %ymm7, %ymm3
 	vmovdqu	%ymm4, %ymm10
 	vpand	%ymm5, %ymm10, %ymm10
-	vmovdqu	%ymm4, %ymm8
-	vpand	%ymm6, %ymm8, %ymm8
-	vpxor	%ymm8, %ymm10, %ymm10
-	vmovdqu	%ymm5, %ymm8
-	vpand	%ymm6, %ymm8, %ymm8
-	vpxor	%ymm8, %ymm10, %ymm8
-	vpaddd	%ymm8, %ymm7, %ymm7
+	vmovdqu	%ymm4, %ymm7
+	vpand	%ymm6, %ymm7, %ymm7
+	vpxor	%ymm7, %ymm10, %ymm10
+	vmovdqu	%ymm5, %ymm7
+	vpand	%ymm6, %ymm7, %ymm7
+	vpxor	%ymm7, %ymm10, %ymm7
+	vpaddd	%ymm7, %ymm8, %ymm7
 	vmovdqu	%ymm4, %ymm8
 	vmovdqu	%ymm8, %ymm10
 	vpslld	$30, %ymm10, %ymm10
@@ -20749,24 +20922,24 @@ slh_dsa_sha2128s_keygen:
 	vpxor	%ymm3, %ymm7, %ymm7
 	vpand	%ymm0, %ymm7, %ymm7
 	vpxor	%ymm7, %ymm10, %ymm7
-	vpaddd	%ymm7, %ymm2, %ymm7
-	vmovdqu	%ymm3, %ymm2
-	vmovdqu	%ymm2, %ymm10
+	vpaddd	%ymm7, %ymm2, %ymm2
+	vmovdqu	%ymm3, %ymm7
+	vmovdqu	%ymm7, %ymm10
 	vpslld	$26, %ymm10, %ymm10
-	vpsrld	$6, %ymm2, %ymm2
-	vpor	%ymm10, %ymm2, %ymm9
-	vmovdqu	%ymm3, %ymm2
-	vmovdqu	%ymm2, %ymm10
+	vpsrld	$6, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm9
+	vmovdqu	%ymm3, %ymm7
+	vmovdqu	%ymm7, %ymm10
 	vpslld	$21, %ymm10, %ymm10
-	vpsrld	$11, %ymm2, %ymm2
-	vpor	%ymm10, %ymm2, %ymm2
-	vpxor	%ymm2, %ymm9, %ymm9
-	vmovdqu	%ymm2, %ymm10
+	vpsrld	$11, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm7
+	vpxor	%ymm7, %ymm9, %ymm9
+	vmovdqu	%ymm7, %ymm10
 	vpslld	$18, %ymm10, %ymm10
-	vpsrld	$14, %ymm2, %ymm2
-	vpor	%ymm10, %ymm2, %ymm2
-	vpxor	%ymm2, %ymm9, %ymm2
-	vpaddd	%ymm2, %ymm7, %ymm7
+	vpsrld	$14, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm7
+	vpxor	%ymm7, %ymm9, %ymm7
+	vpaddd	%ymm7, %ymm2, %ymm7
 	vpaddd	%ymm7, %ymm6, %ymm2
 	vmovdqu	%ymm8, %ymm10
 	vpand	%ymm4, %ymm10, %ymm10
@@ -20777,21 +20950,21 @@ slh_dsa_sha2128s_keygen:
 	vpand	%ymm5, %ymm6, %ymm6
 	vpxor	%ymm6, %ymm10, %ymm6
 	vpaddd	%ymm6, %ymm7, %ymm6
-	vmovdqu	%ymm8, %ymm9
-	vmovdqu	%ymm9, %ymm10
+	vmovdqu	%ymm8, %ymm7
+	vmovdqu	%ymm7, %ymm10
 	vpslld	$30, %ymm10, %ymm10
-	vpsrld	$2, %ymm9, %ymm9
-	vpor	%ymm10, %ymm9, %ymm9
-	vmovdqu	%ymm8, %ymm10
-	vmovdqu	%ymm10, %ymm11
-	vpslld	$19, %ymm11, %ymm11
-	vpsrld	$13, %ymm10, %ymm10
-	vpor	%ymm11, %ymm10, %ymm10
-	vpxor	%ymm10, %ymm9, %ymm9
-	vmovdqu	%ymm10, %ymm11
-	vpslld	$23, %ymm11, %ymm11
-	vpsrld	$9, %ymm10, %ymm10
-	vpor	%ymm11, %ymm10, %ymm7
+	vpsrld	$2, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm9
+	vmovdqu	%ymm8, %ymm7
+	vmovdqu	%ymm7, %ymm10
+	vpslld	$19, %ymm10, %ymm10
+	vpsrld	$13, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm7
+	vpxor	%ymm7, %ymm9, %ymm9
+	vmovdqu	%ymm7, %ymm10
+	vpslld	$23, %ymm10, %ymm10
+	vpsrld	$9, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm7
 	vpxor	%ymm7, %ymm9, %ymm7
 	vpaddd	%ymm7, %ymm6, %ymm6
 	vmovdqu	1280(%rcx), %ymm7
@@ -20805,21 +20978,21 @@ slh_dsa_sha2128s_keygen:
 	vpand	%ymm1, %ymm7, %ymm7
 	vpxor	%ymm7, %ymm10, %ymm7
 	vpaddd	%ymm7, %ymm0, %ymm0
-	vmovdqu	%ymm2, %ymm9
-	vmovdqu	%ymm9, %ymm10
+	vmovdqu	%ymm2, %ymm7
+	vmovdqu	%ymm7, %ymm10
 	vpslld	$26, %ymm10, %ymm10
-	vpsrld	$6, %ymm9, %ymm9
-	vpor	%ymm10, %ymm9, %ymm9
-	vmovdqu	%ymm2, %ymm10
-	vmovdqu	%ymm10, %ymm11
-	vpslld	$21, %ymm11, %ymm11
-	vpsrld	$11, %ymm10, %ymm10
-	vpor	%ymm11, %ymm10, %ymm10
-	vpxor	%ymm10, %ymm9, %ymm9
-	vmovdqu	%ymm10, %ymm11
-	vpslld	$18, %ymm11, %ymm11
-	vpsrld	$14, %ymm10, %ymm10
-	vpor	%ymm11, %ymm10, %ymm7
+	vpsrld	$6, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm9
+	vmovdqu	%ymm2, %ymm7
+	vmovdqu	%ymm7, %ymm10
+	vpslld	$21, %ymm10, %ymm10
+	vpsrld	$11, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm7
+	vpxor	%ymm7, %ymm9, %ymm9
+	vmovdqu	%ymm7, %ymm10
+	vpslld	$18, %ymm10, %ymm10
+	vpsrld	$14, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm7
 	vpxor	%ymm7, %ymm9, %ymm7
 	vpaddd	%ymm7, %ymm0, %ymm7
 	vpaddd	%ymm7, %ymm5, %ymm0
@@ -20832,21 +21005,21 @@ slh_dsa_sha2128s_keygen:
 	vpand	%ymm4, %ymm5, %ymm5
 	vpxor	%ymm5, %ymm10, %ymm5
 	vpaddd	%ymm5, %ymm7, %ymm5
-	vmovdqu	%ymm6, %ymm9
-	vmovdqu	%ymm9, %ymm10
+	vmovdqu	%ymm6, %ymm7
+	vmovdqu	%ymm7, %ymm10
 	vpslld	$30, %ymm10, %ymm10
-	vpsrld	$2, %ymm9, %ymm9
-	vpor	%ymm10, %ymm9, %ymm9
-	vmovdqu	%ymm6, %ymm10
-	vmovdqu	%ymm10, %ymm11
-	vpslld	$19, %ymm11, %ymm11
-	vpsrld	$13, %ymm10, %ymm10
-	vpor	%ymm11, %ymm10, %ymm10
-	vpxor	%ymm10, %ymm9, %ymm9
-	vmovdqu	%ymm10, %ymm11
-	vpslld	$23, %ymm11, %ymm11
-	vpsrld	$9, %ymm10, %ymm10
-	vpor	%ymm11, %ymm10, %ymm7
+	vpsrld	$2, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm9
+	vmovdqu	%ymm6, %ymm7
+	vmovdqu	%ymm7, %ymm10
+	vpslld	$19, %ymm10, %ymm10
+	vpsrld	$13, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm7
+	vpxor	%ymm7, %ymm9, %ymm9
+	vmovdqu	%ymm7, %ymm10
+	vpslld	$23, %ymm10, %ymm10
+	vpsrld	$9, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm7
 	vpxor	%ymm7, %ymm9, %ymm7
 	vpaddd	%ymm7, %ymm5, %ymm5
 	vmovdqu	1312(%rcx), %ymm7
@@ -20860,21 +21033,21 @@ slh_dsa_sha2128s_keygen:
 	vpand	%ymm3, %ymm7, %ymm7
 	vpxor	%ymm7, %ymm10, %ymm7
 	vpaddd	%ymm7, %ymm1, %ymm1
-	vmovdqu	%ymm0, %ymm9
-	vmovdqu	%ymm9, %ymm10
+	vmovdqu	%ymm0, %ymm7
+	vmovdqu	%ymm7, %ymm10
 	vpslld	$26, %ymm10, %ymm10
-	vpsrld	$6, %ymm9, %ymm9
-	vpor	%ymm10, %ymm9, %ymm9
-	vmovdqu	%ymm0, %ymm10
-	vmovdqu	%ymm10, %ymm11
-	vpslld	$21, %ymm11, %ymm11
-	vpsrld	$11, %ymm10, %ymm10
-	vpor	%ymm11, %ymm10, %ymm10
-	vpxor	%ymm10, %ymm9, %ymm9
-	vmovdqu	%ymm10, %ymm11
-	vpslld	$18, %ymm11, %ymm11
-	vpsrld	$14, %ymm10, %ymm10
-	vpor	%ymm11, %ymm10, %ymm7
+	vpsrld	$6, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm9
+	vmovdqu	%ymm0, %ymm7
+	vmovdqu	%ymm7, %ymm10
+	vpslld	$21, %ymm10, %ymm10
+	vpsrld	$11, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm7
+	vpxor	%ymm7, %ymm9, %ymm9
+	vmovdqu	%ymm7, %ymm10
+	vpslld	$18, %ymm10, %ymm10
+	vpsrld	$14, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm7
 	vpxor	%ymm7, %ymm9, %ymm7
 	vpaddd	%ymm7, %ymm1, %ymm7
 	vpaddd	%ymm7, %ymm4, %ymm1
@@ -20887,21 +21060,21 @@ slh_dsa_sha2128s_keygen:
 	vpand	%ymm8, %ymm4, %ymm4
 	vpxor	%ymm4, %ymm10, %ymm4
 	vpaddd	%ymm4, %ymm7, %ymm4
-	vmovdqu	%ymm5, %ymm9
-	vmovdqu	%ymm9, %ymm10
+	vmovdqu	%ymm5, %ymm7
+	vmovdqu	%ymm7, %ymm10
 	vpslld	$30, %ymm10, %ymm10
-	vpsrld	$2, %ymm9, %ymm9
-	vpor	%ymm10, %ymm9, %ymm9
-	vmovdqu	%ymm5, %ymm10
-	vmovdqu	%ymm10, %ymm11
-	vpslld	$19, %ymm11, %ymm11
-	vpsrld	$13, %ymm10, %ymm10
-	vpor	%ymm11, %ymm10, %ymm10
-	vpxor	%ymm10, %ymm9, %ymm9
-	vmovdqu	%ymm10, %ymm11
-	vpslld	$23, %ymm11, %ymm11
-	vpsrld	$9, %ymm10, %ymm10
-	vpor	%ymm11, %ymm10, %ymm7
+	vpsrld	$2, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm9
+	vmovdqu	%ymm5, %ymm7
+	vmovdqu	%ymm7, %ymm10
+	vpslld	$19, %ymm10, %ymm10
+	vpsrld	$13, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm7
+	vpxor	%ymm7, %ymm9, %ymm9
+	vmovdqu	%ymm7, %ymm10
+	vpslld	$23, %ymm10, %ymm10
+	vpsrld	$9, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm7
 	vpxor	%ymm7, %ymm9, %ymm7
 	vpaddd	%ymm7, %ymm4, %ymm4
 	vmovdqu	1344(%rcx), %ymm7
@@ -20914,24 +21087,24 @@ slh_dsa_sha2128s_keygen:
 	vpxor	%ymm1, %ymm7, %ymm7
 	vpand	%ymm2, %ymm7, %ymm7
 	vpxor	%ymm7, %ymm10, %ymm7
-	vpaddd	%ymm7, %ymm3, %ymm7
-	vmovdqu	%ymm1, %ymm3
-	vmovdqu	%ymm3, %ymm10
+	vpaddd	%ymm7, %ymm3, %ymm3
+	vmovdqu	%ymm1, %ymm7
+	vmovdqu	%ymm7, %ymm10
 	vpslld	$26, %ymm10, %ymm10
-	vpsrld	$6, %ymm3, %ymm3
-	vpor	%ymm10, %ymm3, %ymm9
-	vmovdqu	%ymm1, %ymm3
-	vmovdqu	%ymm3, %ymm10
+	vpsrld	$6, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm9
+	vmovdqu	%ymm1, %ymm7
+	vmovdqu	%ymm7, %ymm10
 	vpslld	$21, %ymm10, %ymm10
-	vpsrld	$11, %ymm3, %ymm3
-	vpor	%ymm10, %ymm3, %ymm3
-	vpxor	%ymm3, %ymm9, %ymm9
-	vmovdqu	%ymm3, %ymm10
+	vpsrld	$11, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm7
+	vpxor	%ymm7, %ymm9, %ymm9
+	vmovdqu	%ymm7, %ymm10
 	vpslld	$18, %ymm10, %ymm10
-	vpsrld	$14, %ymm3, %ymm3
-	vpor	%ymm10, %ymm3, %ymm3
-	vpxor	%ymm3, %ymm9, %ymm3
-	vpaddd	%ymm3, %ymm7, %ymm7
+	vpsrld	$14, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm7
+	vpxor	%ymm7, %ymm9, %ymm7
+	vpaddd	%ymm7, %ymm3, %ymm7
 	vpaddd	%ymm7, %ymm8, %ymm3
 	vmovdqu	%ymm4, %ymm10
 	vpand	%ymm5, %ymm10, %ymm10
@@ -20969,24 +21142,24 @@ slh_dsa_sha2128s_keygen:
 	vpxor	%ymm3, %ymm7, %ymm7
 	vpand	%ymm0, %ymm7, %ymm7
 	vpxor	%ymm7, %ymm10, %ymm7
-	vpaddd	%ymm7, %ymm2, %ymm7
-	vmovdqu	%ymm3, %ymm2
-	vmovdqu	%ymm2, %ymm10
+	vpaddd	%ymm7, %ymm2, %ymm2
+	vmovdqu	%ymm3, %ymm7
+	vmovdqu	%ymm7, %ymm10
 	vpslld	$26, %ymm10, %ymm10
-	vpsrld	$6, %ymm2, %ymm2
-	vpor	%ymm10, %ymm2, %ymm9
-	vmovdqu	%ymm3, %ymm2
-	vmovdqu	%ymm2, %ymm10
+	vpsrld	$6, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm9
+	vmovdqu	%ymm3, %ymm7
+	vmovdqu	%ymm7, %ymm10
 	vpslld	$21, %ymm10, %ymm10
-	vpsrld	$11, %ymm2, %ymm2
-	vpor	%ymm10, %ymm2, %ymm2
-	vpxor	%ymm2, %ymm9, %ymm9
-	vmovdqu	%ymm2, %ymm10
+	vpsrld	$11, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm7
+	vpxor	%ymm7, %ymm9, %ymm9
+	vmovdqu	%ymm7, %ymm10
 	vpslld	$18, %ymm10, %ymm10
-	vpsrld	$14, %ymm2, %ymm2
-	vpor	%ymm10, %ymm2, %ymm2
-	vpxor	%ymm2, %ymm9, %ymm2
-	vpaddd	%ymm2, %ymm7, %ymm7
+	vpsrld	$14, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm7
+	vpxor	%ymm7, %ymm9, %ymm7
+	vpaddd	%ymm7, %ymm2, %ymm7
 	vpaddd	%ymm7, %ymm6, %ymm2
 	vmovdqu	%ymm8, %ymm10
 	vpand	%ymm4, %ymm10, %ymm10
@@ -20997,21 +21170,21 @@ slh_dsa_sha2128s_keygen:
 	vpand	%ymm5, %ymm6, %ymm6
 	vpxor	%ymm6, %ymm10, %ymm6
 	vpaddd	%ymm6, %ymm7, %ymm6
-	vmovdqu	%ymm8, %ymm9
-	vmovdqu	%ymm9, %ymm10
+	vmovdqu	%ymm8, %ymm7
+	vmovdqu	%ymm7, %ymm10
 	vpslld	$30, %ymm10, %ymm10
-	vpsrld	$2, %ymm9, %ymm9
-	vpor	%ymm10, %ymm9, %ymm9
-	vmovdqu	%ymm8, %ymm10
-	vmovdqu	%ymm10, %ymm11
-	vpslld	$19, %ymm11, %ymm11
-	vpsrld	$13, %ymm10, %ymm10
-	vpor	%ymm11, %ymm10, %ymm10
-	vpxor	%ymm10, %ymm9, %ymm9
-	vmovdqu	%ymm10, %ymm11
-	vpslld	$23, %ymm11, %ymm11
-	vpsrld	$9, %ymm10, %ymm10
-	vpor	%ymm11, %ymm10, %ymm7
+	vpsrld	$2, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm9
+	vmovdqu	%ymm8, %ymm7
+	vmovdqu	%ymm7, %ymm10
+	vpslld	$19, %ymm10, %ymm10
+	vpsrld	$13, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm7
+	vpxor	%ymm7, %ymm9, %ymm9
+	vmovdqu	%ymm7, %ymm10
+	vpslld	$23, %ymm10, %ymm10
+	vpsrld	$9, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm7
 	vpxor	%ymm7, %ymm9, %ymm7
 	vpaddd	%ymm7, %ymm6, %ymm6
 	vmovdqu	1408(%rcx), %ymm7
@@ -21025,21 +21198,21 @@ slh_dsa_sha2128s_keygen:
 	vpand	%ymm1, %ymm7, %ymm7
 	vpxor	%ymm7, %ymm10, %ymm7
 	vpaddd	%ymm7, %ymm0, %ymm0
-	vmovdqu	%ymm2, %ymm9
-	vmovdqu	%ymm9, %ymm10
+	vmovdqu	%ymm2, %ymm7
+	vmovdqu	%ymm7, %ymm10
 	vpslld	$26, %ymm10, %ymm10
-	vpsrld	$6, %ymm9, %ymm9
-	vpor	%ymm10, %ymm9, %ymm9
-	vmovdqu	%ymm2, %ymm10
-	vmovdqu	%ymm10, %ymm11
-	vpslld	$21, %ymm11, %ymm11
-	vpsrld	$11, %ymm10, %ymm10
-	vpor	%ymm11, %ymm10, %ymm10
-	vpxor	%ymm10, %ymm9, %ymm9
-	vmovdqu	%ymm10, %ymm11
-	vpslld	$18, %ymm11, %ymm11
-	vpsrld	$14, %ymm10, %ymm10
-	vpor	%ymm11, %ymm10, %ymm7
+	vpsrld	$6, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm9
+	vmovdqu	%ymm2, %ymm7
+	vmovdqu	%ymm7, %ymm10
+	vpslld	$21, %ymm10, %ymm10
+	vpsrld	$11, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm7
+	vpxor	%ymm7, %ymm9, %ymm9
+	vmovdqu	%ymm7, %ymm10
+	vpslld	$18, %ymm10, %ymm10
+	vpsrld	$14, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm7
 	vpxor	%ymm7, %ymm9, %ymm7
 	vpaddd	%ymm7, %ymm0, %ymm7
 	vpaddd	%ymm7, %ymm5, %ymm0
@@ -21052,21 +21225,21 @@ slh_dsa_sha2128s_keygen:
 	vpand	%ymm4, %ymm5, %ymm5
 	vpxor	%ymm5, %ymm10, %ymm5
 	vpaddd	%ymm5, %ymm7, %ymm5
-	vmovdqu	%ymm6, %ymm9
-	vmovdqu	%ymm9, %ymm10
+	vmovdqu	%ymm6, %ymm7
+	vmovdqu	%ymm7, %ymm10
 	vpslld	$30, %ymm10, %ymm10
-	vpsrld	$2, %ymm9, %ymm9
-	vpor	%ymm10, %ymm9, %ymm9
-	vmovdqu	%ymm6, %ymm10
-	vmovdqu	%ymm10, %ymm11
-	vpslld	$19, %ymm11, %ymm11
-	vpsrld	$13, %ymm10, %ymm10
-	vpor	%ymm11, %ymm10, %ymm10
-	vpxor	%ymm10, %ymm9, %ymm9
-	vmovdqu	%ymm10, %ymm11
-	vpslld	$23, %ymm11, %ymm11
-	vpsrld	$9, %ymm10, %ymm10
-	vpor	%ymm11, %ymm10, %ymm7
+	vpsrld	$2, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm9
+	vmovdqu	%ymm6, %ymm7
+	vmovdqu	%ymm7, %ymm10
+	vpslld	$19, %ymm10, %ymm10
+	vpsrld	$13, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm7
+	vpxor	%ymm7, %ymm9, %ymm9
+	vmovdqu	%ymm7, %ymm10
+	vpslld	$23, %ymm10, %ymm10
+	vpsrld	$9, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm7
 	vpxor	%ymm7, %ymm9, %ymm7
 	vpaddd	%ymm7, %ymm5, %ymm5
 	vmovdqu	1440(%rcx), %ymm7
@@ -21080,21 +21253,21 @@ slh_dsa_sha2128s_keygen:
 	vpand	%ymm3, %ymm7, %ymm7
 	vpxor	%ymm7, %ymm10, %ymm7
 	vpaddd	%ymm7, %ymm1, %ymm1
-	vmovdqu	%ymm0, %ymm9
-	vmovdqu	%ymm9, %ymm10
+	vmovdqu	%ymm0, %ymm7
+	vmovdqu	%ymm7, %ymm10
 	vpslld	$26, %ymm10, %ymm10
-	vpsrld	$6, %ymm9, %ymm9
-	vpor	%ymm10, %ymm9, %ymm9
-	vmovdqu	%ymm0, %ymm10
-	vmovdqu	%ymm10, %ymm11
-	vpslld	$21, %ymm11, %ymm11
-	vpsrld	$11, %ymm10, %ymm10
-	vpor	%ymm11, %ymm10, %ymm10
-	vpxor	%ymm10, %ymm9, %ymm9
-	vmovdqu	%ymm10, %ymm11
-	vpslld	$18, %ymm11, %ymm11
-	vpsrld	$14, %ymm10, %ymm10
-	vpor	%ymm11, %ymm10, %ymm7
+	vpsrld	$6, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm9
+	vmovdqu	%ymm0, %ymm7
+	vmovdqu	%ymm7, %ymm10
+	vpslld	$21, %ymm10, %ymm10
+	vpsrld	$11, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm7
+	vpxor	%ymm7, %ymm9, %ymm9
+	vmovdqu	%ymm7, %ymm10
+	vpslld	$18, %ymm10, %ymm10
+	vpsrld	$14, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm7
 	vpxor	%ymm7, %ymm9, %ymm7
 	vpaddd	%ymm7, %ymm1, %ymm7
 	vpaddd	%ymm7, %ymm4, %ymm1
@@ -21107,21 +21280,21 @@ slh_dsa_sha2128s_keygen:
 	vpand	%ymm8, %ymm4, %ymm4
 	vpxor	%ymm4, %ymm10, %ymm4
 	vpaddd	%ymm4, %ymm7, %ymm4
-	vmovdqu	%ymm5, %ymm9
-	vmovdqu	%ymm9, %ymm10
+	vmovdqu	%ymm5, %ymm7
+	vmovdqu	%ymm7, %ymm10
 	vpslld	$30, %ymm10, %ymm10
-	vpsrld	$2, %ymm9, %ymm9
-	vpor	%ymm10, %ymm9, %ymm9
-	vmovdqu	%ymm5, %ymm10
-	vmovdqu	%ymm10, %ymm11
-	vpslld	$19, %ymm11, %ymm11
-	vpsrld	$13, %ymm10, %ymm10
-	vpor	%ymm11, %ymm10, %ymm10
-	vpxor	%ymm10, %ymm9, %ymm9
-	vmovdqu	%ymm10, %ymm11
-	vpslld	$23, %ymm11, %ymm11
-	vpsrld	$9, %ymm10, %ymm10
-	vpor	%ymm11, %ymm10, %ymm7
+	vpsrld	$2, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm9
+	vmovdqu	%ymm5, %ymm7
+	vmovdqu	%ymm7, %ymm10
+	vpslld	$19, %ymm10, %ymm10
+	vpsrld	$13, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm7
+	vpxor	%ymm7, %ymm9, %ymm9
+	vmovdqu	%ymm7, %ymm10
+	vpslld	$23, %ymm10, %ymm10
+	vpsrld	$9, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm7
 	vpxor	%ymm7, %ymm9, %ymm7
 	vpaddd	%ymm7, %ymm4, %ymm4
 	vmovdqu	1472(%rcx), %ymm7
@@ -21134,24 +21307,24 @@ slh_dsa_sha2128s_keygen:
 	vpxor	%ymm1, %ymm7, %ymm7
 	vpand	%ymm2, %ymm7, %ymm7
 	vpxor	%ymm7, %ymm10, %ymm7
-	vpaddd	%ymm7, %ymm3, %ymm7
-	vmovdqu	%ymm1, %ymm3
-	vmovdqu	%ymm3, %ymm10
+	vpaddd	%ymm7, %ymm3, %ymm3
+	vmovdqu	%ymm1, %ymm7
+	vmovdqu	%ymm7, %ymm10
 	vpslld	$26, %ymm10, %ymm10
-	vpsrld	$6, %ymm3, %ymm3
-	vpor	%ymm10, %ymm3, %ymm9
-	vmovdqu	%ymm1, %ymm3
-	vmovdqu	%ymm3, %ymm10
+	vpsrld	$6, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm9
+	vmovdqu	%ymm1, %ymm7
+	vmovdqu	%ymm7, %ymm10
 	vpslld	$21, %ymm10, %ymm10
-	vpsrld	$11, %ymm3, %ymm3
-	vpor	%ymm10, %ymm3, %ymm3
-	vpxor	%ymm3, %ymm9, %ymm9
-	vmovdqu	%ymm3, %ymm10
+	vpsrld	$11, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm7
+	vpxor	%ymm7, %ymm9, %ymm9
+	vmovdqu	%ymm7, %ymm10
 	vpslld	$18, %ymm10, %ymm10
-	vpsrld	$14, %ymm3, %ymm3
-	vpor	%ymm10, %ymm3, %ymm3
-	vpxor	%ymm3, %ymm9, %ymm3
-	vpaddd	%ymm3, %ymm7, %ymm7
+	vpsrld	$14, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm7
+	vpxor	%ymm7, %ymm9, %ymm7
+	vpaddd	%ymm7, %ymm3, %ymm7
 	vpaddd	%ymm7, %ymm8, %ymm3
 	vmovdqu	%ymm4, %ymm10
 	vpand	%ymm5, %ymm10, %ymm10
@@ -21189,24 +21362,24 @@ slh_dsa_sha2128s_keygen:
 	vpxor	%ymm3, %ymm7, %ymm7
 	vpand	%ymm0, %ymm7, %ymm7
 	vpxor	%ymm7, %ymm10, %ymm7
-	vpaddd	%ymm7, %ymm2, %ymm7
-	vmovdqu	%ymm3, %ymm2
-	vmovdqu	%ymm2, %ymm10
+	vpaddd	%ymm7, %ymm2, %ymm2
+	vmovdqu	%ymm3, %ymm7
+	vmovdqu	%ymm7, %ymm10
 	vpslld	$26, %ymm10, %ymm10
-	vpsrld	$6, %ymm2, %ymm2
-	vpor	%ymm10, %ymm2, %ymm9
-	vmovdqu	%ymm3, %ymm2
-	vmovdqu	%ymm2, %ymm10
+	vpsrld	$6, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm9
+	vmovdqu	%ymm3, %ymm7
+	vmovdqu	%ymm7, %ymm10
 	vpslld	$21, %ymm10, %ymm10
-	vpsrld	$11, %ymm2, %ymm2
-	vpor	%ymm10, %ymm2, %ymm2
-	vpxor	%ymm2, %ymm9, %ymm9
-	vmovdqu	%ymm2, %ymm10
+	vpsrld	$11, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm7
+	vpxor	%ymm7, %ymm9, %ymm9
+	vmovdqu	%ymm7, %ymm10
 	vpslld	$18, %ymm10, %ymm10
-	vpsrld	$14, %ymm2, %ymm2
-	vpor	%ymm10, %ymm2, %ymm2
-	vpxor	%ymm2, %ymm9, %ymm2
-	vpaddd	%ymm2, %ymm7, %ymm7
+	vpsrld	$14, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm7
+	vpxor	%ymm7, %ymm9, %ymm7
+	vpaddd	%ymm7, %ymm2, %ymm7
 	vpaddd	%ymm7, %ymm6, %ymm2
 	vmovdqu	%ymm8, %ymm10
 	vpand	%ymm4, %ymm10, %ymm10
@@ -21217,21 +21390,21 @@ slh_dsa_sha2128s_keygen:
 	vpand	%ymm5, %ymm6, %ymm6
 	vpxor	%ymm6, %ymm10, %ymm6
 	vpaddd	%ymm6, %ymm7, %ymm6
-	vmovdqu	%ymm8, %ymm9
-	vmovdqu	%ymm9, %ymm10
+	vmovdqu	%ymm8, %ymm7
+	vmovdqu	%ymm7, %ymm10
 	vpslld	$30, %ymm10, %ymm10
-	vpsrld	$2, %ymm9, %ymm9
-	vpor	%ymm10, %ymm9, %ymm9
-	vmovdqu	%ymm8, %ymm10
-	vmovdqu	%ymm10, %ymm11
-	vpslld	$19, %ymm11, %ymm11
-	vpsrld	$13, %ymm10, %ymm10
-	vpor	%ymm11, %ymm10, %ymm10
-	vpxor	%ymm10, %ymm9, %ymm9
-	vmovdqu	%ymm10, %ymm11
-	vpslld	$23, %ymm11, %ymm11
-	vpsrld	$9, %ymm10, %ymm10
-	vpor	%ymm11, %ymm10, %ymm7
+	vpsrld	$2, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm9
+	vmovdqu	%ymm8, %ymm7
+	vmovdqu	%ymm7, %ymm10
+	vpslld	$19, %ymm10, %ymm10
+	vpsrld	$13, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm7
+	vpxor	%ymm7, %ymm9, %ymm9
+	vmovdqu	%ymm7, %ymm10
+	vpslld	$23, %ymm10, %ymm10
+	vpsrld	$9, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm7
 	vpxor	%ymm7, %ymm9, %ymm7
 	vpaddd	%ymm7, %ymm6, %ymm6
 	vmovdqu	1536(%rcx), %ymm7
@@ -21245,21 +21418,21 @@ slh_dsa_sha2128s_keygen:
 	vpand	%ymm1, %ymm7, %ymm7
 	vpxor	%ymm7, %ymm10, %ymm7
 	vpaddd	%ymm7, %ymm0, %ymm0
-	vmovdqu	%ymm2, %ymm9
-	vmovdqu	%ymm9, %ymm10
+	vmovdqu	%ymm2, %ymm7
+	vmovdqu	%ymm7, %ymm10
 	vpslld	$26, %ymm10, %ymm10
-	vpsrld	$6, %ymm9, %ymm9
-	vpor	%ymm10, %ymm9, %ymm9
-	vmovdqu	%ymm2, %ymm10
-	vmovdqu	%ymm10, %ymm11
-	vpslld	$21, %ymm11, %ymm11
-	vpsrld	$11, %ymm10, %ymm10
-	vpor	%ymm11, %ymm10, %ymm10
-	vpxor	%ymm10, %ymm9, %ymm9
-	vmovdqu	%ymm10, %ymm11
-	vpslld	$18, %ymm11, %ymm11
-	vpsrld	$14, %ymm10, %ymm10
-	vpor	%ymm11, %ymm10, %ymm7
+	vpsrld	$6, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm9
+	vmovdqu	%ymm2, %ymm7
+	vmovdqu	%ymm7, %ymm10
+	vpslld	$21, %ymm10, %ymm10
+	vpsrld	$11, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm7
+	vpxor	%ymm7, %ymm9, %ymm9
+	vmovdqu	%ymm7, %ymm10
+	vpslld	$18, %ymm10, %ymm10
+	vpsrld	$14, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm7
 	vpxor	%ymm7, %ymm9, %ymm7
 	vpaddd	%ymm7, %ymm0, %ymm7
 	vpaddd	%ymm7, %ymm5, %ymm0
@@ -21272,21 +21445,21 @@ slh_dsa_sha2128s_keygen:
 	vpand	%ymm4, %ymm5, %ymm5
 	vpxor	%ymm5, %ymm10, %ymm5
 	vpaddd	%ymm5, %ymm7, %ymm5
-	vmovdqu	%ymm6, %ymm9
-	vmovdqu	%ymm9, %ymm10
+	vmovdqu	%ymm6, %ymm7
+	vmovdqu	%ymm7, %ymm10
 	vpslld	$30, %ymm10, %ymm10
-	vpsrld	$2, %ymm9, %ymm9
-	vpor	%ymm10, %ymm9, %ymm9
-	vmovdqu	%ymm6, %ymm10
-	vmovdqu	%ymm10, %ymm11
-	vpslld	$19, %ymm11, %ymm11
-	vpsrld	$13, %ymm10, %ymm10
-	vpor	%ymm11, %ymm10, %ymm10
-	vpxor	%ymm10, %ymm9, %ymm9
-	vmovdqu	%ymm10, %ymm11
-	vpslld	$23, %ymm11, %ymm11
-	vpsrld	$9, %ymm10, %ymm10
-	vpor	%ymm11, %ymm10, %ymm7
+	vpsrld	$2, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm9
+	vmovdqu	%ymm6, %ymm7
+	vmovdqu	%ymm7, %ymm10
+	vpslld	$19, %ymm10, %ymm10
+	vpsrld	$13, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm7
+	vpxor	%ymm7, %ymm9, %ymm9
+	vmovdqu	%ymm7, %ymm10
+	vpslld	$23, %ymm10, %ymm10
+	vpsrld	$9, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm7
 	vpxor	%ymm7, %ymm9, %ymm7
 	vpaddd	%ymm7, %ymm5, %ymm5
 	vmovdqu	1568(%rcx), %ymm7
@@ -21300,21 +21473,21 @@ slh_dsa_sha2128s_keygen:
 	vpand	%ymm3, %ymm7, %ymm7
 	vpxor	%ymm7, %ymm10, %ymm7
 	vpaddd	%ymm7, %ymm1, %ymm1
-	vmovdqu	%ymm0, %ymm9
-	vmovdqu	%ymm9, %ymm10
+	vmovdqu	%ymm0, %ymm7
+	vmovdqu	%ymm7, %ymm10
 	vpslld	$26, %ymm10, %ymm10
-	vpsrld	$6, %ymm9, %ymm9
-	vpor	%ymm10, %ymm9, %ymm9
-	vmovdqu	%ymm0, %ymm10
-	vmovdqu	%ymm10, %ymm11
-	vpslld	$21, %ymm11, %ymm11
-	vpsrld	$11, %ymm10, %ymm10
-	vpor	%ymm11, %ymm10, %ymm10
-	vpxor	%ymm10, %ymm9, %ymm9
-	vmovdqu	%ymm10, %ymm11
-	vpslld	$18, %ymm11, %ymm11
-	vpsrld	$14, %ymm10, %ymm10
-	vpor	%ymm11, %ymm10, %ymm7
+	vpsrld	$6, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm9
+	vmovdqu	%ymm0, %ymm7
+	vmovdqu	%ymm7, %ymm10
+	vpslld	$21, %ymm10, %ymm10
+	vpsrld	$11, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm7
+	vpxor	%ymm7, %ymm9, %ymm9
+	vmovdqu	%ymm7, %ymm10
+	vpslld	$18, %ymm10, %ymm10
+	vpsrld	$14, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm7
 	vpxor	%ymm7, %ymm9, %ymm7
 	vpaddd	%ymm7, %ymm1, %ymm7
 	vpaddd	%ymm7, %ymm4, %ymm1
@@ -21327,21 +21500,21 @@ slh_dsa_sha2128s_keygen:
 	vpand	%ymm8, %ymm4, %ymm4
 	vpxor	%ymm4, %ymm10, %ymm4
 	vpaddd	%ymm4, %ymm7, %ymm4
-	vmovdqu	%ymm5, %ymm9
-	vmovdqu	%ymm9, %ymm10
+	vmovdqu	%ymm5, %ymm7
+	vmovdqu	%ymm7, %ymm10
 	vpslld	$30, %ymm10, %ymm10
-	vpsrld	$2, %ymm9, %ymm9
-	vpor	%ymm10, %ymm9, %ymm9
-	vmovdqu	%ymm5, %ymm10
-	vmovdqu	%ymm10, %ymm11
-	vpslld	$19, %ymm11, %ymm11
-	vpsrld	$13, %ymm10, %ymm10
-	vpor	%ymm11, %ymm10, %ymm10
-	vpxor	%ymm10, %ymm9, %ymm9
-	vmovdqu	%ymm10, %ymm11
-	vpslld	$23, %ymm11, %ymm11
-	vpsrld	$9, %ymm10, %ymm10
-	vpor	%ymm11, %ymm10, %ymm7
+	vpsrld	$2, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm9
+	vmovdqu	%ymm5, %ymm7
+	vmovdqu	%ymm7, %ymm10
+	vpslld	$19, %ymm10, %ymm10
+	vpsrld	$13, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm7
+	vpxor	%ymm7, %ymm9, %ymm9
+	vmovdqu	%ymm7, %ymm10
+	vpslld	$23, %ymm10, %ymm10
+	vpsrld	$9, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm7
 	vpxor	%ymm7, %ymm9, %ymm7
 	vpaddd	%ymm7, %ymm4, %ymm4
 	vmovdqu	1600(%rcx), %ymm7
@@ -21354,24 +21527,24 @@ slh_dsa_sha2128s_keygen:
 	vpxor	%ymm1, %ymm7, %ymm7
 	vpand	%ymm2, %ymm7, %ymm7
 	vpxor	%ymm7, %ymm10, %ymm7
-	vpaddd	%ymm7, %ymm3, %ymm7
-	vmovdqu	%ymm1, %ymm3
-	vmovdqu	%ymm3, %ymm10
+	vpaddd	%ymm7, %ymm3, %ymm3
+	vmovdqu	%ymm1, %ymm7
+	vmovdqu	%ymm7, %ymm10
 	vpslld	$26, %ymm10, %ymm10
-	vpsrld	$6, %ymm3, %ymm3
-	vpor	%ymm10, %ymm3, %ymm9
-	vmovdqu	%ymm1, %ymm3
-	vmovdqu	%ymm3, %ymm10
+	vpsrld	$6, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm9
+	vmovdqu	%ymm1, %ymm7
+	vmovdqu	%ymm7, %ymm10
 	vpslld	$21, %ymm10, %ymm10
-	vpsrld	$11, %ymm3, %ymm3
-	vpor	%ymm10, %ymm3, %ymm3
-	vpxor	%ymm3, %ymm9, %ymm9
-	vmovdqu	%ymm3, %ymm10
+	vpsrld	$11, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm7
+	vpxor	%ymm7, %ymm9, %ymm9
+	vmovdqu	%ymm7, %ymm10
 	vpslld	$18, %ymm10, %ymm10
-	vpsrld	$14, %ymm3, %ymm3
-	vpor	%ymm10, %ymm3, %ymm3
-	vpxor	%ymm3, %ymm9, %ymm3
-	vpaddd	%ymm3, %ymm7, %ymm7
+	vpsrld	$14, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm7
+	vpxor	%ymm7, %ymm9, %ymm7
+	vpaddd	%ymm7, %ymm3, %ymm7
 	vpaddd	%ymm7, %ymm8, %ymm3
 	vmovdqu	%ymm4, %ymm10
 	vpand	%ymm5, %ymm10, %ymm10
@@ -21409,24 +21582,24 @@ slh_dsa_sha2128s_keygen:
 	vpxor	%ymm3, %ymm7, %ymm7
 	vpand	%ymm0, %ymm7, %ymm7
 	vpxor	%ymm7, %ymm10, %ymm7
-	vpaddd	%ymm7, %ymm2, %ymm7
-	vmovdqu	%ymm3, %ymm2
-	vmovdqu	%ymm2, %ymm10
+	vpaddd	%ymm7, %ymm2, %ymm2
+	vmovdqu	%ymm3, %ymm7
+	vmovdqu	%ymm7, %ymm10
 	vpslld	$26, %ymm10, %ymm10
-	vpsrld	$6, %ymm2, %ymm2
-	vpor	%ymm10, %ymm2, %ymm9
-	vmovdqu	%ymm3, %ymm2
-	vmovdqu	%ymm2, %ymm10
+	vpsrld	$6, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm9
+	vmovdqu	%ymm3, %ymm7
+	vmovdqu	%ymm7, %ymm10
 	vpslld	$21, %ymm10, %ymm10
-	vpsrld	$11, %ymm2, %ymm2
-	vpor	%ymm10, %ymm2, %ymm2
-	vpxor	%ymm2, %ymm9, %ymm9
-	vmovdqu	%ymm2, %ymm10
+	vpsrld	$11, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm7
+	vpxor	%ymm7, %ymm9, %ymm9
+	vmovdqu	%ymm7, %ymm10
 	vpslld	$18, %ymm10, %ymm10
-	vpsrld	$14, %ymm2, %ymm2
-	vpor	%ymm10, %ymm2, %ymm2
-	vpxor	%ymm2, %ymm9, %ymm2
-	vpaddd	%ymm2, %ymm7, %ymm7
+	vpsrld	$14, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm7
+	vpxor	%ymm7, %ymm9, %ymm7
+	vpaddd	%ymm7, %ymm2, %ymm7
 	vpaddd	%ymm7, %ymm6, %ymm2
 	vmovdqu	%ymm8, %ymm10
 	vpand	%ymm4, %ymm10, %ymm10
@@ -21437,21 +21610,21 @@ slh_dsa_sha2128s_keygen:
 	vpand	%ymm5, %ymm6, %ymm6
 	vpxor	%ymm6, %ymm10, %ymm6
 	vpaddd	%ymm6, %ymm7, %ymm6
-	vmovdqu	%ymm8, %ymm9
-	vmovdqu	%ymm9, %ymm10
+	vmovdqu	%ymm8, %ymm7
+	vmovdqu	%ymm7, %ymm10
 	vpslld	$30, %ymm10, %ymm10
-	vpsrld	$2, %ymm9, %ymm9
-	vpor	%ymm10, %ymm9, %ymm9
-	vmovdqu	%ymm8, %ymm10
-	vmovdqu	%ymm10, %ymm11
-	vpslld	$19, %ymm11, %ymm11
-	vpsrld	$13, %ymm10, %ymm10
-	vpor	%ymm11, %ymm10, %ymm10
-	vpxor	%ymm10, %ymm9, %ymm9
-	vmovdqu	%ymm10, %ymm11
-	vpslld	$23, %ymm11, %ymm11
-	vpsrld	$9, %ymm10, %ymm10
-	vpor	%ymm11, %ymm10, %ymm7
+	vpsrld	$2, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm9
+	vmovdqu	%ymm8, %ymm7
+	vmovdqu	%ymm7, %ymm10
+	vpslld	$19, %ymm10, %ymm10
+	vpsrld	$13, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm7
+	vpxor	%ymm7, %ymm9, %ymm9
+	vmovdqu	%ymm7, %ymm10
+	vpslld	$23, %ymm10, %ymm10
+	vpsrld	$9, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm7
 	vpxor	%ymm7, %ymm9, %ymm7
 	vpaddd	%ymm7, %ymm6, %ymm6
 	vmovdqu	1664(%rcx), %ymm7
@@ -21465,21 +21638,21 @@ slh_dsa_sha2128s_keygen:
 	vpand	%ymm1, %ymm7, %ymm7
 	vpxor	%ymm7, %ymm10, %ymm7
 	vpaddd	%ymm7, %ymm0, %ymm0
-	vmovdqu	%ymm2, %ymm9
-	vmovdqu	%ymm9, %ymm10
+	vmovdqu	%ymm2, %ymm7
+	vmovdqu	%ymm7, %ymm10
 	vpslld	$26, %ymm10, %ymm10
-	vpsrld	$6, %ymm9, %ymm9
-	vpor	%ymm10, %ymm9, %ymm9
-	vmovdqu	%ymm2, %ymm10
-	vmovdqu	%ymm10, %ymm11
-	vpslld	$21, %ymm11, %ymm11
-	vpsrld	$11, %ymm10, %ymm10
-	vpor	%ymm11, %ymm10, %ymm10
-	vpxor	%ymm10, %ymm9, %ymm9
-	vmovdqu	%ymm10, %ymm11
-	vpslld	$18, %ymm11, %ymm11
-	vpsrld	$14, %ymm10, %ymm10
-	vpor	%ymm11, %ymm10, %ymm7
+	vpsrld	$6, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm9
+	vmovdqu	%ymm2, %ymm7
+	vmovdqu	%ymm7, %ymm10
+	vpslld	$21, %ymm10, %ymm10
+	vpsrld	$11, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm7
+	vpxor	%ymm7, %ymm9, %ymm9
+	vmovdqu	%ymm7, %ymm10
+	vpslld	$18, %ymm10, %ymm10
+	vpsrld	$14, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm7
 	vpxor	%ymm7, %ymm9, %ymm7
 	vpaddd	%ymm7, %ymm0, %ymm7
 	vpaddd	%ymm7, %ymm5, %ymm0
@@ -21492,21 +21665,21 @@ slh_dsa_sha2128s_keygen:
 	vpand	%ymm4, %ymm5, %ymm5
 	vpxor	%ymm5, %ymm10, %ymm5
 	vpaddd	%ymm5, %ymm7, %ymm5
-	vmovdqu	%ymm6, %ymm9
-	vmovdqu	%ymm9, %ymm10
+	vmovdqu	%ymm6, %ymm7
+	vmovdqu	%ymm7, %ymm10
 	vpslld	$30, %ymm10, %ymm10
-	vpsrld	$2, %ymm9, %ymm9
-	vpor	%ymm10, %ymm9, %ymm9
-	vmovdqu	%ymm6, %ymm10
-	vmovdqu	%ymm10, %ymm11
-	vpslld	$19, %ymm11, %ymm11
-	vpsrld	$13, %ymm10, %ymm10
-	vpor	%ymm11, %ymm10, %ymm10
-	vpxor	%ymm10, %ymm9, %ymm9
-	vmovdqu	%ymm10, %ymm11
-	vpslld	$23, %ymm11, %ymm11
-	vpsrld	$9, %ymm10, %ymm10
-	vpor	%ymm11, %ymm10, %ymm7
+	vpsrld	$2, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm9
+	vmovdqu	%ymm6, %ymm7
+	vmovdqu	%ymm7, %ymm10
+	vpslld	$19, %ymm10, %ymm10
+	vpsrld	$13, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm7
+	vpxor	%ymm7, %ymm9, %ymm9
+	vmovdqu	%ymm7, %ymm10
+	vpslld	$23, %ymm10, %ymm10
+	vpsrld	$9, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm7
 	vpxor	%ymm7, %ymm9, %ymm7
 	vpaddd	%ymm7, %ymm5, %ymm5
 	vmovdqu	1696(%rcx), %ymm7
@@ -21520,21 +21693,21 @@ slh_dsa_sha2128s_keygen:
 	vpand	%ymm3, %ymm7, %ymm7
 	vpxor	%ymm7, %ymm10, %ymm7
 	vpaddd	%ymm7, %ymm1, %ymm1
-	vmovdqu	%ymm0, %ymm9
-	vmovdqu	%ymm9, %ymm10
+	vmovdqu	%ymm0, %ymm7
+	vmovdqu	%ymm7, %ymm10
 	vpslld	$26, %ymm10, %ymm10
-	vpsrld	$6, %ymm9, %ymm9
-	vpor	%ymm10, %ymm9, %ymm9
-	vmovdqu	%ymm0, %ymm10
-	vmovdqu	%ymm10, %ymm11
-	vpslld	$21, %ymm11, %ymm11
-	vpsrld	$11, %ymm10, %ymm10
-	vpor	%ymm11, %ymm10, %ymm10
-	vpxor	%ymm10, %ymm9, %ymm9
-	vmovdqu	%ymm10, %ymm11
-	vpslld	$18, %ymm11, %ymm11
-	vpsrld	$14, %ymm10, %ymm10
-	vpor	%ymm11, %ymm10, %ymm7
+	vpsrld	$6, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm9
+	vmovdqu	%ymm0, %ymm7
+	vmovdqu	%ymm7, %ymm10
+	vpslld	$21, %ymm10, %ymm10
+	vpsrld	$11, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm7
+	vpxor	%ymm7, %ymm9, %ymm9
+	vmovdqu	%ymm7, %ymm10
+	vpslld	$18, %ymm10, %ymm10
+	vpsrld	$14, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm7
 	vpxor	%ymm7, %ymm9, %ymm7
 	vpaddd	%ymm7, %ymm1, %ymm7
 	vpaddd	%ymm7, %ymm4, %ymm1
@@ -21547,21 +21720,21 @@ slh_dsa_sha2128s_keygen:
 	vpand	%ymm8, %ymm4, %ymm4
 	vpxor	%ymm4, %ymm10, %ymm4
 	vpaddd	%ymm4, %ymm7, %ymm4
-	vmovdqu	%ymm5, %ymm9
-	vmovdqu	%ymm9, %ymm10
+	vmovdqu	%ymm5, %ymm7
+	vmovdqu	%ymm7, %ymm10
 	vpslld	$30, %ymm10, %ymm10
-	vpsrld	$2, %ymm9, %ymm9
-	vpor	%ymm10, %ymm9, %ymm9
-	vmovdqu	%ymm5, %ymm10
-	vmovdqu	%ymm10, %ymm11
-	vpslld	$19, %ymm11, %ymm11
-	vpsrld	$13, %ymm10, %ymm10
-	vpor	%ymm11, %ymm10, %ymm10
-	vpxor	%ymm10, %ymm9, %ymm9
-	vmovdqu	%ymm10, %ymm11
-	vpslld	$23, %ymm11, %ymm11
-	vpsrld	$9, %ymm10, %ymm10
-	vpor	%ymm11, %ymm10, %ymm7
+	vpsrld	$2, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm9
+	vmovdqu	%ymm5, %ymm7
+	vmovdqu	%ymm7, %ymm10
+	vpslld	$19, %ymm10, %ymm10
+	vpsrld	$13, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm7
+	vpxor	%ymm7, %ymm9, %ymm9
+	vmovdqu	%ymm7, %ymm10
+	vpslld	$23, %ymm10, %ymm10
+	vpsrld	$9, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm7
 	vpxor	%ymm7, %ymm9, %ymm7
 	vpaddd	%ymm7, %ymm4, %ymm4
 	vmovdqu	1728(%rcx), %ymm7
@@ -21574,24 +21747,24 @@ slh_dsa_sha2128s_keygen:
 	vpxor	%ymm1, %ymm7, %ymm7
 	vpand	%ymm2, %ymm7, %ymm7
 	vpxor	%ymm7, %ymm10, %ymm7
-	vpaddd	%ymm7, %ymm3, %ymm7
-	vmovdqu	%ymm1, %ymm3
-	vmovdqu	%ymm3, %ymm10
+	vpaddd	%ymm7, %ymm3, %ymm3
+	vmovdqu	%ymm1, %ymm7
+	vmovdqu	%ymm7, %ymm10
 	vpslld	$26, %ymm10, %ymm10
-	vpsrld	$6, %ymm3, %ymm3
-	vpor	%ymm10, %ymm3, %ymm9
-	vmovdqu	%ymm1, %ymm3
-	vmovdqu	%ymm3, %ymm10
+	vpsrld	$6, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm9
+	vmovdqu	%ymm1, %ymm7
+	vmovdqu	%ymm7, %ymm10
 	vpslld	$21, %ymm10, %ymm10
-	vpsrld	$11, %ymm3, %ymm3
-	vpor	%ymm10, %ymm3, %ymm3
-	vpxor	%ymm3, %ymm9, %ymm9
-	vmovdqu	%ymm3, %ymm10
+	vpsrld	$11, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm7
+	vpxor	%ymm7, %ymm9, %ymm9
+	vmovdqu	%ymm7, %ymm10
 	vpslld	$18, %ymm10, %ymm10
-	vpsrld	$14, %ymm3, %ymm3
-	vpor	%ymm10, %ymm3, %ymm3
-	vpxor	%ymm3, %ymm9, %ymm3
-	vpaddd	%ymm3, %ymm7, %ymm7
+	vpsrld	$14, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm7
+	vpxor	%ymm7, %ymm9, %ymm7
+	vpaddd	%ymm7, %ymm3, %ymm7
 	vpaddd	%ymm7, %ymm8, %ymm3
 	vmovdqu	%ymm4, %ymm10
 	vpand	%ymm5, %ymm10, %ymm10
@@ -21629,24 +21802,24 @@ slh_dsa_sha2128s_keygen:
 	vpxor	%ymm3, %ymm7, %ymm7
 	vpand	%ymm0, %ymm7, %ymm7
 	vpxor	%ymm7, %ymm10, %ymm7
-	vpaddd	%ymm7, %ymm2, %ymm7
-	vmovdqu	%ymm3, %ymm2
-	vmovdqu	%ymm2, %ymm10
+	vpaddd	%ymm7, %ymm2, %ymm2
+	vmovdqu	%ymm3, %ymm7
+	vmovdqu	%ymm7, %ymm10
 	vpslld	$26, %ymm10, %ymm10
-	vpsrld	$6, %ymm2, %ymm2
-	vpor	%ymm10, %ymm2, %ymm9
-	vmovdqu	%ymm3, %ymm2
-	vmovdqu	%ymm2, %ymm10
+	vpsrld	$6, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm9
+	vmovdqu	%ymm3, %ymm7
+	vmovdqu	%ymm7, %ymm10
 	vpslld	$21, %ymm10, %ymm10
-	vpsrld	$11, %ymm2, %ymm2
-	vpor	%ymm10, %ymm2, %ymm2
-	vpxor	%ymm2, %ymm9, %ymm9
-	vmovdqu	%ymm2, %ymm10
+	vpsrld	$11, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm7
+	vpxor	%ymm7, %ymm9, %ymm9
+	vmovdqu	%ymm7, %ymm10
 	vpslld	$18, %ymm10, %ymm10
-	vpsrld	$14, %ymm2, %ymm2
-	vpor	%ymm10, %ymm2, %ymm2
-	vpxor	%ymm2, %ymm9, %ymm2
-	vpaddd	%ymm2, %ymm7, %ymm7
+	vpsrld	$14, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm7
+	vpxor	%ymm7, %ymm9, %ymm7
+	vpaddd	%ymm7, %ymm2, %ymm7
 	vpaddd	%ymm7, %ymm6, %ymm2
 	vmovdqu	%ymm8, %ymm10
 	vpand	%ymm4, %ymm10, %ymm10
@@ -21657,21 +21830,21 @@ slh_dsa_sha2128s_keygen:
 	vpand	%ymm5, %ymm6, %ymm6
 	vpxor	%ymm6, %ymm10, %ymm6
 	vpaddd	%ymm6, %ymm7, %ymm6
-	vmovdqu	%ymm8, %ymm9
-	vmovdqu	%ymm9, %ymm10
+	vmovdqu	%ymm8, %ymm7
+	vmovdqu	%ymm7, %ymm10
 	vpslld	$30, %ymm10, %ymm10
-	vpsrld	$2, %ymm9, %ymm9
-	vpor	%ymm10, %ymm9, %ymm9
-	vmovdqu	%ymm8, %ymm10
-	vmovdqu	%ymm10, %ymm11
-	vpslld	$19, %ymm11, %ymm11
-	vpsrld	$13, %ymm10, %ymm10
-	vpor	%ymm11, %ymm10, %ymm10
-	vpxor	%ymm10, %ymm9, %ymm9
-	vmovdqu	%ymm10, %ymm11
-	vpslld	$23, %ymm11, %ymm11
-	vpsrld	$9, %ymm10, %ymm10
-	vpor	%ymm11, %ymm10, %ymm7
+	vpsrld	$2, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm9
+	vmovdqu	%ymm8, %ymm7
+	vmovdqu	%ymm7, %ymm10
+	vpslld	$19, %ymm10, %ymm10
+	vpsrld	$13, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm7
+	vpxor	%ymm7, %ymm9, %ymm9
+	vmovdqu	%ymm7, %ymm10
+	vpslld	$23, %ymm10, %ymm10
+	vpsrld	$9, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm7
 	vpxor	%ymm7, %ymm9, %ymm7
 	vpaddd	%ymm7, %ymm6, %ymm6
 	vmovdqu	1792(%rcx), %ymm7
@@ -21685,21 +21858,21 @@ slh_dsa_sha2128s_keygen:
 	vpand	%ymm1, %ymm7, %ymm7
 	vpxor	%ymm7, %ymm10, %ymm7
 	vpaddd	%ymm7, %ymm0, %ymm0
-	vmovdqu	%ymm2, %ymm9
-	vmovdqu	%ymm9, %ymm10
+	vmovdqu	%ymm2, %ymm7
+	vmovdqu	%ymm7, %ymm10
 	vpslld	$26, %ymm10, %ymm10
-	vpsrld	$6, %ymm9, %ymm9
-	vpor	%ymm10, %ymm9, %ymm9
-	vmovdqu	%ymm2, %ymm10
-	vmovdqu	%ymm10, %ymm11
-	vpslld	$21, %ymm11, %ymm11
-	vpsrld	$11, %ymm10, %ymm10
-	vpor	%ymm11, %ymm10, %ymm10
-	vpxor	%ymm10, %ymm9, %ymm9
-	vmovdqu	%ymm10, %ymm11
-	vpslld	$18, %ymm11, %ymm11
-	vpsrld	$14, %ymm10, %ymm10
-	vpor	%ymm11, %ymm10, %ymm7
+	vpsrld	$6, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm9
+	vmovdqu	%ymm2, %ymm7
+	vmovdqu	%ymm7, %ymm10
+	vpslld	$21, %ymm10, %ymm10
+	vpsrld	$11, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm7
+	vpxor	%ymm7, %ymm9, %ymm9
+	vmovdqu	%ymm7, %ymm10
+	vpslld	$18, %ymm10, %ymm10
+	vpsrld	$14, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm7
 	vpxor	%ymm7, %ymm9, %ymm7
 	vpaddd	%ymm7, %ymm0, %ymm7
 	vpaddd	%ymm7, %ymm5, %ymm0
@@ -21712,21 +21885,21 @@ slh_dsa_sha2128s_keygen:
 	vpand	%ymm4, %ymm5, %ymm5
 	vpxor	%ymm5, %ymm10, %ymm5
 	vpaddd	%ymm5, %ymm7, %ymm5
-	vmovdqu	%ymm6, %ymm9
-	vmovdqu	%ymm9, %ymm10
+	vmovdqu	%ymm6, %ymm7
+	vmovdqu	%ymm7, %ymm10
 	vpslld	$30, %ymm10, %ymm10
-	vpsrld	$2, %ymm9, %ymm9
-	vpor	%ymm10, %ymm9, %ymm9
-	vmovdqu	%ymm6, %ymm10
-	vmovdqu	%ymm10, %ymm11
-	vpslld	$19, %ymm11, %ymm11
-	vpsrld	$13, %ymm10, %ymm10
-	vpor	%ymm11, %ymm10, %ymm10
-	vpxor	%ymm10, %ymm9, %ymm9
-	vmovdqu	%ymm10, %ymm11
-	vpslld	$23, %ymm11, %ymm11
-	vpsrld	$9, %ymm10, %ymm10
-	vpor	%ymm11, %ymm10, %ymm7
+	vpsrld	$2, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm9
+	vmovdqu	%ymm6, %ymm7
+	vmovdqu	%ymm7, %ymm10
+	vpslld	$19, %ymm10, %ymm10
+	vpsrld	$13, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm7
+	vpxor	%ymm7, %ymm9, %ymm9
+	vmovdqu	%ymm7, %ymm10
+	vpslld	$23, %ymm10, %ymm10
+	vpsrld	$9, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm7
 	vpxor	%ymm7, %ymm9, %ymm7
 	vpaddd	%ymm7, %ymm5, %ymm5
 	vmovdqu	1824(%rcx), %ymm7
@@ -21740,21 +21913,21 @@ slh_dsa_sha2128s_keygen:
 	vpand	%ymm3, %ymm7, %ymm7
 	vpxor	%ymm7, %ymm10, %ymm7
 	vpaddd	%ymm7, %ymm1, %ymm1
-	vmovdqu	%ymm0, %ymm9
-	vmovdqu	%ymm9, %ymm10
+	vmovdqu	%ymm0, %ymm7
+	vmovdqu	%ymm7, %ymm10
 	vpslld	$26, %ymm10, %ymm10
-	vpsrld	$6, %ymm9, %ymm9
-	vpor	%ymm10, %ymm9, %ymm9
-	vmovdqu	%ymm0, %ymm10
-	vmovdqu	%ymm10, %ymm11
-	vpslld	$21, %ymm11, %ymm11
-	vpsrld	$11, %ymm10, %ymm10
-	vpor	%ymm11, %ymm10, %ymm10
-	vpxor	%ymm10, %ymm9, %ymm9
-	vmovdqu	%ymm10, %ymm11
-	vpslld	$18, %ymm11, %ymm11
-	vpsrld	$14, %ymm10, %ymm10
-	vpor	%ymm11, %ymm10, %ymm7
+	vpsrld	$6, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm9
+	vmovdqu	%ymm0, %ymm7
+	vmovdqu	%ymm7, %ymm10
+	vpslld	$21, %ymm10, %ymm10
+	vpsrld	$11, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm7
+	vpxor	%ymm7, %ymm9, %ymm9
+	vmovdqu	%ymm7, %ymm10
+	vpslld	$18, %ymm10, %ymm10
+	vpsrld	$14, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm7
 	vpxor	%ymm7, %ymm9, %ymm7
 	vpaddd	%ymm7, %ymm1, %ymm7
 	vpaddd	%ymm7, %ymm4, %ymm1
@@ -21767,21 +21940,21 @@ slh_dsa_sha2128s_keygen:
 	vpand	%ymm8, %ymm4, %ymm4
 	vpxor	%ymm4, %ymm10, %ymm4
 	vpaddd	%ymm4, %ymm7, %ymm4
-	vmovdqu	%ymm5, %ymm9
-	vmovdqu	%ymm9, %ymm10
+	vmovdqu	%ymm5, %ymm7
+	vmovdqu	%ymm7, %ymm10
 	vpslld	$30, %ymm10, %ymm10
-	vpsrld	$2, %ymm9, %ymm9
-	vpor	%ymm10, %ymm9, %ymm9
-	vmovdqu	%ymm5, %ymm10
-	vmovdqu	%ymm10, %ymm11
-	vpslld	$19, %ymm11, %ymm11
-	vpsrld	$13, %ymm10, %ymm10
-	vpor	%ymm11, %ymm10, %ymm10
-	vpxor	%ymm10, %ymm9, %ymm9
-	vmovdqu	%ymm10, %ymm11
-	vpslld	$23, %ymm11, %ymm11
-	vpsrld	$9, %ymm10, %ymm10
-	vpor	%ymm11, %ymm10, %ymm7
+	vpsrld	$2, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm9
+	vmovdqu	%ymm5, %ymm7
+	vmovdqu	%ymm7, %ymm10
+	vpslld	$19, %ymm10, %ymm10
+	vpsrld	$13, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm7
+	vpxor	%ymm7, %ymm9, %ymm9
+	vmovdqu	%ymm7, %ymm10
+	vpslld	$23, %ymm10, %ymm10
+	vpsrld	$9, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm7
 	vpxor	%ymm7, %ymm9, %ymm7
 	vpaddd	%ymm7, %ymm4, %ymm4
 	vmovdqu	1856(%rcx), %ymm7
@@ -21794,24 +21967,24 @@ slh_dsa_sha2128s_keygen:
 	vpxor	%ymm1, %ymm7, %ymm7
 	vpand	%ymm2, %ymm7, %ymm7
 	vpxor	%ymm7, %ymm10, %ymm7
-	vpaddd	%ymm7, %ymm3, %ymm7
-	vmovdqu	%ymm1, %ymm3
-	vmovdqu	%ymm3, %ymm10
+	vpaddd	%ymm7, %ymm3, %ymm3
+	vmovdqu	%ymm1, %ymm7
+	vmovdqu	%ymm7, %ymm10
 	vpslld	$26, %ymm10, %ymm10
-	vpsrld	$6, %ymm3, %ymm3
-	vpor	%ymm10, %ymm3, %ymm9
-	vmovdqu	%ymm1, %ymm3
-	vmovdqu	%ymm3, %ymm10
+	vpsrld	$6, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm9
+	vmovdqu	%ymm1, %ymm7
+	vmovdqu	%ymm7, %ymm10
 	vpslld	$21, %ymm10, %ymm10
-	vpsrld	$11, %ymm3, %ymm3
-	vpor	%ymm10, %ymm3, %ymm3
-	vpxor	%ymm3, %ymm9, %ymm9
-	vmovdqu	%ymm3, %ymm10
+	vpsrld	$11, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm7
+	vpxor	%ymm7, %ymm9, %ymm9
+	vmovdqu	%ymm7, %ymm10
 	vpslld	$18, %ymm10, %ymm10
-	vpsrld	$14, %ymm3, %ymm3
-	vpor	%ymm10, %ymm3, %ymm3
-	vpxor	%ymm3, %ymm9, %ymm3
-	vpaddd	%ymm3, %ymm7, %ymm7
+	vpsrld	$14, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm7
+	vpxor	%ymm7, %ymm9, %ymm7
+	vpaddd	%ymm7, %ymm3, %ymm7
 	vpaddd	%ymm7, %ymm8, %ymm3
 	vmovdqu	%ymm4, %ymm10
 	vpand	%ymm5, %ymm10, %ymm10
@@ -21849,24 +22022,24 @@ slh_dsa_sha2128s_keygen:
 	vpxor	%ymm3, %ymm7, %ymm7
 	vpand	%ymm0, %ymm7, %ymm7
 	vpxor	%ymm7, %ymm10, %ymm7
-	vpaddd	%ymm7, %ymm2, %ymm7
-	vmovdqu	%ymm3, %ymm2
-	vmovdqu	%ymm2, %ymm10
+	vpaddd	%ymm7, %ymm2, %ymm2
+	vmovdqu	%ymm3, %ymm7
+	vmovdqu	%ymm7, %ymm10
 	vpslld	$26, %ymm10, %ymm10
-	vpsrld	$6, %ymm2, %ymm2
-	vpor	%ymm10, %ymm2, %ymm9
-	vmovdqu	%ymm3, %ymm2
-	vmovdqu	%ymm2, %ymm10
+	vpsrld	$6, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm9
+	vmovdqu	%ymm3, %ymm7
+	vmovdqu	%ymm7, %ymm10
 	vpslld	$21, %ymm10, %ymm10
-	vpsrld	$11, %ymm2, %ymm2
-	vpor	%ymm10, %ymm2, %ymm2
-	vpxor	%ymm2, %ymm9, %ymm9
-	vmovdqu	%ymm2, %ymm10
+	vpsrld	$11, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm7
+	vpxor	%ymm7, %ymm9, %ymm9
+	vmovdqu	%ymm7, %ymm10
 	vpslld	$18, %ymm10, %ymm10
-	vpsrld	$14, %ymm2, %ymm2
-	vpor	%ymm10, %ymm2, %ymm2
-	vpxor	%ymm2, %ymm9, %ymm2
-	vpaddd	%ymm2, %ymm7, %ymm7
+	vpsrld	$14, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm7
+	vpxor	%ymm7, %ymm9, %ymm7
+	vpaddd	%ymm7, %ymm2, %ymm7
 	vpaddd	%ymm7, %ymm6, %ymm2
 	vmovdqu	%ymm8, %ymm10
 	vpand	%ymm4, %ymm10, %ymm10
@@ -21877,21 +22050,21 @@ slh_dsa_sha2128s_keygen:
 	vpand	%ymm5, %ymm6, %ymm6
 	vpxor	%ymm6, %ymm10, %ymm6
 	vpaddd	%ymm6, %ymm7, %ymm6
-	vmovdqu	%ymm8, %ymm9
-	vmovdqu	%ymm9, %ymm10
+	vmovdqu	%ymm8, %ymm7
+	vmovdqu	%ymm7, %ymm10
 	vpslld	$30, %ymm10, %ymm10
-	vpsrld	$2, %ymm9, %ymm9
-	vpor	%ymm10, %ymm9, %ymm9
-	vmovdqu	%ymm8, %ymm10
-	vmovdqu	%ymm10, %ymm11
-	vpslld	$19, %ymm11, %ymm11
-	vpsrld	$13, %ymm10, %ymm10
-	vpor	%ymm11, %ymm10, %ymm10
-	vpxor	%ymm10, %ymm9, %ymm9
-	vmovdqu	%ymm10, %ymm11
-	vpslld	$23, %ymm11, %ymm11
-	vpsrld	$9, %ymm10, %ymm10
-	vpor	%ymm11, %ymm10, %ymm7
+	vpsrld	$2, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm9
+	vmovdqu	%ymm8, %ymm7
+	vmovdqu	%ymm7, %ymm10
+	vpslld	$19, %ymm10, %ymm10
+	vpsrld	$13, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm7
+	vpxor	%ymm7, %ymm9, %ymm9
+	vmovdqu	%ymm7, %ymm10
+	vpslld	$23, %ymm10, %ymm10
+	vpsrld	$9, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm7
 	vpxor	%ymm7, %ymm9, %ymm7
 	vpaddd	%ymm7, %ymm6, %ymm6
 	vmovdqu	1920(%rcx), %ymm7
@@ -21905,21 +22078,21 @@ slh_dsa_sha2128s_keygen:
 	vpand	%ymm1, %ymm7, %ymm7
 	vpxor	%ymm7, %ymm10, %ymm7
 	vpaddd	%ymm7, %ymm0, %ymm0
-	vmovdqu	%ymm2, %ymm9
-	vmovdqu	%ymm9, %ymm10
+	vmovdqu	%ymm2, %ymm7
+	vmovdqu	%ymm7, %ymm10
 	vpslld	$26, %ymm10, %ymm10
-	vpsrld	$6, %ymm9, %ymm9
-	vpor	%ymm10, %ymm9, %ymm9
-	vmovdqu	%ymm2, %ymm10
-	vmovdqu	%ymm10, %ymm11
-	vpslld	$21, %ymm11, %ymm11
-	vpsrld	$11, %ymm10, %ymm10
-	vpor	%ymm11, %ymm10, %ymm10
-	vpxor	%ymm10, %ymm9, %ymm9
-	vmovdqu	%ymm10, %ymm11
-	vpslld	$18, %ymm11, %ymm11
-	vpsrld	$14, %ymm10, %ymm10
-	vpor	%ymm11, %ymm10, %ymm7
+	vpsrld	$6, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm9
+	vmovdqu	%ymm2, %ymm7
+	vmovdqu	%ymm7, %ymm10
+	vpslld	$21, %ymm10, %ymm10
+	vpsrld	$11, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm7
+	vpxor	%ymm7, %ymm9, %ymm9
+	vmovdqu	%ymm7, %ymm10
+	vpslld	$18, %ymm10, %ymm10
+	vpsrld	$14, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm7
 	vpxor	%ymm7, %ymm9, %ymm7
 	vpaddd	%ymm7, %ymm0, %ymm7
 	vpaddd	%ymm7, %ymm5, %ymm0
@@ -21932,21 +22105,21 @@ slh_dsa_sha2128s_keygen:
 	vpand	%ymm4, %ymm5, %ymm5
 	vpxor	%ymm5, %ymm10, %ymm5
 	vpaddd	%ymm5, %ymm7, %ymm5
-	vmovdqu	%ymm6, %ymm9
-	vmovdqu	%ymm9, %ymm10
+	vmovdqu	%ymm6, %ymm7
+	vmovdqu	%ymm7, %ymm10
 	vpslld	$30, %ymm10, %ymm10
-	vpsrld	$2, %ymm9, %ymm9
-	vpor	%ymm10, %ymm9, %ymm9
-	vmovdqu	%ymm6, %ymm10
-	vmovdqu	%ymm10, %ymm11
-	vpslld	$19, %ymm11, %ymm11
-	vpsrld	$13, %ymm10, %ymm10
-	vpor	%ymm11, %ymm10, %ymm10
-	vpxor	%ymm10, %ymm9, %ymm9
-	vmovdqu	%ymm10, %ymm11
-	vpslld	$23, %ymm11, %ymm11
-	vpsrld	$9, %ymm10, %ymm10
-	vpor	%ymm11, %ymm10, %ymm7
+	vpsrld	$2, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm9
+	vmovdqu	%ymm6, %ymm7
+	vmovdqu	%ymm7, %ymm10
+	vpslld	$19, %ymm10, %ymm10
+	vpsrld	$13, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm7
+	vpxor	%ymm7, %ymm9, %ymm9
+	vmovdqu	%ymm7, %ymm10
+	vpslld	$23, %ymm10, %ymm10
+	vpsrld	$9, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm7
 	vpxor	%ymm7, %ymm9, %ymm7
 	vpaddd	%ymm7, %ymm5, %ymm5
 	vmovdqu	1952(%rcx), %ymm7
@@ -21960,21 +22133,21 @@ slh_dsa_sha2128s_keygen:
 	vpand	%ymm3, %ymm7, %ymm7
 	vpxor	%ymm7, %ymm10, %ymm7
 	vpaddd	%ymm7, %ymm1, %ymm1
-	vmovdqu	%ymm0, %ymm9
-	vmovdqu	%ymm9, %ymm10
+	vmovdqu	%ymm0, %ymm7
+	vmovdqu	%ymm7, %ymm10
 	vpslld	$26, %ymm10, %ymm10
-	vpsrld	$6, %ymm9, %ymm9
-	vpor	%ymm10, %ymm9, %ymm9
-	vmovdqu	%ymm0, %ymm10
-	vmovdqu	%ymm10, %ymm11
-	vpslld	$21, %ymm11, %ymm11
-	vpsrld	$11, %ymm10, %ymm10
-	vpor	%ymm11, %ymm10, %ymm10
-	vpxor	%ymm10, %ymm9, %ymm9
-	vmovdqu	%ymm10, %ymm11
-	vpslld	$18, %ymm11, %ymm11
-	vpsrld	$14, %ymm10, %ymm10
-	vpor	%ymm11, %ymm10, %ymm7
+	vpsrld	$6, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm9
+	vmovdqu	%ymm0, %ymm7
+	vmovdqu	%ymm7, %ymm10
+	vpslld	$21, %ymm10, %ymm10
+	vpsrld	$11, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm7
+	vpxor	%ymm7, %ymm9, %ymm9
+	vmovdqu	%ymm7, %ymm10
+	vpslld	$18, %ymm10, %ymm10
+	vpsrld	$14, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm7
 	vpxor	%ymm7, %ymm9, %ymm7
 	vpaddd	%ymm7, %ymm1, %ymm7
 	vpaddd	%ymm7, %ymm4, %ymm1
@@ -21987,21 +22160,21 @@ slh_dsa_sha2128s_keygen:
 	vpand	%ymm8, %ymm4, %ymm4
 	vpxor	%ymm4, %ymm10, %ymm4
 	vpaddd	%ymm4, %ymm7, %ymm4
-	vmovdqu	%ymm5, %ymm9
-	vmovdqu	%ymm9, %ymm10
+	vmovdqu	%ymm5, %ymm7
+	vmovdqu	%ymm7, %ymm10
 	vpslld	$30, %ymm10, %ymm10
-	vpsrld	$2, %ymm9, %ymm9
-	vpor	%ymm10, %ymm9, %ymm9
-	vmovdqu	%ymm5, %ymm10
-	vmovdqu	%ymm10, %ymm11
-	vpslld	$19, %ymm11, %ymm11
-	vpsrld	$13, %ymm10, %ymm10
-	vpor	%ymm11, %ymm10, %ymm10
-	vpxor	%ymm10, %ymm9, %ymm9
-	vmovdqu	%ymm10, %ymm11
-	vpslld	$23, %ymm11, %ymm11
-	vpsrld	$9, %ymm10, %ymm10
-	vpor	%ymm11, %ymm10, %ymm7
+	vpsrld	$2, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm9
+	vmovdqu	%ymm5, %ymm7
+	vmovdqu	%ymm7, %ymm10
+	vpslld	$19, %ymm10, %ymm10
+	vpsrld	$13, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm7
+	vpxor	%ymm7, %ymm9, %ymm9
+	vmovdqu	%ymm7, %ymm10
+	vpslld	$23, %ymm10, %ymm10
+	vpsrld	$9, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm7
 	vpxor	%ymm7, %ymm9, %ymm7
 	vpaddd	%ymm7, %ymm4, %ymm4
 	vmovdqu	1984(%rcx), %ymm7
@@ -22014,24 +22187,24 @@ slh_dsa_sha2128s_keygen:
 	vpxor	%ymm1, %ymm7, %ymm7
 	vpand	%ymm2, %ymm7, %ymm7
 	vpxor	%ymm7, %ymm10, %ymm7
-	vpaddd	%ymm7, %ymm3, %ymm7
-	vmovdqu	%ymm1, %ymm3
-	vmovdqu	%ymm3, %ymm10
+	vpaddd	%ymm7, %ymm3, %ymm3
+	vmovdqu	%ymm1, %ymm7
+	vmovdqu	%ymm7, %ymm10
 	vpslld	$26, %ymm10, %ymm10
-	vpsrld	$6, %ymm3, %ymm3
-	vpor	%ymm10, %ymm3, %ymm9
-	vmovdqu	%ymm1, %ymm3
-	vmovdqu	%ymm3, %ymm10
+	vpsrld	$6, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm9
+	vmovdqu	%ymm1, %ymm7
+	vmovdqu	%ymm7, %ymm10
 	vpslld	$21, %ymm10, %ymm10
-	vpsrld	$11, %ymm3, %ymm3
-	vpor	%ymm10, %ymm3, %ymm3
-	vpxor	%ymm3, %ymm9, %ymm9
-	vmovdqu	%ymm3, %ymm10
+	vpsrld	$11, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm7
+	vpxor	%ymm7, %ymm9, %ymm9
+	vmovdqu	%ymm7, %ymm10
 	vpslld	$18, %ymm10, %ymm10
-	vpsrld	$14, %ymm3, %ymm3
-	vpor	%ymm10, %ymm3, %ymm3
-	vpxor	%ymm3, %ymm9, %ymm3
-	vpaddd	%ymm3, %ymm7, %ymm7
+	vpsrld	$14, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm7
+	vpxor	%ymm7, %ymm9, %ymm7
+	vpaddd	%ymm7, %ymm3, %ymm7
 	vpaddd	%ymm7, %ymm8, %ymm3
 	vmovdqu	%ymm4, %ymm10
 	vpand	%ymm5, %ymm10, %ymm10
@@ -22069,24 +22242,24 @@ slh_dsa_sha2128s_keygen:
 	vpxor	%ymm3, %ymm7, %ymm7
 	vpand	%ymm0, %ymm7, %ymm7
 	vpxor	%ymm7, %ymm10, %ymm7
-	vpaddd	%ymm7, %ymm2, %ymm7
-	vmovdqu	%ymm3, %ymm2
-	vmovdqu	%ymm2, %ymm10
+	vpaddd	%ymm7, %ymm2, %ymm2
+	vmovdqu	%ymm3, %ymm7
+	vmovdqu	%ymm7, %ymm10
 	vpslld	$26, %ymm10, %ymm10
-	vpsrld	$6, %ymm2, %ymm2
-	vpor	%ymm10, %ymm2, %ymm9
-	vmovdqu	%ymm3, %ymm2
-	vmovdqu	%ymm2, %ymm10
+	vpsrld	$6, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm9
+	vmovdqu	%ymm3, %ymm7
+	vmovdqu	%ymm7, %ymm10
 	vpslld	$21, %ymm10, %ymm10
-	vpsrld	$11, %ymm2, %ymm2
-	vpor	%ymm10, %ymm2, %ymm2
-	vpxor	%ymm2, %ymm9, %ymm9
-	vmovdqu	%ymm2, %ymm10
+	vpsrld	$11, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm7
+	vpxor	%ymm7, %ymm9, %ymm9
+	vmovdqu	%ymm7, %ymm10
 	vpslld	$18, %ymm10, %ymm10
-	vpsrld	$14, %ymm2, %ymm2
-	vpor	%ymm10, %ymm2, %ymm2
-	vpxor	%ymm2, %ymm9, %ymm2
-	vpaddd	%ymm2, %ymm7, %ymm2
+	vpsrld	$14, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm7
+	vpxor	%ymm7, %ymm9, %ymm7
+	vpaddd	%ymm7, %ymm2, %ymm2
 	vmovdqu	%ymm3, %ymm7
 	vpaddd	%ymm2, %ymm6, %ymm6
 	vmovdqu	%ymm8, %ymm10
@@ -22149,6 +22322,8 @@ slh_dsa_sha2128s_keygen:
 	vmovdqu	%ymm8, 448(%rcx)
 	vmovdqu	%ymm8, 480(%rcx)
 	movq	312(%rsp), %r13
+	lfence
+	movq	$0, %rbp
 	subq	%r12, %r13
 	jmp 	.Lsha256_parallel_adrsc__absorb_fixed$23
 .Lsha256_parallel_adrsc__absorb_fixed$24:
@@ -24353,21 +24528,21 @@ slh_dsa_sha2128s_keygen:
 	vpand	%ymm0, %ymm7, %ymm7
 	vpxor	%ymm7, %ymm10, %ymm7
 	vpaddd	%ymm7, %ymm6, %ymm6
-	vmovdqu	%ymm3, %ymm9
-	vmovdqu	%ymm9, %ymm10
+	vmovdqu	%ymm3, %ymm7
+	vmovdqu	%ymm7, %ymm10
 	vpslld	$26, %ymm10, %ymm10
-	vpsrld	$6, %ymm9, %ymm9
-	vpor	%ymm10, %ymm9, %ymm9
-	vmovdqu	%ymm3, %ymm10
-	vmovdqu	%ymm10, %ymm11
-	vpslld	$21, %ymm11, %ymm11
-	vpsrld	$11, %ymm10, %ymm10
-	vpor	%ymm11, %ymm10, %ymm10
-	vpxor	%ymm10, %ymm9, %ymm9
-	vmovdqu	%ymm10, %ymm11
-	vpslld	$18, %ymm11, %ymm11
-	vpsrld	$14, %ymm10, %ymm10
-	vpor	%ymm11, %ymm10, %ymm7
+	vpsrld	$6, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm9
+	vmovdqu	%ymm3, %ymm7
+	vmovdqu	%ymm7, %ymm10
+	vpslld	$21, %ymm10, %ymm10
+	vpsrld	$11, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm7
+	vpxor	%ymm7, %ymm9, %ymm9
+	vmovdqu	%ymm7, %ymm10
+	vpslld	$18, %ymm10, %ymm10
+	vpsrld	$14, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm7
 	vpxor	%ymm7, %ymm9, %ymm7
 	vpaddd	%ymm7, %ymm6, %ymm6
 	vpaddd	%ymm6, %ymm2, %ymm2
@@ -24380,21 +24555,21 @@ slh_dsa_sha2128s_keygen:
 	vpand	%ymm5, %ymm7, %ymm7
 	vpxor	%ymm7, %ymm10, %ymm7
 	vpaddd	%ymm7, %ymm6, %ymm6
-	vmovdqu	%ymm8, %ymm9
-	vmovdqu	%ymm9, %ymm10
+	vmovdqu	%ymm8, %ymm7
+	vmovdqu	%ymm7, %ymm10
 	vpslld	$30, %ymm10, %ymm10
-	vpsrld	$2, %ymm9, %ymm9
-	vpor	%ymm10, %ymm9, %ymm9
-	vmovdqu	%ymm8, %ymm10
-	vmovdqu	%ymm10, %ymm11
-	vpslld	$19, %ymm11, %ymm11
-	vpsrld	$13, %ymm10, %ymm10
-	vpor	%ymm11, %ymm10, %ymm10
-	vpxor	%ymm10, %ymm9, %ymm9
-	vmovdqu	%ymm10, %ymm11
-	vpslld	$23, %ymm11, %ymm11
-	vpsrld	$9, %ymm10, %ymm10
-	vpor	%ymm11, %ymm10, %ymm7
+	vpsrld	$2, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm9
+	vmovdqu	%ymm8, %ymm7
+	vmovdqu	%ymm7, %ymm10
+	vpslld	$19, %ymm10, %ymm10
+	vpsrld	$13, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm7
+	vpxor	%ymm7, %ymm9, %ymm9
+	vmovdqu	%ymm7, %ymm10
+	vpslld	$23, %ymm10, %ymm10
+	vpsrld	$9, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm7
 	vpxor	%ymm7, %ymm9, %ymm7
 	vpaddd	%ymm7, %ymm6, %ymm6
 	vmovdqu	128(%rcx), %ymm7
@@ -24408,21 +24583,21 @@ slh_dsa_sha2128s_keygen:
 	vpand	%ymm1, %ymm7, %ymm7
 	vpxor	%ymm7, %ymm10, %ymm7
 	vpaddd	%ymm7, %ymm0, %ymm0
-	vmovdqu	%ymm2, %ymm9
-	vmovdqu	%ymm9, %ymm10
+	vmovdqu	%ymm2, %ymm7
+	vmovdqu	%ymm7, %ymm10
 	vpslld	$26, %ymm10, %ymm10
-	vpsrld	$6, %ymm9, %ymm9
-	vpor	%ymm10, %ymm9, %ymm9
-	vmovdqu	%ymm2, %ymm10
-	vmovdqu	%ymm10, %ymm11
-	vpslld	$21, %ymm11, %ymm11
-	vpsrld	$11, %ymm10, %ymm10
-	vpor	%ymm11, %ymm10, %ymm10
-	vpxor	%ymm10, %ymm9, %ymm9
-	vmovdqu	%ymm10, %ymm11
-	vpslld	$18, %ymm11, %ymm11
-	vpsrld	$14, %ymm10, %ymm10
-	vpor	%ymm11, %ymm10, %ymm7
+	vpsrld	$6, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm9
+	vmovdqu	%ymm2, %ymm7
+	vmovdqu	%ymm7, %ymm10
+	vpslld	$21, %ymm10, %ymm10
+	vpsrld	$11, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm7
+	vpxor	%ymm7, %ymm9, %ymm9
+	vmovdqu	%ymm7, %ymm10
+	vpslld	$18, %ymm10, %ymm10
+	vpsrld	$14, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm7
 	vpxor	%ymm7, %ymm9, %ymm7
 	vpaddd	%ymm7, %ymm0, %ymm7
 	vpaddd	%ymm7, %ymm5, %ymm0
@@ -24435,21 +24610,21 @@ slh_dsa_sha2128s_keygen:
 	vpand	%ymm4, %ymm5, %ymm5
 	vpxor	%ymm5, %ymm10, %ymm5
 	vpaddd	%ymm5, %ymm7, %ymm5
-	vmovdqu	%ymm6, %ymm9
-	vmovdqu	%ymm9, %ymm10
+	vmovdqu	%ymm6, %ymm7
+	vmovdqu	%ymm7, %ymm10
 	vpslld	$30, %ymm10, %ymm10
-	vpsrld	$2, %ymm9, %ymm9
-	vpor	%ymm10, %ymm9, %ymm9
-	vmovdqu	%ymm6, %ymm10
-	vmovdqu	%ymm10, %ymm11
-	vpslld	$19, %ymm11, %ymm11
-	vpsrld	$13, %ymm10, %ymm10
-	vpor	%ymm11, %ymm10, %ymm10
-	vpxor	%ymm10, %ymm9, %ymm9
-	vmovdqu	%ymm10, %ymm11
-	vpslld	$23, %ymm11, %ymm11
-	vpsrld	$9, %ymm10, %ymm10
-	vpor	%ymm11, %ymm10, %ymm7
+	vpsrld	$2, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm9
+	vmovdqu	%ymm6, %ymm7
+	vmovdqu	%ymm7, %ymm10
+	vpslld	$19, %ymm10, %ymm10
+	vpsrld	$13, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm7
+	vpxor	%ymm7, %ymm9, %ymm9
+	vmovdqu	%ymm7, %ymm10
+	vpslld	$23, %ymm10, %ymm10
+	vpsrld	$9, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm7
 	vpxor	%ymm7, %ymm9, %ymm7
 	vpaddd	%ymm7, %ymm5, %ymm5
 	vmovdqu	160(%rcx), %ymm7
@@ -24463,21 +24638,21 @@ slh_dsa_sha2128s_keygen:
 	vpand	%ymm3, %ymm7, %ymm7
 	vpxor	%ymm7, %ymm10, %ymm7
 	vpaddd	%ymm7, %ymm1, %ymm1
-	vmovdqu	%ymm0, %ymm9
-	vmovdqu	%ymm9, %ymm10
+	vmovdqu	%ymm0, %ymm7
+	vmovdqu	%ymm7, %ymm10
 	vpslld	$26, %ymm10, %ymm10
-	vpsrld	$6, %ymm9, %ymm9
-	vpor	%ymm10, %ymm9, %ymm9
-	vmovdqu	%ymm0, %ymm10
-	vmovdqu	%ymm10, %ymm11
-	vpslld	$21, %ymm11, %ymm11
-	vpsrld	$11, %ymm10, %ymm10
-	vpor	%ymm11, %ymm10, %ymm10
-	vpxor	%ymm10, %ymm9, %ymm9
-	vmovdqu	%ymm10, %ymm11
-	vpslld	$18, %ymm11, %ymm11
-	vpsrld	$14, %ymm10, %ymm10
-	vpor	%ymm11, %ymm10, %ymm7
+	vpsrld	$6, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm9
+	vmovdqu	%ymm0, %ymm7
+	vmovdqu	%ymm7, %ymm10
+	vpslld	$21, %ymm10, %ymm10
+	vpsrld	$11, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm7
+	vpxor	%ymm7, %ymm9, %ymm9
+	vmovdqu	%ymm7, %ymm10
+	vpslld	$18, %ymm10, %ymm10
+	vpsrld	$14, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm7
 	vpxor	%ymm7, %ymm9, %ymm7
 	vpaddd	%ymm7, %ymm1, %ymm7
 	vpaddd	%ymm7, %ymm4, %ymm1
@@ -24490,21 +24665,21 @@ slh_dsa_sha2128s_keygen:
 	vpand	%ymm8, %ymm4, %ymm4
 	vpxor	%ymm4, %ymm10, %ymm4
 	vpaddd	%ymm4, %ymm7, %ymm4
-	vmovdqu	%ymm5, %ymm9
-	vmovdqu	%ymm9, %ymm10
+	vmovdqu	%ymm5, %ymm7
+	vmovdqu	%ymm7, %ymm10
 	vpslld	$30, %ymm10, %ymm10
-	vpsrld	$2, %ymm9, %ymm9
-	vpor	%ymm10, %ymm9, %ymm9
-	vmovdqu	%ymm5, %ymm10
-	vmovdqu	%ymm10, %ymm11
-	vpslld	$19, %ymm11, %ymm11
-	vpsrld	$13, %ymm10, %ymm10
-	vpor	%ymm11, %ymm10, %ymm10
-	vpxor	%ymm10, %ymm9, %ymm9
-	vmovdqu	%ymm10, %ymm11
-	vpslld	$23, %ymm11, %ymm11
-	vpsrld	$9, %ymm10, %ymm10
-	vpor	%ymm11, %ymm10, %ymm7
+	vpsrld	$2, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm9
+	vmovdqu	%ymm5, %ymm7
+	vmovdqu	%ymm7, %ymm10
+	vpslld	$19, %ymm10, %ymm10
+	vpsrld	$13, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm7
+	vpxor	%ymm7, %ymm9, %ymm9
+	vmovdqu	%ymm7, %ymm10
+	vpslld	$23, %ymm10, %ymm10
+	vpsrld	$9, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm7
 	vpxor	%ymm7, %ymm9, %ymm7
 	vpaddd	%ymm7, %ymm4, %ymm4
 	vmovdqu	192(%rcx), %ymm7
@@ -24517,24 +24692,24 @@ slh_dsa_sha2128s_keygen:
 	vpxor	%ymm1, %ymm7, %ymm7
 	vpand	%ymm2, %ymm7, %ymm7
 	vpxor	%ymm7, %ymm10, %ymm7
-	vpaddd	%ymm7, %ymm3, %ymm7
-	vmovdqu	%ymm1, %ymm3
-	vmovdqu	%ymm3, %ymm10
+	vpaddd	%ymm7, %ymm3, %ymm3
+	vmovdqu	%ymm1, %ymm7
+	vmovdqu	%ymm7, %ymm10
 	vpslld	$26, %ymm10, %ymm10
-	vpsrld	$6, %ymm3, %ymm3
-	vpor	%ymm10, %ymm3, %ymm9
-	vmovdqu	%ymm1, %ymm3
-	vmovdqu	%ymm3, %ymm10
+	vpsrld	$6, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm9
+	vmovdqu	%ymm1, %ymm7
+	vmovdqu	%ymm7, %ymm10
 	vpslld	$21, %ymm10, %ymm10
-	vpsrld	$11, %ymm3, %ymm3
-	vpor	%ymm10, %ymm3, %ymm3
-	vpxor	%ymm3, %ymm9, %ymm9
-	vmovdqu	%ymm3, %ymm10
+	vpsrld	$11, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm7
+	vpxor	%ymm7, %ymm9, %ymm9
+	vmovdqu	%ymm7, %ymm10
 	vpslld	$18, %ymm10, %ymm10
-	vpsrld	$14, %ymm3, %ymm3
-	vpor	%ymm10, %ymm3, %ymm3
-	vpxor	%ymm3, %ymm9, %ymm3
-	vpaddd	%ymm3, %ymm7, %ymm7
+	vpsrld	$14, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm7
+	vpxor	%ymm7, %ymm9, %ymm7
+	vpaddd	%ymm7, %ymm3, %ymm7
 	vpaddd	%ymm7, %ymm8, %ymm3
 	vmovdqu	%ymm4, %ymm10
 	vpand	%ymm5, %ymm10, %ymm10
@@ -24572,24 +24747,24 @@ slh_dsa_sha2128s_keygen:
 	vpxor	%ymm3, %ymm7, %ymm7
 	vpand	%ymm0, %ymm7, %ymm7
 	vpxor	%ymm7, %ymm10, %ymm7
-	vpaddd	%ymm7, %ymm2, %ymm7
-	vmovdqu	%ymm3, %ymm2
-	vmovdqu	%ymm2, %ymm10
+	vpaddd	%ymm7, %ymm2, %ymm2
+	vmovdqu	%ymm3, %ymm7
+	vmovdqu	%ymm7, %ymm10
 	vpslld	$26, %ymm10, %ymm10
-	vpsrld	$6, %ymm2, %ymm2
-	vpor	%ymm10, %ymm2, %ymm9
-	vmovdqu	%ymm3, %ymm2
-	vmovdqu	%ymm2, %ymm10
+	vpsrld	$6, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm9
+	vmovdqu	%ymm3, %ymm7
+	vmovdqu	%ymm7, %ymm10
 	vpslld	$21, %ymm10, %ymm10
-	vpsrld	$11, %ymm2, %ymm2
-	vpor	%ymm10, %ymm2, %ymm2
-	vpxor	%ymm2, %ymm9, %ymm9
-	vmovdqu	%ymm2, %ymm10
+	vpsrld	$11, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm7
+	vpxor	%ymm7, %ymm9, %ymm9
+	vmovdqu	%ymm7, %ymm10
 	vpslld	$18, %ymm10, %ymm10
-	vpsrld	$14, %ymm2, %ymm2
-	vpor	%ymm10, %ymm2, %ymm2
-	vpxor	%ymm2, %ymm9, %ymm2
-	vpaddd	%ymm2, %ymm7, %ymm7
+	vpsrld	$14, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm7
+	vpxor	%ymm7, %ymm9, %ymm7
+	vpaddd	%ymm7, %ymm2, %ymm7
 	vpaddd	%ymm7, %ymm6, %ymm2
 	vmovdqu	%ymm8, %ymm10
 	vpand	%ymm4, %ymm10, %ymm10
@@ -24600,21 +24775,21 @@ slh_dsa_sha2128s_keygen:
 	vpand	%ymm5, %ymm6, %ymm6
 	vpxor	%ymm6, %ymm10, %ymm6
 	vpaddd	%ymm6, %ymm7, %ymm6
-	vmovdqu	%ymm8, %ymm9
-	vmovdqu	%ymm9, %ymm10
+	vmovdqu	%ymm8, %ymm7
+	vmovdqu	%ymm7, %ymm10
 	vpslld	$30, %ymm10, %ymm10
-	vpsrld	$2, %ymm9, %ymm9
-	vpor	%ymm10, %ymm9, %ymm9
-	vmovdqu	%ymm8, %ymm10
-	vmovdqu	%ymm10, %ymm11
-	vpslld	$19, %ymm11, %ymm11
-	vpsrld	$13, %ymm10, %ymm10
-	vpor	%ymm11, %ymm10, %ymm10
-	vpxor	%ymm10, %ymm9, %ymm9
-	vmovdqu	%ymm10, %ymm11
-	vpslld	$23, %ymm11, %ymm11
-	vpsrld	$9, %ymm10, %ymm10
-	vpor	%ymm11, %ymm10, %ymm7
+	vpsrld	$2, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm9
+	vmovdqu	%ymm8, %ymm7
+	vmovdqu	%ymm7, %ymm10
+	vpslld	$19, %ymm10, %ymm10
+	vpsrld	$13, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm7
+	vpxor	%ymm7, %ymm9, %ymm9
+	vmovdqu	%ymm7, %ymm10
+	vpslld	$23, %ymm10, %ymm10
+	vpsrld	$9, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm7
 	vpxor	%ymm7, %ymm9, %ymm7
 	vpaddd	%ymm7, %ymm6, %ymm6
 	vmovdqu	256(%rcx), %ymm7
@@ -24628,21 +24803,21 @@ slh_dsa_sha2128s_keygen:
 	vpand	%ymm1, %ymm7, %ymm7
 	vpxor	%ymm7, %ymm10, %ymm7
 	vpaddd	%ymm7, %ymm0, %ymm0
-	vmovdqu	%ymm2, %ymm9
-	vmovdqu	%ymm9, %ymm10
+	vmovdqu	%ymm2, %ymm7
+	vmovdqu	%ymm7, %ymm10
 	vpslld	$26, %ymm10, %ymm10
-	vpsrld	$6, %ymm9, %ymm9
-	vpor	%ymm10, %ymm9, %ymm9
-	vmovdqu	%ymm2, %ymm10
-	vmovdqu	%ymm10, %ymm11
-	vpslld	$21, %ymm11, %ymm11
-	vpsrld	$11, %ymm10, %ymm10
-	vpor	%ymm11, %ymm10, %ymm10
-	vpxor	%ymm10, %ymm9, %ymm9
-	vmovdqu	%ymm10, %ymm11
-	vpslld	$18, %ymm11, %ymm11
-	vpsrld	$14, %ymm10, %ymm10
-	vpor	%ymm11, %ymm10, %ymm7
+	vpsrld	$6, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm9
+	vmovdqu	%ymm2, %ymm7
+	vmovdqu	%ymm7, %ymm10
+	vpslld	$21, %ymm10, %ymm10
+	vpsrld	$11, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm7
+	vpxor	%ymm7, %ymm9, %ymm9
+	vmovdqu	%ymm7, %ymm10
+	vpslld	$18, %ymm10, %ymm10
+	vpsrld	$14, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm7
 	vpxor	%ymm7, %ymm9, %ymm7
 	vpaddd	%ymm7, %ymm0, %ymm7
 	vpaddd	%ymm7, %ymm5, %ymm0
@@ -24655,21 +24830,21 @@ slh_dsa_sha2128s_keygen:
 	vpand	%ymm4, %ymm5, %ymm5
 	vpxor	%ymm5, %ymm10, %ymm5
 	vpaddd	%ymm5, %ymm7, %ymm5
-	vmovdqu	%ymm6, %ymm9
-	vmovdqu	%ymm9, %ymm10
+	vmovdqu	%ymm6, %ymm7
+	vmovdqu	%ymm7, %ymm10
 	vpslld	$30, %ymm10, %ymm10
-	vpsrld	$2, %ymm9, %ymm9
-	vpor	%ymm10, %ymm9, %ymm9
-	vmovdqu	%ymm6, %ymm10
-	vmovdqu	%ymm10, %ymm11
-	vpslld	$19, %ymm11, %ymm11
-	vpsrld	$13, %ymm10, %ymm10
-	vpor	%ymm11, %ymm10, %ymm10
-	vpxor	%ymm10, %ymm9, %ymm9
-	vmovdqu	%ymm10, %ymm11
-	vpslld	$23, %ymm11, %ymm11
-	vpsrld	$9, %ymm10, %ymm10
-	vpor	%ymm11, %ymm10, %ymm7
+	vpsrld	$2, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm9
+	vmovdqu	%ymm6, %ymm7
+	vmovdqu	%ymm7, %ymm10
+	vpslld	$19, %ymm10, %ymm10
+	vpsrld	$13, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm7
+	vpxor	%ymm7, %ymm9, %ymm9
+	vmovdqu	%ymm7, %ymm10
+	vpslld	$23, %ymm10, %ymm10
+	vpsrld	$9, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm7
 	vpxor	%ymm7, %ymm9, %ymm7
 	vpaddd	%ymm7, %ymm5, %ymm5
 	vmovdqu	288(%rcx), %ymm7
@@ -24683,21 +24858,21 @@ slh_dsa_sha2128s_keygen:
 	vpand	%ymm3, %ymm7, %ymm7
 	vpxor	%ymm7, %ymm10, %ymm7
 	vpaddd	%ymm7, %ymm1, %ymm1
-	vmovdqu	%ymm0, %ymm9
-	vmovdqu	%ymm9, %ymm10
+	vmovdqu	%ymm0, %ymm7
+	vmovdqu	%ymm7, %ymm10
 	vpslld	$26, %ymm10, %ymm10
-	vpsrld	$6, %ymm9, %ymm9
-	vpor	%ymm10, %ymm9, %ymm9
-	vmovdqu	%ymm0, %ymm10
-	vmovdqu	%ymm10, %ymm11
-	vpslld	$21, %ymm11, %ymm11
-	vpsrld	$11, %ymm10, %ymm10
-	vpor	%ymm11, %ymm10, %ymm10
-	vpxor	%ymm10, %ymm9, %ymm9
-	vmovdqu	%ymm10, %ymm11
-	vpslld	$18, %ymm11, %ymm11
-	vpsrld	$14, %ymm10, %ymm10
-	vpor	%ymm11, %ymm10, %ymm7
+	vpsrld	$6, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm9
+	vmovdqu	%ymm0, %ymm7
+	vmovdqu	%ymm7, %ymm10
+	vpslld	$21, %ymm10, %ymm10
+	vpsrld	$11, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm7
+	vpxor	%ymm7, %ymm9, %ymm9
+	vmovdqu	%ymm7, %ymm10
+	vpslld	$18, %ymm10, %ymm10
+	vpsrld	$14, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm7
 	vpxor	%ymm7, %ymm9, %ymm7
 	vpaddd	%ymm7, %ymm1, %ymm7
 	vpaddd	%ymm7, %ymm4, %ymm1
@@ -24710,21 +24885,21 @@ slh_dsa_sha2128s_keygen:
 	vpand	%ymm8, %ymm4, %ymm4
 	vpxor	%ymm4, %ymm10, %ymm4
 	vpaddd	%ymm4, %ymm7, %ymm4
-	vmovdqu	%ymm5, %ymm9
-	vmovdqu	%ymm9, %ymm10
+	vmovdqu	%ymm5, %ymm7
+	vmovdqu	%ymm7, %ymm10
 	vpslld	$30, %ymm10, %ymm10
-	vpsrld	$2, %ymm9, %ymm9
-	vpor	%ymm10, %ymm9, %ymm9
-	vmovdqu	%ymm5, %ymm10
-	vmovdqu	%ymm10, %ymm11
-	vpslld	$19, %ymm11, %ymm11
-	vpsrld	$13, %ymm10, %ymm10
-	vpor	%ymm11, %ymm10, %ymm10
-	vpxor	%ymm10, %ymm9, %ymm9
-	vmovdqu	%ymm10, %ymm11
-	vpslld	$23, %ymm11, %ymm11
-	vpsrld	$9, %ymm10, %ymm10
-	vpor	%ymm11, %ymm10, %ymm7
+	vpsrld	$2, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm9
+	vmovdqu	%ymm5, %ymm7
+	vmovdqu	%ymm7, %ymm10
+	vpslld	$19, %ymm10, %ymm10
+	vpsrld	$13, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm7
+	vpxor	%ymm7, %ymm9, %ymm9
+	vmovdqu	%ymm7, %ymm10
+	vpslld	$23, %ymm10, %ymm10
+	vpsrld	$9, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm7
 	vpxor	%ymm7, %ymm9, %ymm7
 	vpaddd	%ymm7, %ymm4, %ymm4
 	vmovdqu	320(%rcx), %ymm7
@@ -24737,24 +24912,24 @@ slh_dsa_sha2128s_keygen:
 	vpxor	%ymm1, %ymm7, %ymm7
 	vpand	%ymm2, %ymm7, %ymm7
 	vpxor	%ymm7, %ymm10, %ymm7
-	vpaddd	%ymm7, %ymm3, %ymm7
-	vmovdqu	%ymm1, %ymm3
-	vmovdqu	%ymm3, %ymm10
+	vpaddd	%ymm7, %ymm3, %ymm3
+	vmovdqu	%ymm1, %ymm7
+	vmovdqu	%ymm7, %ymm10
 	vpslld	$26, %ymm10, %ymm10
-	vpsrld	$6, %ymm3, %ymm3
-	vpor	%ymm10, %ymm3, %ymm9
-	vmovdqu	%ymm1, %ymm3
-	vmovdqu	%ymm3, %ymm10
+	vpsrld	$6, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm9
+	vmovdqu	%ymm1, %ymm7
+	vmovdqu	%ymm7, %ymm10
 	vpslld	$21, %ymm10, %ymm10
-	vpsrld	$11, %ymm3, %ymm3
-	vpor	%ymm10, %ymm3, %ymm3
-	vpxor	%ymm3, %ymm9, %ymm9
-	vmovdqu	%ymm3, %ymm10
+	vpsrld	$11, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm7
+	vpxor	%ymm7, %ymm9, %ymm9
+	vmovdqu	%ymm7, %ymm10
 	vpslld	$18, %ymm10, %ymm10
-	vpsrld	$14, %ymm3, %ymm3
-	vpor	%ymm10, %ymm3, %ymm3
-	vpxor	%ymm3, %ymm9, %ymm3
-	vpaddd	%ymm3, %ymm7, %ymm7
+	vpsrld	$14, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm7
+	vpxor	%ymm7, %ymm9, %ymm7
+	vpaddd	%ymm7, %ymm3, %ymm7
 	vpaddd	%ymm7, %ymm8, %ymm3
 	vmovdqu	%ymm4, %ymm10
 	vpand	%ymm5, %ymm10, %ymm10
@@ -24792,24 +24967,24 @@ slh_dsa_sha2128s_keygen:
 	vpxor	%ymm3, %ymm7, %ymm7
 	vpand	%ymm0, %ymm7, %ymm7
 	vpxor	%ymm7, %ymm10, %ymm7
-	vpaddd	%ymm7, %ymm2, %ymm7
-	vmovdqu	%ymm3, %ymm2
-	vmovdqu	%ymm2, %ymm10
+	vpaddd	%ymm7, %ymm2, %ymm2
+	vmovdqu	%ymm3, %ymm7
+	vmovdqu	%ymm7, %ymm10
 	vpslld	$26, %ymm10, %ymm10
-	vpsrld	$6, %ymm2, %ymm2
-	vpor	%ymm10, %ymm2, %ymm9
-	vmovdqu	%ymm3, %ymm2
-	vmovdqu	%ymm2, %ymm10
+	vpsrld	$6, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm9
+	vmovdqu	%ymm3, %ymm7
+	vmovdqu	%ymm7, %ymm10
 	vpslld	$21, %ymm10, %ymm10
-	vpsrld	$11, %ymm2, %ymm2
-	vpor	%ymm10, %ymm2, %ymm2
-	vpxor	%ymm2, %ymm9, %ymm9
-	vmovdqu	%ymm2, %ymm10
+	vpsrld	$11, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm7
+	vpxor	%ymm7, %ymm9, %ymm9
+	vmovdqu	%ymm7, %ymm10
 	vpslld	$18, %ymm10, %ymm10
-	vpsrld	$14, %ymm2, %ymm2
-	vpor	%ymm10, %ymm2, %ymm2
-	vpxor	%ymm2, %ymm9, %ymm2
-	vpaddd	%ymm2, %ymm7, %ymm7
+	vpsrld	$14, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm7
+	vpxor	%ymm7, %ymm9, %ymm7
+	vpaddd	%ymm7, %ymm2, %ymm7
 	vpaddd	%ymm7, %ymm6, %ymm2
 	vmovdqu	%ymm8, %ymm10
 	vpand	%ymm4, %ymm10, %ymm10
@@ -24820,21 +24995,21 @@ slh_dsa_sha2128s_keygen:
 	vpand	%ymm5, %ymm6, %ymm6
 	vpxor	%ymm6, %ymm10, %ymm6
 	vpaddd	%ymm6, %ymm7, %ymm6
-	vmovdqu	%ymm8, %ymm9
-	vmovdqu	%ymm9, %ymm10
+	vmovdqu	%ymm8, %ymm7
+	vmovdqu	%ymm7, %ymm10
 	vpslld	$30, %ymm10, %ymm10
-	vpsrld	$2, %ymm9, %ymm9
-	vpor	%ymm10, %ymm9, %ymm9
-	vmovdqu	%ymm8, %ymm10
-	vmovdqu	%ymm10, %ymm11
-	vpslld	$19, %ymm11, %ymm11
-	vpsrld	$13, %ymm10, %ymm10
-	vpor	%ymm11, %ymm10, %ymm10
-	vpxor	%ymm10, %ymm9, %ymm9
-	vmovdqu	%ymm10, %ymm11
-	vpslld	$23, %ymm11, %ymm11
-	vpsrld	$9, %ymm10, %ymm10
-	vpor	%ymm11, %ymm10, %ymm7
+	vpsrld	$2, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm9
+	vmovdqu	%ymm8, %ymm7
+	vmovdqu	%ymm7, %ymm10
+	vpslld	$19, %ymm10, %ymm10
+	vpsrld	$13, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm7
+	vpxor	%ymm7, %ymm9, %ymm9
+	vmovdqu	%ymm7, %ymm10
+	vpslld	$23, %ymm10, %ymm10
+	vpsrld	$9, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm7
 	vpxor	%ymm7, %ymm9, %ymm7
 	vpaddd	%ymm7, %ymm6, %ymm6
 	vmovdqu	384(%rcx), %ymm7
@@ -24848,21 +25023,21 @@ slh_dsa_sha2128s_keygen:
 	vpand	%ymm1, %ymm7, %ymm7
 	vpxor	%ymm7, %ymm10, %ymm7
 	vpaddd	%ymm7, %ymm0, %ymm0
-	vmovdqu	%ymm2, %ymm9
-	vmovdqu	%ymm9, %ymm10
+	vmovdqu	%ymm2, %ymm7
+	vmovdqu	%ymm7, %ymm10
 	vpslld	$26, %ymm10, %ymm10
-	vpsrld	$6, %ymm9, %ymm9
-	vpor	%ymm10, %ymm9, %ymm9
-	vmovdqu	%ymm2, %ymm10
-	vmovdqu	%ymm10, %ymm11
-	vpslld	$21, %ymm11, %ymm11
-	vpsrld	$11, %ymm10, %ymm10
-	vpor	%ymm11, %ymm10, %ymm10
-	vpxor	%ymm10, %ymm9, %ymm9
-	vmovdqu	%ymm10, %ymm11
-	vpslld	$18, %ymm11, %ymm11
-	vpsrld	$14, %ymm10, %ymm10
-	vpor	%ymm11, %ymm10, %ymm7
+	vpsrld	$6, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm9
+	vmovdqu	%ymm2, %ymm7
+	vmovdqu	%ymm7, %ymm10
+	vpslld	$21, %ymm10, %ymm10
+	vpsrld	$11, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm7
+	vpxor	%ymm7, %ymm9, %ymm9
+	vmovdqu	%ymm7, %ymm10
+	vpslld	$18, %ymm10, %ymm10
+	vpsrld	$14, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm7
 	vpxor	%ymm7, %ymm9, %ymm7
 	vpaddd	%ymm7, %ymm0, %ymm7
 	vpaddd	%ymm7, %ymm5, %ymm0
@@ -24875,21 +25050,21 @@ slh_dsa_sha2128s_keygen:
 	vpand	%ymm4, %ymm5, %ymm5
 	vpxor	%ymm5, %ymm10, %ymm5
 	vpaddd	%ymm5, %ymm7, %ymm5
-	vmovdqu	%ymm6, %ymm9
-	vmovdqu	%ymm9, %ymm10
+	vmovdqu	%ymm6, %ymm7
+	vmovdqu	%ymm7, %ymm10
 	vpslld	$30, %ymm10, %ymm10
-	vpsrld	$2, %ymm9, %ymm9
-	vpor	%ymm10, %ymm9, %ymm9
-	vmovdqu	%ymm6, %ymm10
-	vmovdqu	%ymm10, %ymm11
-	vpslld	$19, %ymm11, %ymm11
-	vpsrld	$13, %ymm10, %ymm10
-	vpor	%ymm11, %ymm10, %ymm10
-	vpxor	%ymm10, %ymm9, %ymm9
-	vmovdqu	%ymm10, %ymm11
-	vpslld	$23, %ymm11, %ymm11
-	vpsrld	$9, %ymm10, %ymm10
-	vpor	%ymm11, %ymm10, %ymm7
+	vpsrld	$2, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm9
+	vmovdqu	%ymm6, %ymm7
+	vmovdqu	%ymm7, %ymm10
+	vpslld	$19, %ymm10, %ymm10
+	vpsrld	$13, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm7
+	vpxor	%ymm7, %ymm9, %ymm9
+	vmovdqu	%ymm7, %ymm10
+	vpslld	$23, %ymm10, %ymm10
+	vpsrld	$9, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm7
 	vpxor	%ymm7, %ymm9, %ymm7
 	vpaddd	%ymm7, %ymm5, %ymm5
 	vmovdqu	416(%rcx), %ymm7
@@ -24903,21 +25078,21 @@ slh_dsa_sha2128s_keygen:
 	vpand	%ymm3, %ymm7, %ymm7
 	vpxor	%ymm7, %ymm10, %ymm7
 	vpaddd	%ymm7, %ymm1, %ymm1
-	vmovdqu	%ymm0, %ymm9
-	vmovdqu	%ymm9, %ymm10
+	vmovdqu	%ymm0, %ymm7
+	vmovdqu	%ymm7, %ymm10
 	vpslld	$26, %ymm10, %ymm10
-	vpsrld	$6, %ymm9, %ymm9
-	vpor	%ymm10, %ymm9, %ymm9
-	vmovdqu	%ymm0, %ymm10
-	vmovdqu	%ymm10, %ymm11
-	vpslld	$21, %ymm11, %ymm11
-	vpsrld	$11, %ymm10, %ymm10
-	vpor	%ymm11, %ymm10, %ymm10
-	vpxor	%ymm10, %ymm9, %ymm9
-	vmovdqu	%ymm10, %ymm11
-	vpslld	$18, %ymm11, %ymm11
-	vpsrld	$14, %ymm10, %ymm10
-	vpor	%ymm11, %ymm10, %ymm7
+	vpsrld	$6, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm9
+	vmovdqu	%ymm0, %ymm7
+	vmovdqu	%ymm7, %ymm10
+	vpslld	$21, %ymm10, %ymm10
+	vpsrld	$11, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm7
+	vpxor	%ymm7, %ymm9, %ymm9
+	vmovdqu	%ymm7, %ymm10
+	vpslld	$18, %ymm10, %ymm10
+	vpsrld	$14, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm7
 	vpxor	%ymm7, %ymm9, %ymm7
 	vpaddd	%ymm7, %ymm1, %ymm7
 	vpaddd	%ymm7, %ymm4, %ymm1
@@ -24930,21 +25105,21 @@ slh_dsa_sha2128s_keygen:
 	vpand	%ymm8, %ymm4, %ymm4
 	vpxor	%ymm4, %ymm10, %ymm4
 	vpaddd	%ymm4, %ymm7, %ymm4
-	vmovdqu	%ymm5, %ymm9
-	vmovdqu	%ymm9, %ymm10
+	vmovdqu	%ymm5, %ymm7
+	vmovdqu	%ymm7, %ymm10
 	vpslld	$30, %ymm10, %ymm10
-	vpsrld	$2, %ymm9, %ymm9
-	vpor	%ymm10, %ymm9, %ymm9
-	vmovdqu	%ymm5, %ymm10
-	vmovdqu	%ymm10, %ymm11
-	vpslld	$19, %ymm11, %ymm11
-	vpsrld	$13, %ymm10, %ymm10
-	vpor	%ymm11, %ymm10, %ymm10
-	vpxor	%ymm10, %ymm9, %ymm9
-	vmovdqu	%ymm10, %ymm11
-	vpslld	$23, %ymm11, %ymm11
-	vpsrld	$9, %ymm10, %ymm10
-	vpor	%ymm11, %ymm10, %ymm7
+	vpsrld	$2, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm9
+	vmovdqu	%ymm5, %ymm7
+	vmovdqu	%ymm7, %ymm10
+	vpslld	$19, %ymm10, %ymm10
+	vpsrld	$13, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm7
+	vpxor	%ymm7, %ymm9, %ymm9
+	vmovdqu	%ymm7, %ymm10
+	vpslld	$23, %ymm10, %ymm10
+	vpsrld	$9, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm7
 	vpxor	%ymm7, %ymm9, %ymm7
 	vpaddd	%ymm7, %ymm4, %ymm4
 	vmovdqu	448(%rcx), %ymm7
@@ -24957,24 +25132,24 @@ slh_dsa_sha2128s_keygen:
 	vpxor	%ymm1, %ymm7, %ymm7
 	vpand	%ymm2, %ymm7, %ymm7
 	vpxor	%ymm7, %ymm10, %ymm7
-	vpaddd	%ymm7, %ymm3, %ymm7
-	vmovdqu	%ymm1, %ymm3
-	vmovdqu	%ymm3, %ymm10
+	vpaddd	%ymm7, %ymm3, %ymm3
+	vmovdqu	%ymm1, %ymm7
+	vmovdqu	%ymm7, %ymm10
 	vpslld	$26, %ymm10, %ymm10
-	vpsrld	$6, %ymm3, %ymm3
-	vpor	%ymm10, %ymm3, %ymm9
-	vmovdqu	%ymm1, %ymm3
-	vmovdqu	%ymm3, %ymm10
+	vpsrld	$6, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm9
+	vmovdqu	%ymm1, %ymm7
+	vmovdqu	%ymm7, %ymm10
 	vpslld	$21, %ymm10, %ymm10
-	vpsrld	$11, %ymm3, %ymm3
-	vpor	%ymm10, %ymm3, %ymm3
-	vpxor	%ymm3, %ymm9, %ymm9
-	vmovdqu	%ymm3, %ymm10
+	vpsrld	$11, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm7
+	vpxor	%ymm7, %ymm9, %ymm9
+	vmovdqu	%ymm7, %ymm10
 	vpslld	$18, %ymm10, %ymm10
-	vpsrld	$14, %ymm3, %ymm3
-	vpor	%ymm10, %ymm3, %ymm3
-	vpxor	%ymm3, %ymm9, %ymm3
-	vpaddd	%ymm3, %ymm7, %ymm7
+	vpsrld	$14, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm7
+	vpxor	%ymm7, %ymm9, %ymm7
+	vpaddd	%ymm7, %ymm3, %ymm7
 	vpaddd	%ymm7, %ymm8, %ymm3
 	vmovdqu	%ymm4, %ymm10
 	vpand	%ymm5, %ymm10, %ymm10
@@ -25012,24 +25187,24 @@ slh_dsa_sha2128s_keygen:
 	vpxor	%ymm3, %ymm7, %ymm7
 	vpand	%ymm0, %ymm7, %ymm7
 	vpxor	%ymm7, %ymm10, %ymm7
-	vpaddd	%ymm7, %ymm2, %ymm7
-	vmovdqu	%ymm3, %ymm2
-	vmovdqu	%ymm2, %ymm10
+	vpaddd	%ymm7, %ymm2, %ymm2
+	vmovdqu	%ymm3, %ymm7
+	vmovdqu	%ymm7, %ymm10
 	vpslld	$26, %ymm10, %ymm10
-	vpsrld	$6, %ymm2, %ymm2
-	vpor	%ymm10, %ymm2, %ymm9
-	vmovdqu	%ymm3, %ymm2
-	vmovdqu	%ymm2, %ymm10
+	vpsrld	$6, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm9
+	vmovdqu	%ymm3, %ymm7
+	vmovdqu	%ymm7, %ymm10
 	vpslld	$21, %ymm10, %ymm10
-	vpsrld	$11, %ymm2, %ymm2
-	vpor	%ymm10, %ymm2, %ymm2
-	vpxor	%ymm2, %ymm9, %ymm9
-	vmovdqu	%ymm2, %ymm10
+	vpsrld	$11, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm7
+	vpxor	%ymm7, %ymm9, %ymm9
+	vmovdqu	%ymm7, %ymm10
 	vpslld	$18, %ymm10, %ymm10
-	vpsrld	$14, %ymm2, %ymm2
-	vpor	%ymm10, %ymm2, %ymm2
-	vpxor	%ymm2, %ymm9, %ymm2
-	vpaddd	%ymm2, %ymm7, %ymm7
+	vpsrld	$14, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm7
+	vpxor	%ymm7, %ymm9, %ymm7
+	vpaddd	%ymm7, %ymm2, %ymm7
 	vpaddd	%ymm7, %ymm6, %ymm2
 	vmovdqu	%ymm8, %ymm10
 	vpand	%ymm4, %ymm10, %ymm10
@@ -25040,21 +25215,21 @@ slh_dsa_sha2128s_keygen:
 	vpand	%ymm5, %ymm6, %ymm6
 	vpxor	%ymm6, %ymm10, %ymm6
 	vpaddd	%ymm6, %ymm7, %ymm6
-	vmovdqu	%ymm8, %ymm9
-	vmovdqu	%ymm9, %ymm10
+	vmovdqu	%ymm8, %ymm7
+	vmovdqu	%ymm7, %ymm10
 	vpslld	$30, %ymm10, %ymm10
-	vpsrld	$2, %ymm9, %ymm9
-	vpor	%ymm10, %ymm9, %ymm9
-	vmovdqu	%ymm8, %ymm10
-	vmovdqu	%ymm10, %ymm11
-	vpslld	$19, %ymm11, %ymm11
-	vpsrld	$13, %ymm10, %ymm10
-	vpor	%ymm11, %ymm10, %ymm10
-	vpxor	%ymm10, %ymm9, %ymm9
-	vmovdqu	%ymm10, %ymm11
-	vpslld	$23, %ymm11, %ymm11
-	vpsrld	$9, %ymm10, %ymm10
-	vpor	%ymm11, %ymm10, %ymm7
+	vpsrld	$2, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm9
+	vmovdqu	%ymm8, %ymm7
+	vmovdqu	%ymm7, %ymm10
+	vpslld	$19, %ymm10, %ymm10
+	vpsrld	$13, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm7
+	vpxor	%ymm7, %ymm9, %ymm9
+	vmovdqu	%ymm7, %ymm10
+	vpslld	$23, %ymm10, %ymm10
+	vpsrld	$9, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm7
 	vpxor	%ymm7, %ymm9, %ymm7
 	vpaddd	%ymm7, %ymm6, %ymm6
 	vmovdqu	512(%rcx), %ymm7
@@ -25068,21 +25243,21 @@ slh_dsa_sha2128s_keygen:
 	vpand	%ymm1, %ymm7, %ymm7
 	vpxor	%ymm7, %ymm10, %ymm7
 	vpaddd	%ymm7, %ymm0, %ymm0
-	vmovdqu	%ymm2, %ymm9
-	vmovdqu	%ymm9, %ymm10
+	vmovdqu	%ymm2, %ymm7
+	vmovdqu	%ymm7, %ymm10
 	vpslld	$26, %ymm10, %ymm10
-	vpsrld	$6, %ymm9, %ymm9
-	vpor	%ymm10, %ymm9, %ymm9
-	vmovdqu	%ymm2, %ymm10
-	vmovdqu	%ymm10, %ymm11
-	vpslld	$21, %ymm11, %ymm11
-	vpsrld	$11, %ymm10, %ymm10
-	vpor	%ymm11, %ymm10, %ymm10
-	vpxor	%ymm10, %ymm9, %ymm9
-	vmovdqu	%ymm10, %ymm11
-	vpslld	$18, %ymm11, %ymm11
-	vpsrld	$14, %ymm10, %ymm10
-	vpor	%ymm11, %ymm10, %ymm7
+	vpsrld	$6, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm9
+	vmovdqu	%ymm2, %ymm7
+	vmovdqu	%ymm7, %ymm10
+	vpslld	$21, %ymm10, %ymm10
+	vpsrld	$11, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm7
+	vpxor	%ymm7, %ymm9, %ymm9
+	vmovdqu	%ymm7, %ymm10
+	vpslld	$18, %ymm10, %ymm10
+	vpsrld	$14, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm7
 	vpxor	%ymm7, %ymm9, %ymm7
 	vpaddd	%ymm7, %ymm0, %ymm7
 	vpaddd	%ymm7, %ymm5, %ymm0
@@ -25095,21 +25270,21 @@ slh_dsa_sha2128s_keygen:
 	vpand	%ymm4, %ymm5, %ymm5
 	vpxor	%ymm5, %ymm10, %ymm5
 	vpaddd	%ymm5, %ymm7, %ymm5
-	vmovdqu	%ymm6, %ymm9
-	vmovdqu	%ymm9, %ymm10
+	vmovdqu	%ymm6, %ymm7
+	vmovdqu	%ymm7, %ymm10
 	vpslld	$30, %ymm10, %ymm10
-	vpsrld	$2, %ymm9, %ymm9
-	vpor	%ymm10, %ymm9, %ymm9
-	vmovdqu	%ymm6, %ymm10
-	vmovdqu	%ymm10, %ymm11
-	vpslld	$19, %ymm11, %ymm11
-	vpsrld	$13, %ymm10, %ymm10
-	vpor	%ymm11, %ymm10, %ymm10
-	vpxor	%ymm10, %ymm9, %ymm9
-	vmovdqu	%ymm10, %ymm11
-	vpslld	$23, %ymm11, %ymm11
-	vpsrld	$9, %ymm10, %ymm10
-	vpor	%ymm11, %ymm10, %ymm7
+	vpsrld	$2, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm9
+	vmovdqu	%ymm6, %ymm7
+	vmovdqu	%ymm7, %ymm10
+	vpslld	$19, %ymm10, %ymm10
+	vpsrld	$13, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm7
+	vpxor	%ymm7, %ymm9, %ymm9
+	vmovdqu	%ymm7, %ymm10
+	vpslld	$23, %ymm10, %ymm10
+	vpsrld	$9, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm7
 	vpxor	%ymm7, %ymm9, %ymm7
 	vpaddd	%ymm7, %ymm5, %ymm5
 	vmovdqu	544(%rcx), %ymm7
@@ -25123,21 +25298,21 @@ slh_dsa_sha2128s_keygen:
 	vpand	%ymm3, %ymm7, %ymm7
 	vpxor	%ymm7, %ymm10, %ymm7
 	vpaddd	%ymm7, %ymm1, %ymm1
-	vmovdqu	%ymm0, %ymm9
-	vmovdqu	%ymm9, %ymm10
+	vmovdqu	%ymm0, %ymm7
+	vmovdqu	%ymm7, %ymm10
 	vpslld	$26, %ymm10, %ymm10
-	vpsrld	$6, %ymm9, %ymm9
-	vpor	%ymm10, %ymm9, %ymm9
-	vmovdqu	%ymm0, %ymm10
-	vmovdqu	%ymm10, %ymm11
-	vpslld	$21, %ymm11, %ymm11
-	vpsrld	$11, %ymm10, %ymm10
-	vpor	%ymm11, %ymm10, %ymm10
-	vpxor	%ymm10, %ymm9, %ymm9
-	vmovdqu	%ymm10, %ymm11
-	vpslld	$18, %ymm11, %ymm11
-	vpsrld	$14, %ymm10, %ymm10
-	vpor	%ymm11, %ymm10, %ymm7
+	vpsrld	$6, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm9
+	vmovdqu	%ymm0, %ymm7
+	vmovdqu	%ymm7, %ymm10
+	vpslld	$21, %ymm10, %ymm10
+	vpsrld	$11, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm7
+	vpxor	%ymm7, %ymm9, %ymm9
+	vmovdqu	%ymm7, %ymm10
+	vpslld	$18, %ymm10, %ymm10
+	vpsrld	$14, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm7
 	vpxor	%ymm7, %ymm9, %ymm7
 	vpaddd	%ymm7, %ymm1, %ymm7
 	vpaddd	%ymm7, %ymm4, %ymm1
@@ -25150,21 +25325,21 @@ slh_dsa_sha2128s_keygen:
 	vpand	%ymm8, %ymm4, %ymm4
 	vpxor	%ymm4, %ymm10, %ymm4
 	vpaddd	%ymm4, %ymm7, %ymm4
-	vmovdqu	%ymm5, %ymm9
-	vmovdqu	%ymm9, %ymm10
+	vmovdqu	%ymm5, %ymm7
+	vmovdqu	%ymm7, %ymm10
 	vpslld	$30, %ymm10, %ymm10
-	vpsrld	$2, %ymm9, %ymm9
-	vpor	%ymm10, %ymm9, %ymm9
-	vmovdqu	%ymm5, %ymm10
-	vmovdqu	%ymm10, %ymm11
-	vpslld	$19, %ymm11, %ymm11
-	vpsrld	$13, %ymm10, %ymm10
-	vpor	%ymm11, %ymm10, %ymm10
-	vpxor	%ymm10, %ymm9, %ymm9
-	vmovdqu	%ymm10, %ymm11
-	vpslld	$23, %ymm11, %ymm11
-	vpsrld	$9, %ymm10, %ymm10
-	vpor	%ymm11, %ymm10, %ymm7
+	vpsrld	$2, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm9
+	vmovdqu	%ymm5, %ymm7
+	vmovdqu	%ymm7, %ymm10
+	vpslld	$19, %ymm10, %ymm10
+	vpsrld	$13, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm7
+	vpxor	%ymm7, %ymm9, %ymm9
+	vmovdqu	%ymm7, %ymm10
+	vpslld	$23, %ymm10, %ymm10
+	vpsrld	$9, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm7
 	vpxor	%ymm7, %ymm9, %ymm7
 	vpaddd	%ymm7, %ymm4, %ymm4
 	vmovdqu	576(%rcx), %ymm7
@@ -25177,24 +25352,24 @@ slh_dsa_sha2128s_keygen:
 	vpxor	%ymm1, %ymm7, %ymm7
 	vpand	%ymm2, %ymm7, %ymm7
 	vpxor	%ymm7, %ymm10, %ymm7
-	vpaddd	%ymm7, %ymm3, %ymm7
-	vmovdqu	%ymm1, %ymm3
-	vmovdqu	%ymm3, %ymm10
+	vpaddd	%ymm7, %ymm3, %ymm3
+	vmovdqu	%ymm1, %ymm7
+	vmovdqu	%ymm7, %ymm10
 	vpslld	$26, %ymm10, %ymm10
-	vpsrld	$6, %ymm3, %ymm3
-	vpor	%ymm10, %ymm3, %ymm9
-	vmovdqu	%ymm1, %ymm3
-	vmovdqu	%ymm3, %ymm10
+	vpsrld	$6, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm9
+	vmovdqu	%ymm1, %ymm7
+	vmovdqu	%ymm7, %ymm10
 	vpslld	$21, %ymm10, %ymm10
-	vpsrld	$11, %ymm3, %ymm3
-	vpor	%ymm10, %ymm3, %ymm3
-	vpxor	%ymm3, %ymm9, %ymm9
-	vmovdqu	%ymm3, %ymm10
+	vpsrld	$11, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm7
+	vpxor	%ymm7, %ymm9, %ymm9
+	vmovdqu	%ymm7, %ymm10
 	vpslld	$18, %ymm10, %ymm10
-	vpsrld	$14, %ymm3, %ymm3
-	vpor	%ymm10, %ymm3, %ymm3
-	vpxor	%ymm3, %ymm9, %ymm3
-	vpaddd	%ymm3, %ymm7, %ymm7
+	vpsrld	$14, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm7
+	vpxor	%ymm7, %ymm9, %ymm7
+	vpaddd	%ymm7, %ymm3, %ymm7
 	vpaddd	%ymm7, %ymm8, %ymm3
 	vmovdqu	%ymm4, %ymm10
 	vpand	%ymm5, %ymm10, %ymm10
@@ -25232,24 +25407,24 @@ slh_dsa_sha2128s_keygen:
 	vpxor	%ymm3, %ymm7, %ymm7
 	vpand	%ymm0, %ymm7, %ymm7
 	vpxor	%ymm7, %ymm10, %ymm7
-	vpaddd	%ymm7, %ymm2, %ymm7
-	vmovdqu	%ymm3, %ymm2
-	vmovdqu	%ymm2, %ymm10
+	vpaddd	%ymm7, %ymm2, %ymm2
+	vmovdqu	%ymm3, %ymm7
+	vmovdqu	%ymm7, %ymm10
 	vpslld	$26, %ymm10, %ymm10
-	vpsrld	$6, %ymm2, %ymm2
-	vpor	%ymm10, %ymm2, %ymm9
-	vmovdqu	%ymm3, %ymm2
-	vmovdqu	%ymm2, %ymm10
+	vpsrld	$6, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm9
+	vmovdqu	%ymm3, %ymm7
+	vmovdqu	%ymm7, %ymm10
 	vpslld	$21, %ymm10, %ymm10
-	vpsrld	$11, %ymm2, %ymm2
-	vpor	%ymm10, %ymm2, %ymm2
-	vpxor	%ymm2, %ymm9, %ymm9
-	vmovdqu	%ymm2, %ymm10
+	vpsrld	$11, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm7
+	vpxor	%ymm7, %ymm9, %ymm9
+	vmovdqu	%ymm7, %ymm10
 	vpslld	$18, %ymm10, %ymm10
-	vpsrld	$14, %ymm2, %ymm2
-	vpor	%ymm10, %ymm2, %ymm2
-	vpxor	%ymm2, %ymm9, %ymm2
-	vpaddd	%ymm2, %ymm7, %ymm7
+	vpsrld	$14, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm7
+	vpxor	%ymm7, %ymm9, %ymm7
+	vpaddd	%ymm7, %ymm2, %ymm7
 	vpaddd	%ymm7, %ymm6, %ymm2
 	vmovdqu	%ymm8, %ymm10
 	vpand	%ymm4, %ymm10, %ymm10
@@ -25260,21 +25435,21 @@ slh_dsa_sha2128s_keygen:
 	vpand	%ymm5, %ymm6, %ymm6
 	vpxor	%ymm6, %ymm10, %ymm6
 	vpaddd	%ymm6, %ymm7, %ymm6
-	vmovdqu	%ymm8, %ymm9
-	vmovdqu	%ymm9, %ymm10
+	vmovdqu	%ymm8, %ymm7
+	vmovdqu	%ymm7, %ymm10
 	vpslld	$30, %ymm10, %ymm10
-	vpsrld	$2, %ymm9, %ymm9
-	vpor	%ymm10, %ymm9, %ymm9
-	vmovdqu	%ymm8, %ymm10
-	vmovdqu	%ymm10, %ymm11
-	vpslld	$19, %ymm11, %ymm11
-	vpsrld	$13, %ymm10, %ymm10
-	vpor	%ymm11, %ymm10, %ymm10
-	vpxor	%ymm10, %ymm9, %ymm9
-	vmovdqu	%ymm10, %ymm11
-	vpslld	$23, %ymm11, %ymm11
-	vpsrld	$9, %ymm10, %ymm10
-	vpor	%ymm11, %ymm10, %ymm7
+	vpsrld	$2, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm9
+	vmovdqu	%ymm8, %ymm7
+	vmovdqu	%ymm7, %ymm10
+	vpslld	$19, %ymm10, %ymm10
+	vpsrld	$13, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm7
+	vpxor	%ymm7, %ymm9, %ymm9
+	vmovdqu	%ymm7, %ymm10
+	vpslld	$23, %ymm10, %ymm10
+	vpsrld	$9, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm7
 	vpxor	%ymm7, %ymm9, %ymm7
 	vpaddd	%ymm7, %ymm6, %ymm6
 	vmovdqu	640(%rcx), %ymm7
@@ -25288,21 +25463,21 @@ slh_dsa_sha2128s_keygen:
 	vpand	%ymm1, %ymm7, %ymm7
 	vpxor	%ymm7, %ymm10, %ymm7
 	vpaddd	%ymm7, %ymm0, %ymm0
-	vmovdqu	%ymm2, %ymm9
-	vmovdqu	%ymm9, %ymm10
+	vmovdqu	%ymm2, %ymm7
+	vmovdqu	%ymm7, %ymm10
 	vpslld	$26, %ymm10, %ymm10
-	vpsrld	$6, %ymm9, %ymm9
-	vpor	%ymm10, %ymm9, %ymm9
-	vmovdqu	%ymm2, %ymm10
-	vmovdqu	%ymm10, %ymm11
-	vpslld	$21, %ymm11, %ymm11
-	vpsrld	$11, %ymm10, %ymm10
-	vpor	%ymm11, %ymm10, %ymm10
-	vpxor	%ymm10, %ymm9, %ymm9
-	vmovdqu	%ymm10, %ymm11
-	vpslld	$18, %ymm11, %ymm11
-	vpsrld	$14, %ymm10, %ymm10
-	vpor	%ymm11, %ymm10, %ymm7
+	vpsrld	$6, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm9
+	vmovdqu	%ymm2, %ymm7
+	vmovdqu	%ymm7, %ymm10
+	vpslld	$21, %ymm10, %ymm10
+	vpsrld	$11, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm7
+	vpxor	%ymm7, %ymm9, %ymm9
+	vmovdqu	%ymm7, %ymm10
+	vpslld	$18, %ymm10, %ymm10
+	vpsrld	$14, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm7
 	vpxor	%ymm7, %ymm9, %ymm7
 	vpaddd	%ymm7, %ymm0, %ymm7
 	vpaddd	%ymm7, %ymm5, %ymm0
@@ -25315,21 +25490,21 @@ slh_dsa_sha2128s_keygen:
 	vpand	%ymm4, %ymm5, %ymm5
 	vpxor	%ymm5, %ymm10, %ymm5
 	vpaddd	%ymm5, %ymm7, %ymm5
-	vmovdqu	%ymm6, %ymm9
-	vmovdqu	%ymm9, %ymm10
+	vmovdqu	%ymm6, %ymm7
+	vmovdqu	%ymm7, %ymm10
 	vpslld	$30, %ymm10, %ymm10
-	vpsrld	$2, %ymm9, %ymm9
-	vpor	%ymm10, %ymm9, %ymm9
-	vmovdqu	%ymm6, %ymm10
-	vmovdqu	%ymm10, %ymm11
-	vpslld	$19, %ymm11, %ymm11
-	vpsrld	$13, %ymm10, %ymm10
-	vpor	%ymm11, %ymm10, %ymm10
-	vpxor	%ymm10, %ymm9, %ymm9
-	vmovdqu	%ymm10, %ymm11
-	vpslld	$23, %ymm11, %ymm11
-	vpsrld	$9, %ymm10, %ymm10
-	vpor	%ymm11, %ymm10, %ymm7
+	vpsrld	$2, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm9
+	vmovdqu	%ymm6, %ymm7
+	vmovdqu	%ymm7, %ymm10
+	vpslld	$19, %ymm10, %ymm10
+	vpsrld	$13, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm7
+	vpxor	%ymm7, %ymm9, %ymm9
+	vmovdqu	%ymm7, %ymm10
+	vpslld	$23, %ymm10, %ymm10
+	vpsrld	$9, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm7
 	vpxor	%ymm7, %ymm9, %ymm7
 	vpaddd	%ymm7, %ymm5, %ymm5
 	vmovdqu	672(%rcx), %ymm7
@@ -25343,21 +25518,21 @@ slh_dsa_sha2128s_keygen:
 	vpand	%ymm3, %ymm7, %ymm7
 	vpxor	%ymm7, %ymm10, %ymm7
 	vpaddd	%ymm7, %ymm1, %ymm1
-	vmovdqu	%ymm0, %ymm9
-	vmovdqu	%ymm9, %ymm10
+	vmovdqu	%ymm0, %ymm7
+	vmovdqu	%ymm7, %ymm10
 	vpslld	$26, %ymm10, %ymm10
-	vpsrld	$6, %ymm9, %ymm9
-	vpor	%ymm10, %ymm9, %ymm9
-	vmovdqu	%ymm0, %ymm10
-	vmovdqu	%ymm10, %ymm11
-	vpslld	$21, %ymm11, %ymm11
-	vpsrld	$11, %ymm10, %ymm10
-	vpor	%ymm11, %ymm10, %ymm10
-	vpxor	%ymm10, %ymm9, %ymm9
-	vmovdqu	%ymm10, %ymm11
-	vpslld	$18, %ymm11, %ymm11
-	vpsrld	$14, %ymm10, %ymm10
-	vpor	%ymm11, %ymm10, %ymm7
+	vpsrld	$6, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm9
+	vmovdqu	%ymm0, %ymm7
+	vmovdqu	%ymm7, %ymm10
+	vpslld	$21, %ymm10, %ymm10
+	vpsrld	$11, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm7
+	vpxor	%ymm7, %ymm9, %ymm9
+	vmovdqu	%ymm7, %ymm10
+	vpslld	$18, %ymm10, %ymm10
+	vpsrld	$14, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm7
 	vpxor	%ymm7, %ymm9, %ymm7
 	vpaddd	%ymm7, %ymm1, %ymm7
 	vpaddd	%ymm7, %ymm4, %ymm1
@@ -25370,21 +25545,21 @@ slh_dsa_sha2128s_keygen:
 	vpand	%ymm8, %ymm4, %ymm4
 	vpxor	%ymm4, %ymm10, %ymm4
 	vpaddd	%ymm4, %ymm7, %ymm4
-	vmovdqu	%ymm5, %ymm9
-	vmovdqu	%ymm9, %ymm10
+	vmovdqu	%ymm5, %ymm7
+	vmovdqu	%ymm7, %ymm10
 	vpslld	$30, %ymm10, %ymm10
-	vpsrld	$2, %ymm9, %ymm9
-	vpor	%ymm10, %ymm9, %ymm9
-	vmovdqu	%ymm5, %ymm10
-	vmovdqu	%ymm10, %ymm11
-	vpslld	$19, %ymm11, %ymm11
-	vpsrld	$13, %ymm10, %ymm10
-	vpor	%ymm11, %ymm10, %ymm10
-	vpxor	%ymm10, %ymm9, %ymm9
-	vmovdqu	%ymm10, %ymm11
-	vpslld	$23, %ymm11, %ymm11
-	vpsrld	$9, %ymm10, %ymm10
-	vpor	%ymm11, %ymm10, %ymm7
+	vpsrld	$2, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm9
+	vmovdqu	%ymm5, %ymm7
+	vmovdqu	%ymm7, %ymm10
+	vpslld	$19, %ymm10, %ymm10
+	vpsrld	$13, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm7
+	vpxor	%ymm7, %ymm9, %ymm9
+	vmovdqu	%ymm7, %ymm10
+	vpslld	$23, %ymm10, %ymm10
+	vpsrld	$9, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm7
 	vpxor	%ymm7, %ymm9, %ymm7
 	vpaddd	%ymm7, %ymm4, %ymm4
 	vmovdqu	704(%rcx), %ymm7
@@ -25397,24 +25572,24 @@ slh_dsa_sha2128s_keygen:
 	vpxor	%ymm1, %ymm7, %ymm7
 	vpand	%ymm2, %ymm7, %ymm7
 	vpxor	%ymm7, %ymm10, %ymm7
-	vpaddd	%ymm7, %ymm3, %ymm7
-	vmovdqu	%ymm1, %ymm3
-	vmovdqu	%ymm3, %ymm10
+	vpaddd	%ymm7, %ymm3, %ymm3
+	vmovdqu	%ymm1, %ymm7
+	vmovdqu	%ymm7, %ymm10
 	vpslld	$26, %ymm10, %ymm10
-	vpsrld	$6, %ymm3, %ymm3
-	vpor	%ymm10, %ymm3, %ymm9
-	vmovdqu	%ymm1, %ymm3
-	vmovdqu	%ymm3, %ymm10
+	vpsrld	$6, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm9
+	vmovdqu	%ymm1, %ymm7
+	vmovdqu	%ymm7, %ymm10
 	vpslld	$21, %ymm10, %ymm10
-	vpsrld	$11, %ymm3, %ymm3
-	vpor	%ymm10, %ymm3, %ymm3
-	vpxor	%ymm3, %ymm9, %ymm9
-	vmovdqu	%ymm3, %ymm10
+	vpsrld	$11, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm7
+	vpxor	%ymm7, %ymm9, %ymm9
+	vmovdqu	%ymm7, %ymm10
 	vpslld	$18, %ymm10, %ymm10
-	vpsrld	$14, %ymm3, %ymm3
-	vpor	%ymm10, %ymm3, %ymm3
-	vpxor	%ymm3, %ymm9, %ymm3
-	vpaddd	%ymm3, %ymm7, %ymm7
+	vpsrld	$14, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm7
+	vpxor	%ymm7, %ymm9, %ymm7
+	vpaddd	%ymm7, %ymm3, %ymm7
 	vpaddd	%ymm7, %ymm8, %ymm3
 	vmovdqu	%ymm4, %ymm10
 	vpand	%ymm5, %ymm10, %ymm10
@@ -25452,24 +25627,24 @@ slh_dsa_sha2128s_keygen:
 	vpxor	%ymm3, %ymm7, %ymm7
 	vpand	%ymm0, %ymm7, %ymm7
 	vpxor	%ymm7, %ymm10, %ymm7
-	vpaddd	%ymm7, %ymm2, %ymm7
-	vmovdqu	%ymm3, %ymm2
-	vmovdqu	%ymm2, %ymm10
+	vpaddd	%ymm7, %ymm2, %ymm2
+	vmovdqu	%ymm3, %ymm7
+	vmovdqu	%ymm7, %ymm10
 	vpslld	$26, %ymm10, %ymm10
-	vpsrld	$6, %ymm2, %ymm2
-	vpor	%ymm10, %ymm2, %ymm9
-	vmovdqu	%ymm3, %ymm2
-	vmovdqu	%ymm2, %ymm10
+	vpsrld	$6, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm9
+	vmovdqu	%ymm3, %ymm7
+	vmovdqu	%ymm7, %ymm10
 	vpslld	$21, %ymm10, %ymm10
-	vpsrld	$11, %ymm2, %ymm2
-	vpor	%ymm10, %ymm2, %ymm2
-	vpxor	%ymm2, %ymm9, %ymm9
-	vmovdqu	%ymm2, %ymm10
+	vpsrld	$11, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm7
+	vpxor	%ymm7, %ymm9, %ymm9
+	vmovdqu	%ymm7, %ymm10
 	vpslld	$18, %ymm10, %ymm10
-	vpsrld	$14, %ymm2, %ymm2
-	vpor	%ymm10, %ymm2, %ymm2
-	vpxor	%ymm2, %ymm9, %ymm2
-	vpaddd	%ymm2, %ymm7, %ymm7
+	vpsrld	$14, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm7
+	vpxor	%ymm7, %ymm9, %ymm7
+	vpaddd	%ymm7, %ymm2, %ymm7
 	vpaddd	%ymm7, %ymm6, %ymm2
 	vmovdqu	%ymm8, %ymm10
 	vpand	%ymm4, %ymm10, %ymm10
@@ -25480,21 +25655,21 @@ slh_dsa_sha2128s_keygen:
 	vpand	%ymm5, %ymm6, %ymm6
 	vpxor	%ymm6, %ymm10, %ymm6
 	vpaddd	%ymm6, %ymm7, %ymm6
-	vmovdqu	%ymm8, %ymm9
-	vmovdqu	%ymm9, %ymm10
+	vmovdqu	%ymm8, %ymm7
+	vmovdqu	%ymm7, %ymm10
 	vpslld	$30, %ymm10, %ymm10
-	vpsrld	$2, %ymm9, %ymm9
-	vpor	%ymm10, %ymm9, %ymm9
-	vmovdqu	%ymm8, %ymm10
-	vmovdqu	%ymm10, %ymm11
-	vpslld	$19, %ymm11, %ymm11
-	vpsrld	$13, %ymm10, %ymm10
-	vpor	%ymm11, %ymm10, %ymm10
-	vpxor	%ymm10, %ymm9, %ymm9
-	vmovdqu	%ymm10, %ymm11
-	vpslld	$23, %ymm11, %ymm11
-	vpsrld	$9, %ymm10, %ymm10
-	vpor	%ymm11, %ymm10, %ymm7
+	vpsrld	$2, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm9
+	vmovdqu	%ymm8, %ymm7
+	vmovdqu	%ymm7, %ymm10
+	vpslld	$19, %ymm10, %ymm10
+	vpsrld	$13, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm7
+	vpxor	%ymm7, %ymm9, %ymm9
+	vmovdqu	%ymm7, %ymm10
+	vpslld	$23, %ymm10, %ymm10
+	vpsrld	$9, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm7
 	vpxor	%ymm7, %ymm9, %ymm7
 	vpaddd	%ymm7, %ymm6, %ymm6
 	vmovdqu	768(%rcx), %ymm7
@@ -25508,21 +25683,21 @@ slh_dsa_sha2128s_keygen:
 	vpand	%ymm1, %ymm7, %ymm7
 	vpxor	%ymm7, %ymm10, %ymm7
 	vpaddd	%ymm7, %ymm0, %ymm0
-	vmovdqu	%ymm2, %ymm9
-	vmovdqu	%ymm9, %ymm10
+	vmovdqu	%ymm2, %ymm7
+	vmovdqu	%ymm7, %ymm10
 	vpslld	$26, %ymm10, %ymm10
-	vpsrld	$6, %ymm9, %ymm9
-	vpor	%ymm10, %ymm9, %ymm9
-	vmovdqu	%ymm2, %ymm10
-	vmovdqu	%ymm10, %ymm11
-	vpslld	$21, %ymm11, %ymm11
-	vpsrld	$11, %ymm10, %ymm10
-	vpor	%ymm11, %ymm10, %ymm10
-	vpxor	%ymm10, %ymm9, %ymm9
-	vmovdqu	%ymm10, %ymm11
-	vpslld	$18, %ymm11, %ymm11
-	vpsrld	$14, %ymm10, %ymm10
-	vpor	%ymm11, %ymm10, %ymm7
+	vpsrld	$6, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm9
+	vmovdqu	%ymm2, %ymm7
+	vmovdqu	%ymm7, %ymm10
+	vpslld	$21, %ymm10, %ymm10
+	vpsrld	$11, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm7
+	vpxor	%ymm7, %ymm9, %ymm9
+	vmovdqu	%ymm7, %ymm10
+	vpslld	$18, %ymm10, %ymm10
+	vpsrld	$14, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm7
 	vpxor	%ymm7, %ymm9, %ymm7
 	vpaddd	%ymm7, %ymm0, %ymm7
 	vpaddd	%ymm7, %ymm5, %ymm0
@@ -25535,21 +25710,21 @@ slh_dsa_sha2128s_keygen:
 	vpand	%ymm4, %ymm5, %ymm5
 	vpxor	%ymm5, %ymm10, %ymm5
 	vpaddd	%ymm5, %ymm7, %ymm5
-	vmovdqu	%ymm6, %ymm9
-	vmovdqu	%ymm9, %ymm10
+	vmovdqu	%ymm6, %ymm7
+	vmovdqu	%ymm7, %ymm10
 	vpslld	$30, %ymm10, %ymm10
-	vpsrld	$2, %ymm9, %ymm9
-	vpor	%ymm10, %ymm9, %ymm9
-	vmovdqu	%ymm6, %ymm10
-	vmovdqu	%ymm10, %ymm11
-	vpslld	$19, %ymm11, %ymm11
-	vpsrld	$13, %ymm10, %ymm10
-	vpor	%ymm11, %ymm10, %ymm10
-	vpxor	%ymm10, %ymm9, %ymm9
-	vmovdqu	%ymm10, %ymm11
-	vpslld	$23, %ymm11, %ymm11
-	vpsrld	$9, %ymm10, %ymm10
-	vpor	%ymm11, %ymm10, %ymm7
+	vpsrld	$2, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm9
+	vmovdqu	%ymm6, %ymm7
+	vmovdqu	%ymm7, %ymm10
+	vpslld	$19, %ymm10, %ymm10
+	vpsrld	$13, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm7
+	vpxor	%ymm7, %ymm9, %ymm9
+	vmovdqu	%ymm7, %ymm10
+	vpslld	$23, %ymm10, %ymm10
+	vpsrld	$9, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm7
 	vpxor	%ymm7, %ymm9, %ymm7
 	vpaddd	%ymm7, %ymm5, %ymm5
 	vmovdqu	800(%rcx), %ymm7
@@ -25563,21 +25738,21 @@ slh_dsa_sha2128s_keygen:
 	vpand	%ymm3, %ymm7, %ymm7
 	vpxor	%ymm7, %ymm10, %ymm7
 	vpaddd	%ymm7, %ymm1, %ymm1
-	vmovdqu	%ymm0, %ymm9
-	vmovdqu	%ymm9, %ymm10
+	vmovdqu	%ymm0, %ymm7
+	vmovdqu	%ymm7, %ymm10
 	vpslld	$26, %ymm10, %ymm10
-	vpsrld	$6, %ymm9, %ymm9
-	vpor	%ymm10, %ymm9, %ymm9
-	vmovdqu	%ymm0, %ymm10
-	vmovdqu	%ymm10, %ymm11
-	vpslld	$21, %ymm11, %ymm11
-	vpsrld	$11, %ymm10, %ymm10
-	vpor	%ymm11, %ymm10, %ymm10
-	vpxor	%ymm10, %ymm9, %ymm9
-	vmovdqu	%ymm10, %ymm11
-	vpslld	$18, %ymm11, %ymm11
-	vpsrld	$14, %ymm10, %ymm10
-	vpor	%ymm11, %ymm10, %ymm7
+	vpsrld	$6, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm9
+	vmovdqu	%ymm0, %ymm7
+	vmovdqu	%ymm7, %ymm10
+	vpslld	$21, %ymm10, %ymm10
+	vpsrld	$11, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm7
+	vpxor	%ymm7, %ymm9, %ymm9
+	vmovdqu	%ymm7, %ymm10
+	vpslld	$18, %ymm10, %ymm10
+	vpsrld	$14, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm7
 	vpxor	%ymm7, %ymm9, %ymm7
 	vpaddd	%ymm7, %ymm1, %ymm7
 	vpaddd	%ymm7, %ymm4, %ymm1
@@ -25590,21 +25765,21 @@ slh_dsa_sha2128s_keygen:
 	vpand	%ymm8, %ymm4, %ymm4
 	vpxor	%ymm4, %ymm10, %ymm4
 	vpaddd	%ymm4, %ymm7, %ymm4
-	vmovdqu	%ymm5, %ymm9
-	vmovdqu	%ymm9, %ymm10
+	vmovdqu	%ymm5, %ymm7
+	vmovdqu	%ymm7, %ymm10
 	vpslld	$30, %ymm10, %ymm10
-	vpsrld	$2, %ymm9, %ymm9
-	vpor	%ymm10, %ymm9, %ymm9
-	vmovdqu	%ymm5, %ymm10
-	vmovdqu	%ymm10, %ymm11
-	vpslld	$19, %ymm11, %ymm11
-	vpsrld	$13, %ymm10, %ymm10
-	vpor	%ymm11, %ymm10, %ymm10
-	vpxor	%ymm10, %ymm9, %ymm9
-	vmovdqu	%ymm10, %ymm11
-	vpslld	$23, %ymm11, %ymm11
-	vpsrld	$9, %ymm10, %ymm10
-	vpor	%ymm11, %ymm10, %ymm7
+	vpsrld	$2, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm9
+	vmovdqu	%ymm5, %ymm7
+	vmovdqu	%ymm7, %ymm10
+	vpslld	$19, %ymm10, %ymm10
+	vpsrld	$13, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm7
+	vpxor	%ymm7, %ymm9, %ymm9
+	vmovdqu	%ymm7, %ymm10
+	vpslld	$23, %ymm10, %ymm10
+	vpsrld	$9, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm7
 	vpxor	%ymm7, %ymm9, %ymm7
 	vpaddd	%ymm7, %ymm4, %ymm4
 	vmovdqu	832(%rcx), %ymm7
@@ -25617,24 +25792,24 @@ slh_dsa_sha2128s_keygen:
 	vpxor	%ymm1, %ymm7, %ymm7
 	vpand	%ymm2, %ymm7, %ymm7
 	vpxor	%ymm7, %ymm10, %ymm7
-	vpaddd	%ymm7, %ymm3, %ymm7
-	vmovdqu	%ymm1, %ymm3
-	vmovdqu	%ymm3, %ymm10
+	vpaddd	%ymm7, %ymm3, %ymm3
+	vmovdqu	%ymm1, %ymm7
+	vmovdqu	%ymm7, %ymm10
 	vpslld	$26, %ymm10, %ymm10
-	vpsrld	$6, %ymm3, %ymm3
-	vpor	%ymm10, %ymm3, %ymm9
-	vmovdqu	%ymm1, %ymm3
-	vmovdqu	%ymm3, %ymm10
+	vpsrld	$6, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm9
+	vmovdqu	%ymm1, %ymm7
+	vmovdqu	%ymm7, %ymm10
 	vpslld	$21, %ymm10, %ymm10
-	vpsrld	$11, %ymm3, %ymm3
-	vpor	%ymm10, %ymm3, %ymm3
-	vpxor	%ymm3, %ymm9, %ymm9
-	vmovdqu	%ymm3, %ymm10
+	vpsrld	$11, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm7
+	vpxor	%ymm7, %ymm9, %ymm9
+	vmovdqu	%ymm7, %ymm10
 	vpslld	$18, %ymm10, %ymm10
-	vpsrld	$14, %ymm3, %ymm3
-	vpor	%ymm10, %ymm3, %ymm3
-	vpxor	%ymm3, %ymm9, %ymm3
-	vpaddd	%ymm3, %ymm7, %ymm7
+	vpsrld	$14, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm7
+	vpxor	%ymm7, %ymm9, %ymm7
+	vpaddd	%ymm7, %ymm3, %ymm7
 	vpaddd	%ymm7, %ymm8, %ymm3
 	vmovdqu	%ymm4, %ymm10
 	vpand	%ymm5, %ymm10, %ymm10
@@ -25672,24 +25847,24 @@ slh_dsa_sha2128s_keygen:
 	vpxor	%ymm3, %ymm7, %ymm7
 	vpand	%ymm0, %ymm7, %ymm7
 	vpxor	%ymm7, %ymm10, %ymm7
-	vpaddd	%ymm7, %ymm2, %ymm7
-	vmovdqu	%ymm3, %ymm2
-	vmovdqu	%ymm2, %ymm10
+	vpaddd	%ymm7, %ymm2, %ymm2
+	vmovdqu	%ymm3, %ymm7
+	vmovdqu	%ymm7, %ymm10
 	vpslld	$26, %ymm10, %ymm10
-	vpsrld	$6, %ymm2, %ymm2
-	vpor	%ymm10, %ymm2, %ymm9
-	vmovdqu	%ymm3, %ymm2
-	vmovdqu	%ymm2, %ymm10
+	vpsrld	$6, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm9
+	vmovdqu	%ymm3, %ymm7
+	vmovdqu	%ymm7, %ymm10
 	vpslld	$21, %ymm10, %ymm10
-	vpsrld	$11, %ymm2, %ymm2
-	vpor	%ymm10, %ymm2, %ymm2
-	vpxor	%ymm2, %ymm9, %ymm9
-	vmovdqu	%ymm2, %ymm10
+	vpsrld	$11, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm7
+	vpxor	%ymm7, %ymm9, %ymm9
+	vmovdqu	%ymm7, %ymm10
 	vpslld	$18, %ymm10, %ymm10
-	vpsrld	$14, %ymm2, %ymm2
-	vpor	%ymm10, %ymm2, %ymm2
-	vpxor	%ymm2, %ymm9, %ymm2
-	vpaddd	%ymm2, %ymm7, %ymm7
+	vpsrld	$14, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm7
+	vpxor	%ymm7, %ymm9, %ymm7
+	vpaddd	%ymm7, %ymm2, %ymm7
 	vpaddd	%ymm7, %ymm6, %ymm2
 	vmovdqu	%ymm8, %ymm10
 	vpand	%ymm4, %ymm10, %ymm10
@@ -25700,21 +25875,21 @@ slh_dsa_sha2128s_keygen:
 	vpand	%ymm5, %ymm6, %ymm6
 	vpxor	%ymm6, %ymm10, %ymm6
 	vpaddd	%ymm6, %ymm7, %ymm6
-	vmovdqu	%ymm8, %ymm9
-	vmovdqu	%ymm9, %ymm10
+	vmovdqu	%ymm8, %ymm7
+	vmovdqu	%ymm7, %ymm10
 	vpslld	$30, %ymm10, %ymm10
-	vpsrld	$2, %ymm9, %ymm9
-	vpor	%ymm10, %ymm9, %ymm9
-	vmovdqu	%ymm8, %ymm10
-	vmovdqu	%ymm10, %ymm11
-	vpslld	$19, %ymm11, %ymm11
-	vpsrld	$13, %ymm10, %ymm10
-	vpor	%ymm11, %ymm10, %ymm10
-	vpxor	%ymm10, %ymm9, %ymm9
-	vmovdqu	%ymm10, %ymm11
-	vpslld	$23, %ymm11, %ymm11
-	vpsrld	$9, %ymm10, %ymm10
-	vpor	%ymm11, %ymm10, %ymm7
+	vpsrld	$2, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm9
+	vmovdqu	%ymm8, %ymm7
+	vmovdqu	%ymm7, %ymm10
+	vpslld	$19, %ymm10, %ymm10
+	vpsrld	$13, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm7
+	vpxor	%ymm7, %ymm9, %ymm9
+	vmovdqu	%ymm7, %ymm10
+	vpslld	$23, %ymm10, %ymm10
+	vpsrld	$9, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm7
 	vpxor	%ymm7, %ymm9, %ymm7
 	vpaddd	%ymm7, %ymm6, %ymm6
 	vmovdqu	896(%rcx), %ymm7
@@ -25728,21 +25903,21 @@ slh_dsa_sha2128s_keygen:
 	vpand	%ymm1, %ymm7, %ymm7
 	vpxor	%ymm7, %ymm10, %ymm7
 	vpaddd	%ymm7, %ymm0, %ymm0
-	vmovdqu	%ymm2, %ymm9
-	vmovdqu	%ymm9, %ymm10
+	vmovdqu	%ymm2, %ymm7
+	vmovdqu	%ymm7, %ymm10
 	vpslld	$26, %ymm10, %ymm10
-	vpsrld	$6, %ymm9, %ymm9
-	vpor	%ymm10, %ymm9, %ymm9
-	vmovdqu	%ymm2, %ymm10
-	vmovdqu	%ymm10, %ymm11
-	vpslld	$21, %ymm11, %ymm11
-	vpsrld	$11, %ymm10, %ymm10
-	vpor	%ymm11, %ymm10, %ymm10
-	vpxor	%ymm10, %ymm9, %ymm9
-	vmovdqu	%ymm10, %ymm11
-	vpslld	$18, %ymm11, %ymm11
-	vpsrld	$14, %ymm10, %ymm10
-	vpor	%ymm11, %ymm10, %ymm7
+	vpsrld	$6, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm9
+	vmovdqu	%ymm2, %ymm7
+	vmovdqu	%ymm7, %ymm10
+	vpslld	$21, %ymm10, %ymm10
+	vpsrld	$11, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm7
+	vpxor	%ymm7, %ymm9, %ymm9
+	vmovdqu	%ymm7, %ymm10
+	vpslld	$18, %ymm10, %ymm10
+	vpsrld	$14, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm7
 	vpxor	%ymm7, %ymm9, %ymm7
 	vpaddd	%ymm7, %ymm0, %ymm7
 	vpaddd	%ymm7, %ymm5, %ymm0
@@ -25755,21 +25930,21 @@ slh_dsa_sha2128s_keygen:
 	vpand	%ymm4, %ymm5, %ymm5
 	vpxor	%ymm5, %ymm10, %ymm5
 	vpaddd	%ymm5, %ymm7, %ymm5
-	vmovdqu	%ymm6, %ymm9
-	vmovdqu	%ymm9, %ymm10
+	vmovdqu	%ymm6, %ymm7
+	vmovdqu	%ymm7, %ymm10
 	vpslld	$30, %ymm10, %ymm10
-	vpsrld	$2, %ymm9, %ymm9
-	vpor	%ymm10, %ymm9, %ymm9
-	vmovdqu	%ymm6, %ymm10
-	vmovdqu	%ymm10, %ymm11
-	vpslld	$19, %ymm11, %ymm11
-	vpsrld	$13, %ymm10, %ymm10
-	vpor	%ymm11, %ymm10, %ymm10
-	vpxor	%ymm10, %ymm9, %ymm9
-	vmovdqu	%ymm10, %ymm11
-	vpslld	$23, %ymm11, %ymm11
-	vpsrld	$9, %ymm10, %ymm10
-	vpor	%ymm11, %ymm10, %ymm7
+	vpsrld	$2, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm9
+	vmovdqu	%ymm6, %ymm7
+	vmovdqu	%ymm7, %ymm10
+	vpslld	$19, %ymm10, %ymm10
+	vpsrld	$13, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm7
+	vpxor	%ymm7, %ymm9, %ymm9
+	vmovdqu	%ymm7, %ymm10
+	vpslld	$23, %ymm10, %ymm10
+	vpsrld	$9, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm7
 	vpxor	%ymm7, %ymm9, %ymm7
 	vpaddd	%ymm7, %ymm5, %ymm5
 	vmovdqu	928(%rcx), %ymm7
@@ -25783,21 +25958,21 @@ slh_dsa_sha2128s_keygen:
 	vpand	%ymm3, %ymm7, %ymm7
 	vpxor	%ymm7, %ymm10, %ymm7
 	vpaddd	%ymm7, %ymm1, %ymm1
-	vmovdqu	%ymm0, %ymm9
-	vmovdqu	%ymm9, %ymm10
+	vmovdqu	%ymm0, %ymm7
+	vmovdqu	%ymm7, %ymm10
 	vpslld	$26, %ymm10, %ymm10
-	vpsrld	$6, %ymm9, %ymm9
-	vpor	%ymm10, %ymm9, %ymm9
-	vmovdqu	%ymm0, %ymm10
-	vmovdqu	%ymm10, %ymm11
-	vpslld	$21, %ymm11, %ymm11
-	vpsrld	$11, %ymm10, %ymm10
-	vpor	%ymm11, %ymm10, %ymm10
-	vpxor	%ymm10, %ymm9, %ymm9
-	vmovdqu	%ymm10, %ymm11
-	vpslld	$18, %ymm11, %ymm11
-	vpsrld	$14, %ymm10, %ymm10
-	vpor	%ymm11, %ymm10, %ymm7
+	vpsrld	$6, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm9
+	vmovdqu	%ymm0, %ymm7
+	vmovdqu	%ymm7, %ymm10
+	vpslld	$21, %ymm10, %ymm10
+	vpsrld	$11, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm7
+	vpxor	%ymm7, %ymm9, %ymm9
+	vmovdqu	%ymm7, %ymm10
+	vpslld	$18, %ymm10, %ymm10
+	vpsrld	$14, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm7
 	vpxor	%ymm7, %ymm9, %ymm7
 	vpaddd	%ymm7, %ymm1, %ymm7
 	vpaddd	%ymm7, %ymm4, %ymm1
@@ -25810,21 +25985,21 @@ slh_dsa_sha2128s_keygen:
 	vpand	%ymm8, %ymm4, %ymm4
 	vpxor	%ymm4, %ymm10, %ymm4
 	vpaddd	%ymm4, %ymm7, %ymm4
-	vmovdqu	%ymm5, %ymm9
-	vmovdqu	%ymm9, %ymm10
+	vmovdqu	%ymm5, %ymm7
+	vmovdqu	%ymm7, %ymm10
 	vpslld	$30, %ymm10, %ymm10
-	vpsrld	$2, %ymm9, %ymm9
-	vpor	%ymm10, %ymm9, %ymm9
-	vmovdqu	%ymm5, %ymm10
-	vmovdqu	%ymm10, %ymm11
-	vpslld	$19, %ymm11, %ymm11
-	vpsrld	$13, %ymm10, %ymm10
-	vpor	%ymm11, %ymm10, %ymm10
-	vpxor	%ymm10, %ymm9, %ymm9
-	vmovdqu	%ymm10, %ymm11
-	vpslld	$23, %ymm11, %ymm11
-	vpsrld	$9, %ymm10, %ymm10
-	vpor	%ymm11, %ymm10, %ymm7
+	vpsrld	$2, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm9
+	vmovdqu	%ymm5, %ymm7
+	vmovdqu	%ymm7, %ymm10
+	vpslld	$19, %ymm10, %ymm10
+	vpsrld	$13, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm7
+	vpxor	%ymm7, %ymm9, %ymm9
+	vmovdqu	%ymm7, %ymm10
+	vpslld	$23, %ymm10, %ymm10
+	vpsrld	$9, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm7
 	vpxor	%ymm7, %ymm9, %ymm7
 	vpaddd	%ymm7, %ymm4, %ymm4
 	vmovdqu	960(%rcx), %ymm7
@@ -25837,24 +26012,24 @@ slh_dsa_sha2128s_keygen:
 	vpxor	%ymm1, %ymm7, %ymm7
 	vpand	%ymm2, %ymm7, %ymm7
 	vpxor	%ymm7, %ymm10, %ymm7
-	vpaddd	%ymm7, %ymm3, %ymm7
-	vmovdqu	%ymm1, %ymm3
-	vmovdqu	%ymm3, %ymm10
+	vpaddd	%ymm7, %ymm3, %ymm3
+	vmovdqu	%ymm1, %ymm7
+	vmovdqu	%ymm7, %ymm10
 	vpslld	$26, %ymm10, %ymm10
-	vpsrld	$6, %ymm3, %ymm3
-	vpor	%ymm10, %ymm3, %ymm9
-	vmovdqu	%ymm1, %ymm3
-	vmovdqu	%ymm3, %ymm10
+	vpsrld	$6, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm9
+	vmovdqu	%ymm1, %ymm7
+	vmovdqu	%ymm7, %ymm10
 	vpslld	$21, %ymm10, %ymm10
-	vpsrld	$11, %ymm3, %ymm3
-	vpor	%ymm10, %ymm3, %ymm3
-	vpxor	%ymm3, %ymm9, %ymm9
-	vmovdqu	%ymm3, %ymm10
+	vpsrld	$11, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm7
+	vpxor	%ymm7, %ymm9, %ymm9
+	vmovdqu	%ymm7, %ymm10
 	vpslld	$18, %ymm10, %ymm10
-	vpsrld	$14, %ymm3, %ymm3
-	vpor	%ymm10, %ymm3, %ymm3
-	vpxor	%ymm3, %ymm9, %ymm3
-	vpaddd	%ymm3, %ymm7, %ymm7
+	vpsrld	$14, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm7
+	vpxor	%ymm7, %ymm9, %ymm7
+	vpaddd	%ymm7, %ymm3, %ymm7
 	vpaddd	%ymm7, %ymm8, %ymm3
 	vmovdqu	%ymm4, %ymm10
 	vpand	%ymm5, %ymm10, %ymm10
@@ -25892,24 +26067,24 @@ slh_dsa_sha2128s_keygen:
 	vpxor	%ymm3, %ymm7, %ymm7
 	vpand	%ymm0, %ymm7, %ymm7
 	vpxor	%ymm7, %ymm10, %ymm7
-	vpaddd	%ymm7, %ymm2, %ymm7
-	vmovdqu	%ymm3, %ymm2
-	vmovdqu	%ymm2, %ymm10
+	vpaddd	%ymm7, %ymm2, %ymm2
+	vmovdqu	%ymm3, %ymm7
+	vmovdqu	%ymm7, %ymm10
 	vpslld	$26, %ymm10, %ymm10
-	vpsrld	$6, %ymm2, %ymm2
-	vpor	%ymm10, %ymm2, %ymm9
-	vmovdqu	%ymm3, %ymm2
-	vmovdqu	%ymm2, %ymm10
+	vpsrld	$6, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm9
+	vmovdqu	%ymm3, %ymm7
+	vmovdqu	%ymm7, %ymm10
 	vpslld	$21, %ymm10, %ymm10
-	vpsrld	$11, %ymm2, %ymm2
-	vpor	%ymm10, %ymm2, %ymm2
-	vpxor	%ymm2, %ymm9, %ymm9
-	vmovdqu	%ymm2, %ymm10
+	vpsrld	$11, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm7
+	vpxor	%ymm7, %ymm9, %ymm9
+	vmovdqu	%ymm7, %ymm10
 	vpslld	$18, %ymm10, %ymm10
-	vpsrld	$14, %ymm2, %ymm2
-	vpor	%ymm10, %ymm2, %ymm2
-	vpxor	%ymm2, %ymm9, %ymm2
-	vpaddd	%ymm2, %ymm7, %ymm7
+	vpsrld	$14, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm7
+	vpxor	%ymm7, %ymm9, %ymm7
+	vpaddd	%ymm7, %ymm2, %ymm7
 	vpaddd	%ymm7, %ymm6, %ymm2
 	vmovdqu	%ymm8, %ymm10
 	vpand	%ymm4, %ymm10, %ymm10
@@ -25920,21 +26095,21 @@ slh_dsa_sha2128s_keygen:
 	vpand	%ymm5, %ymm6, %ymm6
 	vpxor	%ymm6, %ymm10, %ymm6
 	vpaddd	%ymm6, %ymm7, %ymm6
-	vmovdqu	%ymm8, %ymm9
-	vmovdqu	%ymm9, %ymm10
+	vmovdqu	%ymm8, %ymm7
+	vmovdqu	%ymm7, %ymm10
 	vpslld	$30, %ymm10, %ymm10
-	vpsrld	$2, %ymm9, %ymm9
-	vpor	%ymm10, %ymm9, %ymm9
-	vmovdqu	%ymm8, %ymm10
-	vmovdqu	%ymm10, %ymm11
-	vpslld	$19, %ymm11, %ymm11
-	vpsrld	$13, %ymm10, %ymm10
-	vpor	%ymm11, %ymm10, %ymm10
-	vpxor	%ymm10, %ymm9, %ymm9
-	vmovdqu	%ymm10, %ymm11
-	vpslld	$23, %ymm11, %ymm11
-	vpsrld	$9, %ymm10, %ymm10
-	vpor	%ymm11, %ymm10, %ymm7
+	vpsrld	$2, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm9
+	vmovdqu	%ymm8, %ymm7
+	vmovdqu	%ymm7, %ymm10
+	vpslld	$19, %ymm10, %ymm10
+	vpsrld	$13, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm7
+	vpxor	%ymm7, %ymm9, %ymm9
+	vmovdqu	%ymm7, %ymm10
+	vpslld	$23, %ymm10, %ymm10
+	vpsrld	$9, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm7
 	vpxor	%ymm7, %ymm9, %ymm7
 	vpaddd	%ymm7, %ymm6, %ymm6
 	vmovdqu	1024(%rcx), %ymm7
@@ -25948,21 +26123,21 @@ slh_dsa_sha2128s_keygen:
 	vpand	%ymm1, %ymm7, %ymm7
 	vpxor	%ymm7, %ymm10, %ymm7
 	vpaddd	%ymm7, %ymm0, %ymm0
-	vmovdqu	%ymm2, %ymm9
-	vmovdqu	%ymm9, %ymm10
+	vmovdqu	%ymm2, %ymm7
+	vmovdqu	%ymm7, %ymm10
 	vpslld	$26, %ymm10, %ymm10
-	vpsrld	$6, %ymm9, %ymm9
-	vpor	%ymm10, %ymm9, %ymm9
-	vmovdqu	%ymm2, %ymm10
-	vmovdqu	%ymm10, %ymm11
-	vpslld	$21, %ymm11, %ymm11
-	vpsrld	$11, %ymm10, %ymm10
-	vpor	%ymm11, %ymm10, %ymm10
-	vpxor	%ymm10, %ymm9, %ymm9
-	vmovdqu	%ymm10, %ymm11
-	vpslld	$18, %ymm11, %ymm11
-	vpsrld	$14, %ymm10, %ymm10
-	vpor	%ymm11, %ymm10, %ymm7
+	vpsrld	$6, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm9
+	vmovdqu	%ymm2, %ymm7
+	vmovdqu	%ymm7, %ymm10
+	vpslld	$21, %ymm10, %ymm10
+	vpsrld	$11, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm7
+	vpxor	%ymm7, %ymm9, %ymm9
+	vmovdqu	%ymm7, %ymm10
+	vpslld	$18, %ymm10, %ymm10
+	vpsrld	$14, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm7
 	vpxor	%ymm7, %ymm9, %ymm7
 	vpaddd	%ymm7, %ymm0, %ymm7
 	vpaddd	%ymm7, %ymm5, %ymm0
@@ -25975,21 +26150,21 @@ slh_dsa_sha2128s_keygen:
 	vpand	%ymm4, %ymm5, %ymm5
 	vpxor	%ymm5, %ymm10, %ymm5
 	vpaddd	%ymm5, %ymm7, %ymm5
-	vmovdqu	%ymm6, %ymm9
-	vmovdqu	%ymm9, %ymm10
+	vmovdqu	%ymm6, %ymm7
+	vmovdqu	%ymm7, %ymm10
 	vpslld	$30, %ymm10, %ymm10
-	vpsrld	$2, %ymm9, %ymm9
-	vpor	%ymm10, %ymm9, %ymm9
-	vmovdqu	%ymm6, %ymm10
-	vmovdqu	%ymm10, %ymm11
-	vpslld	$19, %ymm11, %ymm11
-	vpsrld	$13, %ymm10, %ymm10
-	vpor	%ymm11, %ymm10, %ymm10
-	vpxor	%ymm10, %ymm9, %ymm9
-	vmovdqu	%ymm10, %ymm11
-	vpslld	$23, %ymm11, %ymm11
-	vpsrld	$9, %ymm10, %ymm10
-	vpor	%ymm11, %ymm10, %ymm7
+	vpsrld	$2, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm9
+	vmovdqu	%ymm6, %ymm7
+	vmovdqu	%ymm7, %ymm10
+	vpslld	$19, %ymm10, %ymm10
+	vpsrld	$13, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm7
+	vpxor	%ymm7, %ymm9, %ymm9
+	vmovdqu	%ymm7, %ymm10
+	vpslld	$23, %ymm10, %ymm10
+	vpsrld	$9, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm7
 	vpxor	%ymm7, %ymm9, %ymm7
 	vpaddd	%ymm7, %ymm5, %ymm5
 	vmovdqu	1056(%rcx), %ymm7
@@ -26003,21 +26178,21 @@ slh_dsa_sha2128s_keygen:
 	vpand	%ymm3, %ymm7, %ymm7
 	vpxor	%ymm7, %ymm10, %ymm7
 	vpaddd	%ymm7, %ymm1, %ymm1
-	vmovdqu	%ymm0, %ymm9
-	vmovdqu	%ymm9, %ymm10
+	vmovdqu	%ymm0, %ymm7
+	vmovdqu	%ymm7, %ymm10
 	vpslld	$26, %ymm10, %ymm10
-	vpsrld	$6, %ymm9, %ymm9
-	vpor	%ymm10, %ymm9, %ymm9
-	vmovdqu	%ymm0, %ymm10
-	vmovdqu	%ymm10, %ymm11
-	vpslld	$21, %ymm11, %ymm11
-	vpsrld	$11, %ymm10, %ymm10
-	vpor	%ymm11, %ymm10, %ymm10
-	vpxor	%ymm10, %ymm9, %ymm9
-	vmovdqu	%ymm10, %ymm11
-	vpslld	$18, %ymm11, %ymm11
-	vpsrld	$14, %ymm10, %ymm10
-	vpor	%ymm11, %ymm10, %ymm7
+	vpsrld	$6, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm9
+	vmovdqu	%ymm0, %ymm7
+	vmovdqu	%ymm7, %ymm10
+	vpslld	$21, %ymm10, %ymm10
+	vpsrld	$11, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm7
+	vpxor	%ymm7, %ymm9, %ymm9
+	vmovdqu	%ymm7, %ymm10
+	vpslld	$18, %ymm10, %ymm10
+	vpsrld	$14, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm7
 	vpxor	%ymm7, %ymm9, %ymm7
 	vpaddd	%ymm7, %ymm1, %ymm7
 	vpaddd	%ymm7, %ymm4, %ymm1
@@ -26030,21 +26205,21 @@ slh_dsa_sha2128s_keygen:
 	vpand	%ymm8, %ymm4, %ymm4
 	vpxor	%ymm4, %ymm10, %ymm4
 	vpaddd	%ymm4, %ymm7, %ymm4
-	vmovdqu	%ymm5, %ymm9
-	vmovdqu	%ymm9, %ymm10
+	vmovdqu	%ymm5, %ymm7
+	vmovdqu	%ymm7, %ymm10
 	vpslld	$30, %ymm10, %ymm10
-	vpsrld	$2, %ymm9, %ymm9
-	vpor	%ymm10, %ymm9, %ymm9
-	vmovdqu	%ymm5, %ymm10
-	vmovdqu	%ymm10, %ymm11
-	vpslld	$19, %ymm11, %ymm11
-	vpsrld	$13, %ymm10, %ymm10
-	vpor	%ymm11, %ymm10, %ymm10
-	vpxor	%ymm10, %ymm9, %ymm9
-	vmovdqu	%ymm10, %ymm11
-	vpslld	$23, %ymm11, %ymm11
-	vpsrld	$9, %ymm10, %ymm10
-	vpor	%ymm11, %ymm10, %ymm7
+	vpsrld	$2, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm9
+	vmovdqu	%ymm5, %ymm7
+	vmovdqu	%ymm7, %ymm10
+	vpslld	$19, %ymm10, %ymm10
+	vpsrld	$13, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm7
+	vpxor	%ymm7, %ymm9, %ymm9
+	vmovdqu	%ymm7, %ymm10
+	vpslld	$23, %ymm10, %ymm10
+	vpsrld	$9, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm7
 	vpxor	%ymm7, %ymm9, %ymm7
 	vpaddd	%ymm7, %ymm4, %ymm4
 	vmovdqu	1088(%rcx), %ymm7
@@ -26057,24 +26232,24 @@ slh_dsa_sha2128s_keygen:
 	vpxor	%ymm1, %ymm7, %ymm7
 	vpand	%ymm2, %ymm7, %ymm7
 	vpxor	%ymm7, %ymm10, %ymm7
-	vpaddd	%ymm7, %ymm3, %ymm7
-	vmovdqu	%ymm1, %ymm3
-	vmovdqu	%ymm3, %ymm10
+	vpaddd	%ymm7, %ymm3, %ymm3
+	vmovdqu	%ymm1, %ymm7
+	vmovdqu	%ymm7, %ymm10
 	vpslld	$26, %ymm10, %ymm10
-	vpsrld	$6, %ymm3, %ymm3
-	vpor	%ymm10, %ymm3, %ymm9
-	vmovdqu	%ymm1, %ymm3
-	vmovdqu	%ymm3, %ymm10
+	vpsrld	$6, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm9
+	vmovdqu	%ymm1, %ymm7
+	vmovdqu	%ymm7, %ymm10
 	vpslld	$21, %ymm10, %ymm10
-	vpsrld	$11, %ymm3, %ymm3
-	vpor	%ymm10, %ymm3, %ymm3
-	vpxor	%ymm3, %ymm9, %ymm9
-	vmovdqu	%ymm3, %ymm10
+	vpsrld	$11, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm7
+	vpxor	%ymm7, %ymm9, %ymm9
+	vmovdqu	%ymm7, %ymm10
 	vpslld	$18, %ymm10, %ymm10
-	vpsrld	$14, %ymm3, %ymm3
-	vpor	%ymm10, %ymm3, %ymm3
-	vpxor	%ymm3, %ymm9, %ymm3
-	vpaddd	%ymm3, %ymm7, %ymm7
+	vpsrld	$14, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm7
+	vpxor	%ymm7, %ymm9, %ymm7
+	vpaddd	%ymm7, %ymm3, %ymm7
 	vpaddd	%ymm7, %ymm8, %ymm3
 	vmovdqu	%ymm4, %ymm10
 	vpand	%ymm5, %ymm10, %ymm10
@@ -26112,24 +26287,24 @@ slh_dsa_sha2128s_keygen:
 	vpxor	%ymm3, %ymm7, %ymm7
 	vpand	%ymm0, %ymm7, %ymm7
 	vpxor	%ymm7, %ymm10, %ymm7
-	vpaddd	%ymm7, %ymm2, %ymm7
-	vmovdqu	%ymm3, %ymm2
-	vmovdqu	%ymm2, %ymm10
+	vpaddd	%ymm7, %ymm2, %ymm2
+	vmovdqu	%ymm3, %ymm7
+	vmovdqu	%ymm7, %ymm10
 	vpslld	$26, %ymm10, %ymm10
-	vpsrld	$6, %ymm2, %ymm2
-	vpor	%ymm10, %ymm2, %ymm9
-	vmovdqu	%ymm3, %ymm2
-	vmovdqu	%ymm2, %ymm10
+	vpsrld	$6, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm9
+	vmovdqu	%ymm3, %ymm7
+	vmovdqu	%ymm7, %ymm10
 	vpslld	$21, %ymm10, %ymm10
-	vpsrld	$11, %ymm2, %ymm2
-	vpor	%ymm10, %ymm2, %ymm2
-	vpxor	%ymm2, %ymm9, %ymm9
-	vmovdqu	%ymm2, %ymm10
+	vpsrld	$11, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm7
+	vpxor	%ymm7, %ymm9, %ymm9
+	vmovdqu	%ymm7, %ymm10
 	vpslld	$18, %ymm10, %ymm10
-	vpsrld	$14, %ymm2, %ymm2
-	vpor	%ymm10, %ymm2, %ymm2
-	vpxor	%ymm2, %ymm9, %ymm2
-	vpaddd	%ymm2, %ymm7, %ymm7
+	vpsrld	$14, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm7
+	vpxor	%ymm7, %ymm9, %ymm7
+	vpaddd	%ymm7, %ymm2, %ymm7
 	vpaddd	%ymm7, %ymm6, %ymm2
 	vmovdqu	%ymm8, %ymm10
 	vpand	%ymm4, %ymm10, %ymm10
@@ -26140,21 +26315,21 @@ slh_dsa_sha2128s_keygen:
 	vpand	%ymm5, %ymm6, %ymm6
 	vpxor	%ymm6, %ymm10, %ymm6
 	vpaddd	%ymm6, %ymm7, %ymm6
-	vmovdqu	%ymm8, %ymm9
-	vmovdqu	%ymm9, %ymm10
+	vmovdqu	%ymm8, %ymm7
+	vmovdqu	%ymm7, %ymm10
 	vpslld	$30, %ymm10, %ymm10
-	vpsrld	$2, %ymm9, %ymm9
-	vpor	%ymm10, %ymm9, %ymm9
-	vmovdqu	%ymm8, %ymm10
-	vmovdqu	%ymm10, %ymm11
-	vpslld	$19, %ymm11, %ymm11
-	vpsrld	$13, %ymm10, %ymm10
-	vpor	%ymm11, %ymm10, %ymm10
-	vpxor	%ymm10, %ymm9, %ymm9
-	vmovdqu	%ymm10, %ymm11
-	vpslld	$23, %ymm11, %ymm11
-	vpsrld	$9, %ymm10, %ymm10
-	vpor	%ymm11, %ymm10, %ymm7
+	vpsrld	$2, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm9
+	vmovdqu	%ymm8, %ymm7
+	vmovdqu	%ymm7, %ymm10
+	vpslld	$19, %ymm10, %ymm10
+	vpsrld	$13, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm7
+	vpxor	%ymm7, %ymm9, %ymm9
+	vmovdqu	%ymm7, %ymm10
+	vpslld	$23, %ymm10, %ymm10
+	vpsrld	$9, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm7
 	vpxor	%ymm7, %ymm9, %ymm7
 	vpaddd	%ymm7, %ymm6, %ymm6
 	vmovdqu	1152(%rcx), %ymm7
@@ -26168,21 +26343,21 @@ slh_dsa_sha2128s_keygen:
 	vpand	%ymm1, %ymm7, %ymm7
 	vpxor	%ymm7, %ymm10, %ymm7
 	vpaddd	%ymm7, %ymm0, %ymm0
-	vmovdqu	%ymm2, %ymm9
-	vmovdqu	%ymm9, %ymm10
+	vmovdqu	%ymm2, %ymm7
+	vmovdqu	%ymm7, %ymm10
 	vpslld	$26, %ymm10, %ymm10
-	vpsrld	$6, %ymm9, %ymm9
-	vpor	%ymm10, %ymm9, %ymm9
-	vmovdqu	%ymm2, %ymm10
-	vmovdqu	%ymm10, %ymm11
-	vpslld	$21, %ymm11, %ymm11
-	vpsrld	$11, %ymm10, %ymm10
-	vpor	%ymm11, %ymm10, %ymm10
-	vpxor	%ymm10, %ymm9, %ymm9
-	vmovdqu	%ymm10, %ymm11
-	vpslld	$18, %ymm11, %ymm11
-	vpsrld	$14, %ymm10, %ymm10
-	vpor	%ymm11, %ymm10, %ymm7
+	vpsrld	$6, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm9
+	vmovdqu	%ymm2, %ymm7
+	vmovdqu	%ymm7, %ymm10
+	vpslld	$21, %ymm10, %ymm10
+	vpsrld	$11, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm7
+	vpxor	%ymm7, %ymm9, %ymm9
+	vmovdqu	%ymm7, %ymm10
+	vpslld	$18, %ymm10, %ymm10
+	vpsrld	$14, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm7
 	vpxor	%ymm7, %ymm9, %ymm7
 	vpaddd	%ymm7, %ymm0, %ymm7
 	vpaddd	%ymm7, %ymm5, %ymm0
@@ -26195,21 +26370,21 @@ slh_dsa_sha2128s_keygen:
 	vpand	%ymm4, %ymm5, %ymm5
 	vpxor	%ymm5, %ymm10, %ymm5
 	vpaddd	%ymm5, %ymm7, %ymm5
-	vmovdqu	%ymm6, %ymm9
-	vmovdqu	%ymm9, %ymm10
+	vmovdqu	%ymm6, %ymm7
+	vmovdqu	%ymm7, %ymm10
 	vpslld	$30, %ymm10, %ymm10
-	vpsrld	$2, %ymm9, %ymm9
-	vpor	%ymm10, %ymm9, %ymm9
-	vmovdqu	%ymm6, %ymm10
-	vmovdqu	%ymm10, %ymm11
-	vpslld	$19, %ymm11, %ymm11
-	vpsrld	$13, %ymm10, %ymm10
-	vpor	%ymm11, %ymm10, %ymm10
-	vpxor	%ymm10, %ymm9, %ymm9
-	vmovdqu	%ymm10, %ymm11
-	vpslld	$23, %ymm11, %ymm11
-	vpsrld	$9, %ymm10, %ymm10
-	vpor	%ymm11, %ymm10, %ymm7
+	vpsrld	$2, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm9
+	vmovdqu	%ymm6, %ymm7
+	vmovdqu	%ymm7, %ymm10
+	vpslld	$19, %ymm10, %ymm10
+	vpsrld	$13, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm7
+	vpxor	%ymm7, %ymm9, %ymm9
+	vmovdqu	%ymm7, %ymm10
+	vpslld	$23, %ymm10, %ymm10
+	vpsrld	$9, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm7
 	vpxor	%ymm7, %ymm9, %ymm7
 	vpaddd	%ymm7, %ymm5, %ymm5
 	vmovdqu	1184(%rcx), %ymm7
@@ -26223,21 +26398,21 @@ slh_dsa_sha2128s_keygen:
 	vpand	%ymm3, %ymm7, %ymm7
 	vpxor	%ymm7, %ymm10, %ymm7
 	vpaddd	%ymm7, %ymm1, %ymm1
-	vmovdqu	%ymm0, %ymm9
-	vmovdqu	%ymm9, %ymm10
+	vmovdqu	%ymm0, %ymm7
+	vmovdqu	%ymm7, %ymm10
 	vpslld	$26, %ymm10, %ymm10
-	vpsrld	$6, %ymm9, %ymm9
-	vpor	%ymm10, %ymm9, %ymm9
-	vmovdqu	%ymm0, %ymm10
-	vmovdqu	%ymm10, %ymm11
-	vpslld	$21, %ymm11, %ymm11
-	vpsrld	$11, %ymm10, %ymm10
-	vpor	%ymm11, %ymm10, %ymm10
-	vpxor	%ymm10, %ymm9, %ymm9
-	vmovdqu	%ymm10, %ymm11
-	vpslld	$18, %ymm11, %ymm11
-	vpsrld	$14, %ymm10, %ymm10
-	vpor	%ymm11, %ymm10, %ymm7
+	vpsrld	$6, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm9
+	vmovdqu	%ymm0, %ymm7
+	vmovdqu	%ymm7, %ymm10
+	vpslld	$21, %ymm10, %ymm10
+	vpsrld	$11, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm7
+	vpxor	%ymm7, %ymm9, %ymm9
+	vmovdqu	%ymm7, %ymm10
+	vpslld	$18, %ymm10, %ymm10
+	vpsrld	$14, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm7
 	vpxor	%ymm7, %ymm9, %ymm7
 	vpaddd	%ymm7, %ymm1, %ymm7
 	vpaddd	%ymm7, %ymm4, %ymm1
@@ -26250,21 +26425,21 @@ slh_dsa_sha2128s_keygen:
 	vpand	%ymm8, %ymm4, %ymm4
 	vpxor	%ymm4, %ymm10, %ymm4
 	vpaddd	%ymm4, %ymm7, %ymm4
-	vmovdqu	%ymm5, %ymm9
-	vmovdqu	%ymm9, %ymm10
+	vmovdqu	%ymm5, %ymm7
+	vmovdqu	%ymm7, %ymm10
 	vpslld	$30, %ymm10, %ymm10
-	vpsrld	$2, %ymm9, %ymm9
-	vpor	%ymm10, %ymm9, %ymm9
-	vmovdqu	%ymm5, %ymm10
-	vmovdqu	%ymm10, %ymm11
-	vpslld	$19, %ymm11, %ymm11
-	vpsrld	$13, %ymm10, %ymm10
-	vpor	%ymm11, %ymm10, %ymm10
-	vpxor	%ymm10, %ymm9, %ymm9
-	vmovdqu	%ymm10, %ymm11
-	vpslld	$23, %ymm11, %ymm11
-	vpsrld	$9, %ymm10, %ymm10
-	vpor	%ymm11, %ymm10, %ymm7
+	vpsrld	$2, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm9
+	vmovdqu	%ymm5, %ymm7
+	vmovdqu	%ymm7, %ymm10
+	vpslld	$19, %ymm10, %ymm10
+	vpsrld	$13, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm7
+	vpxor	%ymm7, %ymm9, %ymm9
+	vmovdqu	%ymm7, %ymm10
+	vpslld	$23, %ymm10, %ymm10
+	vpsrld	$9, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm7
 	vpxor	%ymm7, %ymm9, %ymm7
 	vpaddd	%ymm7, %ymm4, %ymm4
 	vmovdqu	1216(%rcx), %ymm7
@@ -26277,24 +26452,24 @@ slh_dsa_sha2128s_keygen:
 	vpxor	%ymm1, %ymm7, %ymm7
 	vpand	%ymm2, %ymm7, %ymm7
 	vpxor	%ymm7, %ymm10, %ymm7
-	vpaddd	%ymm7, %ymm3, %ymm7
-	vmovdqu	%ymm1, %ymm3
-	vmovdqu	%ymm3, %ymm10
+	vpaddd	%ymm7, %ymm3, %ymm3
+	vmovdqu	%ymm1, %ymm7
+	vmovdqu	%ymm7, %ymm10
 	vpslld	$26, %ymm10, %ymm10
-	vpsrld	$6, %ymm3, %ymm3
-	vpor	%ymm10, %ymm3, %ymm9
-	vmovdqu	%ymm1, %ymm3
-	vmovdqu	%ymm3, %ymm10
+	vpsrld	$6, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm9
+	vmovdqu	%ymm1, %ymm7
+	vmovdqu	%ymm7, %ymm10
 	vpslld	$21, %ymm10, %ymm10
-	vpsrld	$11, %ymm3, %ymm3
-	vpor	%ymm10, %ymm3, %ymm3
-	vpxor	%ymm3, %ymm9, %ymm9
-	vmovdqu	%ymm3, %ymm10
+	vpsrld	$11, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm7
+	vpxor	%ymm7, %ymm9, %ymm9
+	vmovdqu	%ymm7, %ymm10
 	vpslld	$18, %ymm10, %ymm10
-	vpsrld	$14, %ymm3, %ymm3
-	vpor	%ymm10, %ymm3, %ymm3
-	vpxor	%ymm3, %ymm9, %ymm3
-	vpaddd	%ymm3, %ymm7, %ymm7
+	vpsrld	$14, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm7
+	vpxor	%ymm7, %ymm9, %ymm7
+	vpaddd	%ymm7, %ymm3, %ymm7
 	vpaddd	%ymm7, %ymm8, %ymm3
 	vmovdqu	%ymm4, %ymm10
 	vpand	%ymm5, %ymm10, %ymm10
@@ -26332,24 +26507,24 @@ slh_dsa_sha2128s_keygen:
 	vpxor	%ymm3, %ymm7, %ymm7
 	vpand	%ymm0, %ymm7, %ymm7
 	vpxor	%ymm7, %ymm10, %ymm7
-	vpaddd	%ymm7, %ymm2, %ymm7
-	vmovdqu	%ymm3, %ymm2
-	vmovdqu	%ymm2, %ymm10
+	vpaddd	%ymm7, %ymm2, %ymm2
+	vmovdqu	%ymm3, %ymm7
+	vmovdqu	%ymm7, %ymm10
 	vpslld	$26, %ymm10, %ymm10
-	vpsrld	$6, %ymm2, %ymm2
-	vpor	%ymm10, %ymm2, %ymm9
-	vmovdqu	%ymm3, %ymm2
-	vmovdqu	%ymm2, %ymm10
+	vpsrld	$6, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm9
+	vmovdqu	%ymm3, %ymm7
+	vmovdqu	%ymm7, %ymm10
 	vpslld	$21, %ymm10, %ymm10
-	vpsrld	$11, %ymm2, %ymm2
-	vpor	%ymm10, %ymm2, %ymm2
-	vpxor	%ymm2, %ymm9, %ymm9
-	vmovdqu	%ymm2, %ymm10
+	vpsrld	$11, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm7
+	vpxor	%ymm7, %ymm9, %ymm9
+	vmovdqu	%ymm7, %ymm10
 	vpslld	$18, %ymm10, %ymm10
-	vpsrld	$14, %ymm2, %ymm2
-	vpor	%ymm10, %ymm2, %ymm2
-	vpxor	%ymm2, %ymm9, %ymm2
-	vpaddd	%ymm2, %ymm7, %ymm7
+	vpsrld	$14, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm7
+	vpxor	%ymm7, %ymm9, %ymm7
+	vpaddd	%ymm7, %ymm2, %ymm7
 	vpaddd	%ymm7, %ymm6, %ymm2
 	vmovdqu	%ymm8, %ymm10
 	vpand	%ymm4, %ymm10, %ymm10
@@ -26360,21 +26535,21 @@ slh_dsa_sha2128s_keygen:
 	vpand	%ymm5, %ymm6, %ymm6
 	vpxor	%ymm6, %ymm10, %ymm6
 	vpaddd	%ymm6, %ymm7, %ymm6
-	vmovdqu	%ymm8, %ymm9
-	vmovdqu	%ymm9, %ymm10
+	vmovdqu	%ymm8, %ymm7
+	vmovdqu	%ymm7, %ymm10
 	vpslld	$30, %ymm10, %ymm10
-	vpsrld	$2, %ymm9, %ymm9
-	vpor	%ymm10, %ymm9, %ymm9
-	vmovdqu	%ymm8, %ymm10
-	vmovdqu	%ymm10, %ymm11
-	vpslld	$19, %ymm11, %ymm11
-	vpsrld	$13, %ymm10, %ymm10
-	vpor	%ymm11, %ymm10, %ymm10
-	vpxor	%ymm10, %ymm9, %ymm9
-	vmovdqu	%ymm10, %ymm11
-	vpslld	$23, %ymm11, %ymm11
-	vpsrld	$9, %ymm10, %ymm10
-	vpor	%ymm11, %ymm10, %ymm7
+	vpsrld	$2, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm9
+	vmovdqu	%ymm8, %ymm7
+	vmovdqu	%ymm7, %ymm10
+	vpslld	$19, %ymm10, %ymm10
+	vpsrld	$13, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm7
+	vpxor	%ymm7, %ymm9, %ymm9
+	vmovdqu	%ymm7, %ymm10
+	vpslld	$23, %ymm10, %ymm10
+	vpsrld	$9, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm7
 	vpxor	%ymm7, %ymm9, %ymm7
 	vpaddd	%ymm7, %ymm6, %ymm6
 	vmovdqu	1280(%rcx), %ymm7
@@ -26388,21 +26563,21 @@ slh_dsa_sha2128s_keygen:
 	vpand	%ymm1, %ymm7, %ymm7
 	vpxor	%ymm7, %ymm10, %ymm7
 	vpaddd	%ymm7, %ymm0, %ymm0
-	vmovdqu	%ymm2, %ymm9
-	vmovdqu	%ymm9, %ymm10
+	vmovdqu	%ymm2, %ymm7
+	vmovdqu	%ymm7, %ymm10
 	vpslld	$26, %ymm10, %ymm10
-	vpsrld	$6, %ymm9, %ymm9
-	vpor	%ymm10, %ymm9, %ymm9
-	vmovdqu	%ymm2, %ymm10
-	vmovdqu	%ymm10, %ymm11
-	vpslld	$21, %ymm11, %ymm11
-	vpsrld	$11, %ymm10, %ymm10
-	vpor	%ymm11, %ymm10, %ymm10
-	vpxor	%ymm10, %ymm9, %ymm9
-	vmovdqu	%ymm10, %ymm11
-	vpslld	$18, %ymm11, %ymm11
-	vpsrld	$14, %ymm10, %ymm10
-	vpor	%ymm11, %ymm10, %ymm7
+	vpsrld	$6, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm9
+	vmovdqu	%ymm2, %ymm7
+	vmovdqu	%ymm7, %ymm10
+	vpslld	$21, %ymm10, %ymm10
+	vpsrld	$11, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm7
+	vpxor	%ymm7, %ymm9, %ymm9
+	vmovdqu	%ymm7, %ymm10
+	vpslld	$18, %ymm10, %ymm10
+	vpsrld	$14, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm7
 	vpxor	%ymm7, %ymm9, %ymm7
 	vpaddd	%ymm7, %ymm0, %ymm7
 	vpaddd	%ymm7, %ymm5, %ymm0
@@ -26415,21 +26590,21 @@ slh_dsa_sha2128s_keygen:
 	vpand	%ymm4, %ymm5, %ymm5
 	vpxor	%ymm5, %ymm10, %ymm5
 	vpaddd	%ymm5, %ymm7, %ymm5
-	vmovdqu	%ymm6, %ymm9
-	vmovdqu	%ymm9, %ymm10
+	vmovdqu	%ymm6, %ymm7
+	vmovdqu	%ymm7, %ymm10
 	vpslld	$30, %ymm10, %ymm10
-	vpsrld	$2, %ymm9, %ymm9
-	vpor	%ymm10, %ymm9, %ymm9
-	vmovdqu	%ymm6, %ymm10
-	vmovdqu	%ymm10, %ymm11
-	vpslld	$19, %ymm11, %ymm11
-	vpsrld	$13, %ymm10, %ymm10
-	vpor	%ymm11, %ymm10, %ymm10
-	vpxor	%ymm10, %ymm9, %ymm9
-	vmovdqu	%ymm10, %ymm11
-	vpslld	$23, %ymm11, %ymm11
-	vpsrld	$9, %ymm10, %ymm10
-	vpor	%ymm11, %ymm10, %ymm7
+	vpsrld	$2, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm9
+	vmovdqu	%ymm6, %ymm7
+	vmovdqu	%ymm7, %ymm10
+	vpslld	$19, %ymm10, %ymm10
+	vpsrld	$13, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm7
+	vpxor	%ymm7, %ymm9, %ymm9
+	vmovdqu	%ymm7, %ymm10
+	vpslld	$23, %ymm10, %ymm10
+	vpsrld	$9, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm7
 	vpxor	%ymm7, %ymm9, %ymm7
 	vpaddd	%ymm7, %ymm5, %ymm5
 	vmovdqu	1312(%rcx), %ymm7
@@ -26443,21 +26618,21 @@ slh_dsa_sha2128s_keygen:
 	vpand	%ymm3, %ymm7, %ymm7
 	vpxor	%ymm7, %ymm10, %ymm7
 	vpaddd	%ymm7, %ymm1, %ymm1
-	vmovdqu	%ymm0, %ymm9
-	vmovdqu	%ymm9, %ymm10
+	vmovdqu	%ymm0, %ymm7
+	vmovdqu	%ymm7, %ymm10
 	vpslld	$26, %ymm10, %ymm10
-	vpsrld	$6, %ymm9, %ymm9
-	vpor	%ymm10, %ymm9, %ymm9
-	vmovdqu	%ymm0, %ymm10
-	vmovdqu	%ymm10, %ymm11
-	vpslld	$21, %ymm11, %ymm11
-	vpsrld	$11, %ymm10, %ymm10
-	vpor	%ymm11, %ymm10, %ymm10
-	vpxor	%ymm10, %ymm9, %ymm9
-	vmovdqu	%ymm10, %ymm11
-	vpslld	$18, %ymm11, %ymm11
-	vpsrld	$14, %ymm10, %ymm10
-	vpor	%ymm11, %ymm10, %ymm7
+	vpsrld	$6, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm9
+	vmovdqu	%ymm0, %ymm7
+	vmovdqu	%ymm7, %ymm10
+	vpslld	$21, %ymm10, %ymm10
+	vpsrld	$11, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm7
+	vpxor	%ymm7, %ymm9, %ymm9
+	vmovdqu	%ymm7, %ymm10
+	vpslld	$18, %ymm10, %ymm10
+	vpsrld	$14, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm7
 	vpxor	%ymm7, %ymm9, %ymm7
 	vpaddd	%ymm7, %ymm1, %ymm7
 	vpaddd	%ymm7, %ymm4, %ymm1
@@ -26470,21 +26645,21 @@ slh_dsa_sha2128s_keygen:
 	vpand	%ymm8, %ymm4, %ymm4
 	vpxor	%ymm4, %ymm10, %ymm4
 	vpaddd	%ymm4, %ymm7, %ymm4
-	vmovdqu	%ymm5, %ymm9
-	vmovdqu	%ymm9, %ymm10
+	vmovdqu	%ymm5, %ymm7
+	vmovdqu	%ymm7, %ymm10
 	vpslld	$30, %ymm10, %ymm10
-	vpsrld	$2, %ymm9, %ymm9
-	vpor	%ymm10, %ymm9, %ymm9
-	vmovdqu	%ymm5, %ymm10
-	vmovdqu	%ymm10, %ymm11
-	vpslld	$19, %ymm11, %ymm11
-	vpsrld	$13, %ymm10, %ymm10
-	vpor	%ymm11, %ymm10, %ymm10
-	vpxor	%ymm10, %ymm9, %ymm9
-	vmovdqu	%ymm10, %ymm11
-	vpslld	$23, %ymm11, %ymm11
-	vpsrld	$9, %ymm10, %ymm10
-	vpor	%ymm11, %ymm10, %ymm7
+	vpsrld	$2, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm9
+	vmovdqu	%ymm5, %ymm7
+	vmovdqu	%ymm7, %ymm10
+	vpslld	$19, %ymm10, %ymm10
+	vpsrld	$13, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm7
+	vpxor	%ymm7, %ymm9, %ymm9
+	vmovdqu	%ymm7, %ymm10
+	vpslld	$23, %ymm10, %ymm10
+	vpsrld	$9, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm7
 	vpxor	%ymm7, %ymm9, %ymm7
 	vpaddd	%ymm7, %ymm4, %ymm4
 	vmovdqu	1344(%rcx), %ymm7
@@ -26497,24 +26672,24 @@ slh_dsa_sha2128s_keygen:
 	vpxor	%ymm1, %ymm7, %ymm7
 	vpand	%ymm2, %ymm7, %ymm7
 	vpxor	%ymm7, %ymm10, %ymm7
-	vpaddd	%ymm7, %ymm3, %ymm7
-	vmovdqu	%ymm1, %ymm3
-	vmovdqu	%ymm3, %ymm10
+	vpaddd	%ymm7, %ymm3, %ymm3
+	vmovdqu	%ymm1, %ymm7
+	vmovdqu	%ymm7, %ymm10
 	vpslld	$26, %ymm10, %ymm10
-	vpsrld	$6, %ymm3, %ymm3
-	vpor	%ymm10, %ymm3, %ymm9
-	vmovdqu	%ymm1, %ymm3
-	vmovdqu	%ymm3, %ymm10
+	vpsrld	$6, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm9
+	vmovdqu	%ymm1, %ymm7
+	vmovdqu	%ymm7, %ymm10
 	vpslld	$21, %ymm10, %ymm10
-	vpsrld	$11, %ymm3, %ymm3
-	vpor	%ymm10, %ymm3, %ymm3
-	vpxor	%ymm3, %ymm9, %ymm9
-	vmovdqu	%ymm3, %ymm10
+	vpsrld	$11, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm7
+	vpxor	%ymm7, %ymm9, %ymm9
+	vmovdqu	%ymm7, %ymm10
 	vpslld	$18, %ymm10, %ymm10
-	vpsrld	$14, %ymm3, %ymm3
-	vpor	%ymm10, %ymm3, %ymm3
-	vpxor	%ymm3, %ymm9, %ymm3
-	vpaddd	%ymm3, %ymm7, %ymm7
+	vpsrld	$14, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm7
+	vpxor	%ymm7, %ymm9, %ymm7
+	vpaddd	%ymm7, %ymm3, %ymm7
 	vpaddd	%ymm7, %ymm8, %ymm3
 	vmovdqu	%ymm4, %ymm10
 	vpand	%ymm5, %ymm10, %ymm10
@@ -26552,24 +26727,24 @@ slh_dsa_sha2128s_keygen:
 	vpxor	%ymm3, %ymm7, %ymm7
 	vpand	%ymm0, %ymm7, %ymm7
 	vpxor	%ymm7, %ymm10, %ymm7
-	vpaddd	%ymm7, %ymm2, %ymm7
-	vmovdqu	%ymm3, %ymm2
-	vmovdqu	%ymm2, %ymm10
+	vpaddd	%ymm7, %ymm2, %ymm2
+	vmovdqu	%ymm3, %ymm7
+	vmovdqu	%ymm7, %ymm10
 	vpslld	$26, %ymm10, %ymm10
-	vpsrld	$6, %ymm2, %ymm2
-	vpor	%ymm10, %ymm2, %ymm9
-	vmovdqu	%ymm3, %ymm2
-	vmovdqu	%ymm2, %ymm10
+	vpsrld	$6, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm9
+	vmovdqu	%ymm3, %ymm7
+	vmovdqu	%ymm7, %ymm10
 	vpslld	$21, %ymm10, %ymm10
-	vpsrld	$11, %ymm2, %ymm2
-	vpor	%ymm10, %ymm2, %ymm2
-	vpxor	%ymm2, %ymm9, %ymm9
-	vmovdqu	%ymm2, %ymm10
+	vpsrld	$11, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm7
+	vpxor	%ymm7, %ymm9, %ymm9
+	vmovdqu	%ymm7, %ymm10
 	vpslld	$18, %ymm10, %ymm10
-	vpsrld	$14, %ymm2, %ymm2
-	vpor	%ymm10, %ymm2, %ymm2
-	vpxor	%ymm2, %ymm9, %ymm2
-	vpaddd	%ymm2, %ymm7, %ymm7
+	vpsrld	$14, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm7
+	vpxor	%ymm7, %ymm9, %ymm7
+	vpaddd	%ymm7, %ymm2, %ymm7
 	vpaddd	%ymm7, %ymm6, %ymm2
 	vmovdqu	%ymm8, %ymm10
 	vpand	%ymm4, %ymm10, %ymm10
@@ -26580,21 +26755,21 @@ slh_dsa_sha2128s_keygen:
 	vpand	%ymm5, %ymm6, %ymm6
 	vpxor	%ymm6, %ymm10, %ymm6
 	vpaddd	%ymm6, %ymm7, %ymm6
-	vmovdqu	%ymm8, %ymm9
-	vmovdqu	%ymm9, %ymm10
+	vmovdqu	%ymm8, %ymm7
+	vmovdqu	%ymm7, %ymm10
 	vpslld	$30, %ymm10, %ymm10
-	vpsrld	$2, %ymm9, %ymm9
-	vpor	%ymm10, %ymm9, %ymm9
-	vmovdqu	%ymm8, %ymm10
-	vmovdqu	%ymm10, %ymm11
-	vpslld	$19, %ymm11, %ymm11
-	vpsrld	$13, %ymm10, %ymm10
-	vpor	%ymm11, %ymm10, %ymm10
-	vpxor	%ymm10, %ymm9, %ymm9
-	vmovdqu	%ymm10, %ymm11
-	vpslld	$23, %ymm11, %ymm11
-	vpsrld	$9, %ymm10, %ymm10
-	vpor	%ymm11, %ymm10, %ymm7
+	vpsrld	$2, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm9
+	vmovdqu	%ymm8, %ymm7
+	vmovdqu	%ymm7, %ymm10
+	vpslld	$19, %ymm10, %ymm10
+	vpsrld	$13, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm7
+	vpxor	%ymm7, %ymm9, %ymm9
+	vmovdqu	%ymm7, %ymm10
+	vpslld	$23, %ymm10, %ymm10
+	vpsrld	$9, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm7
 	vpxor	%ymm7, %ymm9, %ymm7
 	vpaddd	%ymm7, %ymm6, %ymm6
 	vmovdqu	1408(%rcx), %ymm7
@@ -26608,21 +26783,21 @@ slh_dsa_sha2128s_keygen:
 	vpand	%ymm1, %ymm7, %ymm7
 	vpxor	%ymm7, %ymm10, %ymm7
 	vpaddd	%ymm7, %ymm0, %ymm0
-	vmovdqu	%ymm2, %ymm9
-	vmovdqu	%ymm9, %ymm10
+	vmovdqu	%ymm2, %ymm7
+	vmovdqu	%ymm7, %ymm10
 	vpslld	$26, %ymm10, %ymm10
-	vpsrld	$6, %ymm9, %ymm9
-	vpor	%ymm10, %ymm9, %ymm9
-	vmovdqu	%ymm2, %ymm10
-	vmovdqu	%ymm10, %ymm11
-	vpslld	$21, %ymm11, %ymm11
-	vpsrld	$11, %ymm10, %ymm10
-	vpor	%ymm11, %ymm10, %ymm10
-	vpxor	%ymm10, %ymm9, %ymm9
-	vmovdqu	%ymm10, %ymm11
-	vpslld	$18, %ymm11, %ymm11
-	vpsrld	$14, %ymm10, %ymm10
-	vpor	%ymm11, %ymm10, %ymm7
+	vpsrld	$6, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm9
+	vmovdqu	%ymm2, %ymm7
+	vmovdqu	%ymm7, %ymm10
+	vpslld	$21, %ymm10, %ymm10
+	vpsrld	$11, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm7
+	vpxor	%ymm7, %ymm9, %ymm9
+	vmovdqu	%ymm7, %ymm10
+	vpslld	$18, %ymm10, %ymm10
+	vpsrld	$14, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm7
 	vpxor	%ymm7, %ymm9, %ymm7
 	vpaddd	%ymm7, %ymm0, %ymm7
 	vpaddd	%ymm7, %ymm5, %ymm0
@@ -26635,21 +26810,21 @@ slh_dsa_sha2128s_keygen:
 	vpand	%ymm4, %ymm5, %ymm5
 	vpxor	%ymm5, %ymm10, %ymm5
 	vpaddd	%ymm5, %ymm7, %ymm5
-	vmovdqu	%ymm6, %ymm9
-	vmovdqu	%ymm9, %ymm10
+	vmovdqu	%ymm6, %ymm7
+	vmovdqu	%ymm7, %ymm10
 	vpslld	$30, %ymm10, %ymm10
-	vpsrld	$2, %ymm9, %ymm9
-	vpor	%ymm10, %ymm9, %ymm9
-	vmovdqu	%ymm6, %ymm10
-	vmovdqu	%ymm10, %ymm11
-	vpslld	$19, %ymm11, %ymm11
-	vpsrld	$13, %ymm10, %ymm10
-	vpor	%ymm11, %ymm10, %ymm10
-	vpxor	%ymm10, %ymm9, %ymm9
-	vmovdqu	%ymm10, %ymm11
-	vpslld	$23, %ymm11, %ymm11
-	vpsrld	$9, %ymm10, %ymm10
-	vpor	%ymm11, %ymm10, %ymm7
+	vpsrld	$2, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm9
+	vmovdqu	%ymm6, %ymm7
+	vmovdqu	%ymm7, %ymm10
+	vpslld	$19, %ymm10, %ymm10
+	vpsrld	$13, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm7
+	vpxor	%ymm7, %ymm9, %ymm9
+	vmovdqu	%ymm7, %ymm10
+	vpslld	$23, %ymm10, %ymm10
+	vpsrld	$9, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm7
 	vpxor	%ymm7, %ymm9, %ymm7
 	vpaddd	%ymm7, %ymm5, %ymm5
 	vmovdqu	1440(%rcx), %ymm7
@@ -26663,21 +26838,21 @@ slh_dsa_sha2128s_keygen:
 	vpand	%ymm3, %ymm7, %ymm7
 	vpxor	%ymm7, %ymm10, %ymm7
 	vpaddd	%ymm7, %ymm1, %ymm1
-	vmovdqu	%ymm0, %ymm9
-	vmovdqu	%ymm9, %ymm10
+	vmovdqu	%ymm0, %ymm7
+	vmovdqu	%ymm7, %ymm10
 	vpslld	$26, %ymm10, %ymm10
-	vpsrld	$6, %ymm9, %ymm9
-	vpor	%ymm10, %ymm9, %ymm9
-	vmovdqu	%ymm0, %ymm10
-	vmovdqu	%ymm10, %ymm11
-	vpslld	$21, %ymm11, %ymm11
-	vpsrld	$11, %ymm10, %ymm10
-	vpor	%ymm11, %ymm10, %ymm10
-	vpxor	%ymm10, %ymm9, %ymm9
-	vmovdqu	%ymm10, %ymm11
-	vpslld	$18, %ymm11, %ymm11
-	vpsrld	$14, %ymm10, %ymm10
-	vpor	%ymm11, %ymm10, %ymm7
+	vpsrld	$6, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm9
+	vmovdqu	%ymm0, %ymm7
+	vmovdqu	%ymm7, %ymm10
+	vpslld	$21, %ymm10, %ymm10
+	vpsrld	$11, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm7
+	vpxor	%ymm7, %ymm9, %ymm9
+	vmovdqu	%ymm7, %ymm10
+	vpslld	$18, %ymm10, %ymm10
+	vpsrld	$14, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm7
 	vpxor	%ymm7, %ymm9, %ymm7
 	vpaddd	%ymm7, %ymm1, %ymm7
 	vpaddd	%ymm7, %ymm4, %ymm1
@@ -26690,21 +26865,21 @@ slh_dsa_sha2128s_keygen:
 	vpand	%ymm8, %ymm4, %ymm4
 	vpxor	%ymm4, %ymm10, %ymm4
 	vpaddd	%ymm4, %ymm7, %ymm4
-	vmovdqu	%ymm5, %ymm9
-	vmovdqu	%ymm9, %ymm10
+	vmovdqu	%ymm5, %ymm7
+	vmovdqu	%ymm7, %ymm10
 	vpslld	$30, %ymm10, %ymm10
-	vpsrld	$2, %ymm9, %ymm9
-	vpor	%ymm10, %ymm9, %ymm9
-	vmovdqu	%ymm5, %ymm10
-	vmovdqu	%ymm10, %ymm11
-	vpslld	$19, %ymm11, %ymm11
-	vpsrld	$13, %ymm10, %ymm10
-	vpor	%ymm11, %ymm10, %ymm10
-	vpxor	%ymm10, %ymm9, %ymm9
-	vmovdqu	%ymm10, %ymm11
-	vpslld	$23, %ymm11, %ymm11
-	vpsrld	$9, %ymm10, %ymm10
-	vpor	%ymm11, %ymm10, %ymm7
+	vpsrld	$2, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm9
+	vmovdqu	%ymm5, %ymm7
+	vmovdqu	%ymm7, %ymm10
+	vpslld	$19, %ymm10, %ymm10
+	vpsrld	$13, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm7
+	vpxor	%ymm7, %ymm9, %ymm9
+	vmovdqu	%ymm7, %ymm10
+	vpslld	$23, %ymm10, %ymm10
+	vpsrld	$9, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm7
 	vpxor	%ymm7, %ymm9, %ymm7
 	vpaddd	%ymm7, %ymm4, %ymm4
 	vmovdqu	1472(%rcx), %ymm7
@@ -26717,24 +26892,24 @@ slh_dsa_sha2128s_keygen:
 	vpxor	%ymm1, %ymm7, %ymm7
 	vpand	%ymm2, %ymm7, %ymm7
 	vpxor	%ymm7, %ymm10, %ymm7
-	vpaddd	%ymm7, %ymm3, %ymm7
-	vmovdqu	%ymm1, %ymm3
-	vmovdqu	%ymm3, %ymm10
+	vpaddd	%ymm7, %ymm3, %ymm3
+	vmovdqu	%ymm1, %ymm7
+	vmovdqu	%ymm7, %ymm10
 	vpslld	$26, %ymm10, %ymm10
-	vpsrld	$6, %ymm3, %ymm3
-	vpor	%ymm10, %ymm3, %ymm9
-	vmovdqu	%ymm1, %ymm3
-	vmovdqu	%ymm3, %ymm10
+	vpsrld	$6, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm9
+	vmovdqu	%ymm1, %ymm7
+	vmovdqu	%ymm7, %ymm10
 	vpslld	$21, %ymm10, %ymm10
-	vpsrld	$11, %ymm3, %ymm3
-	vpor	%ymm10, %ymm3, %ymm3
-	vpxor	%ymm3, %ymm9, %ymm9
-	vmovdqu	%ymm3, %ymm10
+	vpsrld	$11, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm7
+	vpxor	%ymm7, %ymm9, %ymm9
+	vmovdqu	%ymm7, %ymm10
 	vpslld	$18, %ymm10, %ymm10
-	vpsrld	$14, %ymm3, %ymm3
-	vpor	%ymm10, %ymm3, %ymm3
-	vpxor	%ymm3, %ymm9, %ymm3
-	vpaddd	%ymm3, %ymm7, %ymm7
+	vpsrld	$14, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm7
+	vpxor	%ymm7, %ymm9, %ymm7
+	vpaddd	%ymm7, %ymm3, %ymm7
 	vpaddd	%ymm7, %ymm8, %ymm3
 	vmovdqu	%ymm4, %ymm10
 	vpand	%ymm5, %ymm10, %ymm10
@@ -26772,24 +26947,24 @@ slh_dsa_sha2128s_keygen:
 	vpxor	%ymm3, %ymm7, %ymm7
 	vpand	%ymm0, %ymm7, %ymm7
 	vpxor	%ymm7, %ymm10, %ymm7
-	vpaddd	%ymm7, %ymm2, %ymm7
-	vmovdqu	%ymm3, %ymm2
-	vmovdqu	%ymm2, %ymm10
+	vpaddd	%ymm7, %ymm2, %ymm2
+	vmovdqu	%ymm3, %ymm7
+	vmovdqu	%ymm7, %ymm10
 	vpslld	$26, %ymm10, %ymm10
-	vpsrld	$6, %ymm2, %ymm2
-	vpor	%ymm10, %ymm2, %ymm9
-	vmovdqu	%ymm3, %ymm2
-	vmovdqu	%ymm2, %ymm10
+	vpsrld	$6, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm9
+	vmovdqu	%ymm3, %ymm7
+	vmovdqu	%ymm7, %ymm10
 	vpslld	$21, %ymm10, %ymm10
-	vpsrld	$11, %ymm2, %ymm2
-	vpor	%ymm10, %ymm2, %ymm2
-	vpxor	%ymm2, %ymm9, %ymm9
-	vmovdqu	%ymm2, %ymm10
+	vpsrld	$11, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm7
+	vpxor	%ymm7, %ymm9, %ymm9
+	vmovdqu	%ymm7, %ymm10
 	vpslld	$18, %ymm10, %ymm10
-	vpsrld	$14, %ymm2, %ymm2
-	vpor	%ymm10, %ymm2, %ymm2
-	vpxor	%ymm2, %ymm9, %ymm2
-	vpaddd	%ymm2, %ymm7, %ymm7
+	vpsrld	$14, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm7
+	vpxor	%ymm7, %ymm9, %ymm7
+	vpaddd	%ymm7, %ymm2, %ymm7
 	vpaddd	%ymm7, %ymm6, %ymm2
 	vmovdqu	%ymm8, %ymm10
 	vpand	%ymm4, %ymm10, %ymm10
@@ -26800,21 +26975,21 @@ slh_dsa_sha2128s_keygen:
 	vpand	%ymm5, %ymm6, %ymm6
 	vpxor	%ymm6, %ymm10, %ymm6
 	vpaddd	%ymm6, %ymm7, %ymm6
-	vmovdqu	%ymm8, %ymm9
-	vmovdqu	%ymm9, %ymm10
+	vmovdqu	%ymm8, %ymm7
+	vmovdqu	%ymm7, %ymm10
 	vpslld	$30, %ymm10, %ymm10
-	vpsrld	$2, %ymm9, %ymm9
-	vpor	%ymm10, %ymm9, %ymm9
-	vmovdqu	%ymm8, %ymm10
-	vmovdqu	%ymm10, %ymm11
-	vpslld	$19, %ymm11, %ymm11
-	vpsrld	$13, %ymm10, %ymm10
-	vpor	%ymm11, %ymm10, %ymm10
-	vpxor	%ymm10, %ymm9, %ymm9
-	vmovdqu	%ymm10, %ymm11
-	vpslld	$23, %ymm11, %ymm11
-	vpsrld	$9, %ymm10, %ymm10
-	vpor	%ymm11, %ymm10, %ymm7
+	vpsrld	$2, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm9
+	vmovdqu	%ymm8, %ymm7
+	vmovdqu	%ymm7, %ymm10
+	vpslld	$19, %ymm10, %ymm10
+	vpsrld	$13, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm7
+	vpxor	%ymm7, %ymm9, %ymm9
+	vmovdqu	%ymm7, %ymm10
+	vpslld	$23, %ymm10, %ymm10
+	vpsrld	$9, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm7
 	vpxor	%ymm7, %ymm9, %ymm7
 	vpaddd	%ymm7, %ymm6, %ymm6
 	vmovdqu	1536(%rcx), %ymm7
@@ -26828,21 +27003,21 @@ slh_dsa_sha2128s_keygen:
 	vpand	%ymm1, %ymm7, %ymm7
 	vpxor	%ymm7, %ymm10, %ymm7
 	vpaddd	%ymm7, %ymm0, %ymm0
-	vmovdqu	%ymm2, %ymm9
-	vmovdqu	%ymm9, %ymm10
+	vmovdqu	%ymm2, %ymm7
+	vmovdqu	%ymm7, %ymm10
 	vpslld	$26, %ymm10, %ymm10
-	vpsrld	$6, %ymm9, %ymm9
-	vpor	%ymm10, %ymm9, %ymm9
-	vmovdqu	%ymm2, %ymm10
-	vmovdqu	%ymm10, %ymm11
-	vpslld	$21, %ymm11, %ymm11
-	vpsrld	$11, %ymm10, %ymm10
-	vpor	%ymm11, %ymm10, %ymm10
-	vpxor	%ymm10, %ymm9, %ymm9
-	vmovdqu	%ymm10, %ymm11
-	vpslld	$18, %ymm11, %ymm11
-	vpsrld	$14, %ymm10, %ymm10
-	vpor	%ymm11, %ymm10, %ymm7
+	vpsrld	$6, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm9
+	vmovdqu	%ymm2, %ymm7
+	vmovdqu	%ymm7, %ymm10
+	vpslld	$21, %ymm10, %ymm10
+	vpsrld	$11, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm7
+	vpxor	%ymm7, %ymm9, %ymm9
+	vmovdqu	%ymm7, %ymm10
+	vpslld	$18, %ymm10, %ymm10
+	vpsrld	$14, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm7
 	vpxor	%ymm7, %ymm9, %ymm7
 	vpaddd	%ymm7, %ymm0, %ymm7
 	vpaddd	%ymm7, %ymm5, %ymm0
@@ -26855,21 +27030,21 @@ slh_dsa_sha2128s_keygen:
 	vpand	%ymm4, %ymm5, %ymm5
 	vpxor	%ymm5, %ymm10, %ymm5
 	vpaddd	%ymm5, %ymm7, %ymm5
-	vmovdqu	%ymm6, %ymm9
-	vmovdqu	%ymm9, %ymm10
+	vmovdqu	%ymm6, %ymm7
+	vmovdqu	%ymm7, %ymm10
 	vpslld	$30, %ymm10, %ymm10
-	vpsrld	$2, %ymm9, %ymm9
-	vpor	%ymm10, %ymm9, %ymm9
-	vmovdqu	%ymm6, %ymm10
-	vmovdqu	%ymm10, %ymm11
-	vpslld	$19, %ymm11, %ymm11
-	vpsrld	$13, %ymm10, %ymm10
-	vpor	%ymm11, %ymm10, %ymm10
-	vpxor	%ymm10, %ymm9, %ymm9
-	vmovdqu	%ymm10, %ymm11
-	vpslld	$23, %ymm11, %ymm11
-	vpsrld	$9, %ymm10, %ymm10
-	vpor	%ymm11, %ymm10, %ymm7
+	vpsrld	$2, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm9
+	vmovdqu	%ymm6, %ymm7
+	vmovdqu	%ymm7, %ymm10
+	vpslld	$19, %ymm10, %ymm10
+	vpsrld	$13, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm7
+	vpxor	%ymm7, %ymm9, %ymm9
+	vmovdqu	%ymm7, %ymm10
+	vpslld	$23, %ymm10, %ymm10
+	vpsrld	$9, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm7
 	vpxor	%ymm7, %ymm9, %ymm7
 	vpaddd	%ymm7, %ymm5, %ymm5
 	vmovdqu	1568(%rcx), %ymm7
@@ -26883,21 +27058,21 @@ slh_dsa_sha2128s_keygen:
 	vpand	%ymm3, %ymm7, %ymm7
 	vpxor	%ymm7, %ymm10, %ymm7
 	vpaddd	%ymm7, %ymm1, %ymm1
-	vmovdqu	%ymm0, %ymm9
-	vmovdqu	%ymm9, %ymm10
+	vmovdqu	%ymm0, %ymm7
+	vmovdqu	%ymm7, %ymm10
 	vpslld	$26, %ymm10, %ymm10
-	vpsrld	$6, %ymm9, %ymm9
-	vpor	%ymm10, %ymm9, %ymm9
-	vmovdqu	%ymm0, %ymm10
-	vmovdqu	%ymm10, %ymm11
-	vpslld	$21, %ymm11, %ymm11
-	vpsrld	$11, %ymm10, %ymm10
-	vpor	%ymm11, %ymm10, %ymm10
-	vpxor	%ymm10, %ymm9, %ymm9
-	vmovdqu	%ymm10, %ymm11
-	vpslld	$18, %ymm11, %ymm11
-	vpsrld	$14, %ymm10, %ymm10
-	vpor	%ymm11, %ymm10, %ymm7
+	vpsrld	$6, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm9
+	vmovdqu	%ymm0, %ymm7
+	vmovdqu	%ymm7, %ymm10
+	vpslld	$21, %ymm10, %ymm10
+	vpsrld	$11, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm7
+	vpxor	%ymm7, %ymm9, %ymm9
+	vmovdqu	%ymm7, %ymm10
+	vpslld	$18, %ymm10, %ymm10
+	vpsrld	$14, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm7
 	vpxor	%ymm7, %ymm9, %ymm7
 	vpaddd	%ymm7, %ymm1, %ymm7
 	vpaddd	%ymm7, %ymm4, %ymm1
@@ -26910,21 +27085,21 @@ slh_dsa_sha2128s_keygen:
 	vpand	%ymm8, %ymm4, %ymm4
 	vpxor	%ymm4, %ymm10, %ymm4
 	vpaddd	%ymm4, %ymm7, %ymm4
-	vmovdqu	%ymm5, %ymm9
-	vmovdqu	%ymm9, %ymm10
+	vmovdqu	%ymm5, %ymm7
+	vmovdqu	%ymm7, %ymm10
 	vpslld	$30, %ymm10, %ymm10
-	vpsrld	$2, %ymm9, %ymm9
-	vpor	%ymm10, %ymm9, %ymm9
-	vmovdqu	%ymm5, %ymm10
-	vmovdqu	%ymm10, %ymm11
-	vpslld	$19, %ymm11, %ymm11
-	vpsrld	$13, %ymm10, %ymm10
-	vpor	%ymm11, %ymm10, %ymm10
-	vpxor	%ymm10, %ymm9, %ymm9
-	vmovdqu	%ymm10, %ymm11
-	vpslld	$23, %ymm11, %ymm11
-	vpsrld	$9, %ymm10, %ymm10
-	vpor	%ymm11, %ymm10, %ymm7
+	vpsrld	$2, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm9
+	vmovdqu	%ymm5, %ymm7
+	vmovdqu	%ymm7, %ymm10
+	vpslld	$19, %ymm10, %ymm10
+	vpsrld	$13, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm7
+	vpxor	%ymm7, %ymm9, %ymm9
+	vmovdqu	%ymm7, %ymm10
+	vpslld	$23, %ymm10, %ymm10
+	vpsrld	$9, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm7
 	vpxor	%ymm7, %ymm9, %ymm7
 	vpaddd	%ymm7, %ymm4, %ymm4
 	vmovdqu	1600(%rcx), %ymm7
@@ -26937,24 +27112,24 @@ slh_dsa_sha2128s_keygen:
 	vpxor	%ymm1, %ymm7, %ymm7
 	vpand	%ymm2, %ymm7, %ymm7
 	vpxor	%ymm7, %ymm10, %ymm7
-	vpaddd	%ymm7, %ymm3, %ymm7
-	vmovdqu	%ymm1, %ymm3
-	vmovdqu	%ymm3, %ymm10
+	vpaddd	%ymm7, %ymm3, %ymm3
+	vmovdqu	%ymm1, %ymm7
+	vmovdqu	%ymm7, %ymm10
 	vpslld	$26, %ymm10, %ymm10
-	vpsrld	$6, %ymm3, %ymm3
-	vpor	%ymm10, %ymm3, %ymm9
-	vmovdqu	%ymm1, %ymm3
-	vmovdqu	%ymm3, %ymm10
+	vpsrld	$6, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm9
+	vmovdqu	%ymm1, %ymm7
+	vmovdqu	%ymm7, %ymm10
 	vpslld	$21, %ymm10, %ymm10
-	vpsrld	$11, %ymm3, %ymm3
-	vpor	%ymm10, %ymm3, %ymm3
-	vpxor	%ymm3, %ymm9, %ymm9
-	vmovdqu	%ymm3, %ymm10
+	vpsrld	$11, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm7
+	vpxor	%ymm7, %ymm9, %ymm9
+	vmovdqu	%ymm7, %ymm10
 	vpslld	$18, %ymm10, %ymm10
-	vpsrld	$14, %ymm3, %ymm3
-	vpor	%ymm10, %ymm3, %ymm3
-	vpxor	%ymm3, %ymm9, %ymm3
-	vpaddd	%ymm3, %ymm7, %ymm7
+	vpsrld	$14, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm7
+	vpxor	%ymm7, %ymm9, %ymm7
+	vpaddd	%ymm7, %ymm3, %ymm7
 	vpaddd	%ymm7, %ymm8, %ymm3
 	vmovdqu	%ymm4, %ymm10
 	vpand	%ymm5, %ymm10, %ymm10
@@ -26992,24 +27167,24 @@ slh_dsa_sha2128s_keygen:
 	vpxor	%ymm3, %ymm7, %ymm7
 	vpand	%ymm0, %ymm7, %ymm7
 	vpxor	%ymm7, %ymm10, %ymm7
-	vpaddd	%ymm7, %ymm2, %ymm7
-	vmovdqu	%ymm3, %ymm2
-	vmovdqu	%ymm2, %ymm10
+	vpaddd	%ymm7, %ymm2, %ymm2
+	vmovdqu	%ymm3, %ymm7
+	vmovdqu	%ymm7, %ymm10
 	vpslld	$26, %ymm10, %ymm10
-	vpsrld	$6, %ymm2, %ymm2
-	vpor	%ymm10, %ymm2, %ymm9
-	vmovdqu	%ymm3, %ymm2
-	vmovdqu	%ymm2, %ymm10
+	vpsrld	$6, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm9
+	vmovdqu	%ymm3, %ymm7
+	vmovdqu	%ymm7, %ymm10
 	vpslld	$21, %ymm10, %ymm10
-	vpsrld	$11, %ymm2, %ymm2
-	vpor	%ymm10, %ymm2, %ymm2
-	vpxor	%ymm2, %ymm9, %ymm9
-	vmovdqu	%ymm2, %ymm10
+	vpsrld	$11, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm7
+	vpxor	%ymm7, %ymm9, %ymm9
+	vmovdqu	%ymm7, %ymm10
 	vpslld	$18, %ymm10, %ymm10
-	vpsrld	$14, %ymm2, %ymm2
-	vpor	%ymm10, %ymm2, %ymm2
-	vpxor	%ymm2, %ymm9, %ymm2
-	vpaddd	%ymm2, %ymm7, %ymm7
+	vpsrld	$14, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm7
+	vpxor	%ymm7, %ymm9, %ymm7
+	vpaddd	%ymm7, %ymm2, %ymm7
 	vpaddd	%ymm7, %ymm6, %ymm2
 	vmovdqu	%ymm8, %ymm10
 	vpand	%ymm4, %ymm10, %ymm10
@@ -27020,21 +27195,21 @@ slh_dsa_sha2128s_keygen:
 	vpand	%ymm5, %ymm6, %ymm6
 	vpxor	%ymm6, %ymm10, %ymm6
 	vpaddd	%ymm6, %ymm7, %ymm6
-	vmovdqu	%ymm8, %ymm9
-	vmovdqu	%ymm9, %ymm10
+	vmovdqu	%ymm8, %ymm7
+	vmovdqu	%ymm7, %ymm10
 	vpslld	$30, %ymm10, %ymm10
-	vpsrld	$2, %ymm9, %ymm9
-	vpor	%ymm10, %ymm9, %ymm9
-	vmovdqu	%ymm8, %ymm10
-	vmovdqu	%ymm10, %ymm11
-	vpslld	$19, %ymm11, %ymm11
-	vpsrld	$13, %ymm10, %ymm10
-	vpor	%ymm11, %ymm10, %ymm10
-	vpxor	%ymm10, %ymm9, %ymm9
-	vmovdqu	%ymm10, %ymm11
-	vpslld	$23, %ymm11, %ymm11
-	vpsrld	$9, %ymm10, %ymm10
-	vpor	%ymm11, %ymm10, %ymm7
+	vpsrld	$2, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm9
+	vmovdqu	%ymm8, %ymm7
+	vmovdqu	%ymm7, %ymm10
+	vpslld	$19, %ymm10, %ymm10
+	vpsrld	$13, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm7
+	vpxor	%ymm7, %ymm9, %ymm9
+	vmovdqu	%ymm7, %ymm10
+	vpslld	$23, %ymm10, %ymm10
+	vpsrld	$9, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm7
 	vpxor	%ymm7, %ymm9, %ymm7
 	vpaddd	%ymm7, %ymm6, %ymm6
 	vmovdqu	1664(%rcx), %ymm7
@@ -27048,21 +27223,21 @@ slh_dsa_sha2128s_keygen:
 	vpand	%ymm1, %ymm7, %ymm7
 	vpxor	%ymm7, %ymm10, %ymm7
 	vpaddd	%ymm7, %ymm0, %ymm0
-	vmovdqu	%ymm2, %ymm9
-	vmovdqu	%ymm9, %ymm10
+	vmovdqu	%ymm2, %ymm7
+	vmovdqu	%ymm7, %ymm10
 	vpslld	$26, %ymm10, %ymm10
-	vpsrld	$6, %ymm9, %ymm9
-	vpor	%ymm10, %ymm9, %ymm9
-	vmovdqu	%ymm2, %ymm10
-	vmovdqu	%ymm10, %ymm11
-	vpslld	$21, %ymm11, %ymm11
-	vpsrld	$11, %ymm10, %ymm10
-	vpor	%ymm11, %ymm10, %ymm10
-	vpxor	%ymm10, %ymm9, %ymm9
-	vmovdqu	%ymm10, %ymm11
-	vpslld	$18, %ymm11, %ymm11
-	vpsrld	$14, %ymm10, %ymm10
-	vpor	%ymm11, %ymm10, %ymm7
+	vpsrld	$6, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm9
+	vmovdqu	%ymm2, %ymm7
+	vmovdqu	%ymm7, %ymm10
+	vpslld	$21, %ymm10, %ymm10
+	vpsrld	$11, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm7
+	vpxor	%ymm7, %ymm9, %ymm9
+	vmovdqu	%ymm7, %ymm10
+	vpslld	$18, %ymm10, %ymm10
+	vpsrld	$14, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm7
 	vpxor	%ymm7, %ymm9, %ymm7
 	vpaddd	%ymm7, %ymm0, %ymm7
 	vpaddd	%ymm7, %ymm5, %ymm0
@@ -27075,21 +27250,21 @@ slh_dsa_sha2128s_keygen:
 	vpand	%ymm4, %ymm5, %ymm5
 	vpxor	%ymm5, %ymm10, %ymm5
 	vpaddd	%ymm5, %ymm7, %ymm5
-	vmovdqu	%ymm6, %ymm9
-	vmovdqu	%ymm9, %ymm10
+	vmovdqu	%ymm6, %ymm7
+	vmovdqu	%ymm7, %ymm10
 	vpslld	$30, %ymm10, %ymm10
-	vpsrld	$2, %ymm9, %ymm9
-	vpor	%ymm10, %ymm9, %ymm9
-	vmovdqu	%ymm6, %ymm10
-	vmovdqu	%ymm10, %ymm11
-	vpslld	$19, %ymm11, %ymm11
-	vpsrld	$13, %ymm10, %ymm10
-	vpor	%ymm11, %ymm10, %ymm10
-	vpxor	%ymm10, %ymm9, %ymm9
-	vmovdqu	%ymm10, %ymm11
-	vpslld	$23, %ymm11, %ymm11
-	vpsrld	$9, %ymm10, %ymm10
-	vpor	%ymm11, %ymm10, %ymm7
+	vpsrld	$2, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm9
+	vmovdqu	%ymm6, %ymm7
+	vmovdqu	%ymm7, %ymm10
+	vpslld	$19, %ymm10, %ymm10
+	vpsrld	$13, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm7
+	vpxor	%ymm7, %ymm9, %ymm9
+	vmovdqu	%ymm7, %ymm10
+	vpslld	$23, %ymm10, %ymm10
+	vpsrld	$9, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm7
 	vpxor	%ymm7, %ymm9, %ymm7
 	vpaddd	%ymm7, %ymm5, %ymm5
 	vmovdqu	1696(%rcx), %ymm7
@@ -27103,21 +27278,21 @@ slh_dsa_sha2128s_keygen:
 	vpand	%ymm3, %ymm7, %ymm7
 	vpxor	%ymm7, %ymm10, %ymm7
 	vpaddd	%ymm7, %ymm1, %ymm1
-	vmovdqu	%ymm0, %ymm9
-	vmovdqu	%ymm9, %ymm10
+	vmovdqu	%ymm0, %ymm7
+	vmovdqu	%ymm7, %ymm10
 	vpslld	$26, %ymm10, %ymm10
-	vpsrld	$6, %ymm9, %ymm9
-	vpor	%ymm10, %ymm9, %ymm9
-	vmovdqu	%ymm0, %ymm10
-	vmovdqu	%ymm10, %ymm11
-	vpslld	$21, %ymm11, %ymm11
-	vpsrld	$11, %ymm10, %ymm10
-	vpor	%ymm11, %ymm10, %ymm10
-	vpxor	%ymm10, %ymm9, %ymm9
-	vmovdqu	%ymm10, %ymm11
-	vpslld	$18, %ymm11, %ymm11
-	vpsrld	$14, %ymm10, %ymm10
-	vpor	%ymm11, %ymm10, %ymm7
+	vpsrld	$6, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm9
+	vmovdqu	%ymm0, %ymm7
+	vmovdqu	%ymm7, %ymm10
+	vpslld	$21, %ymm10, %ymm10
+	vpsrld	$11, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm7
+	vpxor	%ymm7, %ymm9, %ymm9
+	vmovdqu	%ymm7, %ymm10
+	vpslld	$18, %ymm10, %ymm10
+	vpsrld	$14, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm7
 	vpxor	%ymm7, %ymm9, %ymm7
 	vpaddd	%ymm7, %ymm1, %ymm7
 	vpaddd	%ymm7, %ymm4, %ymm1
@@ -27130,21 +27305,21 @@ slh_dsa_sha2128s_keygen:
 	vpand	%ymm8, %ymm4, %ymm4
 	vpxor	%ymm4, %ymm10, %ymm4
 	vpaddd	%ymm4, %ymm7, %ymm4
-	vmovdqu	%ymm5, %ymm9
-	vmovdqu	%ymm9, %ymm10
+	vmovdqu	%ymm5, %ymm7
+	vmovdqu	%ymm7, %ymm10
 	vpslld	$30, %ymm10, %ymm10
-	vpsrld	$2, %ymm9, %ymm9
-	vpor	%ymm10, %ymm9, %ymm9
-	vmovdqu	%ymm5, %ymm10
-	vmovdqu	%ymm10, %ymm11
-	vpslld	$19, %ymm11, %ymm11
-	vpsrld	$13, %ymm10, %ymm10
-	vpor	%ymm11, %ymm10, %ymm10
-	vpxor	%ymm10, %ymm9, %ymm9
-	vmovdqu	%ymm10, %ymm11
-	vpslld	$23, %ymm11, %ymm11
-	vpsrld	$9, %ymm10, %ymm10
-	vpor	%ymm11, %ymm10, %ymm7
+	vpsrld	$2, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm9
+	vmovdqu	%ymm5, %ymm7
+	vmovdqu	%ymm7, %ymm10
+	vpslld	$19, %ymm10, %ymm10
+	vpsrld	$13, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm7
+	vpxor	%ymm7, %ymm9, %ymm9
+	vmovdqu	%ymm7, %ymm10
+	vpslld	$23, %ymm10, %ymm10
+	vpsrld	$9, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm7
 	vpxor	%ymm7, %ymm9, %ymm7
 	vpaddd	%ymm7, %ymm4, %ymm4
 	vmovdqu	1728(%rcx), %ymm7
@@ -27157,24 +27332,24 @@ slh_dsa_sha2128s_keygen:
 	vpxor	%ymm1, %ymm7, %ymm7
 	vpand	%ymm2, %ymm7, %ymm7
 	vpxor	%ymm7, %ymm10, %ymm7
-	vpaddd	%ymm7, %ymm3, %ymm7
-	vmovdqu	%ymm1, %ymm3
-	vmovdqu	%ymm3, %ymm10
+	vpaddd	%ymm7, %ymm3, %ymm3
+	vmovdqu	%ymm1, %ymm7
+	vmovdqu	%ymm7, %ymm10
 	vpslld	$26, %ymm10, %ymm10
-	vpsrld	$6, %ymm3, %ymm3
-	vpor	%ymm10, %ymm3, %ymm9
-	vmovdqu	%ymm1, %ymm3
-	vmovdqu	%ymm3, %ymm10
+	vpsrld	$6, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm9
+	vmovdqu	%ymm1, %ymm7
+	vmovdqu	%ymm7, %ymm10
 	vpslld	$21, %ymm10, %ymm10
-	vpsrld	$11, %ymm3, %ymm3
-	vpor	%ymm10, %ymm3, %ymm3
-	vpxor	%ymm3, %ymm9, %ymm9
-	vmovdqu	%ymm3, %ymm10
+	vpsrld	$11, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm7
+	vpxor	%ymm7, %ymm9, %ymm9
+	vmovdqu	%ymm7, %ymm10
 	vpslld	$18, %ymm10, %ymm10
-	vpsrld	$14, %ymm3, %ymm3
-	vpor	%ymm10, %ymm3, %ymm3
-	vpxor	%ymm3, %ymm9, %ymm3
-	vpaddd	%ymm3, %ymm7, %ymm7
+	vpsrld	$14, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm7
+	vpxor	%ymm7, %ymm9, %ymm7
+	vpaddd	%ymm7, %ymm3, %ymm7
 	vpaddd	%ymm7, %ymm8, %ymm3
 	vmovdqu	%ymm4, %ymm10
 	vpand	%ymm5, %ymm10, %ymm10
@@ -27212,24 +27387,24 @@ slh_dsa_sha2128s_keygen:
 	vpxor	%ymm3, %ymm7, %ymm7
 	vpand	%ymm0, %ymm7, %ymm7
 	vpxor	%ymm7, %ymm10, %ymm7
-	vpaddd	%ymm7, %ymm2, %ymm7
-	vmovdqu	%ymm3, %ymm2
-	vmovdqu	%ymm2, %ymm10
+	vpaddd	%ymm7, %ymm2, %ymm2
+	vmovdqu	%ymm3, %ymm7
+	vmovdqu	%ymm7, %ymm10
 	vpslld	$26, %ymm10, %ymm10
-	vpsrld	$6, %ymm2, %ymm2
-	vpor	%ymm10, %ymm2, %ymm9
-	vmovdqu	%ymm3, %ymm2
-	vmovdqu	%ymm2, %ymm10
+	vpsrld	$6, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm9
+	vmovdqu	%ymm3, %ymm7
+	vmovdqu	%ymm7, %ymm10
 	vpslld	$21, %ymm10, %ymm10
-	vpsrld	$11, %ymm2, %ymm2
-	vpor	%ymm10, %ymm2, %ymm2
-	vpxor	%ymm2, %ymm9, %ymm9
-	vmovdqu	%ymm2, %ymm10
+	vpsrld	$11, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm7
+	vpxor	%ymm7, %ymm9, %ymm9
+	vmovdqu	%ymm7, %ymm10
 	vpslld	$18, %ymm10, %ymm10
-	vpsrld	$14, %ymm2, %ymm2
-	vpor	%ymm10, %ymm2, %ymm2
-	vpxor	%ymm2, %ymm9, %ymm2
-	vpaddd	%ymm2, %ymm7, %ymm7
+	vpsrld	$14, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm7
+	vpxor	%ymm7, %ymm9, %ymm7
+	vpaddd	%ymm7, %ymm2, %ymm7
 	vpaddd	%ymm7, %ymm6, %ymm2
 	vmovdqu	%ymm8, %ymm10
 	vpand	%ymm4, %ymm10, %ymm10
@@ -27240,171 +27415,171 @@ slh_dsa_sha2128s_keygen:
 	vpand	%ymm5, %ymm6, %ymm6
 	vpxor	%ymm6, %ymm10, %ymm6
 	vpaddd	%ymm6, %ymm7, %ymm6
-	vmovdqu	%ymm8, %ymm9
-	vmovdqu	%ymm9, %ymm10
+	vmovdqu	%ymm8, %ymm7
+	vmovdqu	%ymm7, %ymm10
 	vpslld	$30, %ymm10, %ymm10
-	vpsrld	$2, %ymm9, %ymm9
-	vpor	%ymm10, %ymm9, %ymm9
-	vmovdqu	%ymm8, %ymm10
-	vmovdqu	%ymm10, %ymm11
-	vpslld	$19, %ymm11, %ymm11
-	vpsrld	$13, %ymm10, %ymm10
-	vpor	%ymm11, %ymm10, %ymm10
-	vpxor	%ymm10, %ymm9, %ymm9
-	vmovdqu	%ymm10, %ymm11
-	vpslld	$23, %ymm11, %ymm11
-	vpsrld	$9, %ymm10, %ymm10
-	vpor	%ymm11, %ymm10, %ymm7
+	vpsrld	$2, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm9
+	vmovdqu	%ymm8, %ymm7
+	vmovdqu	%ymm7, %ymm10
+	vpslld	$19, %ymm10, %ymm10
+	vpsrld	$13, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm7
+	vpxor	%ymm7, %ymm9, %ymm9
+	vmovdqu	%ymm7, %ymm10
+	vpslld	$23, %ymm10, %ymm10
+	vpsrld	$9, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm7
 	vpxor	%ymm7, %ymm9, %ymm7
-	vpaddd	%ymm7, %ymm6, %ymm6
-	vmovdqu	1792(%rcx), %ymm7
-	vpaddd	%ymm7, %ymm0, %ymm0
-	vmovdqu	glob_data + 2304(%rip), %ymm7
-	vpaddd	%ymm7, %ymm0, %ymm0
+	vpaddd	%ymm7, %ymm6, %ymm7
+	vmovdqu	1792(%rcx), %ymm6
+	vpaddd	%ymm6, %ymm0, %ymm0
+	vmovdqu	glob_data + 2304(%rip), %ymm6
+	vpaddd	%ymm6, %ymm0, %ymm0
 	vmovdqu	%ymm2, %ymm10
 	vpand	%ymm3, %ymm10, %ymm10
-	vmovdqu	glob_data + 448(%rip), %ymm7
-	vpxor	%ymm2, %ymm7, %ymm7
-	vpand	%ymm1, %ymm7, %ymm7
-	vpxor	%ymm7, %ymm10, %ymm7
-	vpaddd	%ymm7, %ymm0, %ymm0
-	vmovdqu	%ymm2, %ymm9
-	vmovdqu	%ymm9, %ymm10
-	vpslld	$26, %ymm10, %ymm10
-	vpsrld	$6, %ymm9, %ymm9
-	vpor	%ymm10, %ymm9, %ymm9
-	vmovdqu	%ymm2, %ymm10
-	vmovdqu	%ymm10, %ymm11
-	vpslld	$21, %ymm11, %ymm11
-	vpsrld	$11, %ymm10, %ymm10
-	vpor	%ymm11, %ymm10, %ymm10
-	vpxor	%ymm10, %ymm9, %ymm9
-	vmovdqu	%ymm10, %ymm11
-	vpslld	$18, %ymm11, %ymm11
-	vpsrld	$14, %ymm10, %ymm10
-	vpor	%ymm11, %ymm10, %ymm7
-	vpxor	%ymm7, %ymm9, %ymm7
-	vpaddd	%ymm7, %ymm0, %ymm7
-	vpaddd	%ymm7, %ymm5, %ymm0
+	vmovdqu	glob_data + 448(%rip), %ymm6
+	vpxor	%ymm2, %ymm6, %ymm6
+	vpand	%ymm1, %ymm6, %ymm6
+	vpxor	%ymm6, %ymm10, %ymm6
+	vpaddd	%ymm6, %ymm0, %ymm0
+	vmovdqu	%ymm2, %ymm6
 	vmovdqu	%ymm6, %ymm10
+	vpslld	$26, %ymm10, %ymm10
+	vpsrld	$6, %ymm6, %ymm6
+	vpor	%ymm10, %ymm6, %ymm9
+	vmovdqu	%ymm2, %ymm6
+	vmovdqu	%ymm6, %ymm10
+	vpslld	$21, %ymm10, %ymm10
+	vpsrld	$11, %ymm6, %ymm6
+	vpor	%ymm10, %ymm6, %ymm6
+	vpxor	%ymm6, %ymm9, %ymm9
+	vmovdqu	%ymm6, %ymm10
+	vpslld	$18, %ymm10, %ymm10
+	vpsrld	$14, %ymm6, %ymm6
+	vpor	%ymm10, %ymm6, %ymm6
+	vpxor	%ymm6, %ymm9, %ymm6
+	vpaddd	%ymm6, %ymm0, %ymm6
+	vpaddd	%ymm6, %ymm5, %ymm0
+	vmovdqu	%ymm7, %ymm10
 	vpand	%ymm8, %ymm10, %ymm10
-	vmovdqu	%ymm6, %ymm5
+	vmovdqu	%ymm7, %ymm5
 	vpand	%ymm4, %ymm5, %ymm5
 	vpxor	%ymm5, %ymm10, %ymm10
 	vmovdqu	%ymm8, %ymm5
 	vpand	%ymm4, %ymm5, %ymm5
 	vpxor	%ymm5, %ymm10, %ymm5
-	vpaddd	%ymm5, %ymm7, %ymm5
-	vmovdqu	%ymm6, %ymm9
-	vmovdqu	%ymm9, %ymm10
-	vpslld	$30, %ymm10, %ymm10
-	vpsrld	$2, %ymm9, %ymm9
-	vpor	%ymm10, %ymm9, %ymm9
+	vpaddd	%ymm5, %ymm6, %ymm5
+	vmovdqu	%ymm7, %ymm6
 	vmovdqu	%ymm6, %ymm10
-	vmovdqu	%ymm10, %ymm11
-	vpslld	$19, %ymm11, %ymm11
-	vpsrld	$13, %ymm10, %ymm10
-	vpor	%ymm11, %ymm10, %ymm10
-	vpxor	%ymm10, %ymm9, %ymm9
-	vmovdqu	%ymm10, %ymm11
-	vpslld	$23, %ymm11, %ymm11
-	vpsrld	$9, %ymm10, %ymm10
-	vpor	%ymm11, %ymm10, %ymm7
-	vpxor	%ymm7, %ymm9, %ymm7
-	vpaddd	%ymm7, %ymm5, %ymm5
-	vmovdqu	1824(%rcx), %ymm7
-	vpaddd	%ymm7, %ymm1, %ymm1
-	vmovdqu	glob_data + 2336(%rip), %ymm7
-	vpaddd	%ymm7, %ymm1, %ymm1
+	vpslld	$30, %ymm10, %ymm10
+	vpsrld	$2, %ymm6, %ymm6
+	vpor	%ymm10, %ymm6, %ymm9
+	vmovdqu	%ymm7, %ymm6
+	vmovdqu	%ymm6, %ymm10
+	vpslld	$19, %ymm10, %ymm10
+	vpsrld	$13, %ymm6, %ymm6
+	vpor	%ymm10, %ymm6, %ymm6
+	vpxor	%ymm6, %ymm9, %ymm9
+	vmovdqu	%ymm6, %ymm10
+	vpslld	$23, %ymm10, %ymm10
+	vpsrld	$9, %ymm6, %ymm6
+	vpor	%ymm10, %ymm6, %ymm6
+	vpxor	%ymm6, %ymm9, %ymm6
+	vpaddd	%ymm6, %ymm5, %ymm5
+	vmovdqu	1824(%rcx), %ymm6
+	vpaddd	%ymm6, %ymm1, %ymm1
+	vmovdqu	glob_data + 2336(%rip), %ymm6
+	vpaddd	%ymm6, %ymm1, %ymm1
 	vmovdqu	%ymm0, %ymm10
 	vpand	%ymm2, %ymm10, %ymm10
-	vmovdqu	glob_data + 448(%rip), %ymm7
-	vpxor	%ymm0, %ymm7, %ymm7
-	vpand	%ymm3, %ymm7, %ymm7
-	vpxor	%ymm7, %ymm10, %ymm7
-	vpaddd	%ymm7, %ymm1, %ymm1
-	vmovdqu	%ymm0, %ymm9
-	vmovdqu	%ymm9, %ymm10
+	vmovdqu	glob_data + 448(%rip), %ymm6
+	vpxor	%ymm0, %ymm6, %ymm6
+	vpand	%ymm3, %ymm6, %ymm6
+	vpxor	%ymm6, %ymm10, %ymm6
+	vpaddd	%ymm6, %ymm1, %ymm1
+	vmovdqu	%ymm0, %ymm6
+	vmovdqu	%ymm6, %ymm10
 	vpslld	$26, %ymm10, %ymm10
-	vpsrld	$6, %ymm9, %ymm9
-	vpor	%ymm10, %ymm9, %ymm9
-	vmovdqu	%ymm0, %ymm10
-	vmovdqu	%ymm10, %ymm11
-	vpslld	$21, %ymm11, %ymm11
-	vpsrld	$11, %ymm10, %ymm10
-	vpor	%ymm11, %ymm10, %ymm10
-	vpxor	%ymm10, %ymm9, %ymm9
-	vmovdqu	%ymm10, %ymm11
-	vpslld	$18, %ymm11, %ymm11
-	vpsrld	$14, %ymm10, %ymm10
-	vpor	%ymm11, %ymm10, %ymm7
-	vpxor	%ymm7, %ymm9, %ymm7
-	vpaddd	%ymm7, %ymm1, %ymm7
-	vpaddd	%ymm7, %ymm4, %ymm1
+	vpsrld	$6, %ymm6, %ymm6
+	vpor	%ymm10, %ymm6, %ymm9
+	vmovdqu	%ymm0, %ymm6
+	vmovdqu	%ymm6, %ymm10
+	vpslld	$21, %ymm10, %ymm10
+	vpsrld	$11, %ymm6, %ymm6
+	vpor	%ymm10, %ymm6, %ymm6
+	vpxor	%ymm6, %ymm9, %ymm9
+	vmovdqu	%ymm6, %ymm10
+	vpslld	$18, %ymm10, %ymm10
+	vpsrld	$14, %ymm6, %ymm6
+	vpor	%ymm10, %ymm6, %ymm6
+	vpxor	%ymm6, %ymm9, %ymm6
+	vpaddd	%ymm6, %ymm1, %ymm6
+	vpaddd	%ymm6, %ymm4, %ymm1
 	vmovdqu	%ymm5, %ymm10
-	vpand	%ymm6, %ymm10, %ymm10
+	vpand	%ymm7, %ymm10, %ymm10
 	vmovdqu	%ymm5, %ymm4
 	vpand	%ymm8, %ymm4, %ymm4
 	vpxor	%ymm4, %ymm10, %ymm10
-	vmovdqu	%ymm6, %ymm4
+	vmovdqu	%ymm7, %ymm4
 	vpand	%ymm8, %ymm4, %ymm4
 	vpxor	%ymm4, %ymm10, %ymm4
-	vpaddd	%ymm4, %ymm7, %ymm4
-	vmovdqu	%ymm5, %ymm9
-	vmovdqu	%ymm9, %ymm10
+	vpaddd	%ymm4, %ymm6, %ymm4
+	vmovdqu	%ymm5, %ymm6
+	vmovdqu	%ymm6, %ymm10
 	vpslld	$30, %ymm10, %ymm10
-	vpsrld	$2, %ymm9, %ymm9
-	vpor	%ymm10, %ymm9, %ymm9
-	vmovdqu	%ymm5, %ymm10
-	vmovdqu	%ymm10, %ymm11
-	vpslld	$19, %ymm11, %ymm11
-	vpsrld	$13, %ymm10, %ymm10
-	vpor	%ymm11, %ymm10, %ymm10
-	vpxor	%ymm10, %ymm9, %ymm9
-	vmovdqu	%ymm10, %ymm11
-	vpslld	$23, %ymm11, %ymm11
-	vpsrld	$9, %ymm10, %ymm10
-	vpor	%ymm11, %ymm10, %ymm7
-	vpxor	%ymm7, %ymm9, %ymm7
-	vpaddd	%ymm7, %ymm4, %ymm4
-	vmovdqu	1856(%rcx), %ymm7
-	vpaddd	%ymm7, %ymm3, %ymm3
-	vmovdqu	glob_data + 2368(%rip), %ymm7
-	vpaddd	%ymm7, %ymm3, %ymm3
+	vpsrld	$2, %ymm6, %ymm6
+	vpor	%ymm10, %ymm6, %ymm9
+	vmovdqu	%ymm5, %ymm6
+	vmovdqu	%ymm6, %ymm10
+	vpslld	$19, %ymm10, %ymm10
+	vpsrld	$13, %ymm6, %ymm6
+	vpor	%ymm10, %ymm6, %ymm6
+	vpxor	%ymm6, %ymm9, %ymm9
+	vmovdqu	%ymm6, %ymm10
+	vpslld	$23, %ymm10, %ymm10
+	vpsrld	$9, %ymm6, %ymm6
+	vpor	%ymm10, %ymm6, %ymm6
+	vpxor	%ymm6, %ymm9, %ymm6
+	vpaddd	%ymm6, %ymm4, %ymm4
+	vmovdqu	1856(%rcx), %ymm6
+	vpaddd	%ymm6, %ymm3, %ymm3
+	vmovdqu	glob_data + 2368(%rip), %ymm6
+	vpaddd	%ymm6, %ymm3, %ymm3
 	vmovdqu	%ymm1, %ymm10
 	vpand	%ymm0, %ymm10, %ymm10
-	vmovdqu	glob_data + 448(%rip), %ymm7
-	vpxor	%ymm1, %ymm7, %ymm7
-	vpand	%ymm2, %ymm7, %ymm7
-	vpxor	%ymm7, %ymm10, %ymm7
-	vpaddd	%ymm7, %ymm3, %ymm7
-	vmovdqu	%ymm1, %ymm3
-	vmovdqu	%ymm3, %ymm10
+	vmovdqu	glob_data + 448(%rip), %ymm6
+	vpxor	%ymm1, %ymm6, %ymm6
+	vpand	%ymm2, %ymm6, %ymm6
+	vpxor	%ymm6, %ymm10, %ymm6
+	vpaddd	%ymm6, %ymm3, %ymm3
+	vmovdqu	%ymm1, %ymm6
+	vmovdqu	%ymm6, %ymm10
 	vpslld	$26, %ymm10, %ymm10
-	vpsrld	$6, %ymm3, %ymm3
-	vpor	%ymm10, %ymm3, %ymm9
-	vmovdqu	%ymm1, %ymm3
-	vmovdqu	%ymm3, %ymm10
+	vpsrld	$6, %ymm6, %ymm6
+	vpor	%ymm10, %ymm6, %ymm9
+	vmovdqu	%ymm1, %ymm6
+	vmovdqu	%ymm6, %ymm10
 	vpslld	$21, %ymm10, %ymm10
-	vpsrld	$11, %ymm3, %ymm3
-	vpor	%ymm10, %ymm3, %ymm3
-	vpxor	%ymm3, %ymm9, %ymm9
-	vmovdqu	%ymm3, %ymm10
+	vpsrld	$11, %ymm6, %ymm6
+	vpor	%ymm10, %ymm6, %ymm6
+	vpxor	%ymm6, %ymm9, %ymm9
+	vmovdqu	%ymm6, %ymm10
 	vpslld	$18, %ymm10, %ymm10
-	vpsrld	$14, %ymm3, %ymm3
-	vpor	%ymm10, %ymm3, %ymm3
-	vpxor	%ymm3, %ymm9, %ymm3
-	vpaddd	%ymm3, %ymm7, %ymm7
-	vpaddd	%ymm7, %ymm8, %ymm3
+	vpsrld	$14, %ymm6, %ymm6
+	vpor	%ymm10, %ymm6, %ymm6
+	vpxor	%ymm6, %ymm9, %ymm6
+	vpaddd	%ymm6, %ymm3, %ymm6
+	vpaddd	%ymm6, %ymm8, %ymm3
 	vmovdqu	%ymm4, %ymm10
 	vpand	%ymm5, %ymm10, %ymm10
 	vmovdqu	%ymm4, %ymm8
-	vpand	%ymm6, %ymm8, %ymm8
+	vpand	%ymm7, %ymm8, %ymm8
 	vpxor	%ymm8, %ymm10, %ymm10
 	vmovdqu	%ymm5, %ymm8
-	vpand	%ymm6, %ymm8, %ymm8
+	vpand	%ymm7, %ymm8, %ymm8
 	vpxor	%ymm8, %ymm10, %ymm8
-	vpaddd	%ymm8, %ymm7, %ymm7
+	vpaddd	%ymm8, %ymm6, %ymm6
 	vmovdqu	%ymm4, %ymm8
 	vmovdqu	%ymm8, %ymm10
 	vpslld	$30, %ymm10, %ymm10
@@ -27421,62 +27596,62 @@ slh_dsa_sha2128s_keygen:
 	vpsrld	$9, %ymm8, %ymm8
 	vpor	%ymm10, %ymm8, %ymm8
 	vpxor	%ymm8, %ymm9, %ymm8
-	vpaddd	%ymm8, %ymm7, %ymm8
-	vmovdqu	1888(%rcx), %ymm7
-	vpaddd	%ymm7, %ymm2, %ymm2
-	vmovdqu	glob_data + 2400(%rip), %ymm7
-	vpaddd	%ymm7, %ymm2, %ymm2
+	vpaddd	%ymm8, %ymm6, %ymm6
+	vmovdqu	1888(%rcx), %ymm8
+	vpaddd	%ymm8, %ymm2, %ymm2
+	vmovdqu	glob_data + 2400(%rip), %ymm8
+	vpaddd	%ymm8, %ymm2, %ymm2
 	vmovdqu	%ymm3, %ymm10
 	vpand	%ymm1, %ymm10, %ymm10
-	vmovdqu	glob_data + 448(%rip), %ymm7
-	vpxor	%ymm3, %ymm7, %ymm7
-	vpand	%ymm0, %ymm7, %ymm7
-	vpxor	%ymm7, %ymm10, %ymm7
-	vpaddd	%ymm7, %ymm2, %ymm7
-	vmovdqu	%ymm3, %ymm2
-	vmovdqu	%ymm2, %ymm10
+	vmovdqu	glob_data + 448(%rip), %ymm8
+	vpxor	%ymm3, %ymm8, %ymm8
+	vpand	%ymm0, %ymm8, %ymm8
+	vpxor	%ymm8, %ymm10, %ymm8
+	vpaddd	%ymm8, %ymm2, %ymm2
+	vmovdqu	%ymm3, %ymm8
+	vmovdqu	%ymm8, %ymm10
 	vpslld	$26, %ymm10, %ymm10
-	vpsrld	$6, %ymm2, %ymm2
-	vpor	%ymm10, %ymm2, %ymm9
-	vmovdqu	%ymm3, %ymm2
-	vmovdqu	%ymm2, %ymm10
+	vpsrld	$6, %ymm8, %ymm8
+	vpor	%ymm10, %ymm8, %ymm9
+	vmovdqu	%ymm3, %ymm8
+	vmovdqu	%ymm8, %ymm10
 	vpslld	$21, %ymm10, %ymm10
-	vpsrld	$11, %ymm2, %ymm2
-	vpor	%ymm10, %ymm2, %ymm2
-	vpxor	%ymm2, %ymm9, %ymm9
-	vmovdqu	%ymm2, %ymm10
+	vpsrld	$11, %ymm8, %ymm8
+	vpor	%ymm10, %ymm8, %ymm8
+	vpxor	%ymm8, %ymm9, %ymm9
+	vmovdqu	%ymm8, %ymm10
 	vpslld	$18, %ymm10, %ymm10
-	vpsrld	$14, %ymm2, %ymm2
-	vpor	%ymm10, %ymm2, %ymm2
-	vpxor	%ymm2, %ymm9, %ymm2
-	vpaddd	%ymm2, %ymm7, %ymm7
-	vpaddd	%ymm7, %ymm6, %ymm2
-	vmovdqu	%ymm8, %ymm10
+	vpsrld	$14, %ymm8, %ymm8
+	vpor	%ymm10, %ymm8, %ymm8
+	vpxor	%ymm8, %ymm9, %ymm8
+	vpaddd	%ymm8, %ymm2, %ymm8
+	vpaddd	%ymm8, %ymm7, %ymm2
+	vmovdqu	%ymm6, %ymm10
 	vpand	%ymm4, %ymm10, %ymm10
-	vmovdqu	%ymm8, %ymm6
-	vpand	%ymm5, %ymm6, %ymm6
-	vpxor	%ymm6, %ymm10, %ymm10
-	vmovdqu	%ymm4, %ymm6
-	vpand	%ymm5, %ymm6, %ymm6
-	vpxor	%ymm6, %ymm10, %ymm6
-	vpaddd	%ymm6, %ymm7, %ymm6
-	vmovdqu	%ymm8, %ymm9
-	vmovdqu	%ymm9, %ymm10
-	vpslld	$30, %ymm10, %ymm10
-	vpsrld	$2, %ymm9, %ymm9
-	vpor	%ymm10, %ymm9, %ymm9
+	vmovdqu	%ymm6, %ymm7
+	vpand	%ymm5, %ymm7, %ymm7
+	vpxor	%ymm7, %ymm10, %ymm10
+	vmovdqu	%ymm4, %ymm7
+	vpand	%ymm5, %ymm7, %ymm7
+	vpxor	%ymm7, %ymm10, %ymm7
+	vpaddd	%ymm7, %ymm8, %ymm7
+	vmovdqu	%ymm6, %ymm8
 	vmovdqu	%ymm8, %ymm10
-	vmovdqu	%ymm10, %ymm11
-	vpslld	$19, %ymm11, %ymm11
-	vpsrld	$13, %ymm10, %ymm10
-	vpor	%ymm11, %ymm10, %ymm10
-	vpxor	%ymm10, %ymm9, %ymm9
-	vmovdqu	%ymm10, %ymm11
-	vpslld	$23, %ymm11, %ymm11
-	vpsrld	$9, %ymm10, %ymm10
-	vpor	%ymm11, %ymm10, %ymm7
-	vpxor	%ymm7, %ymm9, %ymm7
-	vpaddd	%ymm7, %ymm6, %ymm6
+	vpslld	$30, %ymm10, %ymm10
+	vpsrld	$2, %ymm8, %ymm8
+	vpor	%ymm10, %ymm8, %ymm9
+	vmovdqu	%ymm6, %ymm8
+	vmovdqu	%ymm8, %ymm10
+	vpslld	$19, %ymm10, %ymm10
+	vpsrld	$13, %ymm8, %ymm8
+	vpor	%ymm10, %ymm8, %ymm8
+	vpxor	%ymm8, %ymm9, %ymm9
+	vmovdqu	%ymm8, %ymm10
+	vpslld	$23, %ymm10, %ymm10
+	vpsrld	$9, %ymm8, %ymm8
+	vpor	%ymm10, %ymm8, %ymm8
+	vpxor	%ymm8, %ymm9, %ymm8
+	vpaddd	%ymm8, %ymm7, %ymm8
 	vmovdqu	1920(%rcx), %ymm7
 	vpaddd	%ymm7, %ymm0, %ymm0
 	vmovdqu	glob_data + 2432(%rip), %ymm7
@@ -27488,48 +27663,48 @@ slh_dsa_sha2128s_keygen:
 	vpand	%ymm1, %ymm7, %ymm7
 	vpxor	%ymm7, %ymm10, %ymm7
 	vpaddd	%ymm7, %ymm0, %ymm0
-	vmovdqu	%ymm2, %ymm9
-	vmovdqu	%ymm9, %ymm10
+	vmovdqu	%ymm2, %ymm7
+	vmovdqu	%ymm7, %ymm10
 	vpslld	$26, %ymm10, %ymm10
-	vpsrld	$6, %ymm9, %ymm9
-	vpor	%ymm10, %ymm9, %ymm9
-	vmovdqu	%ymm2, %ymm10
-	vmovdqu	%ymm10, %ymm11
-	vpslld	$21, %ymm11, %ymm11
-	vpsrld	$11, %ymm10, %ymm10
-	vpor	%ymm11, %ymm10, %ymm10
-	vpxor	%ymm10, %ymm9, %ymm9
-	vmovdqu	%ymm10, %ymm11
-	vpslld	$18, %ymm11, %ymm11
-	vpsrld	$14, %ymm10, %ymm10
-	vpor	%ymm11, %ymm10, %ymm7
+	vpsrld	$6, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm9
+	vmovdqu	%ymm2, %ymm7
+	vmovdqu	%ymm7, %ymm10
+	vpslld	$21, %ymm10, %ymm10
+	vpsrld	$11, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm7
+	vpxor	%ymm7, %ymm9, %ymm9
+	vmovdqu	%ymm7, %ymm10
+	vpslld	$18, %ymm10, %ymm10
+	vpsrld	$14, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm7
 	vpxor	%ymm7, %ymm9, %ymm7
 	vpaddd	%ymm7, %ymm0, %ymm7
 	vpaddd	%ymm7, %ymm5, %ymm0
-	vmovdqu	%ymm6, %ymm10
-	vpand	%ymm8, %ymm10, %ymm10
-	vmovdqu	%ymm6, %ymm5
+	vmovdqu	%ymm8, %ymm10
+	vpand	%ymm6, %ymm10, %ymm10
+	vmovdqu	%ymm8, %ymm5
 	vpand	%ymm4, %ymm5, %ymm5
 	vpxor	%ymm5, %ymm10, %ymm10
-	vmovdqu	%ymm8, %ymm5
+	vmovdqu	%ymm6, %ymm5
 	vpand	%ymm4, %ymm5, %ymm5
 	vpxor	%ymm5, %ymm10, %ymm5
 	vpaddd	%ymm5, %ymm7, %ymm5
-	vmovdqu	%ymm6, %ymm9
-	vmovdqu	%ymm9, %ymm10
+	vmovdqu	%ymm8, %ymm7
+	vmovdqu	%ymm7, %ymm10
 	vpslld	$30, %ymm10, %ymm10
-	vpsrld	$2, %ymm9, %ymm9
-	vpor	%ymm10, %ymm9, %ymm9
-	vmovdqu	%ymm6, %ymm10
-	vmovdqu	%ymm10, %ymm11
-	vpslld	$19, %ymm11, %ymm11
-	vpsrld	$13, %ymm10, %ymm10
-	vpor	%ymm11, %ymm10, %ymm10
-	vpxor	%ymm10, %ymm9, %ymm9
-	vmovdqu	%ymm10, %ymm11
-	vpslld	$23, %ymm11, %ymm11
-	vpsrld	$9, %ymm10, %ymm10
-	vpor	%ymm11, %ymm10, %ymm7
+	vpsrld	$2, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm9
+	vmovdqu	%ymm8, %ymm7
+	vmovdqu	%ymm7, %ymm10
+	vpslld	$19, %ymm10, %ymm10
+	vpsrld	$13, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm7
+	vpxor	%ymm7, %ymm9, %ymm9
+	vmovdqu	%ymm7, %ymm10
+	vpslld	$23, %ymm10, %ymm10
+	vpsrld	$9, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm7
 	vpxor	%ymm7, %ymm9, %ymm7
 	vpaddd	%ymm7, %ymm5, %ymm5
 	vmovdqu	1952(%rcx), %ymm7
@@ -27543,48 +27718,48 @@ slh_dsa_sha2128s_keygen:
 	vpand	%ymm3, %ymm7, %ymm7
 	vpxor	%ymm7, %ymm10, %ymm7
 	vpaddd	%ymm7, %ymm1, %ymm1
-	vmovdqu	%ymm0, %ymm9
-	vmovdqu	%ymm9, %ymm10
+	vmovdqu	%ymm0, %ymm7
+	vmovdqu	%ymm7, %ymm10
 	vpslld	$26, %ymm10, %ymm10
-	vpsrld	$6, %ymm9, %ymm9
-	vpor	%ymm10, %ymm9, %ymm9
-	vmovdqu	%ymm0, %ymm10
-	vmovdqu	%ymm10, %ymm11
-	vpslld	$21, %ymm11, %ymm11
-	vpsrld	$11, %ymm10, %ymm10
-	vpor	%ymm11, %ymm10, %ymm10
-	vpxor	%ymm10, %ymm9, %ymm9
-	vmovdqu	%ymm10, %ymm11
-	vpslld	$18, %ymm11, %ymm11
-	vpsrld	$14, %ymm10, %ymm10
-	vpor	%ymm11, %ymm10, %ymm7
+	vpsrld	$6, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm9
+	vmovdqu	%ymm0, %ymm7
+	vmovdqu	%ymm7, %ymm10
+	vpslld	$21, %ymm10, %ymm10
+	vpsrld	$11, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm7
+	vpxor	%ymm7, %ymm9, %ymm9
+	vmovdqu	%ymm7, %ymm10
+	vpslld	$18, %ymm10, %ymm10
+	vpsrld	$14, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm7
 	vpxor	%ymm7, %ymm9, %ymm7
 	vpaddd	%ymm7, %ymm1, %ymm7
 	vpaddd	%ymm7, %ymm4, %ymm1
 	vmovdqu	%ymm5, %ymm10
-	vpand	%ymm6, %ymm10, %ymm10
+	vpand	%ymm8, %ymm10, %ymm10
 	vmovdqu	%ymm5, %ymm4
-	vpand	%ymm8, %ymm4, %ymm4
+	vpand	%ymm6, %ymm4, %ymm4
 	vpxor	%ymm4, %ymm10, %ymm10
-	vmovdqu	%ymm6, %ymm4
-	vpand	%ymm8, %ymm4, %ymm4
+	vmovdqu	%ymm8, %ymm4
+	vpand	%ymm6, %ymm4, %ymm4
 	vpxor	%ymm4, %ymm10, %ymm4
 	vpaddd	%ymm4, %ymm7, %ymm4
-	vmovdqu	%ymm5, %ymm9
-	vmovdqu	%ymm9, %ymm10
+	vmovdqu	%ymm5, %ymm7
+	vmovdqu	%ymm7, %ymm10
 	vpslld	$30, %ymm10, %ymm10
-	vpsrld	$2, %ymm9, %ymm9
-	vpor	%ymm10, %ymm9, %ymm9
-	vmovdqu	%ymm5, %ymm10
-	vmovdqu	%ymm10, %ymm11
-	vpslld	$19, %ymm11, %ymm11
-	vpsrld	$13, %ymm10, %ymm10
-	vpor	%ymm11, %ymm10, %ymm10
-	vpxor	%ymm10, %ymm9, %ymm9
-	vmovdqu	%ymm10, %ymm11
-	vpslld	$23, %ymm11, %ymm11
-	vpsrld	$9, %ymm10, %ymm10
-	vpor	%ymm11, %ymm10, %ymm7
+	vpsrld	$2, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm9
+	vmovdqu	%ymm5, %ymm7
+	vmovdqu	%ymm7, %ymm10
+	vpslld	$19, %ymm10, %ymm10
+	vpsrld	$13, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm7
+	vpxor	%ymm7, %ymm9, %ymm9
+	vmovdqu	%ymm7, %ymm10
+	vpslld	$23, %ymm10, %ymm10
+	vpsrld	$9, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm7
 	vpxor	%ymm7, %ymm9, %ymm7
 	vpaddd	%ymm7, %ymm4, %ymm4
 	vmovdqu	1984(%rcx), %ymm7
@@ -27597,51 +27772,51 @@ slh_dsa_sha2128s_keygen:
 	vpxor	%ymm1, %ymm7, %ymm7
 	vpand	%ymm2, %ymm7, %ymm7
 	vpxor	%ymm7, %ymm10, %ymm7
-	vpaddd	%ymm7, %ymm3, %ymm7
-	vmovdqu	%ymm1, %ymm3
-	vmovdqu	%ymm3, %ymm10
+	vpaddd	%ymm7, %ymm3, %ymm3
+	vmovdqu	%ymm1, %ymm7
+	vmovdqu	%ymm7, %ymm10
 	vpslld	$26, %ymm10, %ymm10
-	vpsrld	$6, %ymm3, %ymm3
-	vpor	%ymm10, %ymm3, %ymm9
-	vmovdqu	%ymm1, %ymm3
-	vmovdqu	%ymm3, %ymm10
+	vpsrld	$6, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm9
+	vmovdqu	%ymm1, %ymm7
+	vmovdqu	%ymm7, %ymm10
 	vpslld	$21, %ymm10, %ymm10
-	vpsrld	$11, %ymm3, %ymm3
-	vpor	%ymm10, %ymm3, %ymm3
-	vpxor	%ymm3, %ymm9, %ymm9
-	vmovdqu	%ymm3, %ymm10
+	vpsrld	$11, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm7
+	vpxor	%ymm7, %ymm9, %ymm9
+	vmovdqu	%ymm7, %ymm10
 	vpslld	$18, %ymm10, %ymm10
-	vpsrld	$14, %ymm3, %ymm3
-	vpor	%ymm10, %ymm3, %ymm3
-	vpxor	%ymm3, %ymm9, %ymm3
-	vpaddd	%ymm3, %ymm7, %ymm7
-	vpaddd	%ymm7, %ymm8, %ymm3
+	vpsrld	$14, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm7
+	vpxor	%ymm7, %ymm9, %ymm7
+	vpaddd	%ymm7, %ymm3, %ymm7
+	vpaddd	%ymm7, %ymm6, %ymm3
 	vmovdqu	%ymm4, %ymm10
 	vpand	%ymm5, %ymm10, %ymm10
-	vmovdqu	%ymm4, %ymm8
-	vpand	%ymm6, %ymm8, %ymm8
-	vpxor	%ymm8, %ymm10, %ymm10
-	vmovdqu	%ymm5, %ymm8
-	vpand	%ymm6, %ymm8, %ymm8
-	vpxor	%ymm8, %ymm10, %ymm8
-	vpaddd	%ymm8, %ymm7, %ymm7
-	vmovdqu	%ymm4, %ymm8
-	vmovdqu	%ymm8, %ymm10
+	vmovdqu	%ymm4, %ymm6
+	vpand	%ymm8, %ymm6, %ymm6
+	vpxor	%ymm6, %ymm10, %ymm10
+	vmovdqu	%ymm5, %ymm6
+	vpand	%ymm8, %ymm6, %ymm6
+	vpxor	%ymm6, %ymm10, %ymm6
+	vpaddd	%ymm6, %ymm7, %ymm6
+	vmovdqu	%ymm4, %ymm7
+	vmovdqu	%ymm7, %ymm10
 	vpslld	$30, %ymm10, %ymm10
-	vpsrld	$2, %ymm8, %ymm8
-	vpor	%ymm10, %ymm8, %ymm9
-	vmovdqu	%ymm4, %ymm8
-	vmovdqu	%ymm8, %ymm10
+	vpsrld	$2, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm9
+	vmovdqu	%ymm4, %ymm7
+	vmovdqu	%ymm7, %ymm10
 	vpslld	$19, %ymm10, %ymm10
-	vpsrld	$13, %ymm8, %ymm8
-	vpor	%ymm10, %ymm8, %ymm8
-	vpxor	%ymm8, %ymm9, %ymm9
-	vmovdqu	%ymm8, %ymm10
+	vpsrld	$13, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm7
+	vpxor	%ymm7, %ymm9, %ymm9
+	vmovdqu	%ymm7, %ymm10
 	vpslld	$23, %ymm10, %ymm10
-	vpsrld	$9, %ymm8, %ymm8
-	vpor	%ymm10, %ymm8, %ymm8
-	vpxor	%ymm8, %ymm9, %ymm8
-	vpaddd	%ymm8, %ymm7, %ymm8
+	vpsrld	$9, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm7
+	vpxor	%ymm7, %ymm9, %ymm7
+	vpaddd	%ymm7, %ymm6, %ymm6
 	vmovdqu	2016(%rcx), %ymm7
 	vpaddd	%ymm7, %ymm2, %ymm2
 	vmovdqu	glob_data + 2528(%rip), %ymm7
@@ -27652,41 +27827,41 @@ slh_dsa_sha2128s_keygen:
 	vpxor	%ymm3, %ymm7, %ymm7
 	vpand	%ymm0, %ymm7, %ymm7
 	vpxor	%ymm7, %ymm10, %ymm7
-	vpaddd	%ymm7, %ymm2, %ymm7
-	vmovdqu	%ymm3, %ymm2
-	vmovdqu	%ymm2, %ymm10
-	vpslld	$26, %ymm10, %ymm10
-	vpsrld	$6, %ymm2, %ymm2
-	vpor	%ymm10, %ymm2, %ymm9
-	vmovdqu	%ymm3, %ymm2
-	vmovdqu	%ymm2, %ymm10
-	vpslld	$21, %ymm10, %ymm10
-	vpsrld	$11, %ymm2, %ymm2
-	vpor	%ymm10, %ymm2, %ymm2
-	vpxor	%ymm2, %ymm9, %ymm9
-	vmovdqu	%ymm2, %ymm10
-	vpslld	$18, %ymm10, %ymm10
-	vpsrld	$14, %ymm2, %ymm2
-	vpor	%ymm10, %ymm2, %ymm2
-	vpxor	%ymm2, %ymm9, %ymm2
-	vpaddd	%ymm2, %ymm7, %ymm2
+	vpaddd	%ymm7, %ymm2, %ymm2
 	vmovdqu	%ymm3, %ymm7
-	vpaddd	%ymm2, %ymm6, %ymm6
-	vmovdqu	%ymm8, %ymm10
+	vmovdqu	%ymm7, %ymm10
+	vpslld	$26, %ymm10, %ymm10
+	vpsrld	$6, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm9
+	vmovdqu	%ymm3, %ymm7
+	vmovdqu	%ymm7, %ymm10
+	vpslld	$21, %ymm10, %ymm10
+	vpsrld	$11, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm7
+	vpxor	%ymm7, %ymm9, %ymm9
+	vmovdqu	%ymm7, %ymm10
+	vpslld	$18, %ymm10, %ymm10
+	vpsrld	$14, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm7
+	vpxor	%ymm7, %ymm9, %ymm7
+	vpaddd	%ymm7, %ymm2, %ymm2
+	vmovdqu	%ymm3, %ymm7
+	vpaddd	%ymm2, %ymm8, %ymm8
+	vmovdqu	%ymm6, %ymm10
 	vpand	%ymm4, %ymm10, %ymm10
-	vmovdqu	%ymm8, %ymm3
+	vmovdqu	%ymm6, %ymm3
 	vpand	%ymm5, %ymm3, %ymm3
 	vpxor	%ymm3, %ymm10, %ymm10
 	vmovdqu	%ymm4, %ymm3
 	vpand	%ymm5, %ymm3, %ymm3
 	vpxor	%ymm3, %ymm10, %ymm3
 	vpaddd	%ymm3, %ymm2, %ymm2
-	vmovdqu	%ymm8, %ymm3
+	vmovdqu	%ymm6, %ymm3
 	vmovdqu	%ymm3, %ymm10
 	vpslld	$30, %ymm10, %ymm10
 	vpsrld	$2, %ymm3, %ymm3
 	vpor	%ymm10, %ymm3, %ymm9
-	vmovdqu	%ymm8, %ymm3
+	vmovdqu	%ymm6, %ymm3
 	vmovdqu	%ymm3, %ymm10
 	vpslld	$19, %ymm10, %ymm10
 	vpsrld	$13, %ymm3, %ymm3
@@ -27701,13 +27876,13 @@ slh_dsa_sha2128s_keygen:
 	vmovdqu	32(%rsp), %ymm3
 	vpaddd	%ymm3, %ymm2, %ymm2
 	vmovdqu	64(%rsp), %ymm3
-	vpaddd	%ymm3, %ymm8, %ymm3
-	vmovdqu	96(%rsp), %ymm8
-	vpaddd	%ymm8, %ymm4, %ymm4
-	vmovdqu	128(%rsp), %ymm8
-	vpaddd	%ymm8, %ymm5, %ymm5
-	vmovdqu	160(%rsp), %ymm8
-	vpaddd	%ymm8, %ymm6, %ymm6
+	vpaddd	%ymm3, %ymm6, %ymm3
+	vmovdqu	96(%rsp), %ymm6
+	vpaddd	%ymm6, %ymm4, %ymm4
+	vmovdqu	128(%rsp), %ymm6
+	vpaddd	%ymm6, %ymm5, %ymm5
+	vmovdqu	160(%rsp), %ymm6
+	vpaddd	%ymm6, %ymm8, %ymm6
 	vmovdqu	192(%rsp), %ymm8
 	vpaddd	%ymm8, %ymm7, %ymm7
 	vmovdqu	224(%rsp), %ymm8
@@ -27732,6 +27907,8 @@ slh_dsa_sha2128s_keygen:
 	vmovdqu	%ymm8, 448(%rcx)
 	vmovdqu	%ymm8, 480(%rcx)
 	movq	312(%rsp), %r13
+	lfence
+	movq	$0, %rbp
 	addq	$-64, %r13
 .Lsha256_parallel_adrsc__absorb_fixed$23:
 	cmpq	$64, %r13
@@ -27775,6 +27952,8 @@ slh_dsa_sha2128s_keygen:
 	vmovdqu	%xmm9, %xmm9
 	vinserti128	$1, %xmm10, %ymm9, %ymm9
 	movq	320(%rsp), %r13
+	lfence
+	movq	$0, %r15
 	cmpq	$0, %r13
 	je  	.Lsha256_parallel_adrsc__absorb_fixed$17
 	cmpq	$1, %r13
@@ -27793,6 +27972,8 @@ slh_dsa_sha2128s_keygen:
 .Lsha256_parallel_adrsc__absorb_fixed$18:
 	vpxor	%ymm9, %ymm8, %ymm8
 	movq	312(%rsp), %r13
+	lfence
+	movq	$0, %r15
 	decq	%r13
 	incq	%rax
 	incq	%rbp
@@ -27838,6 +28019,8 @@ slh_dsa_sha2128s_keygen:
 	shlq	$5, %r12
 	vmovdqu	%ymm8, (%rcx,%r12)
 	movq	312(%rsp), %r13
+	lfence
+	movq	$0, %r12
 	addq	$-4, %r13
 	addq	$4, %rax
 	incq	%r14
@@ -27876,6 +28059,8 @@ slh_dsa_sha2128s_keygen:
 	vmovdqu	%xmm9, %xmm9
 	vinserti128	$1, %xmm10, %ymm9, %ymm9
 	movq	312(%rsp), %r13
+	lfence
+	movq	$0, %r15
 	cmpq	$0, %r13
 	je  	.Lsha256_parallel_adrsc__absorb_fixed$6
 	cmpq	$1, %r13
@@ -27902,13 +28087,19 @@ slh_dsa_sha2128s_keygen:
 	vmovdqu	%ymm8, (%rcx,%r14)
 .Lsha256_parallel_adrsc__absorb_fixed$3:
 .Lsha256_parallel_adrsc__absorb_fixed$2:
-	movq	288(%rsp), %r9
+	movq	288(%rsp), %rdi
+	lfence
+	movq	$0, %rax
 	movq	$176, %rax
-	addq	%rax, %r9
+	addq	%rax, %rdi
 	movq	296(%rsp), %rdx
+	lfence
+	movq	$0, %rax
 	addq	$22, %rdx
 	andq	$63, %rdx
 	movq	304(%rsp), %rax
+	lfence
+	movq	$0, %rsi
 	vmovdqu	%ymm2, (%rax)
 	vmovdqu	%ymm3, 32(%rax)
 	vmovdqu	%ymm4, 64(%rax)
@@ -29677,21 +29868,21 @@ slh_dsa_sha2128s_keygen:
 	vpand	%ymm0, %ymm7, %ymm7
 	vpxor	%ymm7, %ymm10, %ymm7
 	vpaddd	%ymm7, %ymm6, %ymm6
-	vmovdqu	%ymm3, %ymm9
-	vmovdqu	%ymm9, %ymm10
+	vmovdqu	%ymm3, %ymm7
+	vmovdqu	%ymm7, %ymm10
 	vpslld	$26, %ymm10, %ymm10
-	vpsrld	$6, %ymm9, %ymm9
-	vpor	%ymm10, %ymm9, %ymm9
-	vmovdqu	%ymm3, %ymm10
-	vmovdqu	%ymm10, %ymm11
-	vpslld	$21, %ymm11, %ymm11
-	vpsrld	$11, %ymm10, %ymm10
-	vpor	%ymm11, %ymm10, %ymm10
-	vpxor	%ymm10, %ymm9, %ymm9
-	vmovdqu	%ymm10, %ymm11
-	vpslld	$18, %ymm11, %ymm11
-	vpsrld	$14, %ymm10, %ymm10
-	vpor	%ymm11, %ymm10, %ymm7
+	vpsrld	$6, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm9
+	vmovdqu	%ymm3, %ymm7
+	vmovdqu	%ymm7, %ymm10
+	vpslld	$21, %ymm10, %ymm10
+	vpsrld	$11, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm7
+	vpxor	%ymm7, %ymm9, %ymm9
+	vmovdqu	%ymm7, %ymm10
+	vpslld	$18, %ymm10, %ymm10
+	vpsrld	$14, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm7
 	vpxor	%ymm7, %ymm9, %ymm7
 	vpaddd	%ymm7, %ymm6, %ymm6
 	vpaddd	%ymm6, %ymm2, %ymm2
@@ -29704,21 +29895,21 @@ slh_dsa_sha2128s_keygen:
 	vpand	%ymm5, %ymm7, %ymm7
 	vpxor	%ymm7, %ymm10, %ymm7
 	vpaddd	%ymm7, %ymm6, %ymm6
-	vmovdqu	%ymm8, %ymm9
-	vmovdqu	%ymm9, %ymm10
+	vmovdqu	%ymm8, %ymm7
+	vmovdqu	%ymm7, %ymm10
 	vpslld	$30, %ymm10, %ymm10
-	vpsrld	$2, %ymm9, %ymm9
-	vpor	%ymm10, %ymm9, %ymm9
-	vmovdqu	%ymm8, %ymm10
-	vmovdqu	%ymm10, %ymm11
-	vpslld	$19, %ymm11, %ymm11
-	vpsrld	$13, %ymm10, %ymm10
-	vpor	%ymm11, %ymm10, %ymm10
-	vpxor	%ymm10, %ymm9, %ymm9
-	vmovdqu	%ymm10, %ymm11
-	vpslld	$23, %ymm11, %ymm11
-	vpsrld	$9, %ymm10, %ymm10
-	vpor	%ymm11, %ymm10, %ymm7
+	vpsrld	$2, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm9
+	vmovdqu	%ymm8, %ymm7
+	vmovdqu	%ymm7, %ymm10
+	vpslld	$19, %ymm10, %ymm10
+	vpsrld	$13, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm7
+	vpxor	%ymm7, %ymm9, %ymm9
+	vmovdqu	%ymm7, %ymm10
+	vpslld	$23, %ymm10, %ymm10
+	vpsrld	$9, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm7
 	vpxor	%ymm7, %ymm9, %ymm7
 	vpaddd	%ymm7, %ymm6, %ymm6
 	vmovdqu	128(%rbp), %ymm7
@@ -29732,21 +29923,21 @@ slh_dsa_sha2128s_keygen:
 	vpand	%ymm1, %ymm7, %ymm7
 	vpxor	%ymm7, %ymm10, %ymm7
 	vpaddd	%ymm7, %ymm0, %ymm0
-	vmovdqu	%ymm2, %ymm9
-	vmovdqu	%ymm9, %ymm10
+	vmovdqu	%ymm2, %ymm7
+	vmovdqu	%ymm7, %ymm10
 	vpslld	$26, %ymm10, %ymm10
-	vpsrld	$6, %ymm9, %ymm9
-	vpor	%ymm10, %ymm9, %ymm9
-	vmovdqu	%ymm2, %ymm10
-	vmovdqu	%ymm10, %ymm11
-	vpslld	$21, %ymm11, %ymm11
-	vpsrld	$11, %ymm10, %ymm10
-	vpor	%ymm11, %ymm10, %ymm10
-	vpxor	%ymm10, %ymm9, %ymm9
-	vmovdqu	%ymm10, %ymm11
-	vpslld	$18, %ymm11, %ymm11
-	vpsrld	$14, %ymm10, %ymm10
-	vpor	%ymm11, %ymm10, %ymm7
+	vpsrld	$6, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm9
+	vmovdqu	%ymm2, %ymm7
+	vmovdqu	%ymm7, %ymm10
+	vpslld	$21, %ymm10, %ymm10
+	vpsrld	$11, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm7
+	vpxor	%ymm7, %ymm9, %ymm9
+	vmovdqu	%ymm7, %ymm10
+	vpslld	$18, %ymm10, %ymm10
+	vpsrld	$14, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm7
 	vpxor	%ymm7, %ymm9, %ymm7
 	vpaddd	%ymm7, %ymm0, %ymm7
 	vpaddd	%ymm7, %ymm5, %ymm0
@@ -29759,21 +29950,21 @@ slh_dsa_sha2128s_keygen:
 	vpand	%ymm4, %ymm5, %ymm5
 	vpxor	%ymm5, %ymm10, %ymm5
 	vpaddd	%ymm5, %ymm7, %ymm5
-	vmovdqu	%ymm6, %ymm9
-	vmovdqu	%ymm9, %ymm10
+	vmovdqu	%ymm6, %ymm7
+	vmovdqu	%ymm7, %ymm10
 	vpslld	$30, %ymm10, %ymm10
-	vpsrld	$2, %ymm9, %ymm9
-	vpor	%ymm10, %ymm9, %ymm9
-	vmovdqu	%ymm6, %ymm10
-	vmovdqu	%ymm10, %ymm11
-	vpslld	$19, %ymm11, %ymm11
-	vpsrld	$13, %ymm10, %ymm10
-	vpor	%ymm11, %ymm10, %ymm10
-	vpxor	%ymm10, %ymm9, %ymm9
-	vmovdqu	%ymm10, %ymm11
-	vpslld	$23, %ymm11, %ymm11
-	vpsrld	$9, %ymm10, %ymm10
-	vpor	%ymm11, %ymm10, %ymm7
+	vpsrld	$2, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm9
+	vmovdqu	%ymm6, %ymm7
+	vmovdqu	%ymm7, %ymm10
+	vpslld	$19, %ymm10, %ymm10
+	vpsrld	$13, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm7
+	vpxor	%ymm7, %ymm9, %ymm9
+	vmovdqu	%ymm7, %ymm10
+	vpslld	$23, %ymm10, %ymm10
+	vpsrld	$9, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm7
 	vpxor	%ymm7, %ymm9, %ymm7
 	vpaddd	%ymm7, %ymm5, %ymm5
 	vmovdqu	160(%rbp), %ymm7
@@ -29787,21 +29978,21 @@ slh_dsa_sha2128s_keygen:
 	vpand	%ymm3, %ymm7, %ymm7
 	vpxor	%ymm7, %ymm10, %ymm7
 	vpaddd	%ymm7, %ymm1, %ymm1
-	vmovdqu	%ymm0, %ymm9
-	vmovdqu	%ymm9, %ymm10
+	vmovdqu	%ymm0, %ymm7
+	vmovdqu	%ymm7, %ymm10
 	vpslld	$26, %ymm10, %ymm10
-	vpsrld	$6, %ymm9, %ymm9
-	vpor	%ymm10, %ymm9, %ymm9
-	vmovdqu	%ymm0, %ymm10
-	vmovdqu	%ymm10, %ymm11
-	vpslld	$21, %ymm11, %ymm11
-	vpsrld	$11, %ymm10, %ymm10
-	vpor	%ymm11, %ymm10, %ymm10
-	vpxor	%ymm10, %ymm9, %ymm9
-	vmovdqu	%ymm10, %ymm11
-	vpslld	$18, %ymm11, %ymm11
-	vpsrld	$14, %ymm10, %ymm10
-	vpor	%ymm11, %ymm10, %ymm7
+	vpsrld	$6, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm9
+	vmovdqu	%ymm0, %ymm7
+	vmovdqu	%ymm7, %ymm10
+	vpslld	$21, %ymm10, %ymm10
+	vpsrld	$11, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm7
+	vpxor	%ymm7, %ymm9, %ymm9
+	vmovdqu	%ymm7, %ymm10
+	vpslld	$18, %ymm10, %ymm10
+	vpsrld	$14, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm7
 	vpxor	%ymm7, %ymm9, %ymm7
 	vpaddd	%ymm7, %ymm1, %ymm7
 	vpaddd	%ymm7, %ymm4, %ymm1
@@ -29814,21 +30005,21 @@ slh_dsa_sha2128s_keygen:
 	vpand	%ymm8, %ymm4, %ymm4
 	vpxor	%ymm4, %ymm10, %ymm4
 	vpaddd	%ymm4, %ymm7, %ymm4
-	vmovdqu	%ymm5, %ymm9
-	vmovdqu	%ymm9, %ymm10
+	vmovdqu	%ymm5, %ymm7
+	vmovdqu	%ymm7, %ymm10
 	vpslld	$30, %ymm10, %ymm10
-	vpsrld	$2, %ymm9, %ymm9
-	vpor	%ymm10, %ymm9, %ymm9
-	vmovdqu	%ymm5, %ymm10
-	vmovdqu	%ymm10, %ymm11
-	vpslld	$19, %ymm11, %ymm11
-	vpsrld	$13, %ymm10, %ymm10
-	vpor	%ymm11, %ymm10, %ymm10
-	vpxor	%ymm10, %ymm9, %ymm9
-	vmovdqu	%ymm10, %ymm11
-	vpslld	$23, %ymm11, %ymm11
-	vpsrld	$9, %ymm10, %ymm10
-	vpor	%ymm11, %ymm10, %ymm7
+	vpsrld	$2, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm9
+	vmovdqu	%ymm5, %ymm7
+	vmovdqu	%ymm7, %ymm10
+	vpslld	$19, %ymm10, %ymm10
+	vpsrld	$13, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm7
+	vpxor	%ymm7, %ymm9, %ymm9
+	vmovdqu	%ymm7, %ymm10
+	vpslld	$23, %ymm10, %ymm10
+	vpsrld	$9, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm7
 	vpxor	%ymm7, %ymm9, %ymm7
 	vpaddd	%ymm7, %ymm4, %ymm4
 	vmovdqu	192(%rbp), %ymm7
@@ -29841,24 +30032,24 @@ slh_dsa_sha2128s_keygen:
 	vpxor	%ymm1, %ymm7, %ymm7
 	vpand	%ymm2, %ymm7, %ymm7
 	vpxor	%ymm7, %ymm10, %ymm7
-	vpaddd	%ymm7, %ymm3, %ymm7
-	vmovdqu	%ymm1, %ymm3
-	vmovdqu	%ymm3, %ymm10
+	vpaddd	%ymm7, %ymm3, %ymm3
+	vmovdqu	%ymm1, %ymm7
+	vmovdqu	%ymm7, %ymm10
 	vpslld	$26, %ymm10, %ymm10
-	vpsrld	$6, %ymm3, %ymm3
-	vpor	%ymm10, %ymm3, %ymm9
-	vmovdqu	%ymm1, %ymm3
-	vmovdqu	%ymm3, %ymm10
+	vpsrld	$6, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm9
+	vmovdqu	%ymm1, %ymm7
+	vmovdqu	%ymm7, %ymm10
 	vpslld	$21, %ymm10, %ymm10
-	vpsrld	$11, %ymm3, %ymm3
-	vpor	%ymm10, %ymm3, %ymm3
-	vpxor	%ymm3, %ymm9, %ymm9
-	vmovdqu	%ymm3, %ymm10
+	vpsrld	$11, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm7
+	vpxor	%ymm7, %ymm9, %ymm9
+	vmovdqu	%ymm7, %ymm10
 	vpslld	$18, %ymm10, %ymm10
-	vpsrld	$14, %ymm3, %ymm3
-	vpor	%ymm10, %ymm3, %ymm3
-	vpxor	%ymm3, %ymm9, %ymm3
-	vpaddd	%ymm3, %ymm7, %ymm7
+	vpsrld	$14, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm7
+	vpxor	%ymm7, %ymm9, %ymm7
+	vpaddd	%ymm7, %ymm3, %ymm7
 	vpaddd	%ymm7, %ymm8, %ymm3
 	vmovdqu	%ymm4, %ymm10
 	vpand	%ymm5, %ymm10, %ymm10
@@ -29896,24 +30087,24 @@ slh_dsa_sha2128s_keygen:
 	vpxor	%ymm3, %ymm7, %ymm7
 	vpand	%ymm0, %ymm7, %ymm7
 	vpxor	%ymm7, %ymm10, %ymm7
-	vpaddd	%ymm7, %ymm2, %ymm7
-	vmovdqu	%ymm3, %ymm2
-	vmovdqu	%ymm2, %ymm10
+	vpaddd	%ymm7, %ymm2, %ymm2
+	vmovdqu	%ymm3, %ymm7
+	vmovdqu	%ymm7, %ymm10
 	vpslld	$26, %ymm10, %ymm10
-	vpsrld	$6, %ymm2, %ymm2
-	vpor	%ymm10, %ymm2, %ymm9
-	vmovdqu	%ymm3, %ymm2
-	vmovdqu	%ymm2, %ymm10
+	vpsrld	$6, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm9
+	vmovdqu	%ymm3, %ymm7
+	vmovdqu	%ymm7, %ymm10
 	vpslld	$21, %ymm10, %ymm10
-	vpsrld	$11, %ymm2, %ymm2
-	vpor	%ymm10, %ymm2, %ymm2
-	vpxor	%ymm2, %ymm9, %ymm9
-	vmovdqu	%ymm2, %ymm10
+	vpsrld	$11, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm7
+	vpxor	%ymm7, %ymm9, %ymm9
+	vmovdqu	%ymm7, %ymm10
 	vpslld	$18, %ymm10, %ymm10
-	vpsrld	$14, %ymm2, %ymm2
-	vpor	%ymm10, %ymm2, %ymm2
-	vpxor	%ymm2, %ymm9, %ymm2
-	vpaddd	%ymm2, %ymm7, %ymm7
+	vpsrld	$14, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm7
+	vpxor	%ymm7, %ymm9, %ymm7
+	vpaddd	%ymm7, %ymm2, %ymm7
 	vpaddd	%ymm7, %ymm6, %ymm2
 	vmovdqu	%ymm8, %ymm10
 	vpand	%ymm4, %ymm10, %ymm10
@@ -29924,21 +30115,21 @@ slh_dsa_sha2128s_keygen:
 	vpand	%ymm5, %ymm6, %ymm6
 	vpxor	%ymm6, %ymm10, %ymm6
 	vpaddd	%ymm6, %ymm7, %ymm6
-	vmovdqu	%ymm8, %ymm9
-	vmovdqu	%ymm9, %ymm10
+	vmovdqu	%ymm8, %ymm7
+	vmovdqu	%ymm7, %ymm10
 	vpslld	$30, %ymm10, %ymm10
-	vpsrld	$2, %ymm9, %ymm9
-	vpor	%ymm10, %ymm9, %ymm9
-	vmovdqu	%ymm8, %ymm10
-	vmovdqu	%ymm10, %ymm11
-	vpslld	$19, %ymm11, %ymm11
-	vpsrld	$13, %ymm10, %ymm10
-	vpor	%ymm11, %ymm10, %ymm10
-	vpxor	%ymm10, %ymm9, %ymm9
-	vmovdqu	%ymm10, %ymm11
-	vpslld	$23, %ymm11, %ymm11
-	vpsrld	$9, %ymm10, %ymm10
-	vpor	%ymm11, %ymm10, %ymm7
+	vpsrld	$2, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm9
+	vmovdqu	%ymm8, %ymm7
+	vmovdqu	%ymm7, %ymm10
+	vpslld	$19, %ymm10, %ymm10
+	vpsrld	$13, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm7
+	vpxor	%ymm7, %ymm9, %ymm9
+	vmovdqu	%ymm7, %ymm10
+	vpslld	$23, %ymm10, %ymm10
+	vpsrld	$9, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm7
 	vpxor	%ymm7, %ymm9, %ymm7
 	vpaddd	%ymm7, %ymm6, %ymm6
 	vmovdqu	256(%rbp), %ymm7
@@ -29952,21 +30143,21 @@ slh_dsa_sha2128s_keygen:
 	vpand	%ymm1, %ymm7, %ymm7
 	vpxor	%ymm7, %ymm10, %ymm7
 	vpaddd	%ymm7, %ymm0, %ymm0
-	vmovdqu	%ymm2, %ymm9
-	vmovdqu	%ymm9, %ymm10
+	vmovdqu	%ymm2, %ymm7
+	vmovdqu	%ymm7, %ymm10
 	vpslld	$26, %ymm10, %ymm10
-	vpsrld	$6, %ymm9, %ymm9
-	vpor	%ymm10, %ymm9, %ymm9
-	vmovdqu	%ymm2, %ymm10
-	vmovdqu	%ymm10, %ymm11
-	vpslld	$21, %ymm11, %ymm11
-	vpsrld	$11, %ymm10, %ymm10
-	vpor	%ymm11, %ymm10, %ymm10
-	vpxor	%ymm10, %ymm9, %ymm9
-	vmovdqu	%ymm10, %ymm11
-	vpslld	$18, %ymm11, %ymm11
-	vpsrld	$14, %ymm10, %ymm10
-	vpor	%ymm11, %ymm10, %ymm7
+	vpsrld	$6, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm9
+	vmovdqu	%ymm2, %ymm7
+	vmovdqu	%ymm7, %ymm10
+	vpslld	$21, %ymm10, %ymm10
+	vpsrld	$11, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm7
+	vpxor	%ymm7, %ymm9, %ymm9
+	vmovdqu	%ymm7, %ymm10
+	vpslld	$18, %ymm10, %ymm10
+	vpsrld	$14, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm7
 	vpxor	%ymm7, %ymm9, %ymm7
 	vpaddd	%ymm7, %ymm0, %ymm7
 	vpaddd	%ymm7, %ymm5, %ymm0
@@ -29979,21 +30170,21 @@ slh_dsa_sha2128s_keygen:
 	vpand	%ymm4, %ymm5, %ymm5
 	vpxor	%ymm5, %ymm10, %ymm5
 	vpaddd	%ymm5, %ymm7, %ymm5
-	vmovdqu	%ymm6, %ymm9
-	vmovdqu	%ymm9, %ymm10
+	vmovdqu	%ymm6, %ymm7
+	vmovdqu	%ymm7, %ymm10
 	vpslld	$30, %ymm10, %ymm10
-	vpsrld	$2, %ymm9, %ymm9
-	vpor	%ymm10, %ymm9, %ymm9
-	vmovdqu	%ymm6, %ymm10
-	vmovdqu	%ymm10, %ymm11
-	vpslld	$19, %ymm11, %ymm11
-	vpsrld	$13, %ymm10, %ymm10
-	vpor	%ymm11, %ymm10, %ymm10
-	vpxor	%ymm10, %ymm9, %ymm9
-	vmovdqu	%ymm10, %ymm11
-	vpslld	$23, %ymm11, %ymm11
-	vpsrld	$9, %ymm10, %ymm10
-	vpor	%ymm11, %ymm10, %ymm7
+	vpsrld	$2, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm9
+	vmovdqu	%ymm6, %ymm7
+	vmovdqu	%ymm7, %ymm10
+	vpslld	$19, %ymm10, %ymm10
+	vpsrld	$13, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm7
+	vpxor	%ymm7, %ymm9, %ymm9
+	vmovdqu	%ymm7, %ymm10
+	vpslld	$23, %ymm10, %ymm10
+	vpsrld	$9, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm7
 	vpxor	%ymm7, %ymm9, %ymm7
 	vpaddd	%ymm7, %ymm5, %ymm5
 	vmovdqu	288(%rbp), %ymm7
@@ -30007,21 +30198,21 @@ slh_dsa_sha2128s_keygen:
 	vpand	%ymm3, %ymm7, %ymm7
 	vpxor	%ymm7, %ymm10, %ymm7
 	vpaddd	%ymm7, %ymm1, %ymm1
-	vmovdqu	%ymm0, %ymm9
-	vmovdqu	%ymm9, %ymm10
+	vmovdqu	%ymm0, %ymm7
+	vmovdqu	%ymm7, %ymm10
 	vpslld	$26, %ymm10, %ymm10
-	vpsrld	$6, %ymm9, %ymm9
-	vpor	%ymm10, %ymm9, %ymm9
-	vmovdqu	%ymm0, %ymm10
-	vmovdqu	%ymm10, %ymm11
-	vpslld	$21, %ymm11, %ymm11
-	vpsrld	$11, %ymm10, %ymm10
-	vpor	%ymm11, %ymm10, %ymm10
-	vpxor	%ymm10, %ymm9, %ymm9
-	vmovdqu	%ymm10, %ymm11
-	vpslld	$18, %ymm11, %ymm11
-	vpsrld	$14, %ymm10, %ymm10
-	vpor	%ymm11, %ymm10, %ymm7
+	vpsrld	$6, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm9
+	vmovdqu	%ymm0, %ymm7
+	vmovdqu	%ymm7, %ymm10
+	vpslld	$21, %ymm10, %ymm10
+	vpsrld	$11, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm7
+	vpxor	%ymm7, %ymm9, %ymm9
+	vmovdqu	%ymm7, %ymm10
+	vpslld	$18, %ymm10, %ymm10
+	vpsrld	$14, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm7
 	vpxor	%ymm7, %ymm9, %ymm7
 	vpaddd	%ymm7, %ymm1, %ymm7
 	vpaddd	%ymm7, %ymm4, %ymm1
@@ -30034,21 +30225,21 @@ slh_dsa_sha2128s_keygen:
 	vpand	%ymm8, %ymm4, %ymm4
 	vpxor	%ymm4, %ymm10, %ymm4
 	vpaddd	%ymm4, %ymm7, %ymm4
-	vmovdqu	%ymm5, %ymm9
-	vmovdqu	%ymm9, %ymm10
+	vmovdqu	%ymm5, %ymm7
+	vmovdqu	%ymm7, %ymm10
 	vpslld	$30, %ymm10, %ymm10
-	vpsrld	$2, %ymm9, %ymm9
-	vpor	%ymm10, %ymm9, %ymm9
-	vmovdqu	%ymm5, %ymm10
-	vmovdqu	%ymm10, %ymm11
-	vpslld	$19, %ymm11, %ymm11
-	vpsrld	$13, %ymm10, %ymm10
-	vpor	%ymm11, %ymm10, %ymm10
-	vpxor	%ymm10, %ymm9, %ymm9
-	vmovdqu	%ymm10, %ymm11
-	vpslld	$23, %ymm11, %ymm11
-	vpsrld	$9, %ymm10, %ymm10
-	vpor	%ymm11, %ymm10, %ymm7
+	vpsrld	$2, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm9
+	vmovdqu	%ymm5, %ymm7
+	vmovdqu	%ymm7, %ymm10
+	vpslld	$19, %ymm10, %ymm10
+	vpsrld	$13, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm7
+	vpxor	%ymm7, %ymm9, %ymm9
+	vmovdqu	%ymm7, %ymm10
+	vpslld	$23, %ymm10, %ymm10
+	vpsrld	$9, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm7
 	vpxor	%ymm7, %ymm9, %ymm7
 	vpaddd	%ymm7, %ymm4, %ymm4
 	vmovdqu	320(%rbp), %ymm7
@@ -30061,24 +30252,24 @@ slh_dsa_sha2128s_keygen:
 	vpxor	%ymm1, %ymm7, %ymm7
 	vpand	%ymm2, %ymm7, %ymm7
 	vpxor	%ymm7, %ymm10, %ymm7
-	vpaddd	%ymm7, %ymm3, %ymm7
-	vmovdqu	%ymm1, %ymm3
-	vmovdqu	%ymm3, %ymm10
+	vpaddd	%ymm7, %ymm3, %ymm3
+	vmovdqu	%ymm1, %ymm7
+	vmovdqu	%ymm7, %ymm10
 	vpslld	$26, %ymm10, %ymm10
-	vpsrld	$6, %ymm3, %ymm3
-	vpor	%ymm10, %ymm3, %ymm9
-	vmovdqu	%ymm1, %ymm3
-	vmovdqu	%ymm3, %ymm10
+	vpsrld	$6, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm9
+	vmovdqu	%ymm1, %ymm7
+	vmovdqu	%ymm7, %ymm10
 	vpslld	$21, %ymm10, %ymm10
-	vpsrld	$11, %ymm3, %ymm3
-	vpor	%ymm10, %ymm3, %ymm3
-	vpxor	%ymm3, %ymm9, %ymm9
-	vmovdqu	%ymm3, %ymm10
+	vpsrld	$11, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm7
+	vpxor	%ymm7, %ymm9, %ymm9
+	vmovdqu	%ymm7, %ymm10
 	vpslld	$18, %ymm10, %ymm10
-	vpsrld	$14, %ymm3, %ymm3
-	vpor	%ymm10, %ymm3, %ymm3
-	vpxor	%ymm3, %ymm9, %ymm3
-	vpaddd	%ymm3, %ymm7, %ymm7
+	vpsrld	$14, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm7
+	vpxor	%ymm7, %ymm9, %ymm7
+	vpaddd	%ymm7, %ymm3, %ymm7
 	vpaddd	%ymm7, %ymm8, %ymm3
 	vmovdqu	%ymm4, %ymm10
 	vpand	%ymm5, %ymm10, %ymm10
@@ -30116,24 +30307,24 @@ slh_dsa_sha2128s_keygen:
 	vpxor	%ymm3, %ymm7, %ymm7
 	vpand	%ymm0, %ymm7, %ymm7
 	vpxor	%ymm7, %ymm10, %ymm7
-	vpaddd	%ymm7, %ymm2, %ymm7
-	vmovdqu	%ymm3, %ymm2
-	vmovdqu	%ymm2, %ymm10
+	vpaddd	%ymm7, %ymm2, %ymm2
+	vmovdqu	%ymm3, %ymm7
+	vmovdqu	%ymm7, %ymm10
 	vpslld	$26, %ymm10, %ymm10
-	vpsrld	$6, %ymm2, %ymm2
-	vpor	%ymm10, %ymm2, %ymm9
-	vmovdqu	%ymm3, %ymm2
-	vmovdqu	%ymm2, %ymm10
+	vpsrld	$6, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm9
+	vmovdqu	%ymm3, %ymm7
+	vmovdqu	%ymm7, %ymm10
 	vpslld	$21, %ymm10, %ymm10
-	vpsrld	$11, %ymm2, %ymm2
-	vpor	%ymm10, %ymm2, %ymm2
-	vpxor	%ymm2, %ymm9, %ymm9
-	vmovdqu	%ymm2, %ymm10
+	vpsrld	$11, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm7
+	vpxor	%ymm7, %ymm9, %ymm9
+	vmovdqu	%ymm7, %ymm10
 	vpslld	$18, %ymm10, %ymm10
-	vpsrld	$14, %ymm2, %ymm2
-	vpor	%ymm10, %ymm2, %ymm2
-	vpxor	%ymm2, %ymm9, %ymm2
-	vpaddd	%ymm2, %ymm7, %ymm7
+	vpsrld	$14, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm7
+	vpxor	%ymm7, %ymm9, %ymm7
+	vpaddd	%ymm7, %ymm2, %ymm7
 	vpaddd	%ymm7, %ymm6, %ymm2
 	vmovdqu	%ymm8, %ymm10
 	vpand	%ymm4, %ymm10, %ymm10
@@ -30144,21 +30335,21 @@ slh_dsa_sha2128s_keygen:
 	vpand	%ymm5, %ymm6, %ymm6
 	vpxor	%ymm6, %ymm10, %ymm6
 	vpaddd	%ymm6, %ymm7, %ymm6
-	vmovdqu	%ymm8, %ymm9
-	vmovdqu	%ymm9, %ymm10
+	vmovdqu	%ymm8, %ymm7
+	vmovdqu	%ymm7, %ymm10
 	vpslld	$30, %ymm10, %ymm10
-	vpsrld	$2, %ymm9, %ymm9
-	vpor	%ymm10, %ymm9, %ymm9
-	vmovdqu	%ymm8, %ymm10
-	vmovdqu	%ymm10, %ymm11
-	vpslld	$19, %ymm11, %ymm11
-	vpsrld	$13, %ymm10, %ymm10
-	vpor	%ymm11, %ymm10, %ymm10
-	vpxor	%ymm10, %ymm9, %ymm9
-	vmovdqu	%ymm10, %ymm11
-	vpslld	$23, %ymm11, %ymm11
-	vpsrld	$9, %ymm10, %ymm10
-	vpor	%ymm11, %ymm10, %ymm7
+	vpsrld	$2, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm9
+	vmovdqu	%ymm8, %ymm7
+	vmovdqu	%ymm7, %ymm10
+	vpslld	$19, %ymm10, %ymm10
+	vpsrld	$13, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm7
+	vpxor	%ymm7, %ymm9, %ymm9
+	vmovdqu	%ymm7, %ymm10
+	vpslld	$23, %ymm10, %ymm10
+	vpsrld	$9, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm7
 	vpxor	%ymm7, %ymm9, %ymm7
 	vpaddd	%ymm7, %ymm6, %ymm6
 	vmovdqu	384(%rbp), %ymm7
@@ -30172,21 +30363,21 @@ slh_dsa_sha2128s_keygen:
 	vpand	%ymm1, %ymm7, %ymm7
 	vpxor	%ymm7, %ymm10, %ymm7
 	vpaddd	%ymm7, %ymm0, %ymm0
-	vmovdqu	%ymm2, %ymm9
-	vmovdqu	%ymm9, %ymm10
+	vmovdqu	%ymm2, %ymm7
+	vmovdqu	%ymm7, %ymm10
 	vpslld	$26, %ymm10, %ymm10
-	vpsrld	$6, %ymm9, %ymm9
-	vpor	%ymm10, %ymm9, %ymm9
-	vmovdqu	%ymm2, %ymm10
-	vmovdqu	%ymm10, %ymm11
-	vpslld	$21, %ymm11, %ymm11
-	vpsrld	$11, %ymm10, %ymm10
-	vpor	%ymm11, %ymm10, %ymm10
-	vpxor	%ymm10, %ymm9, %ymm9
-	vmovdqu	%ymm10, %ymm11
-	vpslld	$18, %ymm11, %ymm11
-	vpsrld	$14, %ymm10, %ymm10
-	vpor	%ymm11, %ymm10, %ymm7
+	vpsrld	$6, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm9
+	vmovdqu	%ymm2, %ymm7
+	vmovdqu	%ymm7, %ymm10
+	vpslld	$21, %ymm10, %ymm10
+	vpsrld	$11, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm7
+	vpxor	%ymm7, %ymm9, %ymm9
+	vmovdqu	%ymm7, %ymm10
+	vpslld	$18, %ymm10, %ymm10
+	vpsrld	$14, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm7
 	vpxor	%ymm7, %ymm9, %ymm7
 	vpaddd	%ymm7, %ymm0, %ymm7
 	vpaddd	%ymm7, %ymm5, %ymm0
@@ -30199,21 +30390,21 @@ slh_dsa_sha2128s_keygen:
 	vpand	%ymm4, %ymm5, %ymm5
 	vpxor	%ymm5, %ymm10, %ymm5
 	vpaddd	%ymm5, %ymm7, %ymm5
-	vmovdqu	%ymm6, %ymm9
-	vmovdqu	%ymm9, %ymm10
+	vmovdqu	%ymm6, %ymm7
+	vmovdqu	%ymm7, %ymm10
 	vpslld	$30, %ymm10, %ymm10
-	vpsrld	$2, %ymm9, %ymm9
-	vpor	%ymm10, %ymm9, %ymm9
-	vmovdqu	%ymm6, %ymm10
-	vmovdqu	%ymm10, %ymm11
-	vpslld	$19, %ymm11, %ymm11
-	vpsrld	$13, %ymm10, %ymm10
-	vpor	%ymm11, %ymm10, %ymm10
-	vpxor	%ymm10, %ymm9, %ymm9
-	vmovdqu	%ymm10, %ymm11
-	vpslld	$23, %ymm11, %ymm11
-	vpsrld	$9, %ymm10, %ymm10
-	vpor	%ymm11, %ymm10, %ymm7
+	vpsrld	$2, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm9
+	vmovdqu	%ymm6, %ymm7
+	vmovdqu	%ymm7, %ymm10
+	vpslld	$19, %ymm10, %ymm10
+	vpsrld	$13, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm7
+	vpxor	%ymm7, %ymm9, %ymm9
+	vmovdqu	%ymm7, %ymm10
+	vpslld	$23, %ymm10, %ymm10
+	vpsrld	$9, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm7
 	vpxor	%ymm7, %ymm9, %ymm7
 	vpaddd	%ymm7, %ymm5, %ymm5
 	vmovdqu	416(%rbp), %ymm7
@@ -30227,21 +30418,21 @@ slh_dsa_sha2128s_keygen:
 	vpand	%ymm3, %ymm7, %ymm7
 	vpxor	%ymm7, %ymm10, %ymm7
 	vpaddd	%ymm7, %ymm1, %ymm1
-	vmovdqu	%ymm0, %ymm9
-	vmovdqu	%ymm9, %ymm10
+	vmovdqu	%ymm0, %ymm7
+	vmovdqu	%ymm7, %ymm10
 	vpslld	$26, %ymm10, %ymm10
-	vpsrld	$6, %ymm9, %ymm9
-	vpor	%ymm10, %ymm9, %ymm9
-	vmovdqu	%ymm0, %ymm10
-	vmovdqu	%ymm10, %ymm11
-	vpslld	$21, %ymm11, %ymm11
-	vpsrld	$11, %ymm10, %ymm10
-	vpor	%ymm11, %ymm10, %ymm10
-	vpxor	%ymm10, %ymm9, %ymm9
-	vmovdqu	%ymm10, %ymm11
-	vpslld	$18, %ymm11, %ymm11
-	vpsrld	$14, %ymm10, %ymm10
-	vpor	%ymm11, %ymm10, %ymm7
+	vpsrld	$6, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm9
+	vmovdqu	%ymm0, %ymm7
+	vmovdqu	%ymm7, %ymm10
+	vpslld	$21, %ymm10, %ymm10
+	vpsrld	$11, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm7
+	vpxor	%ymm7, %ymm9, %ymm9
+	vmovdqu	%ymm7, %ymm10
+	vpslld	$18, %ymm10, %ymm10
+	vpsrld	$14, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm7
 	vpxor	%ymm7, %ymm9, %ymm7
 	vpaddd	%ymm7, %ymm1, %ymm7
 	vpaddd	%ymm7, %ymm4, %ymm1
@@ -30254,21 +30445,21 @@ slh_dsa_sha2128s_keygen:
 	vpand	%ymm8, %ymm4, %ymm4
 	vpxor	%ymm4, %ymm10, %ymm4
 	vpaddd	%ymm4, %ymm7, %ymm4
-	vmovdqu	%ymm5, %ymm9
-	vmovdqu	%ymm9, %ymm10
+	vmovdqu	%ymm5, %ymm7
+	vmovdqu	%ymm7, %ymm10
 	vpslld	$30, %ymm10, %ymm10
-	vpsrld	$2, %ymm9, %ymm9
-	vpor	%ymm10, %ymm9, %ymm9
-	vmovdqu	%ymm5, %ymm10
-	vmovdqu	%ymm10, %ymm11
-	vpslld	$19, %ymm11, %ymm11
-	vpsrld	$13, %ymm10, %ymm10
-	vpor	%ymm11, %ymm10, %ymm10
-	vpxor	%ymm10, %ymm9, %ymm9
-	vmovdqu	%ymm10, %ymm11
-	vpslld	$23, %ymm11, %ymm11
-	vpsrld	$9, %ymm10, %ymm10
-	vpor	%ymm11, %ymm10, %ymm7
+	vpsrld	$2, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm9
+	vmovdqu	%ymm5, %ymm7
+	vmovdqu	%ymm7, %ymm10
+	vpslld	$19, %ymm10, %ymm10
+	vpsrld	$13, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm7
+	vpxor	%ymm7, %ymm9, %ymm9
+	vmovdqu	%ymm7, %ymm10
+	vpslld	$23, %ymm10, %ymm10
+	vpsrld	$9, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm7
 	vpxor	%ymm7, %ymm9, %ymm7
 	vpaddd	%ymm7, %ymm4, %ymm4
 	vmovdqu	448(%rbp), %ymm7
@@ -30281,24 +30472,24 @@ slh_dsa_sha2128s_keygen:
 	vpxor	%ymm1, %ymm7, %ymm7
 	vpand	%ymm2, %ymm7, %ymm7
 	vpxor	%ymm7, %ymm10, %ymm7
-	vpaddd	%ymm7, %ymm3, %ymm7
-	vmovdqu	%ymm1, %ymm3
-	vmovdqu	%ymm3, %ymm10
+	vpaddd	%ymm7, %ymm3, %ymm3
+	vmovdqu	%ymm1, %ymm7
+	vmovdqu	%ymm7, %ymm10
 	vpslld	$26, %ymm10, %ymm10
-	vpsrld	$6, %ymm3, %ymm3
-	vpor	%ymm10, %ymm3, %ymm9
-	vmovdqu	%ymm1, %ymm3
-	vmovdqu	%ymm3, %ymm10
+	vpsrld	$6, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm9
+	vmovdqu	%ymm1, %ymm7
+	vmovdqu	%ymm7, %ymm10
 	vpslld	$21, %ymm10, %ymm10
-	vpsrld	$11, %ymm3, %ymm3
-	vpor	%ymm10, %ymm3, %ymm3
-	vpxor	%ymm3, %ymm9, %ymm9
-	vmovdqu	%ymm3, %ymm10
+	vpsrld	$11, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm7
+	vpxor	%ymm7, %ymm9, %ymm9
+	vmovdqu	%ymm7, %ymm10
 	vpslld	$18, %ymm10, %ymm10
-	vpsrld	$14, %ymm3, %ymm3
-	vpor	%ymm10, %ymm3, %ymm3
-	vpxor	%ymm3, %ymm9, %ymm3
-	vpaddd	%ymm3, %ymm7, %ymm7
+	vpsrld	$14, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm7
+	vpxor	%ymm7, %ymm9, %ymm7
+	vpaddd	%ymm7, %ymm3, %ymm7
 	vpaddd	%ymm7, %ymm8, %ymm3
 	vmovdqu	%ymm4, %ymm10
 	vpand	%ymm5, %ymm10, %ymm10
@@ -30336,24 +30527,24 @@ slh_dsa_sha2128s_keygen:
 	vpxor	%ymm3, %ymm7, %ymm7
 	vpand	%ymm0, %ymm7, %ymm7
 	vpxor	%ymm7, %ymm10, %ymm7
-	vpaddd	%ymm7, %ymm2, %ymm7
-	vmovdqu	%ymm3, %ymm2
-	vmovdqu	%ymm2, %ymm10
+	vpaddd	%ymm7, %ymm2, %ymm2
+	vmovdqu	%ymm3, %ymm7
+	vmovdqu	%ymm7, %ymm10
 	vpslld	$26, %ymm10, %ymm10
-	vpsrld	$6, %ymm2, %ymm2
-	vpor	%ymm10, %ymm2, %ymm9
-	vmovdqu	%ymm3, %ymm2
-	vmovdqu	%ymm2, %ymm10
+	vpsrld	$6, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm9
+	vmovdqu	%ymm3, %ymm7
+	vmovdqu	%ymm7, %ymm10
 	vpslld	$21, %ymm10, %ymm10
-	vpsrld	$11, %ymm2, %ymm2
-	vpor	%ymm10, %ymm2, %ymm2
-	vpxor	%ymm2, %ymm9, %ymm9
-	vmovdqu	%ymm2, %ymm10
+	vpsrld	$11, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm7
+	vpxor	%ymm7, %ymm9, %ymm9
+	vmovdqu	%ymm7, %ymm10
 	vpslld	$18, %ymm10, %ymm10
-	vpsrld	$14, %ymm2, %ymm2
-	vpor	%ymm10, %ymm2, %ymm2
-	vpxor	%ymm2, %ymm9, %ymm2
-	vpaddd	%ymm2, %ymm7, %ymm7
+	vpsrld	$14, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm7
+	vpxor	%ymm7, %ymm9, %ymm7
+	vpaddd	%ymm7, %ymm2, %ymm7
 	vpaddd	%ymm7, %ymm6, %ymm2
 	vmovdqu	%ymm8, %ymm10
 	vpand	%ymm4, %ymm10, %ymm10
@@ -30364,21 +30555,21 @@ slh_dsa_sha2128s_keygen:
 	vpand	%ymm5, %ymm6, %ymm6
 	vpxor	%ymm6, %ymm10, %ymm6
 	vpaddd	%ymm6, %ymm7, %ymm6
-	vmovdqu	%ymm8, %ymm9
-	vmovdqu	%ymm9, %ymm10
+	vmovdqu	%ymm8, %ymm7
+	vmovdqu	%ymm7, %ymm10
 	vpslld	$30, %ymm10, %ymm10
-	vpsrld	$2, %ymm9, %ymm9
-	vpor	%ymm10, %ymm9, %ymm9
-	vmovdqu	%ymm8, %ymm10
-	vmovdqu	%ymm10, %ymm11
-	vpslld	$19, %ymm11, %ymm11
-	vpsrld	$13, %ymm10, %ymm10
-	vpor	%ymm11, %ymm10, %ymm10
-	vpxor	%ymm10, %ymm9, %ymm9
-	vmovdqu	%ymm10, %ymm11
-	vpslld	$23, %ymm11, %ymm11
-	vpsrld	$9, %ymm10, %ymm10
-	vpor	%ymm11, %ymm10, %ymm7
+	vpsrld	$2, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm9
+	vmovdqu	%ymm8, %ymm7
+	vmovdqu	%ymm7, %ymm10
+	vpslld	$19, %ymm10, %ymm10
+	vpsrld	$13, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm7
+	vpxor	%ymm7, %ymm9, %ymm9
+	vmovdqu	%ymm7, %ymm10
+	vpslld	$23, %ymm10, %ymm10
+	vpsrld	$9, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm7
 	vpxor	%ymm7, %ymm9, %ymm7
 	vpaddd	%ymm7, %ymm6, %ymm6
 	vmovdqu	512(%rbp), %ymm7
@@ -30392,21 +30583,21 @@ slh_dsa_sha2128s_keygen:
 	vpand	%ymm1, %ymm7, %ymm7
 	vpxor	%ymm7, %ymm10, %ymm7
 	vpaddd	%ymm7, %ymm0, %ymm0
-	vmovdqu	%ymm2, %ymm9
-	vmovdqu	%ymm9, %ymm10
+	vmovdqu	%ymm2, %ymm7
+	vmovdqu	%ymm7, %ymm10
 	vpslld	$26, %ymm10, %ymm10
-	vpsrld	$6, %ymm9, %ymm9
-	vpor	%ymm10, %ymm9, %ymm9
-	vmovdqu	%ymm2, %ymm10
-	vmovdqu	%ymm10, %ymm11
-	vpslld	$21, %ymm11, %ymm11
-	vpsrld	$11, %ymm10, %ymm10
-	vpor	%ymm11, %ymm10, %ymm10
-	vpxor	%ymm10, %ymm9, %ymm9
-	vmovdqu	%ymm10, %ymm11
-	vpslld	$18, %ymm11, %ymm11
-	vpsrld	$14, %ymm10, %ymm10
-	vpor	%ymm11, %ymm10, %ymm7
+	vpsrld	$6, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm9
+	vmovdqu	%ymm2, %ymm7
+	vmovdqu	%ymm7, %ymm10
+	vpslld	$21, %ymm10, %ymm10
+	vpsrld	$11, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm7
+	vpxor	%ymm7, %ymm9, %ymm9
+	vmovdqu	%ymm7, %ymm10
+	vpslld	$18, %ymm10, %ymm10
+	vpsrld	$14, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm7
 	vpxor	%ymm7, %ymm9, %ymm7
 	vpaddd	%ymm7, %ymm0, %ymm7
 	vpaddd	%ymm7, %ymm5, %ymm0
@@ -30419,21 +30610,21 @@ slh_dsa_sha2128s_keygen:
 	vpand	%ymm4, %ymm5, %ymm5
 	vpxor	%ymm5, %ymm10, %ymm5
 	vpaddd	%ymm5, %ymm7, %ymm5
-	vmovdqu	%ymm6, %ymm9
-	vmovdqu	%ymm9, %ymm10
+	vmovdqu	%ymm6, %ymm7
+	vmovdqu	%ymm7, %ymm10
 	vpslld	$30, %ymm10, %ymm10
-	vpsrld	$2, %ymm9, %ymm9
-	vpor	%ymm10, %ymm9, %ymm9
-	vmovdqu	%ymm6, %ymm10
-	vmovdqu	%ymm10, %ymm11
-	vpslld	$19, %ymm11, %ymm11
-	vpsrld	$13, %ymm10, %ymm10
-	vpor	%ymm11, %ymm10, %ymm10
-	vpxor	%ymm10, %ymm9, %ymm9
-	vmovdqu	%ymm10, %ymm11
-	vpslld	$23, %ymm11, %ymm11
-	vpsrld	$9, %ymm10, %ymm10
-	vpor	%ymm11, %ymm10, %ymm7
+	vpsrld	$2, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm9
+	vmovdqu	%ymm6, %ymm7
+	vmovdqu	%ymm7, %ymm10
+	vpslld	$19, %ymm10, %ymm10
+	vpsrld	$13, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm7
+	vpxor	%ymm7, %ymm9, %ymm9
+	vmovdqu	%ymm7, %ymm10
+	vpslld	$23, %ymm10, %ymm10
+	vpsrld	$9, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm7
 	vpxor	%ymm7, %ymm9, %ymm7
 	vpaddd	%ymm7, %ymm5, %ymm5
 	vmovdqu	544(%rbp), %ymm7
@@ -30447,21 +30638,21 @@ slh_dsa_sha2128s_keygen:
 	vpand	%ymm3, %ymm7, %ymm7
 	vpxor	%ymm7, %ymm10, %ymm7
 	vpaddd	%ymm7, %ymm1, %ymm1
-	vmovdqu	%ymm0, %ymm9
-	vmovdqu	%ymm9, %ymm10
+	vmovdqu	%ymm0, %ymm7
+	vmovdqu	%ymm7, %ymm10
 	vpslld	$26, %ymm10, %ymm10
-	vpsrld	$6, %ymm9, %ymm9
-	vpor	%ymm10, %ymm9, %ymm9
-	vmovdqu	%ymm0, %ymm10
-	vmovdqu	%ymm10, %ymm11
-	vpslld	$21, %ymm11, %ymm11
-	vpsrld	$11, %ymm10, %ymm10
-	vpor	%ymm11, %ymm10, %ymm10
-	vpxor	%ymm10, %ymm9, %ymm9
-	vmovdqu	%ymm10, %ymm11
-	vpslld	$18, %ymm11, %ymm11
-	vpsrld	$14, %ymm10, %ymm10
-	vpor	%ymm11, %ymm10, %ymm7
+	vpsrld	$6, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm9
+	vmovdqu	%ymm0, %ymm7
+	vmovdqu	%ymm7, %ymm10
+	vpslld	$21, %ymm10, %ymm10
+	vpsrld	$11, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm7
+	vpxor	%ymm7, %ymm9, %ymm9
+	vmovdqu	%ymm7, %ymm10
+	vpslld	$18, %ymm10, %ymm10
+	vpsrld	$14, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm7
 	vpxor	%ymm7, %ymm9, %ymm7
 	vpaddd	%ymm7, %ymm1, %ymm7
 	vpaddd	%ymm7, %ymm4, %ymm1
@@ -30474,21 +30665,21 @@ slh_dsa_sha2128s_keygen:
 	vpand	%ymm8, %ymm4, %ymm4
 	vpxor	%ymm4, %ymm10, %ymm4
 	vpaddd	%ymm4, %ymm7, %ymm4
-	vmovdqu	%ymm5, %ymm9
-	vmovdqu	%ymm9, %ymm10
+	vmovdqu	%ymm5, %ymm7
+	vmovdqu	%ymm7, %ymm10
 	vpslld	$30, %ymm10, %ymm10
-	vpsrld	$2, %ymm9, %ymm9
-	vpor	%ymm10, %ymm9, %ymm9
-	vmovdqu	%ymm5, %ymm10
-	vmovdqu	%ymm10, %ymm11
-	vpslld	$19, %ymm11, %ymm11
-	vpsrld	$13, %ymm10, %ymm10
-	vpor	%ymm11, %ymm10, %ymm10
-	vpxor	%ymm10, %ymm9, %ymm9
-	vmovdqu	%ymm10, %ymm11
-	vpslld	$23, %ymm11, %ymm11
-	vpsrld	$9, %ymm10, %ymm10
-	vpor	%ymm11, %ymm10, %ymm7
+	vpsrld	$2, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm9
+	vmovdqu	%ymm5, %ymm7
+	vmovdqu	%ymm7, %ymm10
+	vpslld	$19, %ymm10, %ymm10
+	vpsrld	$13, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm7
+	vpxor	%ymm7, %ymm9, %ymm9
+	vmovdqu	%ymm7, %ymm10
+	vpslld	$23, %ymm10, %ymm10
+	vpsrld	$9, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm7
 	vpxor	%ymm7, %ymm9, %ymm7
 	vpaddd	%ymm7, %ymm4, %ymm4
 	vmovdqu	576(%rbp), %ymm7
@@ -30501,24 +30692,24 @@ slh_dsa_sha2128s_keygen:
 	vpxor	%ymm1, %ymm7, %ymm7
 	vpand	%ymm2, %ymm7, %ymm7
 	vpxor	%ymm7, %ymm10, %ymm7
-	vpaddd	%ymm7, %ymm3, %ymm7
-	vmovdqu	%ymm1, %ymm3
-	vmovdqu	%ymm3, %ymm10
+	vpaddd	%ymm7, %ymm3, %ymm3
+	vmovdqu	%ymm1, %ymm7
+	vmovdqu	%ymm7, %ymm10
 	vpslld	$26, %ymm10, %ymm10
-	vpsrld	$6, %ymm3, %ymm3
-	vpor	%ymm10, %ymm3, %ymm9
-	vmovdqu	%ymm1, %ymm3
-	vmovdqu	%ymm3, %ymm10
+	vpsrld	$6, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm9
+	vmovdqu	%ymm1, %ymm7
+	vmovdqu	%ymm7, %ymm10
 	vpslld	$21, %ymm10, %ymm10
-	vpsrld	$11, %ymm3, %ymm3
-	vpor	%ymm10, %ymm3, %ymm3
-	vpxor	%ymm3, %ymm9, %ymm9
-	vmovdqu	%ymm3, %ymm10
+	vpsrld	$11, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm7
+	vpxor	%ymm7, %ymm9, %ymm9
+	vmovdqu	%ymm7, %ymm10
 	vpslld	$18, %ymm10, %ymm10
-	vpsrld	$14, %ymm3, %ymm3
-	vpor	%ymm10, %ymm3, %ymm3
-	vpxor	%ymm3, %ymm9, %ymm3
-	vpaddd	%ymm3, %ymm7, %ymm7
+	vpsrld	$14, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm7
+	vpxor	%ymm7, %ymm9, %ymm7
+	vpaddd	%ymm7, %ymm3, %ymm7
 	vpaddd	%ymm7, %ymm8, %ymm3
 	vmovdqu	%ymm4, %ymm10
 	vpand	%ymm5, %ymm10, %ymm10
@@ -30556,24 +30747,24 @@ slh_dsa_sha2128s_keygen:
 	vpxor	%ymm3, %ymm7, %ymm7
 	vpand	%ymm0, %ymm7, %ymm7
 	vpxor	%ymm7, %ymm10, %ymm7
-	vpaddd	%ymm7, %ymm2, %ymm7
-	vmovdqu	%ymm3, %ymm2
-	vmovdqu	%ymm2, %ymm10
+	vpaddd	%ymm7, %ymm2, %ymm2
+	vmovdqu	%ymm3, %ymm7
+	vmovdqu	%ymm7, %ymm10
 	vpslld	$26, %ymm10, %ymm10
-	vpsrld	$6, %ymm2, %ymm2
-	vpor	%ymm10, %ymm2, %ymm9
-	vmovdqu	%ymm3, %ymm2
-	vmovdqu	%ymm2, %ymm10
+	vpsrld	$6, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm9
+	vmovdqu	%ymm3, %ymm7
+	vmovdqu	%ymm7, %ymm10
 	vpslld	$21, %ymm10, %ymm10
-	vpsrld	$11, %ymm2, %ymm2
-	vpor	%ymm10, %ymm2, %ymm2
-	vpxor	%ymm2, %ymm9, %ymm9
-	vmovdqu	%ymm2, %ymm10
+	vpsrld	$11, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm7
+	vpxor	%ymm7, %ymm9, %ymm9
+	vmovdqu	%ymm7, %ymm10
 	vpslld	$18, %ymm10, %ymm10
-	vpsrld	$14, %ymm2, %ymm2
-	vpor	%ymm10, %ymm2, %ymm2
-	vpxor	%ymm2, %ymm9, %ymm2
-	vpaddd	%ymm2, %ymm7, %ymm7
+	vpsrld	$14, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm7
+	vpxor	%ymm7, %ymm9, %ymm7
+	vpaddd	%ymm7, %ymm2, %ymm7
 	vpaddd	%ymm7, %ymm6, %ymm2
 	vmovdqu	%ymm8, %ymm10
 	vpand	%ymm4, %ymm10, %ymm10
@@ -30584,21 +30775,21 @@ slh_dsa_sha2128s_keygen:
 	vpand	%ymm5, %ymm6, %ymm6
 	vpxor	%ymm6, %ymm10, %ymm6
 	vpaddd	%ymm6, %ymm7, %ymm6
-	vmovdqu	%ymm8, %ymm9
-	vmovdqu	%ymm9, %ymm10
+	vmovdqu	%ymm8, %ymm7
+	vmovdqu	%ymm7, %ymm10
 	vpslld	$30, %ymm10, %ymm10
-	vpsrld	$2, %ymm9, %ymm9
-	vpor	%ymm10, %ymm9, %ymm9
-	vmovdqu	%ymm8, %ymm10
-	vmovdqu	%ymm10, %ymm11
-	vpslld	$19, %ymm11, %ymm11
-	vpsrld	$13, %ymm10, %ymm10
-	vpor	%ymm11, %ymm10, %ymm10
-	vpxor	%ymm10, %ymm9, %ymm9
-	vmovdqu	%ymm10, %ymm11
-	vpslld	$23, %ymm11, %ymm11
-	vpsrld	$9, %ymm10, %ymm10
-	vpor	%ymm11, %ymm10, %ymm7
+	vpsrld	$2, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm9
+	vmovdqu	%ymm8, %ymm7
+	vmovdqu	%ymm7, %ymm10
+	vpslld	$19, %ymm10, %ymm10
+	vpsrld	$13, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm7
+	vpxor	%ymm7, %ymm9, %ymm9
+	vmovdqu	%ymm7, %ymm10
+	vpslld	$23, %ymm10, %ymm10
+	vpsrld	$9, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm7
 	vpxor	%ymm7, %ymm9, %ymm7
 	vpaddd	%ymm7, %ymm6, %ymm6
 	vmovdqu	640(%rbp), %ymm7
@@ -30612,21 +30803,21 @@ slh_dsa_sha2128s_keygen:
 	vpand	%ymm1, %ymm7, %ymm7
 	vpxor	%ymm7, %ymm10, %ymm7
 	vpaddd	%ymm7, %ymm0, %ymm0
-	vmovdqu	%ymm2, %ymm9
-	vmovdqu	%ymm9, %ymm10
+	vmovdqu	%ymm2, %ymm7
+	vmovdqu	%ymm7, %ymm10
 	vpslld	$26, %ymm10, %ymm10
-	vpsrld	$6, %ymm9, %ymm9
-	vpor	%ymm10, %ymm9, %ymm9
-	vmovdqu	%ymm2, %ymm10
-	vmovdqu	%ymm10, %ymm11
-	vpslld	$21, %ymm11, %ymm11
-	vpsrld	$11, %ymm10, %ymm10
-	vpor	%ymm11, %ymm10, %ymm10
-	vpxor	%ymm10, %ymm9, %ymm9
-	vmovdqu	%ymm10, %ymm11
-	vpslld	$18, %ymm11, %ymm11
-	vpsrld	$14, %ymm10, %ymm10
-	vpor	%ymm11, %ymm10, %ymm7
+	vpsrld	$6, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm9
+	vmovdqu	%ymm2, %ymm7
+	vmovdqu	%ymm7, %ymm10
+	vpslld	$21, %ymm10, %ymm10
+	vpsrld	$11, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm7
+	vpxor	%ymm7, %ymm9, %ymm9
+	vmovdqu	%ymm7, %ymm10
+	vpslld	$18, %ymm10, %ymm10
+	vpsrld	$14, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm7
 	vpxor	%ymm7, %ymm9, %ymm7
 	vpaddd	%ymm7, %ymm0, %ymm7
 	vpaddd	%ymm7, %ymm5, %ymm0
@@ -30639,21 +30830,21 @@ slh_dsa_sha2128s_keygen:
 	vpand	%ymm4, %ymm5, %ymm5
 	vpxor	%ymm5, %ymm10, %ymm5
 	vpaddd	%ymm5, %ymm7, %ymm5
-	vmovdqu	%ymm6, %ymm9
-	vmovdqu	%ymm9, %ymm10
+	vmovdqu	%ymm6, %ymm7
+	vmovdqu	%ymm7, %ymm10
 	vpslld	$30, %ymm10, %ymm10
-	vpsrld	$2, %ymm9, %ymm9
-	vpor	%ymm10, %ymm9, %ymm9
-	vmovdqu	%ymm6, %ymm10
-	vmovdqu	%ymm10, %ymm11
-	vpslld	$19, %ymm11, %ymm11
-	vpsrld	$13, %ymm10, %ymm10
-	vpor	%ymm11, %ymm10, %ymm10
-	vpxor	%ymm10, %ymm9, %ymm9
-	vmovdqu	%ymm10, %ymm11
-	vpslld	$23, %ymm11, %ymm11
-	vpsrld	$9, %ymm10, %ymm10
-	vpor	%ymm11, %ymm10, %ymm7
+	vpsrld	$2, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm9
+	vmovdqu	%ymm6, %ymm7
+	vmovdqu	%ymm7, %ymm10
+	vpslld	$19, %ymm10, %ymm10
+	vpsrld	$13, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm7
+	vpxor	%ymm7, %ymm9, %ymm9
+	vmovdqu	%ymm7, %ymm10
+	vpslld	$23, %ymm10, %ymm10
+	vpsrld	$9, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm7
 	vpxor	%ymm7, %ymm9, %ymm7
 	vpaddd	%ymm7, %ymm5, %ymm5
 	vmovdqu	672(%rbp), %ymm7
@@ -30667,21 +30858,21 @@ slh_dsa_sha2128s_keygen:
 	vpand	%ymm3, %ymm7, %ymm7
 	vpxor	%ymm7, %ymm10, %ymm7
 	vpaddd	%ymm7, %ymm1, %ymm1
-	vmovdqu	%ymm0, %ymm9
-	vmovdqu	%ymm9, %ymm10
+	vmovdqu	%ymm0, %ymm7
+	vmovdqu	%ymm7, %ymm10
 	vpslld	$26, %ymm10, %ymm10
-	vpsrld	$6, %ymm9, %ymm9
-	vpor	%ymm10, %ymm9, %ymm9
-	vmovdqu	%ymm0, %ymm10
-	vmovdqu	%ymm10, %ymm11
-	vpslld	$21, %ymm11, %ymm11
-	vpsrld	$11, %ymm10, %ymm10
-	vpor	%ymm11, %ymm10, %ymm10
-	vpxor	%ymm10, %ymm9, %ymm9
-	vmovdqu	%ymm10, %ymm11
-	vpslld	$18, %ymm11, %ymm11
-	vpsrld	$14, %ymm10, %ymm10
-	vpor	%ymm11, %ymm10, %ymm7
+	vpsrld	$6, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm9
+	vmovdqu	%ymm0, %ymm7
+	vmovdqu	%ymm7, %ymm10
+	vpslld	$21, %ymm10, %ymm10
+	vpsrld	$11, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm7
+	vpxor	%ymm7, %ymm9, %ymm9
+	vmovdqu	%ymm7, %ymm10
+	vpslld	$18, %ymm10, %ymm10
+	vpsrld	$14, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm7
 	vpxor	%ymm7, %ymm9, %ymm7
 	vpaddd	%ymm7, %ymm1, %ymm7
 	vpaddd	%ymm7, %ymm4, %ymm1
@@ -30694,21 +30885,21 @@ slh_dsa_sha2128s_keygen:
 	vpand	%ymm8, %ymm4, %ymm4
 	vpxor	%ymm4, %ymm10, %ymm4
 	vpaddd	%ymm4, %ymm7, %ymm4
-	vmovdqu	%ymm5, %ymm9
-	vmovdqu	%ymm9, %ymm10
+	vmovdqu	%ymm5, %ymm7
+	vmovdqu	%ymm7, %ymm10
 	vpslld	$30, %ymm10, %ymm10
-	vpsrld	$2, %ymm9, %ymm9
-	vpor	%ymm10, %ymm9, %ymm9
-	vmovdqu	%ymm5, %ymm10
-	vmovdqu	%ymm10, %ymm11
-	vpslld	$19, %ymm11, %ymm11
-	vpsrld	$13, %ymm10, %ymm10
-	vpor	%ymm11, %ymm10, %ymm10
-	vpxor	%ymm10, %ymm9, %ymm9
-	vmovdqu	%ymm10, %ymm11
-	vpslld	$23, %ymm11, %ymm11
-	vpsrld	$9, %ymm10, %ymm10
-	vpor	%ymm11, %ymm10, %ymm7
+	vpsrld	$2, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm9
+	vmovdqu	%ymm5, %ymm7
+	vmovdqu	%ymm7, %ymm10
+	vpslld	$19, %ymm10, %ymm10
+	vpsrld	$13, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm7
+	vpxor	%ymm7, %ymm9, %ymm9
+	vmovdqu	%ymm7, %ymm10
+	vpslld	$23, %ymm10, %ymm10
+	vpsrld	$9, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm7
 	vpxor	%ymm7, %ymm9, %ymm7
 	vpaddd	%ymm7, %ymm4, %ymm4
 	vmovdqu	704(%rbp), %ymm7
@@ -30721,24 +30912,24 @@ slh_dsa_sha2128s_keygen:
 	vpxor	%ymm1, %ymm7, %ymm7
 	vpand	%ymm2, %ymm7, %ymm7
 	vpxor	%ymm7, %ymm10, %ymm7
-	vpaddd	%ymm7, %ymm3, %ymm7
-	vmovdqu	%ymm1, %ymm3
-	vmovdqu	%ymm3, %ymm10
+	vpaddd	%ymm7, %ymm3, %ymm3
+	vmovdqu	%ymm1, %ymm7
+	vmovdqu	%ymm7, %ymm10
 	vpslld	$26, %ymm10, %ymm10
-	vpsrld	$6, %ymm3, %ymm3
-	vpor	%ymm10, %ymm3, %ymm9
-	vmovdqu	%ymm1, %ymm3
-	vmovdqu	%ymm3, %ymm10
+	vpsrld	$6, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm9
+	vmovdqu	%ymm1, %ymm7
+	vmovdqu	%ymm7, %ymm10
 	vpslld	$21, %ymm10, %ymm10
-	vpsrld	$11, %ymm3, %ymm3
-	vpor	%ymm10, %ymm3, %ymm3
-	vpxor	%ymm3, %ymm9, %ymm9
-	vmovdqu	%ymm3, %ymm10
+	vpsrld	$11, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm7
+	vpxor	%ymm7, %ymm9, %ymm9
+	vmovdqu	%ymm7, %ymm10
 	vpslld	$18, %ymm10, %ymm10
-	vpsrld	$14, %ymm3, %ymm3
-	vpor	%ymm10, %ymm3, %ymm3
-	vpxor	%ymm3, %ymm9, %ymm3
-	vpaddd	%ymm3, %ymm7, %ymm7
+	vpsrld	$14, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm7
+	vpxor	%ymm7, %ymm9, %ymm7
+	vpaddd	%ymm7, %ymm3, %ymm7
 	vpaddd	%ymm7, %ymm8, %ymm3
 	vmovdqu	%ymm4, %ymm10
 	vpand	%ymm5, %ymm10, %ymm10
@@ -30776,24 +30967,24 @@ slh_dsa_sha2128s_keygen:
 	vpxor	%ymm3, %ymm7, %ymm7
 	vpand	%ymm0, %ymm7, %ymm7
 	vpxor	%ymm7, %ymm10, %ymm7
-	vpaddd	%ymm7, %ymm2, %ymm7
-	vmovdqu	%ymm3, %ymm2
-	vmovdqu	%ymm2, %ymm10
+	vpaddd	%ymm7, %ymm2, %ymm2
+	vmovdqu	%ymm3, %ymm7
+	vmovdqu	%ymm7, %ymm10
 	vpslld	$26, %ymm10, %ymm10
-	vpsrld	$6, %ymm2, %ymm2
-	vpor	%ymm10, %ymm2, %ymm9
-	vmovdqu	%ymm3, %ymm2
-	vmovdqu	%ymm2, %ymm10
+	vpsrld	$6, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm9
+	vmovdqu	%ymm3, %ymm7
+	vmovdqu	%ymm7, %ymm10
 	vpslld	$21, %ymm10, %ymm10
-	vpsrld	$11, %ymm2, %ymm2
-	vpor	%ymm10, %ymm2, %ymm2
-	vpxor	%ymm2, %ymm9, %ymm9
-	vmovdqu	%ymm2, %ymm10
+	vpsrld	$11, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm7
+	vpxor	%ymm7, %ymm9, %ymm9
+	vmovdqu	%ymm7, %ymm10
 	vpslld	$18, %ymm10, %ymm10
-	vpsrld	$14, %ymm2, %ymm2
-	vpor	%ymm10, %ymm2, %ymm2
-	vpxor	%ymm2, %ymm9, %ymm2
-	vpaddd	%ymm2, %ymm7, %ymm7
+	vpsrld	$14, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm7
+	vpxor	%ymm7, %ymm9, %ymm7
+	vpaddd	%ymm7, %ymm2, %ymm7
 	vpaddd	%ymm7, %ymm6, %ymm2
 	vmovdqu	%ymm8, %ymm10
 	vpand	%ymm4, %ymm10, %ymm10
@@ -30804,21 +30995,21 @@ slh_dsa_sha2128s_keygen:
 	vpand	%ymm5, %ymm6, %ymm6
 	vpxor	%ymm6, %ymm10, %ymm6
 	vpaddd	%ymm6, %ymm7, %ymm6
-	vmovdqu	%ymm8, %ymm9
-	vmovdqu	%ymm9, %ymm10
+	vmovdqu	%ymm8, %ymm7
+	vmovdqu	%ymm7, %ymm10
 	vpslld	$30, %ymm10, %ymm10
-	vpsrld	$2, %ymm9, %ymm9
-	vpor	%ymm10, %ymm9, %ymm9
-	vmovdqu	%ymm8, %ymm10
-	vmovdqu	%ymm10, %ymm11
-	vpslld	$19, %ymm11, %ymm11
-	vpsrld	$13, %ymm10, %ymm10
-	vpor	%ymm11, %ymm10, %ymm10
-	vpxor	%ymm10, %ymm9, %ymm9
-	vmovdqu	%ymm10, %ymm11
-	vpslld	$23, %ymm11, %ymm11
-	vpsrld	$9, %ymm10, %ymm10
-	vpor	%ymm11, %ymm10, %ymm7
+	vpsrld	$2, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm9
+	vmovdqu	%ymm8, %ymm7
+	vmovdqu	%ymm7, %ymm10
+	vpslld	$19, %ymm10, %ymm10
+	vpsrld	$13, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm7
+	vpxor	%ymm7, %ymm9, %ymm9
+	vmovdqu	%ymm7, %ymm10
+	vpslld	$23, %ymm10, %ymm10
+	vpsrld	$9, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm7
 	vpxor	%ymm7, %ymm9, %ymm7
 	vpaddd	%ymm7, %ymm6, %ymm6
 	vmovdqu	768(%rbp), %ymm7
@@ -30832,21 +31023,21 @@ slh_dsa_sha2128s_keygen:
 	vpand	%ymm1, %ymm7, %ymm7
 	vpxor	%ymm7, %ymm10, %ymm7
 	vpaddd	%ymm7, %ymm0, %ymm0
-	vmovdqu	%ymm2, %ymm9
-	vmovdqu	%ymm9, %ymm10
+	vmovdqu	%ymm2, %ymm7
+	vmovdqu	%ymm7, %ymm10
 	vpslld	$26, %ymm10, %ymm10
-	vpsrld	$6, %ymm9, %ymm9
-	vpor	%ymm10, %ymm9, %ymm9
-	vmovdqu	%ymm2, %ymm10
-	vmovdqu	%ymm10, %ymm11
-	vpslld	$21, %ymm11, %ymm11
-	vpsrld	$11, %ymm10, %ymm10
-	vpor	%ymm11, %ymm10, %ymm10
-	vpxor	%ymm10, %ymm9, %ymm9
-	vmovdqu	%ymm10, %ymm11
-	vpslld	$18, %ymm11, %ymm11
-	vpsrld	$14, %ymm10, %ymm10
-	vpor	%ymm11, %ymm10, %ymm7
+	vpsrld	$6, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm9
+	vmovdqu	%ymm2, %ymm7
+	vmovdqu	%ymm7, %ymm10
+	vpslld	$21, %ymm10, %ymm10
+	vpsrld	$11, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm7
+	vpxor	%ymm7, %ymm9, %ymm9
+	vmovdqu	%ymm7, %ymm10
+	vpslld	$18, %ymm10, %ymm10
+	vpsrld	$14, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm7
 	vpxor	%ymm7, %ymm9, %ymm7
 	vpaddd	%ymm7, %ymm0, %ymm7
 	vpaddd	%ymm7, %ymm5, %ymm0
@@ -30859,21 +31050,21 @@ slh_dsa_sha2128s_keygen:
 	vpand	%ymm4, %ymm5, %ymm5
 	vpxor	%ymm5, %ymm10, %ymm5
 	vpaddd	%ymm5, %ymm7, %ymm5
-	vmovdqu	%ymm6, %ymm9
-	vmovdqu	%ymm9, %ymm10
+	vmovdqu	%ymm6, %ymm7
+	vmovdqu	%ymm7, %ymm10
 	vpslld	$30, %ymm10, %ymm10
-	vpsrld	$2, %ymm9, %ymm9
-	vpor	%ymm10, %ymm9, %ymm9
-	vmovdqu	%ymm6, %ymm10
-	vmovdqu	%ymm10, %ymm11
-	vpslld	$19, %ymm11, %ymm11
-	vpsrld	$13, %ymm10, %ymm10
-	vpor	%ymm11, %ymm10, %ymm10
-	vpxor	%ymm10, %ymm9, %ymm9
-	vmovdqu	%ymm10, %ymm11
-	vpslld	$23, %ymm11, %ymm11
-	vpsrld	$9, %ymm10, %ymm10
-	vpor	%ymm11, %ymm10, %ymm7
+	vpsrld	$2, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm9
+	vmovdqu	%ymm6, %ymm7
+	vmovdqu	%ymm7, %ymm10
+	vpslld	$19, %ymm10, %ymm10
+	vpsrld	$13, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm7
+	vpxor	%ymm7, %ymm9, %ymm9
+	vmovdqu	%ymm7, %ymm10
+	vpslld	$23, %ymm10, %ymm10
+	vpsrld	$9, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm7
 	vpxor	%ymm7, %ymm9, %ymm7
 	vpaddd	%ymm7, %ymm5, %ymm5
 	vmovdqu	800(%rbp), %ymm7
@@ -30887,21 +31078,21 @@ slh_dsa_sha2128s_keygen:
 	vpand	%ymm3, %ymm7, %ymm7
 	vpxor	%ymm7, %ymm10, %ymm7
 	vpaddd	%ymm7, %ymm1, %ymm1
-	vmovdqu	%ymm0, %ymm9
-	vmovdqu	%ymm9, %ymm10
+	vmovdqu	%ymm0, %ymm7
+	vmovdqu	%ymm7, %ymm10
 	vpslld	$26, %ymm10, %ymm10
-	vpsrld	$6, %ymm9, %ymm9
-	vpor	%ymm10, %ymm9, %ymm9
-	vmovdqu	%ymm0, %ymm10
-	vmovdqu	%ymm10, %ymm11
-	vpslld	$21, %ymm11, %ymm11
-	vpsrld	$11, %ymm10, %ymm10
-	vpor	%ymm11, %ymm10, %ymm10
-	vpxor	%ymm10, %ymm9, %ymm9
-	vmovdqu	%ymm10, %ymm11
-	vpslld	$18, %ymm11, %ymm11
-	vpsrld	$14, %ymm10, %ymm10
-	vpor	%ymm11, %ymm10, %ymm7
+	vpsrld	$6, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm9
+	vmovdqu	%ymm0, %ymm7
+	vmovdqu	%ymm7, %ymm10
+	vpslld	$21, %ymm10, %ymm10
+	vpsrld	$11, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm7
+	vpxor	%ymm7, %ymm9, %ymm9
+	vmovdqu	%ymm7, %ymm10
+	vpslld	$18, %ymm10, %ymm10
+	vpsrld	$14, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm7
 	vpxor	%ymm7, %ymm9, %ymm7
 	vpaddd	%ymm7, %ymm1, %ymm7
 	vpaddd	%ymm7, %ymm4, %ymm1
@@ -30914,21 +31105,21 @@ slh_dsa_sha2128s_keygen:
 	vpand	%ymm8, %ymm4, %ymm4
 	vpxor	%ymm4, %ymm10, %ymm4
 	vpaddd	%ymm4, %ymm7, %ymm4
-	vmovdqu	%ymm5, %ymm9
-	vmovdqu	%ymm9, %ymm10
+	vmovdqu	%ymm5, %ymm7
+	vmovdqu	%ymm7, %ymm10
 	vpslld	$30, %ymm10, %ymm10
-	vpsrld	$2, %ymm9, %ymm9
-	vpor	%ymm10, %ymm9, %ymm9
-	vmovdqu	%ymm5, %ymm10
-	vmovdqu	%ymm10, %ymm11
-	vpslld	$19, %ymm11, %ymm11
-	vpsrld	$13, %ymm10, %ymm10
-	vpor	%ymm11, %ymm10, %ymm10
-	vpxor	%ymm10, %ymm9, %ymm9
-	vmovdqu	%ymm10, %ymm11
-	vpslld	$23, %ymm11, %ymm11
-	vpsrld	$9, %ymm10, %ymm10
-	vpor	%ymm11, %ymm10, %ymm7
+	vpsrld	$2, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm9
+	vmovdqu	%ymm5, %ymm7
+	vmovdqu	%ymm7, %ymm10
+	vpslld	$19, %ymm10, %ymm10
+	vpsrld	$13, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm7
+	vpxor	%ymm7, %ymm9, %ymm9
+	vmovdqu	%ymm7, %ymm10
+	vpslld	$23, %ymm10, %ymm10
+	vpsrld	$9, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm7
 	vpxor	%ymm7, %ymm9, %ymm7
 	vpaddd	%ymm7, %ymm4, %ymm4
 	vmovdqu	832(%rbp), %ymm7
@@ -30941,24 +31132,24 @@ slh_dsa_sha2128s_keygen:
 	vpxor	%ymm1, %ymm7, %ymm7
 	vpand	%ymm2, %ymm7, %ymm7
 	vpxor	%ymm7, %ymm10, %ymm7
-	vpaddd	%ymm7, %ymm3, %ymm7
-	vmovdqu	%ymm1, %ymm3
-	vmovdqu	%ymm3, %ymm10
+	vpaddd	%ymm7, %ymm3, %ymm3
+	vmovdqu	%ymm1, %ymm7
+	vmovdqu	%ymm7, %ymm10
 	vpslld	$26, %ymm10, %ymm10
-	vpsrld	$6, %ymm3, %ymm3
-	vpor	%ymm10, %ymm3, %ymm9
-	vmovdqu	%ymm1, %ymm3
-	vmovdqu	%ymm3, %ymm10
+	vpsrld	$6, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm9
+	vmovdqu	%ymm1, %ymm7
+	vmovdqu	%ymm7, %ymm10
 	vpslld	$21, %ymm10, %ymm10
-	vpsrld	$11, %ymm3, %ymm3
-	vpor	%ymm10, %ymm3, %ymm3
-	vpxor	%ymm3, %ymm9, %ymm9
-	vmovdqu	%ymm3, %ymm10
+	vpsrld	$11, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm7
+	vpxor	%ymm7, %ymm9, %ymm9
+	vmovdqu	%ymm7, %ymm10
 	vpslld	$18, %ymm10, %ymm10
-	vpsrld	$14, %ymm3, %ymm3
-	vpor	%ymm10, %ymm3, %ymm3
-	vpxor	%ymm3, %ymm9, %ymm3
-	vpaddd	%ymm3, %ymm7, %ymm7
+	vpsrld	$14, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm7
+	vpxor	%ymm7, %ymm9, %ymm7
+	vpaddd	%ymm7, %ymm3, %ymm7
 	vpaddd	%ymm7, %ymm8, %ymm3
 	vmovdqu	%ymm4, %ymm10
 	vpand	%ymm5, %ymm10, %ymm10
@@ -30996,24 +31187,24 @@ slh_dsa_sha2128s_keygen:
 	vpxor	%ymm3, %ymm7, %ymm7
 	vpand	%ymm0, %ymm7, %ymm7
 	vpxor	%ymm7, %ymm10, %ymm7
-	vpaddd	%ymm7, %ymm2, %ymm7
-	vmovdqu	%ymm3, %ymm2
-	vmovdqu	%ymm2, %ymm10
+	vpaddd	%ymm7, %ymm2, %ymm2
+	vmovdqu	%ymm3, %ymm7
+	vmovdqu	%ymm7, %ymm10
 	vpslld	$26, %ymm10, %ymm10
-	vpsrld	$6, %ymm2, %ymm2
-	vpor	%ymm10, %ymm2, %ymm9
-	vmovdqu	%ymm3, %ymm2
-	vmovdqu	%ymm2, %ymm10
+	vpsrld	$6, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm9
+	vmovdqu	%ymm3, %ymm7
+	vmovdqu	%ymm7, %ymm10
 	vpslld	$21, %ymm10, %ymm10
-	vpsrld	$11, %ymm2, %ymm2
-	vpor	%ymm10, %ymm2, %ymm2
-	vpxor	%ymm2, %ymm9, %ymm9
-	vmovdqu	%ymm2, %ymm10
+	vpsrld	$11, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm7
+	vpxor	%ymm7, %ymm9, %ymm9
+	vmovdqu	%ymm7, %ymm10
 	vpslld	$18, %ymm10, %ymm10
-	vpsrld	$14, %ymm2, %ymm2
-	vpor	%ymm10, %ymm2, %ymm2
-	vpxor	%ymm2, %ymm9, %ymm2
-	vpaddd	%ymm2, %ymm7, %ymm7
+	vpsrld	$14, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm7
+	vpxor	%ymm7, %ymm9, %ymm7
+	vpaddd	%ymm7, %ymm2, %ymm7
 	vpaddd	%ymm7, %ymm6, %ymm2
 	vmovdqu	%ymm8, %ymm10
 	vpand	%ymm4, %ymm10, %ymm10
@@ -31024,21 +31215,21 @@ slh_dsa_sha2128s_keygen:
 	vpand	%ymm5, %ymm6, %ymm6
 	vpxor	%ymm6, %ymm10, %ymm6
 	vpaddd	%ymm6, %ymm7, %ymm6
-	vmovdqu	%ymm8, %ymm9
-	vmovdqu	%ymm9, %ymm10
+	vmovdqu	%ymm8, %ymm7
+	vmovdqu	%ymm7, %ymm10
 	vpslld	$30, %ymm10, %ymm10
-	vpsrld	$2, %ymm9, %ymm9
-	vpor	%ymm10, %ymm9, %ymm9
-	vmovdqu	%ymm8, %ymm10
-	vmovdqu	%ymm10, %ymm11
-	vpslld	$19, %ymm11, %ymm11
-	vpsrld	$13, %ymm10, %ymm10
-	vpor	%ymm11, %ymm10, %ymm10
-	vpxor	%ymm10, %ymm9, %ymm9
-	vmovdqu	%ymm10, %ymm11
-	vpslld	$23, %ymm11, %ymm11
-	vpsrld	$9, %ymm10, %ymm10
-	vpor	%ymm11, %ymm10, %ymm7
+	vpsrld	$2, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm9
+	vmovdqu	%ymm8, %ymm7
+	vmovdqu	%ymm7, %ymm10
+	vpslld	$19, %ymm10, %ymm10
+	vpsrld	$13, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm7
+	vpxor	%ymm7, %ymm9, %ymm9
+	vmovdqu	%ymm7, %ymm10
+	vpslld	$23, %ymm10, %ymm10
+	vpsrld	$9, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm7
 	vpxor	%ymm7, %ymm9, %ymm7
 	vpaddd	%ymm7, %ymm6, %ymm6
 	vmovdqu	896(%rbp), %ymm7
@@ -31052,21 +31243,21 @@ slh_dsa_sha2128s_keygen:
 	vpand	%ymm1, %ymm7, %ymm7
 	vpxor	%ymm7, %ymm10, %ymm7
 	vpaddd	%ymm7, %ymm0, %ymm0
-	vmovdqu	%ymm2, %ymm9
-	vmovdqu	%ymm9, %ymm10
+	vmovdqu	%ymm2, %ymm7
+	vmovdqu	%ymm7, %ymm10
 	vpslld	$26, %ymm10, %ymm10
-	vpsrld	$6, %ymm9, %ymm9
-	vpor	%ymm10, %ymm9, %ymm9
-	vmovdqu	%ymm2, %ymm10
-	vmovdqu	%ymm10, %ymm11
-	vpslld	$21, %ymm11, %ymm11
-	vpsrld	$11, %ymm10, %ymm10
-	vpor	%ymm11, %ymm10, %ymm10
-	vpxor	%ymm10, %ymm9, %ymm9
-	vmovdqu	%ymm10, %ymm11
-	vpslld	$18, %ymm11, %ymm11
-	vpsrld	$14, %ymm10, %ymm10
-	vpor	%ymm11, %ymm10, %ymm7
+	vpsrld	$6, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm9
+	vmovdqu	%ymm2, %ymm7
+	vmovdqu	%ymm7, %ymm10
+	vpslld	$21, %ymm10, %ymm10
+	vpsrld	$11, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm7
+	vpxor	%ymm7, %ymm9, %ymm9
+	vmovdqu	%ymm7, %ymm10
+	vpslld	$18, %ymm10, %ymm10
+	vpsrld	$14, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm7
 	vpxor	%ymm7, %ymm9, %ymm7
 	vpaddd	%ymm7, %ymm0, %ymm7
 	vpaddd	%ymm7, %ymm5, %ymm0
@@ -31079,21 +31270,21 @@ slh_dsa_sha2128s_keygen:
 	vpand	%ymm4, %ymm5, %ymm5
 	vpxor	%ymm5, %ymm10, %ymm5
 	vpaddd	%ymm5, %ymm7, %ymm5
-	vmovdqu	%ymm6, %ymm9
-	vmovdqu	%ymm9, %ymm10
+	vmovdqu	%ymm6, %ymm7
+	vmovdqu	%ymm7, %ymm10
 	vpslld	$30, %ymm10, %ymm10
-	vpsrld	$2, %ymm9, %ymm9
-	vpor	%ymm10, %ymm9, %ymm9
-	vmovdqu	%ymm6, %ymm10
-	vmovdqu	%ymm10, %ymm11
-	vpslld	$19, %ymm11, %ymm11
-	vpsrld	$13, %ymm10, %ymm10
-	vpor	%ymm11, %ymm10, %ymm10
-	vpxor	%ymm10, %ymm9, %ymm9
-	vmovdqu	%ymm10, %ymm11
-	vpslld	$23, %ymm11, %ymm11
-	vpsrld	$9, %ymm10, %ymm10
-	vpor	%ymm11, %ymm10, %ymm7
+	vpsrld	$2, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm9
+	vmovdqu	%ymm6, %ymm7
+	vmovdqu	%ymm7, %ymm10
+	vpslld	$19, %ymm10, %ymm10
+	vpsrld	$13, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm7
+	vpxor	%ymm7, %ymm9, %ymm9
+	vmovdqu	%ymm7, %ymm10
+	vpslld	$23, %ymm10, %ymm10
+	vpsrld	$9, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm7
 	vpxor	%ymm7, %ymm9, %ymm7
 	vpaddd	%ymm7, %ymm5, %ymm5
 	vmovdqu	928(%rbp), %ymm7
@@ -31107,21 +31298,21 @@ slh_dsa_sha2128s_keygen:
 	vpand	%ymm3, %ymm7, %ymm7
 	vpxor	%ymm7, %ymm10, %ymm7
 	vpaddd	%ymm7, %ymm1, %ymm1
-	vmovdqu	%ymm0, %ymm9
-	vmovdqu	%ymm9, %ymm10
+	vmovdqu	%ymm0, %ymm7
+	vmovdqu	%ymm7, %ymm10
 	vpslld	$26, %ymm10, %ymm10
-	vpsrld	$6, %ymm9, %ymm9
-	vpor	%ymm10, %ymm9, %ymm9
-	vmovdqu	%ymm0, %ymm10
-	vmovdqu	%ymm10, %ymm11
-	vpslld	$21, %ymm11, %ymm11
-	vpsrld	$11, %ymm10, %ymm10
-	vpor	%ymm11, %ymm10, %ymm10
-	vpxor	%ymm10, %ymm9, %ymm9
-	vmovdqu	%ymm10, %ymm11
-	vpslld	$18, %ymm11, %ymm11
-	vpsrld	$14, %ymm10, %ymm10
-	vpor	%ymm11, %ymm10, %ymm7
+	vpsrld	$6, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm9
+	vmovdqu	%ymm0, %ymm7
+	vmovdqu	%ymm7, %ymm10
+	vpslld	$21, %ymm10, %ymm10
+	vpsrld	$11, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm7
+	vpxor	%ymm7, %ymm9, %ymm9
+	vmovdqu	%ymm7, %ymm10
+	vpslld	$18, %ymm10, %ymm10
+	vpsrld	$14, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm7
 	vpxor	%ymm7, %ymm9, %ymm7
 	vpaddd	%ymm7, %ymm1, %ymm7
 	vpaddd	%ymm7, %ymm4, %ymm1
@@ -31134,21 +31325,21 @@ slh_dsa_sha2128s_keygen:
 	vpand	%ymm8, %ymm4, %ymm4
 	vpxor	%ymm4, %ymm10, %ymm4
 	vpaddd	%ymm4, %ymm7, %ymm4
-	vmovdqu	%ymm5, %ymm9
-	vmovdqu	%ymm9, %ymm10
+	vmovdqu	%ymm5, %ymm7
+	vmovdqu	%ymm7, %ymm10
 	vpslld	$30, %ymm10, %ymm10
-	vpsrld	$2, %ymm9, %ymm9
-	vpor	%ymm10, %ymm9, %ymm9
-	vmovdqu	%ymm5, %ymm10
-	vmovdqu	%ymm10, %ymm11
-	vpslld	$19, %ymm11, %ymm11
-	vpsrld	$13, %ymm10, %ymm10
-	vpor	%ymm11, %ymm10, %ymm10
-	vpxor	%ymm10, %ymm9, %ymm9
-	vmovdqu	%ymm10, %ymm11
-	vpslld	$23, %ymm11, %ymm11
-	vpsrld	$9, %ymm10, %ymm10
-	vpor	%ymm11, %ymm10, %ymm7
+	vpsrld	$2, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm9
+	vmovdqu	%ymm5, %ymm7
+	vmovdqu	%ymm7, %ymm10
+	vpslld	$19, %ymm10, %ymm10
+	vpsrld	$13, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm7
+	vpxor	%ymm7, %ymm9, %ymm9
+	vmovdqu	%ymm7, %ymm10
+	vpslld	$23, %ymm10, %ymm10
+	vpsrld	$9, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm7
 	vpxor	%ymm7, %ymm9, %ymm7
 	vpaddd	%ymm7, %ymm4, %ymm4
 	vmovdqu	960(%rbp), %ymm7
@@ -31161,24 +31352,24 @@ slh_dsa_sha2128s_keygen:
 	vpxor	%ymm1, %ymm7, %ymm7
 	vpand	%ymm2, %ymm7, %ymm7
 	vpxor	%ymm7, %ymm10, %ymm7
-	vpaddd	%ymm7, %ymm3, %ymm7
-	vmovdqu	%ymm1, %ymm3
-	vmovdqu	%ymm3, %ymm10
+	vpaddd	%ymm7, %ymm3, %ymm3
+	vmovdqu	%ymm1, %ymm7
+	vmovdqu	%ymm7, %ymm10
 	vpslld	$26, %ymm10, %ymm10
-	vpsrld	$6, %ymm3, %ymm3
-	vpor	%ymm10, %ymm3, %ymm9
-	vmovdqu	%ymm1, %ymm3
-	vmovdqu	%ymm3, %ymm10
+	vpsrld	$6, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm9
+	vmovdqu	%ymm1, %ymm7
+	vmovdqu	%ymm7, %ymm10
 	vpslld	$21, %ymm10, %ymm10
-	vpsrld	$11, %ymm3, %ymm3
-	vpor	%ymm10, %ymm3, %ymm3
-	vpxor	%ymm3, %ymm9, %ymm9
-	vmovdqu	%ymm3, %ymm10
+	vpsrld	$11, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm7
+	vpxor	%ymm7, %ymm9, %ymm9
+	vmovdqu	%ymm7, %ymm10
 	vpslld	$18, %ymm10, %ymm10
-	vpsrld	$14, %ymm3, %ymm3
-	vpor	%ymm10, %ymm3, %ymm3
-	vpxor	%ymm3, %ymm9, %ymm3
-	vpaddd	%ymm3, %ymm7, %ymm7
+	vpsrld	$14, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm7
+	vpxor	%ymm7, %ymm9, %ymm7
+	vpaddd	%ymm7, %ymm3, %ymm7
 	vpaddd	%ymm7, %ymm8, %ymm3
 	vmovdqu	%ymm4, %ymm10
 	vpand	%ymm5, %ymm10, %ymm10
@@ -31216,24 +31407,24 @@ slh_dsa_sha2128s_keygen:
 	vpxor	%ymm3, %ymm7, %ymm7
 	vpand	%ymm0, %ymm7, %ymm7
 	vpxor	%ymm7, %ymm10, %ymm7
-	vpaddd	%ymm7, %ymm2, %ymm7
-	vmovdqu	%ymm3, %ymm2
-	vmovdqu	%ymm2, %ymm10
+	vpaddd	%ymm7, %ymm2, %ymm2
+	vmovdqu	%ymm3, %ymm7
+	vmovdqu	%ymm7, %ymm10
 	vpslld	$26, %ymm10, %ymm10
-	vpsrld	$6, %ymm2, %ymm2
-	vpor	%ymm10, %ymm2, %ymm9
-	vmovdqu	%ymm3, %ymm2
-	vmovdqu	%ymm2, %ymm10
+	vpsrld	$6, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm9
+	vmovdqu	%ymm3, %ymm7
+	vmovdqu	%ymm7, %ymm10
 	vpslld	$21, %ymm10, %ymm10
-	vpsrld	$11, %ymm2, %ymm2
-	vpor	%ymm10, %ymm2, %ymm2
-	vpxor	%ymm2, %ymm9, %ymm9
-	vmovdqu	%ymm2, %ymm10
+	vpsrld	$11, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm7
+	vpxor	%ymm7, %ymm9, %ymm9
+	vmovdqu	%ymm7, %ymm10
 	vpslld	$18, %ymm10, %ymm10
-	vpsrld	$14, %ymm2, %ymm2
-	vpor	%ymm10, %ymm2, %ymm2
-	vpxor	%ymm2, %ymm9, %ymm2
-	vpaddd	%ymm2, %ymm7, %ymm7
+	vpsrld	$14, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm7
+	vpxor	%ymm7, %ymm9, %ymm7
+	vpaddd	%ymm7, %ymm2, %ymm7
 	vpaddd	%ymm7, %ymm6, %ymm2
 	vmovdqu	%ymm8, %ymm10
 	vpand	%ymm4, %ymm10, %ymm10
@@ -31244,21 +31435,21 @@ slh_dsa_sha2128s_keygen:
 	vpand	%ymm5, %ymm6, %ymm6
 	vpxor	%ymm6, %ymm10, %ymm6
 	vpaddd	%ymm6, %ymm7, %ymm6
-	vmovdqu	%ymm8, %ymm9
-	vmovdqu	%ymm9, %ymm10
+	vmovdqu	%ymm8, %ymm7
+	vmovdqu	%ymm7, %ymm10
 	vpslld	$30, %ymm10, %ymm10
-	vpsrld	$2, %ymm9, %ymm9
-	vpor	%ymm10, %ymm9, %ymm9
-	vmovdqu	%ymm8, %ymm10
-	vmovdqu	%ymm10, %ymm11
-	vpslld	$19, %ymm11, %ymm11
-	vpsrld	$13, %ymm10, %ymm10
-	vpor	%ymm11, %ymm10, %ymm10
-	vpxor	%ymm10, %ymm9, %ymm9
-	vmovdqu	%ymm10, %ymm11
-	vpslld	$23, %ymm11, %ymm11
-	vpsrld	$9, %ymm10, %ymm10
-	vpor	%ymm11, %ymm10, %ymm7
+	vpsrld	$2, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm9
+	vmovdqu	%ymm8, %ymm7
+	vmovdqu	%ymm7, %ymm10
+	vpslld	$19, %ymm10, %ymm10
+	vpsrld	$13, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm7
+	vpxor	%ymm7, %ymm9, %ymm9
+	vmovdqu	%ymm7, %ymm10
+	vpslld	$23, %ymm10, %ymm10
+	vpsrld	$9, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm7
 	vpxor	%ymm7, %ymm9, %ymm7
 	vpaddd	%ymm7, %ymm6, %ymm6
 	vmovdqu	1024(%rbp), %ymm7
@@ -31272,21 +31463,21 @@ slh_dsa_sha2128s_keygen:
 	vpand	%ymm1, %ymm7, %ymm7
 	vpxor	%ymm7, %ymm10, %ymm7
 	vpaddd	%ymm7, %ymm0, %ymm0
-	vmovdqu	%ymm2, %ymm9
-	vmovdqu	%ymm9, %ymm10
+	vmovdqu	%ymm2, %ymm7
+	vmovdqu	%ymm7, %ymm10
 	vpslld	$26, %ymm10, %ymm10
-	vpsrld	$6, %ymm9, %ymm9
-	vpor	%ymm10, %ymm9, %ymm9
-	vmovdqu	%ymm2, %ymm10
-	vmovdqu	%ymm10, %ymm11
-	vpslld	$21, %ymm11, %ymm11
-	vpsrld	$11, %ymm10, %ymm10
-	vpor	%ymm11, %ymm10, %ymm10
-	vpxor	%ymm10, %ymm9, %ymm9
-	vmovdqu	%ymm10, %ymm11
-	vpslld	$18, %ymm11, %ymm11
-	vpsrld	$14, %ymm10, %ymm10
-	vpor	%ymm11, %ymm10, %ymm7
+	vpsrld	$6, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm9
+	vmovdqu	%ymm2, %ymm7
+	vmovdqu	%ymm7, %ymm10
+	vpslld	$21, %ymm10, %ymm10
+	vpsrld	$11, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm7
+	vpxor	%ymm7, %ymm9, %ymm9
+	vmovdqu	%ymm7, %ymm10
+	vpslld	$18, %ymm10, %ymm10
+	vpsrld	$14, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm7
 	vpxor	%ymm7, %ymm9, %ymm7
 	vpaddd	%ymm7, %ymm0, %ymm7
 	vpaddd	%ymm7, %ymm5, %ymm0
@@ -31299,21 +31490,21 @@ slh_dsa_sha2128s_keygen:
 	vpand	%ymm4, %ymm5, %ymm5
 	vpxor	%ymm5, %ymm10, %ymm5
 	vpaddd	%ymm5, %ymm7, %ymm5
-	vmovdqu	%ymm6, %ymm9
-	vmovdqu	%ymm9, %ymm10
+	vmovdqu	%ymm6, %ymm7
+	vmovdqu	%ymm7, %ymm10
 	vpslld	$30, %ymm10, %ymm10
-	vpsrld	$2, %ymm9, %ymm9
-	vpor	%ymm10, %ymm9, %ymm9
-	vmovdqu	%ymm6, %ymm10
-	vmovdqu	%ymm10, %ymm11
-	vpslld	$19, %ymm11, %ymm11
-	vpsrld	$13, %ymm10, %ymm10
-	vpor	%ymm11, %ymm10, %ymm10
-	vpxor	%ymm10, %ymm9, %ymm9
-	vmovdqu	%ymm10, %ymm11
-	vpslld	$23, %ymm11, %ymm11
-	vpsrld	$9, %ymm10, %ymm10
-	vpor	%ymm11, %ymm10, %ymm7
+	vpsrld	$2, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm9
+	vmovdqu	%ymm6, %ymm7
+	vmovdqu	%ymm7, %ymm10
+	vpslld	$19, %ymm10, %ymm10
+	vpsrld	$13, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm7
+	vpxor	%ymm7, %ymm9, %ymm9
+	vmovdqu	%ymm7, %ymm10
+	vpslld	$23, %ymm10, %ymm10
+	vpsrld	$9, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm7
 	vpxor	%ymm7, %ymm9, %ymm7
 	vpaddd	%ymm7, %ymm5, %ymm5
 	vmovdqu	1056(%rbp), %ymm7
@@ -31327,21 +31518,21 @@ slh_dsa_sha2128s_keygen:
 	vpand	%ymm3, %ymm7, %ymm7
 	vpxor	%ymm7, %ymm10, %ymm7
 	vpaddd	%ymm7, %ymm1, %ymm1
-	vmovdqu	%ymm0, %ymm9
-	vmovdqu	%ymm9, %ymm10
+	vmovdqu	%ymm0, %ymm7
+	vmovdqu	%ymm7, %ymm10
 	vpslld	$26, %ymm10, %ymm10
-	vpsrld	$6, %ymm9, %ymm9
-	vpor	%ymm10, %ymm9, %ymm9
-	vmovdqu	%ymm0, %ymm10
-	vmovdqu	%ymm10, %ymm11
-	vpslld	$21, %ymm11, %ymm11
-	vpsrld	$11, %ymm10, %ymm10
-	vpor	%ymm11, %ymm10, %ymm10
-	vpxor	%ymm10, %ymm9, %ymm9
-	vmovdqu	%ymm10, %ymm11
-	vpslld	$18, %ymm11, %ymm11
-	vpsrld	$14, %ymm10, %ymm10
-	vpor	%ymm11, %ymm10, %ymm7
+	vpsrld	$6, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm9
+	vmovdqu	%ymm0, %ymm7
+	vmovdqu	%ymm7, %ymm10
+	vpslld	$21, %ymm10, %ymm10
+	vpsrld	$11, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm7
+	vpxor	%ymm7, %ymm9, %ymm9
+	vmovdqu	%ymm7, %ymm10
+	vpslld	$18, %ymm10, %ymm10
+	vpsrld	$14, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm7
 	vpxor	%ymm7, %ymm9, %ymm7
 	vpaddd	%ymm7, %ymm1, %ymm7
 	vpaddd	%ymm7, %ymm4, %ymm1
@@ -31354,21 +31545,21 @@ slh_dsa_sha2128s_keygen:
 	vpand	%ymm8, %ymm4, %ymm4
 	vpxor	%ymm4, %ymm10, %ymm4
 	vpaddd	%ymm4, %ymm7, %ymm4
-	vmovdqu	%ymm5, %ymm9
-	vmovdqu	%ymm9, %ymm10
+	vmovdqu	%ymm5, %ymm7
+	vmovdqu	%ymm7, %ymm10
 	vpslld	$30, %ymm10, %ymm10
-	vpsrld	$2, %ymm9, %ymm9
-	vpor	%ymm10, %ymm9, %ymm9
-	vmovdqu	%ymm5, %ymm10
-	vmovdqu	%ymm10, %ymm11
-	vpslld	$19, %ymm11, %ymm11
-	vpsrld	$13, %ymm10, %ymm10
-	vpor	%ymm11, %ymm10, %ymm10
-	vpxor	%ymm10, %ymm9, %ymm9
-	vmovdqu	%ymm10, %ymm11
-	vpslld	$23, %ymm11, %ymm11
-	vpsrld	$9, %ymm10, %ymm10
-	vpor	%ymm11, %ymm10, %ymm7
+	vpsrld	$2, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm9
+	vmovdqu	%ymm5, %ymm7
+	vmovdqu	%ymm7, %ymm10
+	vpslld	$19, %ymm10, %ymm10
+	vpsrld	$13, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm7
+	vpxor	%ymm7, %ymm9, %ymm9
+	vmovdqu	%ymm7, %ymm10
+	vpslld	$23, %ymm10, %ymm10
+	vpsrld	$9, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm7
 	vpxor	%ymm7, %ymm9, %ymm7
 	vpaddd	%ymm7, %ymm4, %ymm4
 	vmovdqu	1088(%rbp), %ymm7
@@ -31381,24 +31572,24 @@ slh_dsa_sha2128s_keygen:
 	vpxor	%ymm1, %ymm7, %ymm7
 	vpand	%ymm2, %ymm7, %ymm7
 	vpxor	%ymm7, %ymm10, %ymm7
-	vpaddd	%ymm7, %ymm3, %ymm7
-	vmovdqu	%ymm1, %ymm3
-	vmovdqu	%ymm3, %ymm10
+	vpaddd	%ymm7, %ymm3, %ymm3
+	vmovdqu	%ymm1, %ymm7
+	vmovdqu	%ymm7, %ymm10
 	vpslld	$26, %ymm10, %ymm10
-	vpsrld	$6, %ymm3, %ymm3
-	vpor	%ymm10, %ymm3, %ymm9
-	vmovdqu	%ymm1, %ymm3
-	vmovdqu	%ymm3, %ymm10
+	vpsrld	$6, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm9
+	vmovdqu	%ymm1, %ymm7
+	vmovdqu	%ymm7, %ymm10
 	vpslld	$21, %ymm10, %ymm10
-	vpsrld	$11, %ymm3, %ymm3
-	vpor	%ymm10, %ymm3, %ymm3
-	vpxor	%ymm3, %ymm9, %ymm9
-	vmovdqu	%ymm3, %ymm10
+	vpsrld	$11, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm7
+	vpxor	%ymm7, %ymm9, %ymm9
+	vmovdqu	%ymm7, %ymm10
 	vpslld	$18, %ymm10, %ymm10
-	vpsrld	$14, %ymm3, %ymm3
-	vpor	%ymm10, %ymm3, %ymm3
-	vpxor	%ymm3, %ymm9, %ymm3
-	vpaddd	%ymm3, %ymm7, %ymm7
+	vpsrld	$14, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm7
+	vpxor	%ymm7, %ymm9, %ymm7
+	vpaddd	%ymm7, %ymm3, %ymm7
 	vpaddd	%ymm7, %ymm8, %ymm3
 	vmovdqu	%ymm4, %ymm10
 	vpand	%ymm5, %ymm10, %ymm10
@@ -31436,24 +31627,24 @@ slh_dsa_sha2128s_keygen:
 	vpxor	%ymm3, %ymm7, %ymm7
 	vpand	%ymm0, %ymm7, %ymm7
 	vpxor	%ymm7, %ymm10, %ymm7
-	vpaddd	%ymm7, %ymm2, %ymm7
-	vmovdqu	%ymm3, %ymm2
-	vmovdqu	%ymm2, %ymm10
+	vpaddd	%ymm7, %ymm2, %ymm2
+	vmovdqu	%ymm3, %ymm7
+	vmovdqu	%ymm7, %ymm10
 	vpslld	$26, %ymm10, %ymm10
-	vpsrld	$6, %ymm2, %ymm2
-	vpor	%ymm10, %ymm2, %ymm9
-	vmovdqu	%ymm3, %ymm2
-	vmovdqu	%ymm2, %ymm10
+	vpsrld	$6, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm9
+	vmovdqu	%ymm3, %ymm7
+	vmovdqu	%ymm7, %ymm10
 	vpslld	$21, %ymm10, %ymm10
-	vpsrld	$11, %ymm2, %ymm2
-	vpor	%ymm10, %ymm2, %ymm2
-	vpxor	%ymm2, %ymm9, %ymm9
-	vmovdqu	%ymm2, %ymm10
+	vpsrld	$11, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm7
+	vpxor	%ymm7, %ymm9, %ymm9
+	vmovdqu	%ymm7, %ymm10
 	vpslld	$18, %ymm10, %ymm10
-	vpsrld	$14, %ymm2, %ymm2
-	vpor	%ymm10, %ymm2, %ymm2
-	vpxor	%ymm2, %ymm9, %ymm2
-	vpaddd	%ymm2, %ymm7, %ymm7
+	vpsrld	$14, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm7
+	vpxor	%ymm7, %ymm9, %ymm7
+	vpaddd	%ymm7, %ymm2, %ymm7
 	vpaddd	%ymm7, %ymm6, %ymm2
 	vmovdqu	%ymm8, %ymm10
 	vpand	%ymm4, %ymm10, %ymm10
@@ -31464,21 +31655,21 @@ slh_dsa_sha2128s_keygen:
 	vpand	%ymm5, %ymm6, %ymm6
 	vpxor	%ymm6, %ymm10, %ymm6
 	vpaddd	%ymm6, %ymm7, %ymm6
-	vmovdqu	%ymm8, %ymm9
-	vmovdqu	%ymm9, %ymm10
+	vmovdqu	%ymm8, %ymm7
+	vmovdqu	%ymm7, %ymm10
 	vpslld	$30, %ymm10, %ymm10
-	vpsrld	$2, %ymm9, %ymm9
-	vpor	%ymm10, %ymm9, %ymm9
-	vmovdqu	%ymm8, %ymm10
-	vmovdqu	%ymm10, %ymm11
-	vpslld	$19, %ymm11, %ymm11
-	vpsrld	$13, %ymm10, %ymm10
-	vpor	%ymm11, %ymm10, %ymm10
-	vpxor	%ymm10, %ymm9, %ymm9
-	vmovdqu	%ymm10, %ymm11
-	vpslld	$23, %ymm11, %ymm11
-	vpsrld	$9, %ymm10, %ymm10
-	vpor	%ymm11, %ymm10, %ymm7
+	vpsrld	$2, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm9
+	vmovdqu	%ymm8, %ymm7
+	vmovdqu	%ymm7, %ymm10
+	vpslld	$19, %ymm10, %ymm10
+	vpsrld	$13, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm7
+	vpxor	%ymm7, %ymm9, %ymm9
+	vmovdqu	%ymm7, %ymm10
+	vpslld	$23, %ymm10, %ymm10
+	vpsrld	$9, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm7
 	vpxor	%ymm7, %ymm9, %ymm7
 	vpaddd	%ymm7, %ymm6, %ymm6
 	vmovdqu	1152(%rbp), %ymm7
@@ -31492,21 +31683,21 @@ slh_dsa_sha2128s_keygen:
 	vpand	%ymm1, %ymm7, %ymm7
 	vpxor	%ymm7, %ymm10, %ymm7
 	vpaddd	%ymm7, %ymm0, %ymm0
-	vmovdqu	%ymm2, %ymm9
-	vmovdqu	%ymm9, %ymm10
+	vmovdqu	%ymm2, %ymm7
+	vmovdqu	%ymm7, %ymm10
 	vpslld	$26, %ymm10, %ymm10
-	vpsrld	$6, %ymm9, %ymm9
-	vpor	%ymm10, %ymm9, %ymm9
-	vmovdqu	%ymm2, %ymm10
-	vmovdqu	%ymm10, %ymm11
-	vpslld	$21, %ymm11, %ymm11
-	vpsrld	$11, %ymm10, %ymm10
-	vpor	%ymm11, %ymm10, %ymm10
-	vpxor	%ymm10, %ymm9, %ymm9
-	vmovdqu	%ymm10, %ymm11
-	vpslld	$18, %ymm11, %ymm11
-	vpsrld	$14, %ymm10, %ymm10
-	vpor	%ymm11, %ymm10, %ymm7
+	vpsrld	$6, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm9
+	vmovdqu	%ymm2, %ymm7
+	vmovdqu	%ymm7, %ymm10
+	vpslld	$21, %ymm10, %ymm10
+	vpsrld	$11, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm7
+	vpxor	%ymm7, %ymm9, %ymm9
+	vmovdqu	%ymm7, %ymm10
+	vpslld	$18, %ymm10, %ymm10
+	vpsrld	$14, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm7
 	vpxor	%ymm7, %ymm9, %ymm7
 	vpaddd	%ymm7, %ymm0, %ymm7
 	vpaddd	%ymm7, %ymm5, %ymm0
@@ -31519,21 +31710,21 @@ slh_dsa_sha2128s_keygen:
 	vpand	%ymm4, %ymm5, %ymm5
 	vpxor	%ymm5, %ymm10, %ymm5
 	vpaddd	%ymm5, %ymm7, %ymm5
-	vmovdqu	%ymm6, %ymm9
-	vmovdqu	%ymm9, %ymm10
+	vmovdqu	%ymm6, %ymm7
+	vmovdqu	%ymm7, %ymm10
 	vpslld	$30, %ymm10, %ymm10
-	vpsrld	$2, %ymm9, %ymm9
-	vpor	%ymm10, %ymm9, %ymm9
-	vmovdqu	%ymm6, %ymm10
-	vmovdqu	%ymm10, %ymm11
-	vpslld	$19, %ymm11, %ymm11
-	vpsrld	$13, %ymm10, %ymm10
-	vpor	%ymm11, %ymm10, %ymm10
-	vpxor	%ymm10, %ymm9, %ymm9
-	vmovdqu	%ymm10, %ymm11
-	vpslld	$23, %ymm11, %ymm11
-	vpsrld	$9, %ymm10, %ymm10
-	vpor	%ymm11, %ymm10, %ymm7
+	vpsrld	$2, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm9
+	vmovdqu	%ymm6, %ymm7
+	vmovdqu	%ymm7, %ymm10
+	vpslld	$19, %ymm10, %ymm10
+	vpsrld	$13, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm7
+	vpxor	%ymm7, %ymm9, %ymm9
+	vmovdqu	%ymm7, %ymm10
+	vpslld	$23, %ymm10, %ymm10
+	vpsrld	$9, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm7
 	vpxor	%ymm7, %ymm9, %ymm7
 	vpaddd	%ymm7, %ymm5, %ymm5
 	vmovdqu	1184(%rbp), %ymm7
@@ -31547,21 +31738,21 @@ slh_dsa_sha2128s_keygen:
 	vpand	%ymm3, %ymm7, %ymm7
 	vpxor	%ymm7, %ymm10, %ymm7
 	vpaddd	%ymm7, %ymm1, %ymm1
-	vmovdqu	%ymm0, %ymm9
-	vmovdqu	%ymm9, %ymm10
+	vmovdqu	%ymm0, %ymm7
+	vmovdqu	%ymm7, %ymm10
 	vpslld	$26, %ymm10, %ymm10
-	vpsrld	$6, %ymm9, %ymm9
-	vpor	%ymm10, %ymm9, %ymm9
-	vmovdqu	%ymm0, %ymm10
-	vmovdqu	%ymm10, %ymm11
-	vpslld	$21, %ymm11, %ymm11
-	vpsrld	$11, %ymm10, %ymm10
-	vpor	%ymm11, %ymm10, %ymm10
-	vpxor	%ymm10, %ymm9, %ymm9
-	vmovdqu	%ymm10, %ymm11
-	vpslld	$18, %ymm11, %ymm11
-	vpsrld	$14, %ymm10, %ymm10
-	vpor	%ymm11, %ymm10, %ymm7
+	vpsrld	$6, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm9
+	vmovdqu	%ymm0, %ymm7
+	vmovdqu	%ymm7, %ymm10
+	vpslld	$21, %ymm10, %ymm10
+	vpsrld	$11, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm7
+	vpxor	%ymm7, %ymm9, %ymm9
+	vmovdqu	%ymm7, %ymm10
+	vpslld	$18, %ymm10, %ymm10
+	vpsrld	$14, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm7
 	vpxor	%ymm7, %ymm9, %ymm7
 	vpaddd	%ymm7, %ymm1, %ymm7
 	vpaddd	%ymm7, %ymm4, %ymm1
@@ -31574,21 +31765,21 @@ slh_dsa_sha2128s_keygen:
 	vpand	%ymm8, %ymm4, %ymm4
 	vpxor	%ymm4, %ymm10, %ymm4
 	vpaddd	%ymm4, %ymm7, %ymm4
-	vmovdqu	%ymm5, %ymm9
-	vmovdqu	%ymm9, %ymm10
+	vmovdqu	%ymm5, %ymm7
+	vmovdqu	%ymm7, %ymm10
 	vpslld	$30, %ymm10, %ymm10
-	vpsrld	$2, %ymm9, %ymm9
-	vpor	%ymm10, %ymm9, %ymm9
-	vmovdqu	%ymm5, %ymm10
-	vmovdqu	%ymm10, %ymm11
-	vpslld	$19, %ymm11, %ymm11
-	vpsrld	$13, %ymm10, %ymm10
-	vpor	%ymm11, %ymm10, %ymm10
-	vpxor	%ymm10, %ymm9, %ymm9
-	vmovdqu	%ymm10, %ymm11
-	vpslld	$23, %ymm11, %ymm11
-	vpsrld	$9, %ymm10, %ymm10
-	vpor	%ymm11, %ymm10, %ymm7
+	vpsrld	$2, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm9
+	vmovdqu	%ymm5, %ymm7
+	vmovdqu	%ymm7, %ymm10
+	vpslld	$19, %ymm10, %ymm10
+	vpsrld	$13, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm7
+	vpxor	%ymm7, %ymm9, %ymm9
+	vmovdqu	%ymm7, %ymm10
+	vpslld	$23, %ymm10, %ymm10
+	vpsrld	$9, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm7
 	vpxor	%ymm7, %ymm9, %ymm7
 	vpaddd	%ymm7, %ymm4, %ymm4
 	vmovdqu	1216(%rbp), %ymm7
@@ -31601,24 +31792,24 @@ slh_dsa_sha2128s_keygen:
 	vpxor	%ymm1, %ymm7, %ymm7
 	vpand	%ymm2, %ymm7, %ymm7
 	vpxor	%ymm7, %ymm10, %ymm7
-	vpaddd	%ymm7, %ymm3, %ymm7
-	vmovdqu	%ymm1, %ymm3
-	vmovdqu	%ymm3, %ymm10
+	vpaddd	%ymm7, %ymm3, %ymm3
+	vmovdqu	%ymm1, %ymm7
+	vmovdqu	%ymm7, %ymm10
 	vpslld	$26, %ymm10, %ymm10
-	vpsrld	$6, %ymm3, %ymm3
-	vpor	%ymm10, %ymm3, %ymm9
-	vmovdqu	%ymm1, %ymm3
-	vmovdqu	%ymm3, %ymm10
+	vpsrld	$6, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm9
+	vmovdqu	%ymm1, %ymm7
+	vmovdqu	%ymm7, %ymm10
 	vpslld	$21, %ymm10, %ymm10
-	vpsrld	$11, %ymm3, %ymm3
-	vpor	%ymm10, %ymm3, %ymm3
-	vpxor	%ymm3, %ymm9, %ymm9
-	vmovdqu	%ymm3, %ymm10
+	vpsrld	$11, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm7
+	vpxor	%ymm7, %ymm9, %ymm9
+	vmovdqu	%ymm7, %ymm10
 	vpslld	$18, %ymm10, %ymm10
-	vpsrld	$14, %ymm3, %ymm3
-	vpor	%ymm10, %ymm3, %ymm3
-	vpxor	%ymm3, %ymm9, %ymm3
-	vpaddd	%ymm3, %ymm7, %ymm7
+	vpsrld	$14, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm7
+	vpxor	%ymm7, %ymm9, %ymm7
+	vpaddd	%ymm7, %ymm3, %ymm7
 	vpaddd	%ymm7, %ymm8, %ymm3
 	vmovdqu	%ymm4, %ymm10
 	vpand	%ymm5, %ymm10, %ymm10
@@ -31656,24 +31847,24 @@ slh_dsa_sha2128s_keygen:
 	vpxor	%ymm3, %ymm7, %ymm7
 	vpand	%ymm0, %ymm7, %ymm7
 	vpxor	%ymm7, %ymm10, %ymm7
-	vpaddd	%ymm7, %ymm2, %ymm7
-	vmovdqu	%ymm3, %ymm2
-	vmovdqu	%ymm2, %ymm10
+	vpaddd	%ymm7, %ymm2, %ymm2
+	vmovdqu	%ymm3, %ymm7
+	vmovdqu	%ymm7, %ymm10
 	vpslld	$26, %ymm10, %ymm10
-	vpsrld	$6, %ymm2, %ymm2
-	vpor	%ymm10, %ymm2, %ymm9
-	vmovdqu	%ymm3, %ymm2
-	vmovdqu	%ymm2, %ymm10
+	vpsrld	$6, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm9
+	vmovdqu	%ymm3, %ymm7
+	vmovdqu	%ymm7, %ymm10
 	vpslld	$21, %ymm10, %ymm10
-	vpsrld	$11, %ymm2, %ymm2
-	vpor	%ymm10, %ymm2, %ymm2
-	vpxor	%ymm2, %ymm9, %ymm9
-	vmovdqu	%ymm2, %ymm10
+	vpsrld	$11, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm7
+	vpxor	%ymm7, %ymm9, %ymm9
+	vmovdqu	%ymm7, %ymm10
 	vpslld	$18, %ymm10, %ymm10
-	vpsrld	$14, %ymm2, %ymm2
-	vpor	%ymm10, %ymm2, %ymm2
-	vpxor	%ymm2, %ymm9, %ymm2
-	vpaddd	%ymm2, %ymm7, %ymm7
+	vpsrld	$14, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm7
+	vpxor	%ymm7, %ymm9, %ymm7
+	vpaddd	%ymm7, %ymm2, %ymm7
 	vpaddd	%ymm7, %ymm6, %ymm2
 	vmovdqu	%ymm8, %ymm10
 	vpand	%ymm4, %ymm10, %ymm10
@@ -31684,21 +31875,21 @@ slh_dsa_sha2128s_keygen:
 	vpand	%ymm5, %ymm6, %ymm6
 	vpxor	%ymm6, %ymm10, %ymm6
 	vpaddd	%ymm6, %ymm7, %ymm6
-	vmovdqu	%ymm8, %ymm9
-	vmovdqu	%ymm9, %ymm10
+	vmovdqu	%ymm8, %ymm7
+	vmovdqu	%ymm7, %ymm10
 	vpslld	$30, %ymm10, %ymm10
-	vpsrld	$2, %ymm9, %ymm9
-	vpor	%ymm10, %ymm9, %ymm9
-	vmovdqu	%ymm8, %ymm10
-	vmovdqu	%ymm10, %ymm11
-	vpslld	$19, %ymm11, %ymm11
-	vpsrld	$13, %ymm10, %ymm10
-	vpor	%ymm11, %ymm10, %ymm10
-	vpxor	%ymm10, %ymm9, %ymm9
-	vmovdqu	%ymm10, %ymm11
-	vpslld	$23, %ymm11, %ymm11
-	vpsrld	$9, %ymm10, %ymm10
-	vpor	%ymm11, %ymm10, %ymm7
+	vpsrld	$2, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm9
+	vmovdqu	%ymm8, %ymm7
+	vmovdqu	%ymm7, %ymm10
+	vpslld	$19, %ymm10, %ymm10
+	vpsrld	$13, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm7
+	vpxor	%ymm7, %ymm9, %ymm9
+	vmovdqu	%ymm7, %ymm10
+	vpslld	$23, %ymm10, %ymm10
+	vpsrld	$9, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm7
 	vpxor	%ymm7, %ymm9, %ymm7
 	vpaddd	%ymm7, %ymm6, %ymm6
 	vmovdqu	1280(%rbp), %ymm7
@@ -31712,21 +31903,21 @@ slh_dsa_sha2128s_keygen:
 	vpand	%ymm1, %ymm7, %ymm7
 	vpxor	%ymm7, %ymm10, %ymm7
 	vpaddd	%ymm7, %ymm0, %ymm0
-	vmovdqu	%ymm2, %ymm9
-	vmovdqu	%ymm9, %ymm10
+	vmovdqu	%ymm2, %ymm7
+	vmovdqu	%ymm7, %ymm10
 	vpslld	$26, %ymm10, %ymm10
-	vpsrld	$6, %ymm9, %ymm9
-	vpor	%ymm10, %ymm9, %ymm9
-	vmovdqu	%ymm2, %ymm10
-	vmovdqu	%ymm10, %ymm11
-	vpslld	$21, %ymm11, %ymm11
-	vpsrld	$11, %ymm10, %ymm10
-	vpor	%ymm11, %ymm10, %ymm10
-	vpxor	%ymm10, %ymm9, %ymm9
-	vmovdqu	%ymm10, %ymm11
-	vpslld	$18, %ymm11, %ymm11
-	vpsrld	$14, %ymm10, %ymm10
-	vpor	%ymm11, %ymm10, %ymm7
+	vpsrld	$6, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm9
+	vmovdqu	%ymm2, %ymm7
+	vmovdqu	%ymm7, %ymm10
+	vpslld	$21, %ymm10, %ymm10
+	vpsrld	$11, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm7
+	vpxor	%ymm7, %ymm9, %ymm9
+	vmovdqu	%ymm7, %ymm10
+	vpslld	$18, %ymm10, %ymm10
+	vpsrld	$14, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm7
 	vpxor	%ymm7, %ymm9, %ymm7
 	vpaddd	%ymm7, %ymm0, %ymm7
 	vpaddd	%ymm7, %ymm5, %ymm0
@@ -31739,21 +31930,21 @@ slh_dsa_sha2128s_keygen:
 	vpand	%ymm4, %ymm5, %ymm5
 	vpxor	%ymm5, %ymm10, %ymm5
 	vpaddd	%ymm5, %ymm7, %ymm5
-	vmovdqu	%ymm6, %ymm9
-	vmovdqu	%ymm9, %ymm10
+	vmovdqu	%ymm6, %ymm7
+	vmovdqu	%ymm7, %ymm10
 	vpslld	$30, %ymm10, %ymm10
-	vpsrld	$2, %ymm9, %ymm9
-	vpor	%ymm10, %ymm9, %ymm9
-	vmovdqu	%ymm6, %ymm10
-	vmovdqu	%ymm10, %ymm11
-	vpslld	$19, %ymm11, %ymm11
-	vpsrld	$13, %ymm10, %ymm10
-	vpor	%ymm11, %ymm10, %ymm10
-	vpxor	%ymm10, %ymm9, %ymm9
-	vmovdqu	%ymm10, %ymm11
-	vpslld	$23, %ymm11, %ymm11
-	vpsrld	$9, %ymm10, %ymm10
-	vpor	%ymm11, %ymm10, %ymm7
+	vpsrld	$2, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm9
+	vmovdqu	%ymm6, %ymm7
+	vmovdqu	%ymm7, %ymm10
+	vpslld	$19, %ymm10, %ymm10
+	vpsrld	$13, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm7
+	vpxor	%ymm7, %ymm9, %ymm9
+	vmovdqu	%ymm7, %ymm10
+	vpslld	$23, %ymm10, %ymm10
+	vpsrld	$9, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm7
 	vpxor	%ymm7, %ymm9, %ymm7
 	vpaddd	%ymm7, %ymm5, %ymm5
 	vmovdqu	1312(%rbp), %ymm7
@@ -31767,21 +31958,21 @@ slh_dsa_sha2128s_keygen:
 	vpand	%ymm3, %ymm7, %ymm7
 	vpxor	%ymm7, %ymm10, %ymm7
 	vpaddd	%ymm7, %ymm1, %ymm1
-	vmovdqu	%ymm0, %ymm9
-	vmovdqu	%ymm9, %ymm10
+	vmovdqu	%ymm0, %ymm7
+	vmovdqu	%ymm7, %ymm10
 	vpslld	$26, %ymm10, %ymm10
-	vpsrld	$6, %ymm9, %ymm9
-	vpor	%ymm10, %ymm9, %ymm9
-	vmovdqu	%ymm0, %ymm10
-	vmovdqu	%ymm10, %ymm11
-	vpslld	$21, %ymm11, %ymm11
-	vpsrld	$11, %ymm10, %ymm10
-	vpor	%ymm11, %ymm10, %ymm10
-	vpxor	%ymm10, %ymm9, %ymm9
-	vmovdqu	%ymm10, %ymm11
-	vpslld	$18, %ymm11, %ymm11
-	vpsrld	$14, %ymm10, %ymm10
-	vpor	%ymm11, %ymm10, %ymm7
+	vpsrld	$6, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm9
+	vmovdqu	%ymm0, %ymm7
+	vmovdqu	%ymm7, %ymm10
+	vpslld	$21, %ymm10, %ymm10
+	vpsrld	$11, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm7
+	vpxor	%ymm7, %ymm9, %ymm9
+	vmovdqu	%ymm7, %ymm10
+	vpslld	$18, %ymm10, %ymm10
+	vpsrld	$14, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm7
 	vpxor	%ymm7, %ymm9, %ymm7
 	vpaddd	%ymm7, %ymm1, %ymm7
 	vpaddd	%ymm7, %ymm4, %ymm1
@@ -31794,21 +31985,21 @@ slh_dsa_sha2128s_keygen:
 	vpand	%ymm8, %ymm4, %ymm4
 	vpxor	%ymm4, %ymm10, %ymm4
 	vpaddd	%ymm4, %ymm7, %ymm4
-	vmovdqu	%ymm5, %ymm9
-	vmovdqu	%ymm9, %ymm10
+	vmovdqu	%ymm5, %ymm7
+	vmovdqu	%ymm7, %ymm10
 	vpslld	$30, %ymm10, %ymm10
-	vpsrld	$2, %ymm9, %ymm9
-	vpor	%ymm10, %ymm9, %ymm9
-	vmovdqu	%ymm5, %ymm10
-	vmovdqu	%ymm10, %ymm11
-	vpslld	$19, %ymm11, %ymm11
-	vpsrld	$13, %ymm10, %ymm10
-	vpor	%ymm11, %ymm10, %ymm10
-	vpxor	%ymm10, %ymm9, %ymm9
-	vmovdqu	%ymm10, %ymm11
-	vpslld	$23, %ymm11, %ymm11
-	vpsrld	$9, %ymm10, %ymm10
-	vpor	%ymm11, %ymm10, %ymm7
+	vpsrld	$2, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm9
+	vmovdqu	%ymm5, %ymm7
+	vmovdqu	%ymm7, %ymm10
+	vpslld	$19, %ymm10, %ymm10
+	vpsrld	$13, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm7
+	vpxor	%ymm7, %ymm9, %ymm9
+	vmovdqu	%ymm7, %ymm10
+	vpslld	$23, %ymm10, %ymm10
+	vpsrld	$9, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm7
 	vpxor	%ymm7, %ymm9, %ymm7
 	vpaddd	%ymm7, %ymm4, %ymm4
 	vmovdqu	1344(%rbp), %ymm7
@@ -31821,24 +32012,24 @@ slh_dsa_sha2128s_keygen:
 	vpxor	%ymm1, %ymm7, %ymm7
 	vpand	%ymm2, %ymm7, %ymm7
 	vpxor	%ymm7, %ymm10, %ymm7
-	vpaddd	%ymm7, %ymm3, %ymm7
-	vmovdqu	%ymm1, %ymm3
-	vmovdqu	%ymm3, %ymm10
+	vpaddd	%ymm7, %ymm3, %ymm3
+	vmovdqu	%ymm1, %ymm7
+	vmovdqu	%ymm7, %ymm10
 	vpslld	$26, %ymm10, %ymm10
-	vpsrld	$6, %ymm3, %ymm3
-	vpor	%ymm10, %ymm3, %ymm9
-	vmovdqu	%ymm1, %ymm3
-	vmovdqu	%ymm3, %ymm10
+	vpsrld	$6, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm9
+	vmovdqu	%ymm1, %ymm7
+	vmovdqu	%ymm7, %ymm10
 	vpslld	$21, %ymm10, %ymm10
-	vpsrld	$11, %ymm3, %ymm3
-	vpor	%ymm10, %ymm3, %ymm3
-	vpxor	%ymm3, %ymm9, %ymm9
-	vmovdqu	%ymm3, %ymm10
+	vpsrld	$11, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm7
+	vpxor	%ymm7, %ymm9, %ymm9
+	vmovdqu	%ymm7, %ymm10
 	vpslld	$18, %ymm10, %ymm10
-	vpsrld	$14, %ymm3, %ymm3
-	vpor	%ymm10, %ymm3, %ymm3
-	vpxor	%ymm3, %ymm9, %ymm3
-	vpaddd	%ymm3, %ymm7, %ymm7
+	vpsrld	$14, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm7
+	vpxor	%ymm7, %ymm9, %ymm7
+	vpaddd	%ymm7, %ymm3, %ymm7
 	vpaddd	%ymm7, %ymm8, %ymm3
 	vmovdqu	%ymm4, %ymm10
 	vpand	%ymm5, %ymm10, %ymm10
@@ -31876,24 +32067,24 @@ slh_dsa_sha2128s_keygen:
 	vpxor	%ymm3, %ymm7, %ymm7
 	vpand	%ymm0, %ymm7, %ymm7
 	vpxor	%ymm7, %ymm10, %ymm7
-	vpaddd	%ymm7, %ymm2, %ymm7
-	vmovdqu	%ymm3, %ymm2
-	vmovdqu	%ymm2, %ymm10
+	vpaddd	%ymm7, %ymm2, %ymm2
+	vmovdqu	%ymm3, %ymm7
+	vmovdqu	%ymm7, %ymm10
 	vpslld	$26, %ymm10, %ymm10
-	vpsrld	$6, %ymm2, %ymm2
-	vpor	%ymm10, %ymm2, %ymm9
-	vmovdqu	%ymm3, %ymm2
-	vmovdqu	%ymm2, %ymm10
+	vpsrld	$6, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm9
+	vmovdqu	%ymm3, %ymm7
+	vmovdqu	%ymm7, %ymm10
 	vpslld	$21, %ymm10, %ymm10
-	vpsrld	$11, %ymm2, %ymm2
-	vpor	%ymm10, %ymm2, %ymm2
-	vpxor	%ymm2, %ymm9, %ymm9
-	vmovdqu	%ymm2, %ymm10
+	vpsrld	$11, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm7
+	vpxor	%ymm7, %ymm9, %ymm9
+	vmovdqu	%ymm7, %ymm10
 	vpslld	$18, %ymm10, %ymm10
-	vpsrld	$14, %ymm2, %ymm2
-	vpor	%ymm10, %ymm2, %ymm2
-	vpxor	%ymm2, %ymm9, %ymm2
-	vpaddd	%ymm2, %ymm7, %ymm7
+	vpsrld	$14, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm7
+	vpxor	%ymm7, %ymm9, %ymm7
+	vpaddd	%ymm7, %ymm2, %ymm7
 	vpaddd	%ymm7, %ymm6, %ymm2
 	vmovdqu	%ymm8, %ymm10
 	vpand	%ymm4, %ymm10, %ymm10
@@ -31904,21 +32095,21 @@ slh_dsa_sha2128s_keygen:
 	vpand	%ymm5, %ymm6, %ymm6
 	vpxor	%ymm6, %ymm10, %ymm6
 	vpaddd	%ymm6, %ymm7, %ymm6
-	vmovdqu	%ymm8, %ymm9
-	vmovdqu	%ymm9, %ymm10
+	vmovdqu	%ymm8, %ymm7
+	vmovdqu	%ymm7, %ymm10
 	vpslld	$30, %ymm10, %ymm10
-	vpsrld	$2, %ymm9, %ymm9
-	vpor	%ymm10, %ymm9, %ymm9
-	vmovdqu	%ymm8, %ymm10
-	vmovdqu	%ymm10, %ymm11
-	vpslld	$19, %ymm11, %ymm11
-	vpsrld	$13, %ymm10, %ymm10
-	vpor	%ymm11, %ymm10, %ymm10
-	vpxor	%ymm10, %ymm9, %ymm9
-	vmovdqu	%ymm10, %ymm11
-	vpslld	$23, %ymm11, %ymm11
-	vpsrld	$9, %ymm10, %ymm10
-	vpor	%ymm11, %ymm10, %ymm7
+	vpsrld	$2, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm9
+	vmovdqu	%ymm8, %ymm7
+	vmovdqu	%ymm7, %ymm10
+	vpslld	$19, %ymm10, %ymm10
+	vpsrld	$13, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm7
+	vpxor	%ymm7, %ymm9, %ymm9
+	vmovdqu	%ymm7, %ymm10
+	vpslld	$23, %ymm10, %ymm10
+	vpsrld	$9, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm7
 	vpxor	%ymm7, %ymm9, %ymm7
 	vpaddd	%ymm7, %ymm6, %ymm6
 	vmovdqu	1408(%rbp), %ymm7
@@ -31932,21 +32123,21 @@ slh_dsa_sha2128s_keygen:
 	vpand	%ymm1, %ymm7, %ymm7
 	vpxor	%ymm7, %ymm10, %ymm7
 	vpaddd	%ymm7, %ymm0, %ymm0
-	vmovdqu	%ymm2, %ymm9
-	vmovdqu	%ymm9, %ymm10
+	vmovdqu	%ymm2, %ymm7
+	vmovdqu	%ymm7, %ymm10
 	vpslld	$26, %ymm10, %ymm10
-	vpsrld	$6, %ymm9, %ymm9
-	vpor	%ymm10, %ymm9, %ymm9
-	vmovdqu	%ymm2, %ymm10
-	vmovdqu	%ymm10, %ymm11
-	vpslld	$21, %ymm11, %ymm11
-	vpsrld	$11, %ymm10, %ymm10
-	vpor	%ymm11, %ymm10, %ymm10
-	vpxor	%ymm10, %ymm9, %ymm9
-	vmovdqu	%ymm10, %ymm11
-	vpslld	$18, %ymm11, %ymm11
-	vpsrld	$14, %ymm10, %ymm10
-	vpor	%ymm11, %ymm10, %ymm7
+	vpsrld	$6, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm9
+	vmovdqu	%ymm2, %ymm7
+	vmovdqu	%ymm7, %ymm10
+	vpslld	$21, %ymm10, %ymm10
+	vpsrld	$11, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm7
+	vpxor	%ymm7, %ymm9, %ymm9
+	vmovdqu	%ymm7, %ymm10
+	vpslld	$18, %ymm10, %ymm10
+	vpsrld	$14, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm7
 	vpxor	%ymm7, %ymm9, %ymm7
 	vpaddd	%ymm7, %ymm0, %ymm7
 	vpaddd	%ymm7, %ymm5, %ymm0
@@ -31959,21 +32150,21 @@ slh_dsa_sha2128s_keygen:
 	vpand	%ymm4, %ymm5, %ymm5
 	vpxor	%ymm5, %ymm10, %ymm5
 	vpaddd	%ymm5, %ymm7, %ymm5
-	vmovdqu	%ymm6, %ymm9
-	vmovdqu	%ymm9, %ymm10
+	vmovdqu	%ymm6, %ymm7
+	vmovdqu	%ymm7, %ymm10
 	vpslld	$30, %ymm10, %ymm10
-	vpsrld	$2, %ymm9, %ymm9
-	vpor	%ymm10, %ymm9, %ymm9
-	vmovdqu	%ymm6, %ymm10
-	vmovdqu	%ymm10, %ymm11
-	vpslld	$19, %ymm11, %ymm11
-	vpsrld	$13, %ymm10, %ymm10
-	vpor	%ymm11, %ymm10, %ymm10
-	vpxor	%ymm10, %ymm9, %ymm9
-	vmovdqu	%ymm10, %ymm11
-	vpslld	$23, %ymm11, %ymm11
-	vpsrld	$9, %ymm10, %ymm10
-	vpor	%ymm11, %ymm10, %ymm7
+	vpsrld	$2, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm9
+	vmovdqu	%ymm6, %ymm7
+	vmovdqu	%ymm7, %ymm10
+	vpslld	$19, %ymm10, %ymm10
+	vpsrld	$13, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm7
+	vpxor	%ymm7, %ymm9, %ymm9
+	vmovdqu	%ymm7, %ymm10
+	vpslld	$23, %ymm10, %ymm10
+	vpsrld	$9, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm7
 	vpxor	%ymm7, %ymm9, %ymm7
 	vpaddd	%ymm7, %ymm5, %ymm5
 	vmovdqu	1440(%rbp), %ymm7
@@ -31987,21 +32178,21 @@ slh_dsa_sha2128s_keygen:
 	vpand	%ymm3, %ymm7, %ymm7
 	vpxor	%ymm7, %ymm10, %ymm7
 	vpaddd	%ymm7, %ymm1, %ymm1
-	vmovdqu	%ymm0, %ymm9
-	vmovdqu	%ymm9, %ymm10
+	vmovdqu	%ymm0, %ymm7
+	vmovdqu	%ymm7, %ymm10
 	vpslld	$26, %ymm10, %ymm10
-	vpsrld	$6, %ymm9, %ymm9
-	vpor	%ymm10, %ymm9, %ymm9
-	vmovdqu	%ymm0, %ymm10
-	vmovdqu	%ymm10, %ymm11
-	vpslld	$21, %ymm11, %ymm11
-	vpsrld	$11, %ymm10, %ymm10
-	vpor	%ymm11, %ymm10, %ymm10
-	vpxor	%ymm10, %ymm9, %ymm9
-	vmovdqu	%ymm10, %ymm11
-	vpslld	$18, %ymm11, %ymm11
-	vpsrld	$14, %ymm10, %ymm10
-	vpor	%ymm11, %ymm10, %ymm7
+	vpsrld	$6, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm9
+	vmovdqu	%ymm0, %ymm7
+	vmovdqu	%ymm7, %ymm10
+	vpslld	$21, %ymm10, %ymm10
+	vpsrld	$11, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm7
+	vpxor	%ymm7, %ymm9, %ymm9
+	vmovdqu	%ymm7, %ymm10
+	vpslld	$18, %ymm10, %ymm10
+	vpsrld	$14, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm7
 	vpxor	%ymm7, %ymm9, %ymm7
 	vpaddd	%ymm7, %ymm1, %ymm7
 	vpaddd	%ymm7, %ymm4, %ymm1
@@ -32014,21 +32205,21 @@ slh_dsa_sha2128s_keygen:
 	vpand	%ymm8, %ymm4, %ymm4
 	vpxor	%ymm4, %ymm10, %ymm4
 	vpaddd	%ymm4, %ymm7, %ymm4
-	vmovdqu	%ymm5, %ymm9
-	vmovdqu	%ymm9, %ymm10
+	vmovdqu	%ymm5, %ymm7
+	vmovdqu	%ymm7, %ymm10
 	vpslld	$30, %ymm10, %ymm10
-	vpsrld	$2, %ymm9, %ymm9
-	vpor	%ymm10, %ymm9, %ymm9
-	vmovdqu	%ymm5, %ymm10
-	vmovdqu	%ymm10, %ymm11
-	vpslld	$19, %ymm11, %ymm11
-	vpsrld	$13, %ymm10, %ymm10
-	vpor	%ymm11, %ymm10, %ymm10
-	vpxor	%ymm10, %ymm9, %ymm9
-	vmovdqu	%ymm10, %ymm11
-	vpslld	$23, %ymm11, %ymm11
-	vpsrld	$9, %ymm10, %ymm10
-	vpor	%ymm11, %ymm10, %ymm7
+	vpsrld	$2, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm9
+	vmovdqu	%ymm5, %ymm7
+	vmovdqu	%ymm7, %ymm10
+	vpslld	$19, %ymm10, %ymm10
+	vpsrld	$13, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm7
+	vpxor	%ymm7, %ymm9, %ymm9
+	vmovdqu	%ymm7, %ymm10
+	vpslld	$23, %ymm10, %ymm10
+	vpsrld	$9, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm7
 	vpxor	%ymm7, %ymm9, %ymm7
 	vpaddd	%ymm7, %ymm4, %ymm4
 	vmovdqu	1472(%rbp), %ymm7
@@ -32041,24 +32232,24 @@ slh_dsa_sha2128s_keygen:
 	vpxor	%ymm1, %ymm7, %ymm7
 	vpand	%ymm2, %ymm7, %ymm7
 	vpxor	%ymm7, %ymm10, %ymm7
-	vpaddd	%ymm7, %ymm3, %ymm7
-	vmovdqu	%ymm1, %ymm3
-	vmovdqu	%ymm3, %ymm10
+	vpaddd	%ymm7, %ymm3, %ymm3
+	vmovdqu	%ymm1, %ymm7
+	vmovdqu	%ymm7, %ymm10
 	vpslld	$26, %ymm10, %ymm10
-	vpsrld	$6, %ymm3, %ymm3
-	vpor	%ymm10, %ymm3, %ymm9
-	vmovdqu	%ymm1, %ymm3
-	vmovdqu	%ymm3, %ymm10
+	vpsrld	$6, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm9
+	vmovdqu	%ymm1, %ymm7
+	vmovdqu	%ymm7, %ymm10
 	vpslld	$21, %ymm10, %ymm10
-	vpsrld	$11, %ymm3, %ymm3
-	vpor	%ymm10, %ymm3, %ymm3
-	vpxor	%ymm3, %ymm9, %ymm9
-	vmovdqu	%ymm3, %ymm10
+	vpsrld	$11, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm7
+	vpxor	%ymm7, %ymm9, %ymm9
+	vmovdqu	%ymm7, %ymm10
 	vpslld	$18, %ymm10, %ymm10
-	vpsrld	$14, %ymm3, %ymm3
-	vpor	%ymm10, %ymm3, %ymm3
-	vpxor	%ymm3, %ymm9, %ymm3
-	vpaddd	%ymm3, %ymm7, %ymm7
+	vpsrld	$14, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm7
+	vpxor	%ymm7, %ymm9, %ymm7
+	vpaddd	%ymm7, %ymm3, %ymm7
 	vpaddd	%ymm7, %ymm8, %ymm3
 	vmovdqu	%ymm4, %ymm10
 	vpand	%ymm5, %ymm10, %ymm10
@@ -32096,24 +32287,24 @@ slh_dsa_sha2128s_keygen:
 	vpxor	%ymm3, %ymm7, %ymm7
 	vpand	%ymm0, %ymm7, %ymm7
 	vpxor	%ymm7, %ymm10, %ymm7
-	vpaddd	%ymm7, %ymm2, %ymm7
-	vmovdqu	%ymm3, %ymm2
-	vmovdqu	%ymm2, %ymm10
+	vpaddd	%ymm7, %ymm2, %ymm2
+	vmovdqu	%ymm3, %ymm7
+	vmovdqu	%ymm7, %ymm10
 	vpslld	$26, %ymm10, %ymm10
-	vpsrld	$6, %ymm2, %ymm2
-	vpor	%ymm10, %ymm2, %ymm9
-	vmovdqu	%ymm3, %ymm2
-	vmovdqu	%ymm2, %ymm10
+	vpsrld	$6, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm9
+	vmovdqu	%ymm3, %ymm7
+	vmovdqu	%ymm7, %ymm10
 	vpslld	$21, %ymm10, %ymm10
-	vpsrld	$11, %ymm2, %ymm2
-	vpor	%ymm10, %ymm2, %ymm2
-	vpxor	%ymm2, %ymm9, %ymm9
-	vmovdqu	%ymm2, %ymm10
+	vpsrld	$11, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm7
+	vpxor	%ymm7, %ymm9, %ymm9
+	vmovdqu	%ymm7, %ymm10
 	vpslld	$18, %ymm10, %ymm10
-	vpsrld	$14, %ymm2, %ymm2
-	vpor	%ymm10, %ymm2, %ymm2
-	vpxor	%ymm2, %ymm9, %ymm2
-	vpaddd	%ymm2, %ymm7, %ymm7
+	vpsrld	$14, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm7
+	vpxor	%ymm7, %ymm9, %ymm7
+	vpaddd	%ymm7, %ymm2, %ymm7
 	vpaddd	%ymm7, %ymm6, %ymm2
 	vmovdqu	%ymm8, %ymm10
 	vpand	%ymm4, %ymm10, %ymm10
@@ -32124,21 +32315,21 @@ slh_dsa_sha2128s_keygen:
 	vpand	%ymm5, %ymm6, %ymm6
 	vpxor	%ymm6, %ymm10, %ymm6
 	vpaddd	%ymm6, %ymm7, %ymm6
-	vmovdqu	%ymm8, %ymm9
-	vmovdqu	%ymm9, %ymm10
+	vmovdqu	%ymm8, %ymm7
+	vmovdqu	%ymm7, %ymm10
 	vpslld	$30, %ymm10, %ymm10
-	vpsrld	$2, %ymm9, %ymm9
-	vpor	%ymm10, %ymm9, %ymm9
-	vmovdqu	%ymm8, %ymm10
-	vmovdqu	%ymm10, %ymm11
-	vpslld	$19, %ymm11, %ymm11
-	vpsrld	$13, %ymm10, %ymm10
-	vpor	%ymm11, %ymm10, %ymm10
-	vpxor	%ymm10, %ymm9, %ymm9
-	vmovdqu	%ymm10, %ymm11
-	vpslld	$23, %ymm11, %ymm11
-	vpsrld	$9, %ymm10, %ymm10
-	vpor	%ymm11, %ymm10, %ymm7
+	vpsrld	$2, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm9
+	vmovdqu	%ymm8, %ymm7
+	vmovdqu	%ymm7, %ymm10
+	vpslld	$19, %ymm10, %ymm10
+	vpsrld	$13, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm7
+	vpxor	%ymm7, %ymm9, %ymm9
+	vmovdqu	%ymm7, %ymm10
+	vpslld	$23, %ymm10, %ymm10
+	vpsrld	$9, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm7
 	vpxor	%ymm7, %ymm9, %ymm7
 	vpaddd	%ymm7, %ymm6, %ymm6
 	vmovdqu	1536(%rbp), %ymm7
@@ -32152,21 +32343,21 @@ slh_dsa_sha2128s_keygen:
 	vpand	%ymm1, %ymm7, %ymm7
 	vpxor	%ymm7, %ymm10, %ymm7
 	vpaddd	%ymm7, %ymm0, %ymm0
-	vmovdqu	%ymm2, %ymm9
-	vmovdqu	%ymm9, %ymm10
+	vmovdqu	%ymm2, %ymm7
+	vmovdqu	%ymm7, %ymm10
 	vpslld	$26, %ymm10, %ymm10
-	vpsrld	$6, %ymm9, %ymm9
-	vpor	%ymm10, %ymm9, %ymm9
-	vmovdqu	%ymm2, %ymm10
-	vmovdqu	%ymm10, %ymm11
-	vpslld	$21, %ymm11, %ymm11
-	vpsrld	$11, %ymm10, %ymm10
-	vpor	%ymm11, %ymm10, %ymm10
-	vpxor	%ymm10, %ymm9, %ymm9
-	vmovdqu	%ymm10, %ymm11
-	vpslld	$18, %ymm11, %ymm11
-	vpsrld	$14, %ymm10, %ymm10
-	vpor	%ymm11, %ymm10, %ymm7
+	vpsrld	$6, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm9
+	vmovdqu	%ymm2, %ymm7
+	vmovdqu	%ymm7, %ymm10
+	vpslld	$21, %ymm10, %ymm10
+	vpsrld	$11, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm7
+	vpxor	%ymm7, %ymm9, %ymm9
+	vmovdqu	%ymm7, %ymm10
+	vpslld	$18, %ymm10, %ymm10
+	vpsrld	$14, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm7
 	vpxor	%ymm7, %ymm9, %ymm7
 	vpaddd	%ymm7, %ymm0, %ymm7
 	vpaddd	%ymm7, %ymm5, %ymm0
@@ -32179,21 +32370,21 @@ slh_dsa_sha2128s_keygen:
 	vpand	%ymm4, %ymm5, %ymm5
 	vpxor	%ymm5, %ymm10, %ymm5
 	vpaddd	%ymm5, %ymm7, %ymm5
-	vmovdqu	%ymm6, %ymm9
-	vmovdqu	%ymm9, %ymm10
+	vmovdqu	%ymm6, %ymm7
+	vmovdqu	%ymm7, %ymm10
 	vpslld	$30, %ymm10, %ymm10
-	vpsrld	$2, %ymm9, %ymm9
-	vpor	%ymm10, %ymm9, %ymm9
-	vmovdqu	%ymm6, %ymm10
-	vmovdqu	%ymm10, %ymm11
-	vpslld	$19, %ymm11, %ymm11
-	vpsrld	$13, %ymm10, %ymm10
-	vpor	%ymm11, %ymm10, %ymm10
-	vpxor	%ymm10, %ymm9, %ymm9
-	vmovdqu	%ymm10, %ymm11
-	vpslld	$23, %ymm11, %ymm11
-	vpsrld	$9, %ymm10, %ymm10
-	vpor	%ymm11, %ymm10, %ymm7
+	vpsrld	$2, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm9
+	vmovdqu	%ymm6, %ymm7
+	vmovdqu	%ymm7, %ymm10
+	vpslld	$19, %ymm10, %ymm10
+	vpsrld	$13, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm7
+	vpxor	%ymm7, %ymm9, %ymm9
+	vmovdqu	%ymm7, %ymm10
+	vpslld	$23, %ymm10, %ymm10
+	vpsrld	$9, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm7
 	vpxor	%ymm7, %ymm9, %ymm7
 	vpaddd	%ymm7, %ymm5, %ymm5
 	vmovdqu	1568(%rbp), %ymm7
@@ -32207,21 +32398,21 @@ slh_dsa_sha2128s_keygen:
 	vpand	%ymm3, %ymm7, %ymm7
 	vpxor	%ymm7, %ymm10, %ymm7
 	vpaddd	%ymm7, %ymm1, %ymm1
-	vmovdqu	%ymm0, %ymm9
-	vmovdqu	%ymm9, %ymm10
+	vmovdqu	%ymm0, %ymm7
+	vmovdqu	%ymm7, %ymm10
 	vpslld	$26, %ymm10, %ymm10
-	vpsrld	$6, %ymm9, %ymm9
-	vpor	%ymm10, %ymm9, %ymm9
-	vmovdqu	%ymm0, %ymm10
-	vmovdqu	%ymm10, %ymm11
-	vpslld	$21, %ymm11, %ymm11
-	vpsrld	$11, %ymm10, %ymm10
-	vpor	%ymm11, %ymm10, %ymm10
-	vpxor	%ymm10, %ymm9, %ymm9
-	vmovdqu	%ymm10, %ymm11
-	vpslld	$18, %ymm11, %ymm11
-	vpsrld	$14, %ymm10, %ymm10
-	vpor	%ymm11, %ymm10, %ymm7
+	vpsrld	$6, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm9
+	vmovdqu	%ymm0, %ymm7
+	vmovdqu	%ymm7, %ymm10
+	vpslld	$21, %ymm10, %ymm10
+	vpsrld	$11, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm7
+	vpxor	%ymm7, %ymm9, %ymm9
+	vmovdqu	%ymm7, %ymm10
+	vpslld	$18, %ymm10, %ymm10
+	vpsrld	$14, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm7
 	vpxor	%ymm7, %ymm9, %ymm7
 	vpaddd	%ymm7, %ymm1, %ymm7
 	vpaddd	%ymm7, %ymm4, %ymm1
@@ -32234,21 +32425,21 @@ slh_dsa_sha2128s_keygen:
 	vpand	%ymm8, %ymm4, %ymm4
 	vpxor	%ymm4, %ymm10, %ymm4
 	vpaddd	%ymm4, %ymm7, %ymm4
-	vmovdqu	%ymm5, %ymm9
-	vmovdqu	%ymm9, %ymm10
+	vmovdqu	%ymm5, %ymm7
+	vmovdqu	%ymm7, %ymm10
 	vpslld	$30, %ymm10, %ymm10
-	vpsrld	$2, %ymm9, %ymm9
-	vpor	%ymm10, %ymm9, %ymm9
-	vmovdqu	%ymm5, %ymm10
-	vmovdqu	%ymm10, %ymm11
-	vpslld	$19, %ymm11, %ymm11
-	vpsrld	$13, %ymm10, %ymm10
-	vpor	%ymm11, %ymm10, %ymm10
-	vpxor	%ymm10, %ymm9, %ymm9
-	vmovdqu	%ymm10, %ymm11
-	vpslld	$23, %ymm11, %ymm11
-	vpsrld	$9, %ymm10, %ymm10
-	vpor	%ymm11, %ymm10, %ymm7
+	vpsrld	$2, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm9
+	vmovdqu	%ymm5, %ymm7
+	vmovdqu	%ymm7, %ymm10
+	vpslld	$19, %ymm10, %ymm10
+	vpsrld	$13, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm7
+	vpxor	%ymm7, %ymm9, %ymm9
+	vmovdqu	%ymm7, %ymm10
+	vpslld	$23, %ymm10, %ymm10
+	vpsrld	$9, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm7
 	vpxor	%ymm7, %ymm9, %ymm7
 	vpaddd	%ymm7, %ymm4, %ymm4
 	vmovdqu	1600(%rbp), %ymm7
@@ -32261,24 +32452,24 @@ slh_dsa_sha2128s_keygen:
 	vpxor	%ymm1, %ymm7, %ymm7
 	vpand	%ymm2, %ymm7, %ymm7
 	vpxor	%ymm7, %ymm10, %ymm7
-	vpaddd	%ymm7, %ymm3, %ymm7
-	vmovdqu	%ymm1, %ymm3
-	vmovdqu	%ymm3, %ymm10
+	vpaddd	%ymm7, %ymm3, %ymm3
+	vmovdqu	%ymm1, %ymm7
+	vmovdqu	%ymm7, %ymm10
 	vpslld	$26, %ymm10, %ymm10
-	vpsrld	$6, %ymm3, %ymm3
-	vpor	%ymm10, %ymm3, %ymm9
-	vmovdqu	%ymm1, %ymm3
-	vmovdqu	%ymm3, %ymm10
+	vpsrld	$6, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm9
+	vmovdqu	%ymm1, %ymm7
+	vmovdqu	%ymm7, %ymm10
 	vpslld	$21, %ymm10, %ymm10
-	vpsrld	$11, %ymm3, %ymm3
-	vpor	%ymm10, %ymm3, %ymm3
-	vpxor	%ymm3, %ymm9, %ymm9
-	vmovdqu	%ymm3, %ymm10
+	vpsrld	$11, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm7
+	vpxor	%ymm7, %ymm9, %ymm9
+	vmovdqu	%ymm7, %ymm10
 	vpslld	$18, %ymm10, %ymm10
-	vpsrld	$14, %ymm3, %ymm3
-	vpor	%ymm10, %ymm3, %ymm3
-	vpxor	%ymm3, %ymm9, %ymm3
-	vpaddd	%ymm3, %ymm7, %ymm7
+	vpsrld	$14, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm7
+	vpxor	%ymm7, %ymm9, %ymm7
+	vpaddd	%ymm7, %ymm3, %ymm7
 	vpaddd	%ymm7, %ymm8, %ymm3
 	vmovdqu	%ymm4, %ymm10
 	vpand	%ymm5, %ymm10, %ymm10
@@ -32316,24 +32507,24 @@ slh_dsa_sha2128s_keygen:
 	vpxor	%ymm3, %ymm7, %ymm7
 	vpand	%ymm0, %ymm7, %ymm7
 	vpxor	%ymm7, %ymm10, %ymm7
-	vpaddd	%ymm7, %ymm2, %ymm7
-	vmovdqu	%ymm3, %ymm2
-	vmovdqu	%ymm2, %ymm10
+	vpaddd	%ymm7, %ymm2, %ymm2
+	vmovdqu	%ymm3, %ymm7
+	vmovdqu	%ymm7, %ymm10
 	vpslld	$26, %ymm10, %ymm10
-	vpsrld	$6, %ymm2, %ymm2
-	vpor	%ymm10, %ymm2, %ymm9
-	vmovdqu	%ymm3, %ymm2
-	vmovdqu	%ymm2, %ymm10
+	vpsrld	$6, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm9
+	vmovdqu	%ymm3, %ymm7
+	vmovdqu	%ymm7, %ymm10
 	vpslld	$21, %ymm10, %ymm10
-	vpsrld	$11, %ymm2, %ymm2
-	vpor	%ymm10, %ymm2, %ymm2
-	vpxor	%ymm2, %ymm9, %ymm9
-	vmovdqu	%ymm2, %ymm10
+	vpsrld	$11, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm7
+	vpxor	%ymm7, %ymm9, %ymm9
+	vmovdqu	%ymm7, %ymm10
 	vpslld	$18, %ymm10, %ymm10
-	vpsrld	$14, %ymm2, %ymm2
-	vpor	%ymm10, %ymm2, %ymm2
-	vpxor	%ymm2, %ymm9, %ymm2
-	vpaddd	%ymm2, %ymm7, %ymm7
+	vpsrld	$14, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm7
+	vpxor	%ymm7, %ymm9, %ymm7
+	vpaddd	%ymm7, %ymm2, %ymm7
 	vpaddd	%ymm7, %ymm6, %ymm2
 	vmovdqu	%ymm8, %ymm10
 	vpand	%ymm4, %ymm10, %ymm10
@@ -32344,21 +32535,21 @@ slh_dsa_sha2128s_keygen:
 	vpand	%ymm5, %ymm6, %ymm6
 	vpxor	%ymm6, %ymm10, %ymm6
 	vpaddd	%ymm6, %ymm7, %ymm6
-	vmovdqu	%ymm8, %ymm9
-	vmovdqu	%ymm9, %ymm10
+	vmovdqu	%ymm8, %ymm7
+	vmovdqu	%ymm7, %ymm10
 	vpslld	$30, %ymm10, %ymm10
-	vpsrld	$2, %ymm9, %ymm9
-	vpor	%ymm10, %ymm9, %ymm9
-	vmovdqu	%ymm8, %ymm10
-	vmovdqu	%ymm10, %ymm11
-	vpslld	$19, %ymm11, %ymm11
-	vpsrld	$13, %ymm10, %ymm10
-	vpor	%ymm11, %ymm10, %ymm10
-	vpxor	%ymm10, %ymm9, %ymm9
-	vmovdqu	%ymm10, %ymm11
-	vpslld	$23, %ymm11, %ymm11
-	vpsrld	$9, %ymm10, %ymm10
-	vpor	%ymm11, %ymm10, %ymm7
+	vpsrld	$2, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm9
+	vmovdqu	%ymm8, %ymm7
+	vmovdqu	%ymm7, %ymm10
+	vpslld	$19, %ymm10, %ymm10
+	vpsrld	$13, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm7
+	vpxor	%ymm7, %ymm9, %ymm9
+	vmovdqu	%ymm7, %ymm10
+	vpslld	$23, %ymm10, %ymm10
+	vpsrld	$9, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm7
 	vpxor	%ymm7, %ymm9, %ymm7
 	vpaddd	%ymm7, %ymm6, %ymm6
 	vmovdqu	1664(%rbp), %ymm7
@@ -32372,21 +32563,21 @@ slh_dsa_sha2128s_keygen:
 	vpand	%ymm1, %ymm7, %ymm7
 	vpxor	%ymm7, %ymm10, %ymm7
 	vpaddd	%ymm7, %ymm0, %ymm0
-	vmovdqu	%ymm2, %ymm9
-	vmovdqu	%ymm9, %ymm10
+	vmovdqu	%ymm2, %ymm7
+	vmovdqu	%ymm7, %ymm10
 	vpslld	$26, %ymm10, %ymm10
-	vpsrld	$6, %ymm9, %ymm9
-	vpor	%ymm10, %ymm9, %ymm9
-	vmovdqu	%ymm2, %ymm10
-	vmovdqu	%ymm10, %ymm11
-	vpslld	$21, %ymm11, %ymm11
-	vpsrld	$11, %ymm10, %ymm10
-	vpor	%ymm11, %ymm10, %ymm10
-	vpxor	%ymm10, %ymm9, %ymm9
-	vmovdqu	%ymm10, %ymm11
-	vpslld	$18, %ymm11, %ymm11
-	vpsrld	$14, %ymm10, %ymm10
-	vpor	%ymm11, %ymm10, %ymm7
+	vpsrld	$6, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm9
+	vmovdqu	%ymm2, %ymm7
+	vmovdqu	%ymm7, %ymm10
+	vpslld	$21, %ymm10, %ymm10
+	vpsrld	$11, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm7
+	vpxor	%ymm7, %ymm9, %ymm9
+	vmovdqu	%ymm7, %ymm10
+	vpslld	$18, %ymm10, %ymm10
+	vpsrld	$14, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm7
 	vpxor	%ymm7, %ymm9, %ymm7
 	vpaddd	%ymm7, %ymm0, %ymm7
 	vpaddd	%ymm7, %ymm5, %ymm0
@@ -32399,21 +32590,21 @@ slh_dsa_sha2128s_keygen:
 	vpand	%ymm4, %ymm5, %ymm5
 	vpxor	%ymm5, %ymm10, %ymm5
 	vpaddd	%ymm5, %ymm7, %ymm5
-	vmovdqu	%ymm6, %ymm9
-	vmovdqu	%ymm9, %ymm10
+	vmovdqu	%ymm6, %ymm7
+	vmovdqu	%ymm7, %ymm10
 	vpslld	$30, %ymm10, %ymm10
-	vpsrld	$2, %ymm9, %ymm9
-	vpor	%ymm10, %ymm9, %ymm9
-	vmovdqu	%ymm6, %ymm10
-	vmovdqu	%ymm10, %ymm11
-	vpslld	$19, %ymm11, %ymm11
-	vpsrld	$13, %ymm10, %ymm10
-	vpor	%ymm11, %ymm10, %ymm10
-	vpxor	%ymm10, %ymm9, %ymm9
-	vmovdqu	%ymm10, %ymm11
-	vpslld	$23, %ymm11, %ymm11
-	vpsrld	$9, %ymm10, %ymm10
-	vpor	%ymm11, %ymm10, %ymm7
+	vpsrld	$2, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm9
+	vmovdqu	%ymm6, %ymm7
+	vmovdqu	%ymm7, %ymm10
+	vpslld	$19, %ymm10, %ymm10
+	vpsrld	$13, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm7
+	vpxor	%ymm7, %ymm9, %ymm9
+	vmovdqu	%ymm7, %ymm10
+	vpslld	$23, %ymm10, %ymm10
+	vpsrld	$9, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm7
 	vpxor	%ymm7, %ymm9, %ymm7
 	vpaddd	%ymm7, %ymm5, %ymm5
 	vmovdqu	1696(%rbp), %ymm7
@@ -32427,21 +32618,21 @@ slh_dsa_sha2128s_keygen:
 	vpand	%ymm3, %ymm7, %ymm7
 	vpxor	%ymm7, %ymm10, %ymm7
 	vpaddd	%ymm7, %ymm1, %ymm1
-	vmovdqu	%ymm0, %ymm9
-	vmovdqu	%ymm9, %ymm10
+	vmovdqu	%ymm0, %ymm7
+	vmovdqu	%ymm7, %ymm10
 	vpslld	$26, %ymm10, %ymm10
-	vpsrld	$6, %ymm9, %ymm9
-	vpor	%ymm10, %ymm9, %ymm9
-	vmovdqu	%ymm0, %ymm10
-	vmovdqu	%ymm10, %ymm11
-	vpslld	$21, %ymm11, %ymm11
-	vpsrld	$11, %ymm10, %ymm10
-	vpor	%ymm11, %ymm10, %ymm10
-	vpxor	%ymm10, %ymm9, %ymm9
-	vmovdqu	%ymm10, %ymm11
-	vpslld	$18, %ymm11, %ymm11
-	vpsrld	$14, %ymm10, %ymm10
-	vpor	%ymm11, %ymm10, %ymm7
+	vpsrld	$6, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm9
+	vmovdqu	%ymm0, %ymm7
+	vmovdqu	%ymm7, %ymm10
+	vpslld	$21, %ymm10, %ymm10
+	vpsrld	$11, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm7
+	vpxor	%ymm7, %ymm9, %ymm9
+	vmovdqu	%ymm7, %ymm10
+	vpslld	$18, %ymm10, %ymm10
+	vpsrld	$14, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm7
 	vpxor	%ymm7, %ymm9, %ymm7
 	vpaddd	%ymm7, %ymm1, %ymm7
 	vpaddd	%ymm7, %ymm4, %ymm1
@@ -32454,21 +32645,21 @@ slh_dsa_sha2128s_keygen:
 	vpand	%ymm8, %ymm4, %ymm4
 	vpxor	%ymm4, %ymm10, %ymm4
 	vpaddd	%ymm4, %ymm7, %ymm4
-	vmovdqu	%ymm5, %ymm9
-	vmovdqu	%ymm9, %ymm10
+	vmovdqu	%ymm5, %ymm7
+	vmovdqu	%ymm7, %ymm10
 	vpslld	$30, %ymm10, %ymm10
-	vpsrld	$2, %ymm9, %ymm9
-	vpor	%ymm10, %ymm9, %ymm9
-	vmovdqu	%ymm5, %ymm10
-	vmovdqu	%ymm10, %ymm11
-	vpslld	$19, %ymm11, %ymm11
-	vpsrld	$13, %ymm10, %ymm10
-	vpor	%ymm11, %ymm10, %ymm10
-	vpxor	%ymm10, %ymm9, %ymm9
-	vmovdqu	%ymm10, %ymm11
-	vpslld	$23, %ymm11, %ymm11
-	vpsrld	$9, %ymm10, %ymm10
-	vpor	%ymm11, %ymm10, %ymm7
+	vpsrld	$2, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm9
+	vmovdqu	%ymm5, %ymm7
+	vmovdqu	%ymm7, %ymm10
+	vpslld	$19, %ymm10, %ymm10
+	vpsrld	$13, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm7
+	vpxor	%ymm7, %ymm9, %ymm9
+	vmovdqu	%ymm7, %ymm10
+	vpslld	$23, %ymm10, %ymm10
+	vpsrld	$9, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm7
 	vpxor	%ymm7, %ymm9, %ymm7
 	vpaddd	%ymm7, %ymm4, %ymm4
 	vmovdqu	1728(%rbp), %ymm7
@@ -32481,24 +32672,24 @@ slh_dsa_sha2128s_keygen:
 	vpxor	%ymm1, %ymm7, %ymm7
 	vpand	%ymm2, %ymm7, %ymm7
 	vpxor	%ymm7, %ymm10, %ymm7
-	vpaddd	%ymm7, %ymm3, %ymm7
-	vmovdqu	%ymm1, %ymm3
-	vmovdqu	%ymm3, %ymm10
+	vpaddd	%ymm7, %ymm3, %ymm3
+	vmovdqu	%ymm1, %ymm7
+	vmovdqu	%ymm7, %ymm10
 	vpslld	$26, %ymm10, %ymm10
-	vpsrld	$6, %ymm3, %ymm3
-	vpor	%ymm10, %ymm3, %ymm9
-	vmovdqu	%ymm1, %ymm3
-	vmovdqu	%ymm3, %ymm10
+	vpsrld	$6, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm9
+	vmovdqu	%ymm1, %ymm7
+	vmovdqu	%ymm7, %ymm10
 	vpslld	$21, %ymm10, %ymm10
-	vpsrld	$11, %ymm3, %ymm3
-	vpor	%ymm10, %ymm3, %ymm3
-	vpxor	%ymm3, %ymm9, %ymm9
-	vmovdqu	%ymm3, %ymm10
+	vpsrld	$11, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm7
+	vpxor	%ymm7, %ymm9, %ymm9
+	vmovdqu	%ymm7, %ymm10
 	vpslld	$18, %ymm10, %ymm10
-	vpsrld	$14, %ymm3, %ymm3
-	vpor	%ymm10, %ymm3, %ymm3
-	vpxor	%ymm3, %ymm9, %ymm3
-	vpaddd	%ymm3, %ymm7, %ymm7
+	vpsrld	$14, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm7
+	vpxor	%ymm7, %ymm9, %ymm7
+	vpaddd	%ymm7, %ymm3, %ymm7
 	vpaddd	%ymm7, %ymm8, %ymm3
 	vmovdqu	%ymm4, %ymm10
 	vpand	%ymm5, %ymm10, %ymm10
@@ -32536,24 +32727,24 @@ slh_dsa_sha2128s_keygen:
 	vpxor	%ymm3, %ymm7, %ymm7
 	vpand	%ymm0, %ymm7, %ymm7
 	vpxor	%ymm7, %ymm10, %ymm7
-	vpaddd	%ymm7, %ymm2, %ymm7
-	vmovdqu	%ymm3, %ymm2
-	vmovdqu	%ymm2, %ymm10
+	vpaddd	%ymm7, %ymm2, %ymm2
+	vmovdqu	%ymm3, %ymm7
+	vmovdqu	%ymm7, %ymm10
 	vpslld	$26, %ymm10, %ymm10
-	vpsrld	$6, %ymm2, %ymm2
-	vpor	%ymm10, %ymm2, %ymm9
-	vmovdqu	%ymm3, %ymm2
-	vmovdqu	%ymm2, %ymm10
+	vpsrld	$6, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm9
+	vmovdqu	%ymm3, %ymm7
+	vmovdqu	%ymm7, %ymm10
 	vpslld	$21, %ymm10, %ymm10
-	vpsrld	$11, %ymm2, %ymm2
-	vpor	%ymm10, %ymm2, %ymm2
-	vpxor	%ymm2, %ymm9, %ymm9
-	vmovdqu	%ymm2, %ymm10
+	vpsrld	$11, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm7
+	vpxor	%ymm7, %ymm9, %ymm9
+	vmovdqu	%ymm7, %ymm10
 	vpslld	$18, %ymm10, %ymm10
-	vpsrld	$14, %ymm2, %ymm2
-	vpor	%ymm10, %ymm2, %ymm2
-	vpxor	%ymm2, %ymm9, %ymm2
-	vpaddd	%ymm2, %ymm7, %ymm7
+	vpsrld	$14, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm7
+	vpxor	%ymm7, %ymm9, %ymm7
+	vpaddd	%ymm7, %ymm2, %ymm7
 	vpaddd	%ymm7, %ymm6, %ymm2
 	vmovdqu	%ymm8, %ymm10
 	vpand	%ymm4, %ymm10, %ymm10
@@ -32564,21 +32755,21 @@ slh_dsa_sha2128s_keygen:
 	vpand	%ymm5, %ymm6, %ymm6
 	vpxor	%ymm6, %ymm10, %ymm6
 	vpaddd	%ymm6, %ymm7, %ymm6
-	vmovdqu	%ymm8, %ymm9
-	vmovdqu	%ymm9, %ymm10
+	vmovdqu	%ymm8, %ymm7
+	vmovdqu	%ymm7, %ymm10
 	vpslld	$30, %ymm10, %ymm10
-	vpsrld	$2, %ymm9, %ymm9
-	vpor	%ymm10, %ymm9, %ymm9
-	vmovdqu	%ymm8, %ymm10
-	vmovdqu	%ymm10, %ymm11
-	vpslld	$19, %ymm11, %ymm11
-	vpsrld	$13, %ymm10, %ymm10
-	vpor	%ymm11, %ymm10, %ymm10
-	vpxor	%ymm10, %ymm9, %ymm9
-	vmovdqu	%ymm10, %ymm11
-	vpslld	$23, %ymm11, %ymm11
-	vpsrld	$9, %ymm10, %ymm10
-	vpor	%ymm11, %ymm10, %ymm7
+	vpsrld	$2, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm9
+	vmovdqu	%ymm8, %ymm7
+	vmovdqu	%ymm7, %ymm10
+	vpslld	$19, %ymm10, %ymm10
+	vpsrld	$13, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm7
+	vpxor	%ymm7, %ymm9, %ymm9
+	vmovdqu	%ymm7, %ymm10
+	vpslld	$23, %ymm10, %ymm10
+	vpsrld	$9, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm7
 	vpxor	%ymm7, %ymm9, %ymm7
 	vpaddd	%ymm7, %ymm6, %ymm6
 	vmovdqu	1792(%rbp), %ymm7
@@ -32592,21 +32783,21 @@ slh_dsa_sha2128s_keygen:
 	vpand	%ymm1, %ymm7, %ymm7
 	vpxor	%ymm7, %ymm10, %ymm7
 	vpaddd	%ymm7, %ymm0, %ymm0
-	vmovdqu	%ymm2, %ymm9
-	vmovdqu	%ymm9, %ymm10
+	vmovdqu	%ymm2, %ymm7
+	vmovdqu	%ymm7, %ymm10
 	vpslld	$26, %ymm10, %ymm10
-	vpsrld	$6, %ymm9, %ymm9
-	vpor	%ymm10, %ymm9, %ymm9
-	vmovdqu	%ymm2, %ymm10
-	vmovdqu	%ymm10, %ymm11
-	vpslld	$21, %ymm11, %ymm11
-	vpsrld	$11, %ymm10, %ymm10
-	vpor	%ymm11, %ymm10, %ymm10
-	vpxor	%ymm10, %ymm9, %ymm9
-	vmovdqu	%ymm10, %ymm11
-	vpslld	$18, %ymm11, %ymm11
-	vpsrld	$14, %ymm10, %ymm10
-	vpor	%ymm11, %ymm10, %ymm7
+	vpsrld	$6, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm9
+	vmovdqu	%ymm2, %ymm7
+	vmovdqu	%ymm7, %ymm10
+	vpslld	$21, %ymm10, %ymm10
+	vpsrld	$11, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm7
+	vpxor	%ymm7, %ymm9, %ymm9
+	vmovdqu	%ymm7, %ymm10
+	vpslld	$18, %ymm10, %ymm10
+	vpsrld	$14, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm7
 	vpxor	%ymm7, %ymm9, %ymm7
 	vpaddd	%ymm7, %ymm0, %ymm7
 	vpaddd	%ymm7, %ymm5, %ymm0
@@ -32619,21 +32810,21 @@ slh_dsa_sha2128s_keygen:
 	vpand	%ymm4, %ymm5, %ymm5
 	vpxor	%ymm5, %ymm10, %ymm5
 	vpaddd	%ymm5, %ymm7, %ymm5
-	vmovdqu	%ymm6, %ymm9
-	vmovdqu	%ymm9, %ymm10
+	vmovdqu	%ymm6, %ymm7
+	vmovdqu	%ymm7, %ymm10
 	vpslld	$30, %ymm10, %ymm10
-	vpsrld	$2, %ymm9, %ymm9
-	vpor	%ymm10, %ymm9, %ymm9
-	vmovdqu	%ymm6, %ymm10
-	vmovdqu	%ymm10, %ymm11
-	vpslld	$19, %ymm11, %ymm11
-	vpsrld	$13, %ymm10, %ymm10
-	vpor	%ymm11, %ymm10, %ymm10
-	vpxor	%ymm10, %ymm9, %ymm9
-	vmovdqu	%ymm10, %ymm11
-	vpslld	$23, %ymm11, %ymm11
-	vpsrld	$9, %ymm10, %ymm10
-	vpor	%ymm11, %ymm10, %ymm7
+	vpsrld	$2, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm9
+	vmovdqu	%ymm6, %ymm7
+	vmovdqu	%ymm7, %ymm10
+	vpslld	$19, %ymm10, %ymm10
+	vpsrld	$13, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm7
+	vpxor	%ymm7, %ymm9, %ymm9
+	vmovdqu	%ymm7, %ymm10
+	vpslld	$23, %ymm10, %ymm10
+	vpsrld	$9, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm7
 	vpxor	%ymm7, %ymm9, %ymm7
 	vpaddd	%ymm7, %ymm5, %ymm5
 	vmovdqu	1824(%rbp), %ymm7
@@ -32647,21 +32838,21 @@ slh_dsa_sha2128s_keygen:
 	vpand	%ymm3, %ymm7, %ymm7
 	vpxor	%ymm7, %ymm10, %ymm7
 	vpaddd	%ymm7, %ymm1, %ymm1
-	vmovdqu	%ymm0, %ymm9
-	vmovdqu	%ymm9, %ymm10
+	vmovdqu	%ymm0, %ymm7
+	vmovdqu	%ymm7, %ymm10
 	vpslld	$26, %ymm10, %ymm10
-	vpsrld	$6, %ymm9, %ymm9
-	vpor	%ymm10, %ymm9, %ymm9
-	vmovdqu	%ymm0, %ymm10
-	vmovdqu	%ymm10, %ymm11
-	vpslld	$21, %ymm11, %ymm11
-	vpsrld	$11, %ymm10, %ymm10
-	vpor	%ymm11, %ymm10, %ymm10
-	vpxor	%ymm10, %ymm9, %ymm9
-	vmovdqu	%ymm10, %ymm11
-	vpslld	$18, %ymm11, %ymm11
-	vpsrld	$14, %ymm10, %ymm10
-	vpor	%ymm11, %ymm10, %ymm7
+	vpsrld	$6, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm9
+	vmovdqu	%ymm0, %ymm7
+	vmovdqu	%ymm7, %ymm10
+	vpslld	$21, %ymm10, %ymm10
+	vpsrld	$11, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm7
+	vpxor	%ymm7, %ymm9, %ymm9
+	vmovdqu	%ymm7, %ymm10
+	vpslld	$18, %ymm10, %ymm10
+	vpsrld	$14, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm7
 	vpxor	%ymm7, %ymm9, %ymm7
 	vpaddd	%ymm7, %ymm1, %ymm7
 	vpaddd	%ymm7, %ymm4, %ymm1
@@ -32674,21 +32865,21 @@ slh_dsa_sha2128s_keygen:
 	vpand	%ymm8, %ymm4, %ymm4
 	vpxor	%ymm4, %ymm10, %ymm4
 	vpaddd	%ymm4, %ymm7, %ymm4
-	vmovdqu	%ymm5, %ymm9
-	vmovdqu	%ymm9, %ymm10
+	vmovdqu	%ymm5, %ymm7
+	vmovdqu	%ymm7, %ymm10
 	vpslld	$30, %ymm10, %ymm10
-	vpsrld	$2, %ymm9, %ymm9
-	vpor	%ymm10, %ymm9, %ymm9
-	vmovdqu	%ymm5, %ymm10
-	vmovdqu	%ymm10, %ymm11
-	vpslld	$19, %ymm11, %ymm11
-	vpsrld	$13, %ymm10, %ymm10
-	vpor	%ymm11, %ymm10, %ymm10
-	vpxor	%ymm10, %ymm9, %ymm9
-	vmovdqu	%ymm10, %ymm11
-	vpslld	$23, %ymm11, %ymm11
-	vpsrld	$9, %ymm10, %ymm10
-	vpor	%ymm11, %ymm10, %ymm7
+	vpsrld	$2, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm9
+	vmovdqu	%ymm5, %ymm7
+	vmovdqu	%ymm7, %ymm10
+	vpslld	$19, %ymm10, %ymm10
+	vpsrld	$13, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm7
+	vpxor	%ymm7, %ymm9, %ymm9
+	vmovdqu	%ymm7, %ymm10
+	vpslld	$23, %ymm10, %ymm10
+	vpsrld	$9, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm7
 	vpxor	%ymm7, %ymm9, %ymm7
 	vpaddd	%ymm7, %ymm4, %ymm4
 	vmovdqu	1856(%rbp), %ymm7
@@ -32701,24 +32892,24 @@ slh_dsa_sha2128s_keygen:
 	vpxor	%ymm1, %ymm7, %ymm7
 	vpand	%ymm2, %ymm7, %ymm7
 	vpxor	%ymm7, %ymm10, %ymm7
-	vpaddd	%ymm7, %ymm3, %ymm7
-	vmovdqu	%ymm1, %ymm3
-	vmovdqu	%ymm3, %ymm10
+	vpaddd	%ymm7, %ymm3, %ymm3
+	vmovdqu	%ymm1, %ymm7
+	vmovdqu	%ymm7, %ymm10
 	vpslld	$26, %ymm10, %ymm10
-	vpsrld	$6, %ymm3, %ymm3
-	vpor	%ymm10, %ymm3, %ymm9
-	vmovdqu	%ymm1, %ymm3
-	vmovdqu	%ymm3, %ymm10
+	vpsrld	$6, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm9
+	vmovdqu	%ymm1, %ymm7
+	vmovdqu	%ymm7, %ymm10
 	vpslld	$21, %ymm10, %ymm10
-	vpsrld	$11, %ymm3, %ymm3
-	vpor	%ymm10, %ymm3, %ymm3
-	vpxor	%ymm3, %ymm9, %ymm9
-	vmovdqu	%ymm3, %ymm10
+	vpsrld	$11, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm7
+	vpxor	%ymm7, %ymm9, %ymm9
+	vmovdqu	%ymm7, %ymm10
 	vpslld	$18, %ymm10, %ymm10
-	vpsrld	$14, %ymm3, %ymm3
-	vpor	%ymm10, %ymm3, %ymm3
-	vpxor	%ymm3, %ymm9, %ymm3
-	vpaddd	%ymm3, %ymm7, %ymm7
+	vpsrld	$14, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm7
+	vpxor	%ymm7, %ymm9, %ymm7
+	vpaddd	%ymm7, %ymm3, %ymm7
 	vpaddd	%ymm7, %ymm8, %ymm3
 	vmovdqu	%ymm4, %ymm10
 	vpand	%ymm5, %ymm10, %ymm10
@@ -32756,24 +32947,24 @@ slh_dsa_sha2128s_keygen:
 	vpxor	%ymm3, %ymm7, %ymm7
 	vpand	%ymm0, %ymm7, %ymm7
 	vpxor	%ymm7, %ymm10, %ymm7
-	vpaddd	%ymm7, %ymm2, %ymm7
-	vmovdqu	%ymm3, %ymm2
-	vmovdqu	%ymm2, %ymm10
+	vpaddd	%ymm7, %ymm2, %ymm2
+	vmovdqu	%ymm3, %ymm7
+	vmovdqu	%ymm7, %ymm10
 	vpslld	$26, %ymm10, %ymm10
-	vpsrld	$6, %ymm2, %ymm2
-	vpor	%ymm10, %ymm2, %ymm9
-	vmovdqu	%ymm3, %ymm2
-	vmovdqu	%ymm2, %ymm10
+	vpsrld	$6, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm9
+	vmovdqu	%ymm3, %ymm7
+	vmovdqu	%ymm7, %ymm10
 	vpslld	$21, %ymm10, %ymm10
-	vpsrld	$11, %ymm2, %ymm2
-	vpor	%ymm10, %ymm2, %ymm2
-	vpxor	%ymm2, %ymm9, %ymm9
-	vmovdqu	%ymm2, %ymm10
+	vpsrld	$11, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm7
+	vpxor	%ymm7, %ymm9, %ymm9
+	vmovdqu	%ymm7, %ymm10
 	vpslld	$18, %ymm10, %ymm10
-	vpsrld	$14, %ymm2, %ymm2
-	vpor	%ymm10, %ymm2, %ymm2
-	vpxor	%ymm2, %ymm9, %ymm2
-	vpaddd	%ymm2, %ymm7, %ymm7
+	vpsrld	$14, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm7
+	vpxor	%ymm7, %ymm9, %ymm7
+	vpaddd	%ymm7, %ymm2, %ymm7
 	vpaddd	%ymm7, %ymm6, %ymm2
 	vmovdqu	%ymm8, %ymm10
 	vpand	%ymm4, %ymm10, %ymm10
@@ -32784,21 +32975,21 @@ slh_dsa_sha2128s_keygen:
 	vpand	%ymm5, %ymm6, %ymm6
 	vpxor	%ymm6, %ymm10, %ymm6
 	vpaddd	%ymm6, %ymm7, %ymm6
-	vmovdqu	%ymm8, %ymm9
-	vmovdqu	%ymm9, %ymm10
+	vmovdqu	%ymm8, %ymm7
+	vmovdqu	%ymm7, %ymm10
 	vpslld	$30, %ymm10, %ymm10
-	vpsrld	$2, %ymm9, %ymm9
-	vpor	%ymm10, %ymm9, %ymm9
-	vmovdqu	%ymm8, %ymm10
-	vmovdqu	%ymm10, %ymm11
-	vpslld	$19, %ymm11, %ymm11
-	vpsrld	$13, %ymm10, %ymm10
-	vpor	%ymm11, %ymm10, %ymm10
-	vpxor	%ymm10, %ymm9, %ymm9
-	vmovdqu	%ymm10, %ymm11
-	vpslld	$23, %ymm11, %ymm11
-	vpsrld	$9, %ymm10, %ymm10
-	vpor	%ymm11, %ymm10, %ymm7
+	vpsrld	$2, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm9
+	vmovdqu	%ymm8, %ymm7
+	vmovdqu	%ymm7, %ymm10
+	vpslld	$19, %ymm10, %ymm10
+	vpsrld	$13, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm7
+	vpxor	%ymm7, %ymm9, %ymm9
+	vmovdqu	%ymm7, %ymm10
+	vpslld	$23, %ymm10, %ymm10
+	vpsrld	$9, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm7
 	vpxor	%ymm7, %ymm9, %ymm7
 	vpaddd	%ymm7, %ymm6, %ymm6
 	vmovdqu	1920(%rbp), %ymm7
@@ -32812,21 +33003,21 @@ slh_dsa_sha2128s_keygen:
 	vpand	%ymm1, %ymm7, %ymm7
 	vpxor	%ymm7, %ymm10, %ymm7
 	vpaddd	%ymm7, %ymm0, %ymm0
-	vmovdqu	%ymm2, %ymm9
-	vmovdqu	%ymm9, %ymm10
+	vmovdqu	%ymm2, %ymm7
+	vmovdqu	%ymm7, %ymm10
 	vpslld	$26, %ymm10, %ymm10
-	vpsrld	$6, %ymm9, %ymm9
-	vpor	%ymm10, %ymm9, %ymm9
-	vmovdqu	%ymm2, %ymm10
-	vmovdqu	%ymm10, %ymm11
-	vpslld	$21, %ymm11, %ymm11
-	vpsrld	$11, %ymm10, %ymm10
-	vpor	%ymm11, %ymm10, %ymm10
-	vpxor	%ymm10, %ymm9, %ymm9
-	vmovdqu	%ymm10, %ymm11
-	vpslld	$18, %ymm11, %ymm11
-	vpsrld	$14, %ymm10, %ymm10
-	vpor	%ymm11, %ymm10, %ymm7
+	vpsrld	$6, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm9
+	vmovdqu	%ymm2, %ymm7
+	vmovdqu	%ymm7, %ymm10
+	vpslld	$21, %ymm10, %ymm10
+	vpsrld	$11, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm7
+	vpxor	%ymm7, %ymm9, %ymm9
+	vmovdqu	%ymm7, %ymm10
+	vpslld	$18, %ymm10, %ymm10
+	vpsrld	$14, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm7
 	vpxor	%ymm7, %ymm9, %ymm7
 	vpaddd	%ymm7, %ymm0, %ymm7
 	vpaddd	%ymm7, %ymm5, %ymm0
@@ -32839,21 +33030,21 @@ slh_dsa_sha2128s_keygen:
 	vpand	%ymm4, %ymm5, %ymm5
 	vpxor	%ymm5, %ymm10, %ymm5
 	vpaddd	%ymm5, %ymm7, %ymm5
-	vmovdqu	%ymm6, %ymm9
-	vmovdqu	%ymm9, %ymm10
+	vmovdqu	%ymm6, %ymm7
+	vmovdqu	%ymm7, %ymm10
 	vpslld	$30, %ymm10, %ymm10
-	vpsrld	$2, %ymm9, %ymm9
-	vpor	%ymm10, %ymm9, %ymm9
-	vmovdqu	%ymm6, %ymm10
-	vmovdqu	%ymm10, %ymm11
-	vpslld	$19, %ymm11, %ymm11
-	vpsrld	$13, %ymm10, %ymm10
-	vpor	%ymm11, %ymm10, %ymm10
-	vpxor	%ymm10, %ymm9, %ymm9
-	vmovdqu	%ymm10, %ymm11
-	vpslld	$23, %ymm11, %ymm11
-	vpsrld	$9, %ymm10, %ymm10
-	vpor	%ymm11, %ymm10, %ymm7
+	vpsrld	$2, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm9
+	vmovdqu	%ymm6, %ymm7
+	vmovdqu	%ymm7, %ymm10
+	vpslld	$19, %ymm10, %ymm10
+	vpsrld	$13, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm7
+	vpxor	%ymm7, %ymm9, %ymm9
+	vmovdqu	%ymm7, %ymm10
+	vpslld	$23, %ymm10, %ymm10
+	vpsrld	$9, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm7
 	vpxor	%ymm7, %ymm9, %ymm7
 	vpaddd	%ymm7, %ymm5, %ymm5
 	vmovdqu	1952(%rbp), %ymm7
@@ -32867,21 +33058,21 @@ slh_dsa_sha2128s_keygen:
 	vpand	%ymm3, %ymm7, %ymm7
 	vpxor	%ymm7, %ymm10, %ymm7
 	vpaddd	%ymm7, %ymm1, %ymm1
-	vmovdqu	%ymm0, %ymm9
-	vmovdqu	%ymm9, %ymm10
+	vmovdqu	%ymm0, %ymm7
+	vmovdqu	%ymm7, %ymm10
 	vpslld	$26, %ymm10, %ymm10
-	vpsrld	$6, %ymm9, %ymm9
-	vpor	%ymm10, %ymm9, %ymm9
-	vmovdqu	%ymm0, %ymm10
-	vmovdqu	%ymm10, %ymm11
-	vpslld	$21, %ymm11, %ymm11
-	vpsrld	$11, %ymm10, %ymm10
-	vpor	%ymm11, %ymm10, %ymm10
-	vpxor	%ymm10, %ymm9, %ymm9
-	vmovdqu	%ymm10, %ymm11
-	vpslld	$18, %ymm11, %ymm11
-	vpsrld	$14, %ymm10, %ymm10
-	vpor	%ymm11, %ymm10, %ymm7
+	vpsrld	$6, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm9
+	vmovdqu	%ymm0, %ymm7
+	vmovdqu	%ymm7, %ymm10
+	vpslld	$21, %ymm10, %ymm10
+	vpsrld	$11, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm7
+	vpxor	%ymm7, %ymm9, %ymm9
+	vmovdqu	%ymm7, %ymm10
+	vpslld	$18, %ymm10, %ymm10
+	vpsrld	$14, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm7
 	vpxor	%ymm7, %ymm9, %ymm7
 	vpaddd	%ymm7, %ymm1, %ymm7
 	vpaddd	%ymm7, %ymm4, %ymm1
@@ -32894,21 +33085,21 @@ slh_dsa_sha2128s_keygen:
 	vpand	%ymm8, %ymm4, %ymm4
 	vpxor	%ymm4, %ymm10, %ymm4
 	vpaddd	%ymm4, %ymm7, %ymm4
-	vmovdqu	%ymm5, %ymm9
-	vmovdqu	%ymm9, %ymm10
+	vmovdqu	%ymm5, %ymm7
+	vmovdqu	%ymm7, %ymm10
 	vpslld	$30, %ymm10, %ymm10
-	vpsrld	$2, %ymm9, %ymm9
-	vpor	%ymm10, %ymm9, %ymm9
-	vmovdqu	%ymm5, %ymm10
-	vmovdqu	%ymm10, %ymm11
-	vpslld	$19, %ymm11, %ymm11
-	vpsrld	$13, %ymm10, %ymm10
-	vpor	%ymm11, %ymm10, %ymm10
-	vpxor	%ymm10, %ymm9, %ymm9
-	vmovdqu	%ymm10, %ymm11
-	vpslld	$23, %ymm11, %ymm11
-	vpsrld	$9, %ymm10, %ymm10
-	vpor	%ymm11, %ymm10, %ymm7
+	vpsrld	$2, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm9
+	vmovdqu	%ymm5, %ymm7
+	vmovdqu	%ymm7, %ymm10
+	vpslld	$19, %ymm10, %ymm10
+	vpsrld	$13, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm7
+	vpxor	%ymm7, %ymm9, %ymm9
+	vmovdqu	%ymm7, %ymm10
+	vpslld	$23, %ymm10, %ymm10
+	vpsrld	$9, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm7
 	vpxor	%ymm7, %ymm9, %ymm7
 	vpaddd	%ymm7, %ymm4, %ymm4
 	vmovdqu	1984(%rbp), %ymm7
@@ -32921,24 +33112,24 @@ slh_dsa_sha2128s_keygen:
 	vpxor	%ymm1, %ymm7, %ymm7
 	vpand	%ymm2, %ymm7, %ymm7
 	vpxor	%ymm7, %ymm10, %ymm7
-	vpaddd	%ymm7, %ymm3, %ymm7
-	vmovdqu	%ymm1, %ymm3
-	vmovdqu	%ymm3, %ymm10
+	vpaddd	%ymm7, %ymm3, %ymm3
+	vmovdqu	%ymm1, %ymm7
+	vmovdqu	%ymm7, %ymm10
 	vpslld	$26, %ymm10, %ymm10
-	vpsrld	$6, %ymm3, %ymm3
-	vpor	%ymm10, %ymm3, %ymm9
-	vmovdqu	%ymm1, %ymm3
-	vmovdqu	%ymm3, %ymm10
+	vpsrld	$6, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm9
+	vmovdqu	%ymm1, %ymm7
+	vmovdqu	%ymm7, %ymm10
 	vpslld	$21, %ymm10, %ymm10
-	vpsrld	$11, %ymm3, %ymm3
-	vpor	%ymm10, %ymm3, %ymm3
-	vpxor	%ymm3, %ymm9, %ymm9
-	vmovdqu	%ymm3, %ymm10
+	vpsrld	$11, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm7
+	vpxor	%ymm7, %ymm9, %ymm9
+	vmovdqu	%ymm7, %ymm10
 	vpslld	$18, %ymm10, %ymm10
-	vpsrld	$14, %ymm3, %ymm3
-	vpor	%ymm10, %ymm3, %ymm3
-	vpxor	%ymm3, %ymm9, %ymm3
-	vpaddd	%ymm3, %ymm7, %ymm7
+	vpsrld	$14, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm7
+	vpxor	%ymm7, %ymm9, %ymm7
+	vpaddd	%ymm7, %ymm3, %ymm7
 	vpaddd	%ymm7, %ymm8, %ymm3
 	vmovdqu	%ymm4, %ymm10
 	vpand	%ymm5, %ymm10, %ymm10
@@ -32976,24 +33167,24 @@ slh_dsa_sha2128s_keygen:
 	vpxor	%ymm3, %ymm7, %ymm7
 	vpand	%ymm0, %ymm7, %ymm7
 	vpxor	%ymm7, %ymm10, %ymm7
-	vpaddd	%ymm7, %ymm2, %ymm7
-	vmovdqu	%ymm3, %ymm2
-	vmovdqu	%ymm2, %ymm10
+	vpaddd	%ymm7, %ymm2, %ymm2
+	vmovdqu	%ymm3, %ymm7
+	vmovdqu	%ymm7, %ymm10
 	vpslld	$26, %ymm10, %ymm10
-	vpsrld	$6, %ymm2, %ymm2
-	vpor	%ymm10, %ymm2, %ymm9
-	vmovdqu	%ymm3, %ymm2
-	vmovdqu	%ymm2, %ymm10
+	vpsrld	$6, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm9
+	vmovdqu	%ymm3, %ymm7
+	vmovdqu	%ymm7, %ymm10
 	vpslld	$21, %ymm10, %ymm10
-	vpsrld	$11, %ymm2, %ymm2
-	vpor	%ymm10, %ymm2, %ymm2
-	vpxor	%ymm2, %ymm9, %ymm9
-	vmovdqu	%ymm2, %ymm10
+	vpsrld	$11, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm7
+	vpxor	%ymm7, %ymm9, %ymm9
+	vmovdqu	%ymm7, %ymm10
 	vpslld	$18, %ymm10, %ymm10
-	vpsrld	$14, %ymm2, %ymm2
-	vpor	%ymm10, %ymm2, %ymm2
-	vpxor	%ymm2, %ymm9, %ymm2
-	vpaddd	%ymm2, %ymm7, %ymm2
+	vpsrld	$14, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm7
+	vpxor	%ymm7, %ymm9, %ymm7
+	vpaddd	%ymm7, %ymm2, %ymm2
 	vmovdqu	%ymm3, %ymm7
 	vpaddd	%ymm2, %ymm6, %ymm6
 	vmovdqu	%ymm8, %ymm10
@@ -34795,21 +34986,21 @@ slh_dsa_sha2128s_keygen:
 	vpand	%ymm0, %ymm7, %ymm7
 	vpxor	%ymm7, %ymm10, %ymm7
 	vpaddd	%ymm7, %ymm6, %ymm6
-	vmovdqu	%ymm3, %ymm9
-	vmovdqu	%ymm9, %ymm10
+	vmovdqu	%ymm3, %ymm7
+	vmovdqu	%ymm7, %ymm10
 	vpslld	$26, %ymm10, %ymm10
-	vpsrld	$6, %ymm9, %ymm9
-	vpor	%ymm10, %ymm9, %ymm9
-	vmovdqu	%ymm3, %ymm10
-	vmovdqu	%ymm10, %ymm11
-	vpslld	$21, %ymm11, %ymm11
-	vpsrld	$11, %ymm10, %ymm10
-	vpor	%ymm11, %ymm10, %ymm10
-	vpxor	%ymm10, %ymm9, %ymm9
-	vmovdqu	%ymm10, %ymm11
-	vpslld	$18, %ymm11, %ymm11
-	vpsrld	$14, %ymm10, %ymm10
-	vpor	%ymm11, %ymm10, %ymm7
+	vpsrld	$6, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm9
+	vmovdqu	%ymm3, %ymm7
+	vmovdqu	%ymm7, %ymm10
+	vpslld	$21, %ymm10, %ymm10
+	vpsrld	$11, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm7
+	vpxor	%ymm7, %ymm9, %ymm9
+	vmovdqu	%ymm7, %ymm10
+	vpslld	$18, %ymm10, %ymm10
+	vpsrld	$14, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm7
 	vpxor	%ymm7, %ymm9, %ymm7
 	vpaddd	%ymm7, %ymm6, %ymm6
 	vpaddd	%ymm6, %ymm2, %ymm2
@@ -34822,21 +35013,21 @@ slh_dsa_sha2128s_keygen:
 	vpand	%ymm5, %ymm7, %ymm7
 	vpxor	%ymm7, %ymm10, %ymm7
 	vpaddd	%ymm7, %ymm6, %ymm6
-	vmovdqu	%ymm8, %ymm9
-	vmovdqu	%ymm9, %ymm10
+	vmovdqu	%ymm8, %ymm7
+	vmovdqu	%ymm7, %ymm10
 	vpslld	$30, %ymm10, %ymm10
-	vpsrld	$2, %ymm9, %ymm9
-	vpor	%ymm10, %ymm9, %ymm9
-	vmovdqu	%ymm8, %ymm10
-	vmovdqu	%ymm10, %ymm11
-	vpslld	$19, %ymm11, %ymm11
-	vpsrld	$13, %ymm10, %ymm10
-	vpor	%ymm11, %ymm10, %ymm10
-	vpxor	%ymm10, %ymm9, %ymm9
-	vmovdqu	%ymm10, %ymm11
-	vpslld	$23, %ymm11, %ymm11
-	vpsrld	$9, %ymm10, %ymm10
-	vpor	%ymm11, %ymm10, %ymm7
+	vpsrld	$2, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm9
+	vmovdqu	%ymm8, %ymm7
+	vmovdqu	%ymm7, %ymm10
+	vpslld	$19, %ymm10, %ymm10
+	vpsrld	$13, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm7
+	vpxor	%ymm7, %ymm9, %ymm9
+	vmovdqu	%ymm7, %ymm10
+	vpslld	$23, %ymm10, %ymm10
+	vpsrld	$9, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm7
 	vpxor	%ymm7, %ymm9, %ymm7
 	vpaddd	%ymm7, %ymm6, %ymm6
 	vmovdqu	128(%rbp), %ymm7
@@ -34850,21 +35041,21 @@ slh_dsa_sha2128s_keygen:
 	vpand	%ymm1, %ymm7, %ymm7
 	vpxor	%ymm7, %ymm10, %ymm7
 	vpaddd	%ymm7, %ymm0, %ymm0
-	vmovdqu	%ymm2, %ymm9
-	vmovdqu	%ymm9, %ymm10
+	vmovdqu	%ymm2, %ymm7
+	vmovdqu	%ymm7, %ymm10
 	vpslld	$26, %ymm10, %ymm10
-	vpsrld	$6, %ymm9, %ymm9
-	vpor	%ymm10, %ymm9, %ymm9
-	vmovdqu	%ymm2, %ymm10
-	vmovdqu	%ymm10, %ymm11
-	vpslld	$21, %ymm11, %ymm11
-	vpsrld	$11, %ymm10, %ymm10
-	vpor	%ymm11, %ymm10, %ymm10
-	vpxor	%ymm10, %ymm9, %ymm9
-	vmovdqu	%ymm10, %ymm11
-	vpslld	$18, %ymm11, %ymm11
-	vpsrld	$14, %ymm10, %ymm10
-	vpor	%ymm11, %ymm10, %ymm7
+	vpsrld	$6, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm9
+	vmovdqu	%ymm2, %ymm7
+	vmovdqu	%ymm7, %ymm10
+	vpslld	$21, %ymm10, %ymm10
+	vpsrld	$11, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm7
+	vpxor	%ymm7, %ymm9, %ymm9
+	vmovdqu	%ymm7, %ymm10
+	vpslld	$18, %ymm10, %ymm10
+	vpsrld	$14, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm7
 	vpxor	%ymm7, %ymm9, %ymm7
 	vpaddd	%ymm7, %ymm0, %ymm7
 	vpaddd	%ymm7, %ymm5, %ymm0
@@ -34877,21 +35068,21 @@ slh_dsa_sha2128s_keygen:
 	vpand	%ymm4, %ymm5, %ymm5
 	vpxor	%ymm5, %ymm10, %ymm5
 	vpaddd	%ymm5, %ymm7, %ymm5
-	vmovdqu	%ymm6, %ymm9
-	vmovdqu	%ymm9, %ymm10
+	vmovdqu	%ymm6, %ymm7
+	vmovdqu	%ymm7, %ymm10
 	vpslld	$30, %ymm10, %ymm10
-	vpsrld	$2, %ymm9, %ymm9
-	vpor	%ymm10, %ymm9, %ymm9
-	vmovdqu	%ymm6, %ymm10
-	vmovdqu	%ymm10, %ymm11
-	vpslld	$19, %ymm11, %ymm11
-	vpsrld	$13, %ymm10, %ymm10
-	vpor	%ymm11, %ymm10, %ymm10
-	vpxor	%ymm10, %ymm9, %ymm9
-	vmovdqu	%ymm10, %ymm11
-	vpslld	$23, %ymm11, %ymm11
-	vpsrld	$9, %ymm10, %ymm10
-	vpor	%ymm11, %ymm10, %ymm7
+	vpsrld	$2, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm9
+	vmovdqu	%ymm6, %ymm7
+	vmovdqu	%ymm7, %ymm10
+	vpslld	$19, %ymm10, %ymm10
+	vpsrld	$13, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm7
+	vpxor	%ymm7, %ymm9, %ymm9
+	vmovdqu	%ymm7, %ymm10
+	vpslld	$23, %ymm10, %ymm10
+	vpsrld	$9, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm7
 	vpxor	%ymm7, %ymm9, %ymm7
 	vpaddd	%ymm7, %ymm5, %ymm5
 	vmovdqu	160(%rbp), %ymm7
@@ -34905,21 +35096,21 @@ slh_dsa_sha2128s_keygen:
 	vpand	%ymm3, %ymm7, %ymm7
 	vpxor	%ymm7, %ymm10, %ymm7
 	vpaddd	%ymm7, %ymm1, %ymm1
-	vmovdqu	%ymm0, %ymm9
-	vmovdqu	%ymm9, %ymm10
+	vmovdqu	%ymm0, %ymm7
+	vmovdqu	%ymm7, %ymm10
 	vpslld	$26, %ymm10, %ymm10
-	vpsrld	$6, %ymm9, %ymm9
-	vpor	%ymm10, %ymm9, %ymm9
-	vmovdqu	%ymm0, %ymm10
-	vmovdqu	%ymm10, %ymm11
-	vpslld	$21, %ymm11, %ymm11
-	vpsrld	$11, %ymm10, %ymm10
-	vpor	%ymm11, %ymm10, %ymm10
-	vpxor	%ymm10, %ymm9, %ymm9
-	vmovdqu	%ymm10, %ymm11
-	vpslld	$18, %ymm11, %ymm11
-	vpsrld	$14, %ymm10, %ymm10
-	vpor	%ymm11, %ymm10, %ymm7
+	vpsrld	$6, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm9
+	vmovdqu	%ymm0, %ymm7
+	vmovdqu	%ymm7, %ymm10
+	vpslld	$21, %ymm10, %ymm10
+	vpsrld	$11, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm7
+	vpxor	%ymm7, %ymm9, %ymm9
+	vmovdqu	%ymm7, %ymm10
+	vpslld	$18, %ymm10, %ymm10
+	vpsrld	$14, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm7
 	vpxor	%ymm7, %ymm9, %ymm7
 	vpaddd	%ymm7, %ymm1, %ymm7
 	vpaddd	%ymm7, %ymm4, %ymm1
@@ -34932,21 +35123,21 @@ slh_dsa_sha2128s_keygen:
 	vpand	%ymm8, %ymm4, %ymm4
 	vpxor	%ymm4, %ymm10, %ymm4
 	vpaddd	%ymm4, %ymm7, %ymm4
-	vmovdqu	%ymm5, %ymm9
-	vmovdqu	%ymm9, %ymm10
+	vmovdqu	%ymm5, %ymm7
+	vmovdqu	%ymm7, %ymm10
 	vpslld	$30, %ymm10, %ymm10
-	vpsrld	$2, %ymm9, %ymm9
-	vpor	%ymm10, %ymm9, %ymm9
-	vmovdqu	%ymm5, %ymm10
-	vmovdqu	%ymm10, %ymm11
-	vpslld	$19, %ymm11, %ymm11
-	vpsrld	$13, %ymm10, %ymm10
-	vpor	%ymm11, %ymm10, %ymm10
-	vpxor	%ymm10, %ymm9, %ymm9
-	vmovdqu	%ymm10, %ymm11
-	vpslld	$23, %ymm11, %ymm11
-	vpsrld	$9, %ymm10, %ymm10
-	vpor	%ymm11, %ymm10, %ymm7
+	vpsrld	$2, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm9
+	vmovdqu	%ymm5, %ymm7
+	vmovdqu	%ymm7, %ymm10
+	vpslld	$19, %ymm10, %ymm10
+	vpsrld	$13, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm7
+	vpxor	%ymm7, %ymm9, %ymm9
+	vmovdqu	%ymm7, %ymm10
+	vpslld	$23, %ymm10, %ymm10
+	vpsrld	$9, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm7
 	vpxor	%ymm7, %ymm9, %ymm7
 	vpaddd	%ymm7, %ymm4, %ymm4
 	vmovdqu	192(%rbp), %ymm7
@@ -34959,24 +35150,24 @@ slh_dsa_sha2128s_keygen:
 	vpxor	%ymm1, %ymm7, %ymm7
 	vpand	%ymm2, %ymm7, %ymm7
 	vpxor	%ymm7, %ymm10, %ymm7
-	vpaddd	%ymm7, %ymm3, %ymm7
-	vmovdqu	%ymm1, %ymm3
-	vmovdqu	%ymm3, %ymm10
+	vpaddd	%ymm7, %ymm3, %ymm3
+	vmovdqu	%ymm1, %ymm7
+	vmovdqu	%ymm7, %ymm10
 	vpslld	$26, %ymm10, %ymm10
-	vpsrld	$6, %ymm3, %ymm3
-	vpor	%ymm10, %ymm3, %ymm9
-	vmovdqu	%ymm1, %ymm3
-	vmovdqu	%ymm3, %ymm10
+	vpsrld	$6, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm9
+	vmovdqu	%ymm1, %ymm7
+	vmovdqu	%ymm7, %ymm10
 	vpslld	$21, %ymm10, %ymm10
-	vpsrld	$11, %ymm3, %ymm3
-	vpor	%ymm10, %ymm3, %ymm3
-	vpxor	%ymm3, %ymm9, %ymm9
-	vmovdqu	%ymm3, %ymm10
+	vpsrld	$11, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm7
+	vpxor	%ymm7, %ymm9, %ymm9
+	vmovdqu	%ymm7, %ymm10
 	vpslld	$18, %ymm10, %ymm10
-	vpsrld	$14, %ymm3, %ymm3
-	vpor	%ymm10, %ymm3, %ymm3
-	vpxor	%ymm3, %ymm9, %ymm3
-	vpaddd	%ymm3, %ymm7, %ymm7
+	vpsrld	$14, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm7
+	vpxor	%ymm7, %ymm9, %ymm7
+	vpaddd	%ymm7, %ymm3, %ymm7
 	vpaddd	%ymm7, %ymm8, %ymm3
 	vmovdqu	%ymm4, %ymm10
 	vpand	%ymm5, %ymm10, %ymm10
@@ -35014,24 +35205,24 @@ slh_dsa_sha2128s_keygen:
 	vpxor	%ymm3, %ymm7, %ymm7
 	vpand	%ymm0, %ymm7, %ymm7
 	vpxor	%ymm7, %ymm10, %ymm7
-	vpaddd	%ymm7, %ymm2, %ymm7
-	vmovdqu	%ymm3, %ymm2
-	vmovdqu	%ymm2, %ymm10
+	vpaddd	%ymm7, %ymm2, %ymm2
+	vmovdqu	%ymm3, %ymm7
+	vmovdqu	%ymm7, %ymm10
 	vpslld	$26, %ymm10, %ymm10
-	vpsrld	$6, %ymm2, %ymm2
-	vpor	%ymm10, %ymm2, %ymm9
-	vmovdqu	%ymm3, %ymm2
-	vmovdqu	%ymm2, %ymm10
+	vpsrld	$6, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm9
+	vmovdqu	%ymm3, %ymm7
+	vmovdqu	%ymm7, %ymm10
 	vpslld	$21, %ymm10, %ymm10
-	vpsrld	$11, %ymm2, %ymm2
-	vpor	%ymm10, %ymm2, %ymm2
-	vpxor	%ymm2, %ymm9, %ymm9
-	vmovdqu	%ymm2, %ymm10
+	vpsrld	$11, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm7
+	vpxor	%ymm7, %ymm9, %ymm9
+	vmovdqu	%ymm7, %ymm10
 	vpslld	$18, %ymm10, %ymm10
-	vpsrld	$14, %ymm2, %ymm2
-	vpor	%ymm10, %ymm2, %ymm2
-	vpxor	%ymm2, %ymm9, %ymm2
-	vpaddd	%ymm2, %ymm7, %ymm7
+	vpsrld	$14, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm7
+	vpxor	%ymm7, %ymm9, %ymm7
+	vpaddd	%ymm7, %ymm2, %ymm7
 	vpaddd	%ymm7, %ymm6, %ymm2
 	vmovdqu	%ymm8, %ymm10
 	vpand	%ymm4, %ymm10, %ymm10
@@ -35042,21 +35233,21 @@ slh_dsa_sha2128s_keygen:
 	vpand	%ymm5, %ymm6, %ymm6
 	vpxor	%ymm6, %ymm10, %ymm6
 	vpaddd	%ymm6, %ymm7, %ymm6
-	vmovdqu	%ymm8, %ymm9
-	vmovdqu	%ymm9, %ymm10
+	vmovdqu	%ymm8, %ymm7
+	vmovdqu	%ymm7, %ymm10
 	vpslld	$30, %ymm10, %ymm10
-	vpsrld	$2, %ymm9, %ymm9
-	vpor	%ymm10, %ymm9, %ymm9
-	vmovdqu	%ymm8, %ymm10
-	vmovdqu	%ymm10, %ymm11
-	vpslld	$19, %ymm11, %ymm11
-	vpsrld	$13, %ymm10, %ymm10
-	vpor	%ymm11, %ymm10, %ymm10
-	vpxor	%ymm10, %ymm9, %ymm9
-	vmovdqu	%ymm10, %ymm11
-	vpslld	$23, %ymm11, %ymm11
-	vpsrld	$9, %ymm10, %ymm10
-	vpor	%ymm11, %ymm10, %ymm7
+	vpsrld	$2, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm9
+	vmovdqu	%ymm8, %ymm7
+	vmovdqu	%ymm7, %ymm10
+	vpslld	$19, %ymm10, %ymm10
+	vpsrld	$13, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm7
+	vpxor	%ymm7, %ymm9, %ymm9
+	vmovdqu	%ymm7, %ymm10
+	vpslld	$23, %ymm10, %ymm10
+	vpsrld	$9, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm7
 	vpxor	%ymm7, %ymm9, %ymm7
 	vpaddd	%ymm7, %ymm6, %ymm6
 	vmovdqu	256(%rbp), %ymm7
@@ -35070,21 +35261,21 @@ slh_dsa_sha2128s_keygen:
 	vpand	%ymm1, %ymm7, %ymm7
 	vpxor	%ymm7, %ymm10, %ymm7
 	vpaddd	%ymm7, %ymm0, %ymm0
-	vmovdqu	%ymm2, %ymm9
-	vmovdqu	%ymm9, %ymm10
+	vmovdqu	%ymm2, %ymm7
+	vmovdqu	%ymm7, %ymm10
 	vpslld	$26, %ymm10, %ymm10
-	vpsrld	$6, %ymm9, %ymm9
-	vpor	%ymm10, %ymm9, %ymm9
-	vmovdqu	%ymm2, %ymm10
-	vmovdqu	%ymm10, %ymm11
-	vpslld	$21, %ymm11, %ymm11
-	vpsrld	$11, %ymm10, %ymm10
-	vpor	%ymm11, %ymm10, %ymm10
-	vpxor	%ymm10, %ymm9, %ymm9
-	vmovdqu	%ymm10, %ymm11
-	vpslld	$18, %ymm11, %ymm11
-	vpsrld	$14, %ymm10, %ymm10
-	vpor	%ymm11, %ymm10, %ymm7
+	vpsrld	$6, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm9
+	vmovdqu	%ymm2, %ymm7
+	vmovdqu	%ymm7, %ymm10
+	vpslld	$21, %ymm10, %ymm10
+	vpsrld	$11, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm7
+	vpxor	%ymm7, %ymm9, %ymm9
+	vmovdqu	%ymm7, %ymm10
+	vpslld	$18, %ymm10, %ymm10
+	vpsrld	$14, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm7
 	vpxor	%ymm7, %ymm9, %ymm7
 	vpaddd	%ymm7, %ymm0, %ymm7
 	vpaddd	%ymm7, %ymm5, %ymm0
@@ -35097,21 +35288,21 @@ slh_dsa_sha2128s_keygen:
 	vpand	%ymm4, %ymm5, %ymm5
 	vpxor	%ymm5, %ymm10, %ymm5
 	vpaddd	%ymm5, %ymm7, %ymm5
-	vmovdqu	%ymm6, %ymm9
-	vmovdqu	%ymm9, %ymm10
+	vmovdqu	%ymm6, %ymm7
+	vmovdqu	%ymm7, %ymm10
 	vpslld	$30, %ymm10, %ymm10
-	vpsrld	$2, %ymm9, %ymm9
-	vpor	%ymm10, %ymm9, %ymm9
-	vmovdqu	%ymm6, %ymm10
-	vmovdqu	%ymm10, %ymm11
-	vpslld	$19, %ymm11, %ymm11
-	vpsrld	$13, %ymm10, %ymm10
-	vpor	%ymm11, %ymm10, %ymm10
-	vpxor	%ymm10, %ymm9, %ymm9
-	vmovdqu	%ymm10, %ymm11
-	vpslld	$23, %ymm11, %ymm11
-	vpsrld	$9, %ymm10, %ymm10
-	vpor	%ymm11, %ymm10, %ymm7
+	vpsrld	$2, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm9
+	vmovdqu	%ymm6, %ymm7
+	vmovdqu	%ymm7, %ymm10
+	vpslld	$19, %ymm10, %ymm10
+	vpsrld	$13, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm7
+	vpxor	%ymm7, %ymm9, %ymm9
+	vmovdqu	%ymm7, %ymm10
+	vpslld	$23, %ymm10, %ymm10
+	vpsrld	$9, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm7
 	vpxor	%ymm7, %ymm9, %ymm7
 	vpaddd	%ymm7, %ymm5, %ymm5
 	vmovdqu	288(%rbp), %ymm7
@@ -35125,21 +35316,21 @@ slh_dsa_sha2128s_keygen:
 	vpand	%ymm3, %ymm7, %ymm7
 	vpxor	%ymm7, %ymm10, %ymm7
 	vpaddd	%ymm7, %ymm1, %ymm1
-	vmovdqu	%ymm0, %ymm9
-	vmovdqu	%ymm9, %ymm10
+	vmovdqu	%ymm0, %ymm7
+	vmovdqu	%ymm7, %ymm10
 	vpslld	$26, %ymm10, %ymm10
-	vpsrld	$6, %ymm9, %ymm9
-	vpor	%ymm10, %ymm9, %ymm9
-	vmovdqu	%ymm0, %ymm10
-	vmovdqu	%ymm10, %ymm11
-	vpslld	$21, %ymm11, %ymm11
-	vpsrld	$11, %ymm10, %ymm10
-	vpor	%ymm11, %ymm10, %ymm10
-	vpxor	%ymm10, %ymm9, %ymm9
-	vmovdqu	%ymm10, %ymm11
-	vpslld	$18, %ymm11, %ymm11
-	vpsrld	$14, %ymm10, %ymm10
-	vpor	%ymm11, %ymm10, %ymm7
+	vpsrld	$6, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm9
+	vmovdqu	%ymm0, %ymm7
+	vmovdqu	%ymm7, %ymm10
+	vpslld	$21, %ymm10, %ymm10
+	vpsrld	$11, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm7
+	vpxor	%ymm7, %ymm9, %ymm9
+	vmovdqu	%ymm7, %ymm10
+	vpslld	$18, %ymm10, %ymm10
+	vpsrld	$14, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm7
 	vpxor	%ymm7, %ymm9, %ymm7
 	vpaddd	%ymm7, %ymm1, %ymm7
 	vpaddd	%ymm7, %ymm4, %ymm1
@@ -35152,21 +35343,21 @@ slh_dsa_sha2128s_keygen:
 	vpand	%ymm8, %ymm4, %ymm4
 	vpxor	%ymm4, %ymm10, %ymm4
 	vpaddd	%ymm4, %ymm7, %ymm4
-	vmovdqu	%ymm5, %ymm9
-	vmovdqu	%ymm9, %ymm10
+	vmovdqu	%ymm5, %ymm7
+	vmovdqu	%ymm7, %ymm10
 	vpslld	$30, %ymm10, %ymm10
-	vpsrld	$2, %ymm9, %ymm9
-	vpor	%ymm10, %ymm9, %ymm9
-	vmovdqu	%ymm5, %ymm10
-	vmovdqu	%ymm10, %ymm11
-	vpslld	$19, %ymm11, %ymm11
-	vpsrld	$13, %ymm10, %ymm10
-	vpor	%ymm11, %ymm10, %ymm10
-	vpxor	%ymm10, %ymm9, %ymm9
-	vmovdqu	%ymm10, %ymm11
-	vpslld	$23, %ymm11, %ymm11
-	vpsrld	$9, %ymm10, %ymm10
-	vpor	%ymm11, %ymm10, %ymm7
+	vpsrld	$2, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm9
+	vmovdqu	%ymm5, %ymm7
+	vmovdqu	%ymm7, %ymm10
+	vpslld	$19, %ymm10, %ymm10
+	vpsrld	$13, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm7
+	vpxor	%ymm7, %ymm9, %ymm9
+	vmovdqu	%ymm7, %ymm10
+	vpslld	$23, %ymm10, %ymm10
+	vpsrld	$9, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm7
 	vpxor	%ymm7, %ymm9, %ymm7
 	vpaddd	%ymm7, %ymm4, %ymm4
 	vmovdqu	320(%rbp), %ymm7
@@ -35179,104 +35370,104 @@ slh_dsa_sha2128s_keygen:
 	vpxor	%ymm1, %ymm7, %ymm7
 	vpand	%ymm2, %ymm7, %ymm7
 	vpxor	%ymm7, %ymm10, %ymm7
-	vpaddd	%ymm7, %ymm3, %ymm7
-	vmovdqu	%ymm1, %ymm3
-	vmovdqu	%ymm3, %ymm10
+	vpaddd	%ymm7, %ymm3, %ymm3
+	vmovdqu	%ymm1, %ymm7
+	vmovdqu	%ymm7, %ymm10
 	vpslld	$26, %ymm10, %ymm10
-	vpsrld	$6, %ymm3, %ymm3
-	vpor	%ymm10, %ymm3, %ymm9
-	vmovdqu	%ymm1, %ymm3
-	vmovdqu	%ymm3, %ymm10
+	vpsrld	$6, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm9
+	vmovdqu	%ymm1, %ymm7
+	vmovdqu	%ymm7, %ymm10
 	vpslld	$21, %ymm10, %ymm10
-	vpsrld	$11, %ymm3, %ymm3
+	vpsrld	$11, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm7
+	vpxor	%ymm7, %ymm9, %ymm9
+	vmovdqu	%ymm7, %ymm10
+	vpslld	$18, %ymm10, %ymm10
+	vpsrld	$14, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm7
+	vpxor	%ymm7, %ymm9, %ymm7
+	vpaddd	%ymm7, %ymm3, %ymm3
+	vpaddd	%ymm3, %ymm8, %ymm8
+	vmovdqu	%ymm4, %ymm10
+	vpand	%ymm5, %ymm10, %ymm10
+	vmovdqu	%ymm4, %ymm7
+	vpand	%ymm6, %ymm7, %ymm7
+	vpxor	%ymm7, %ymm10, %ymm10
+	vmovdqu	%ymm5, %ymm7
+	vpand	%ymm6, %ymm7, %ymm7
+	vpxor	%ymm7, %ymm10, %ymm7
+	vpaddd	%ymm7, %ymm3, %ymm7
+	vmovdqu	%ymm4, %ymm3
+	vmovdqu	%ymm3, %ymm10
+	vpslld	$30, %ymm10, %ymm10
+	vpsrld	$2, %ymm3, %ymm3
+	vpor	%ymm10, %ymm3, %ymm9
+	vmovdqu	%ymm4, %ymm3
+	vmovdqu	%ymm3, %ymm10
+	vpslld	$19, %ymm10, %ymm10
+	vpsrld	$13, %ymm3, %ymm3
 	vpor	%ymm10, %ymm3, %ymm3
 	vpxor	%ymm3, %ymm9, %ymm9
 	vmovdqu	%ymm3, %ymm10
-	vpslld	$18, %ymm10, %ymm10
-	vpsrld	$14, %ymm3, %ymm3
+	vpslld	$23, %ymm10, %ymm10
+	vpsrld	$9, %ymm3, %ymm3
 	vpor	%ymm10, %ymm3, %ymm3
 	vpxor	%ymm3, %ymm9, %ymm3
-	vpaddd	%ymm3, %ymm7, %ymm7
-	vpaddd	%ymm7, %ymm8, %ymm3
-	vmovdqu	%ymm4, %ymm10
-	vpand	%ymm5, %ymm10, %ymm10
-	vmovdqu	%ymm4, %ymm8
-	vpand	%ymm6, %ymm8, %ymm8
-	vpxor	%ymm8, %ymm10, %ymm10
-	vmovdqu	%ymm5, %ymm8
-	vpand	%ymm6, %ymm8, %ymm8
-	vpxor	%ymm8, %ymm10, %ymm8
-	vpaddd	%ymm8, %ymm7, %ymm7
-	vmovdqu	%ymm4, %ymm8
-	vmovdqu	%ymm8, %ymm10
-	vpslld	$30, %ymm10, %ymm10
-	vpsrld	$2, %ymm8, %ymm8
-	vpor	%ymm10, %ymm8, %ymm9
-	vmovdqu	%ymm4, %ymm8
-	vmovdqu	%ymm8, %ymm10
-	vpslld	$19, %ymm10, %ymm10
-	vpsrld	$13, %ymm8, %ymm8
-	vpor	%ymm10, %ymm8, %ymm8
-	vpxor	%ymm8, %ymm9, %ymm9
-	vmovdqu	%ymm8, %ymm10
-	vpslld	$23, %ymm10, %ymm10
-	vpsrld	$9, %ymm8, %ymm8
-	vpor	%ymm10, %ymm8, %ymm8
-	vpxor	%ymm8, %ymm9, %ymm8
-	vpaddd	%ymm8, %ymm7, %ymm8
+	vpaddd	%ymm3, %ymm7, %ymm3
 	vmovdqu	352(%rbp), %ymm7
 	vpaddd	%ymm7, %ymm2, %ymm2
 	vmovdqu	glob_data + 864(%rip), %ymm7
 	vpaddd	%ymm7, %ymm2, %ymm2
-	vmovdqu	%ymm3, %ymm10
+	vmovdqu	%ymm8, %ymm10
 	vpand	%ymm1, %ymm10, %ymm10
 	vmovdqu	glob_data + 448(%rip), %ymm7
-	vpxor	%ymm3, %ymm7, %ymm7
+	vpxor	%ymm8, %ymm7, %ymm7
 	vpand	%ymm0, %ymm7, %ymm7
 	vpxor	%ymm7, %ymm10, %ymm7
-	vpaddd	%ymm7, %ymm2, %ymm7
-	vmovdqu	%ymm3, %ymm2
-	vmovdqu	%ymm2, %ymm10
+	vpaddd	%ymm7, %ymm2, %ymm2
+	vmovdqu	%ymm8, %ymm7
+	vmovdqu	%ymm7, %ymm10
 	vpslld	$26, %ymm10, %ymm10
-	vpsrld	$6, %ymm2, %ymm2
-	vpor	%ymm10, %ymm2, %ymm9
-	vmovdqu	%ymm3, %ymm2
-	vmovdqu	%ymm2, %ymm10
+	vpsrld	$6, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm9
+	vmovdqu	%ymm8, %ymm7
+	vmovdqu	%ymm7, %ymm10
 	vpslld	$21, %ymm10, %ymm10
-	vpsrld	$11, %ymm2, %ymm2
-	vpor	%ymm10, %ymm2, %ymm2
-	vpxor	%ymm2, %ymm9, %ymm9
-	vmovdqu	%ymm2, %ymm10
+	vpsrld	$11, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm7
+	vpxor	%ymm7, %ymm9, %ymm9
+	vmovdqu	%ymm7, %ymm10
 	vpslld	$18, %ymm10, %ymm10
-	vpsrld	$14, %ymm2, %ymm2
-	vpor	%ymm10, %ymm2, %ymm2
-	vpxor	%ymm2, %ymm9, %ymm2
-	vpaddd	%ymm2, %ymm7, %ymm7
+	vpsrld	$14, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm7
+	vpxor	%ymm7, %ymm9, %ymm7
+	vpaddd	%ymm7, %ymm2, %ymm7
 	vpaddd	%ymm7, %ymm6, %ymm2
-	vmovdqu	%ymm8, %ymm10
+	vmovdqu	%ymm3, %ymm10
 	vpand	%ymm4, %ymm10, %ymm10
-	vmovdqu	%ymm8, %ymm6
+	vmovdqu	%ymm3, %ymm6
 	vpand	%ymm5, %ymm6, %ymm6
 	vpxor	%ymm6, %ymm10, %ymm10
 	vmovdqu	%ymm4, %ymm6
 	vpand	%ymm5, %ymm6, %ymm6
 	vpxor	%ymm6, %ymm10, %ymm6
 	vpaddd	%ymm6, %ymm7, %ymm6
-	vmovdqu	%ymm8, %ymm9
-	vmovdqu	%ymm9, %ymm10
+	vmovdqu	%ymm3, %ymm7
+	vmovdqu	%ymm7, %ymm10
 	vpslld	$30, %ymm10, %ymm10
-	vpsrld	$2, %ymm9, %ymm9
-	vpor	%ymm10, %ymm9, %ymm9
-	vmovdqu	%ymm8, %ymm10
-	vmovdqu	%ymm10, %ymm11
-	vpslld	$19, %ymm11, %ymm11
-	vpsrld	$13, %ymm10, %ymm10
-	vpor	%ymm11, %ymm10, %ymm10
-	vpxor	%ymm10, %ymm9, %ymm9
-	vmovdqu	%ymm10, %ymm11
-	vpslld	$23, %ymm11, %ymm11
-	vpsrld	$9, %ymm10, %ymm10
-	vpor	%ymm11, %ymm10, %ymm7
+	vpsrld	$2, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm9
+	vmovdqu	%ymm3, %ymm7
+	vmovdqu	%ymm7, %ymm10
+	vpslld	$19, %ymm10, %ymm10
+	vpsrld	$13, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm7
+	vpxor	%ymm7, %ymm9, %ymm9
+	vmovdqu	%ymm7, %ymm10
+	vpslld	$23, %ymm10, %ymm10
+	vpsrld	$9, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm7
 	vpxor	%ymm7, %ymm9, %ymm7
 	vpaddd	%ymm7, %ymm6, %ymm6
 	vmovdqu	384(%rbp), %ymm7
@@ -35284,54 +35475,54 @@ slh_dsa_sha2128s_keygen:
 	vmovdqu	glob_data + 896(%rip), %ymm7
 	vpaddd	%ymm7, %ymm0, %ymm0
 	vmovdqu	%ymm2, %ymm10
-	vpand	%ymm3, %ymm10, %ymm10
+	vpand	%ymm8, %ymm10, %ymm10
 	vmovdqu	glob_data + 448(%rip), %ymm7
 	vpxor	%ymm2, %ymm7, %ymm7
 	vpand	%ymm1, %ymm7, %ymm7
 	vpxor	%ymm7, %ymm10, %ymm7
 	vpaddd	%ymm7, %ymm0, %ymm0
-	vmovdqu	%ymm2, %ymm9
-	vmovdqu	%ymm9, %ymm10
+	vmovdqu	%ymm2, %ymm7
+	vmovdqu	%ymm7, %ymm10
 	vpslld	$26, %ymm10, %ymm10
-	vpsrld	$6, %ymm9, %ymm9
-	vpor	%ymm10, %ymm9, %ymm9
-	vmovdqu	%ymm2, %ymm10
-	vmovdqu	%ymm10, %ymm11
-	vpslld	$21, %ymm11, %ymm11
-	vpsrld	$11, %ymm10, %ymm10
-	vpor	%ymm11, %ymm10, %ymm10
-	vpxor	%ymm10, %ymm9, %ymm9
-	vmovdqu	%ymm10, %ymm11
-	vpslld	$18, %ymm11, %ymm11
-	vpsrld	$14, %ymm10, %ymm10
-	vpor	%ymm11, %ymm10, %ymm7
+	vpsrld	$6, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm9
+	vmovdqu	%ymm2, %ymm7
+	vmovdqu	%ymm7, %ymm10
+	vpslld	$21, %ymm10, %ymm10
+	vpsrld	$11, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm7
+	vpxor	%ymm7, %ymm9, %ymm9
+	vmovdqu	%ymm7, %ymm10
+	vpslld	$18, %ymm10, %ymm10
+	vpsrld	$14, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm7
 	vpxor	%ymm7, %ymm9, %ymm7
 	vpaddd	%ymm7, %ymm0, %ymm7
 	vpaddd	%ymm7, %ymm5, %ymm0
 	vmovdqu	%ymm6, %ymm10
-	vpand	%ymm8, %ymm10, %ymm10
+	vpand	%ymm3, %ymm10, %ymm10
 	vmovdqu	%ymm6, %ymm5
 	vpand	%ymm4, %ymm5, %ymm5
 	vpxor	%ymm5, %ymm10, %ymm10
-	vmovdqu	%ymm8, %ymm5
+	vmovdqu	%ymm3, %ymm5
 	vpand	%ymm4, %ymm5, %ymm5
 	vpxor	%ymm5, %ymm10, %ymm5
 	vpaddd	%ymm5, %ymm7, %ymm5
-	vmovdqu	%ymm6, %ymm9
-	vmovdqu	%ymm9, %ymm10
+	vmovdqu	%ymm6, %ymm7
+	vmovdqu	%ymm7, %ymm10
 	vpslld	$30, %ymm10, %ymm10
-	vpsrld	$2, %ymm9, %ymm9
-	vpor	%ymm10, %ymm9, %ymm9
-	vmovdqu	%ymm6, %ymm10
-	vmovdqu	%ymm10, %ymm11
-	vpslld	$19, %ymm11, %ymm11
-	vpsrld	$13, %ymm10, %ymm10
-	vpor	%ymm11, %ymm10, %ymm10
-	vpxor	%ymm10, %ymm9, %ymm9
-	vmovdqu	%ymm10, %ymm11
-	vpslld	$23, %ymm11, %ymm11
-	vpsrld	$9, %ymm10, %ymm10
-	vpor	%ymm11, %ymm10, %ymm7
+	vpsrld	$2, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm9
+	vmovdqu	%ymm6, %ymm7
+	vmovdqu	%ymm7, %ymm10
+	vpslld	$19, %ymm10, %ymm10
+	vpsrld	$13, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm7
+	vpxor	%ymm7, %ymm9, %ymm9
+	vmovdqu	%ymm7, %ymm10
+	vpslld	$23, %ymm10, %ymm10
+	vpsrld	$9, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm7
 	vpxor	%ymm7, %ymm9, %ymm7
 	vpaddd	%ymm7, %ymm5, %ymm5
 	vmovdqu	416(%rbp), %ymm7
@@ -35342,82 +35533,82 @@ slh_dsa_sha2128s_keygen:
 	vpand	%ymm2, %ymm10, %ymm10
 	vmovdqu	glob_data + 448(%rip), %ymm7
 	vpxor	%ymm0, %ymm7, %ymm7
-	vpand	%ymm3, %ymm7, %ymm7
+	vpand	%ymm8, %ymm7, %ymm7
 	vpxor	%ymm7, %ymm10, %ymm7
 	vpaddd	%ymm7, %ymm1, %ymm1
-	vmovdqu	%ymm0, %ymm9
-	vmovdqu	%ymm9, %ymm10
+	vmovdqu	%ymm0, %ymm7
+	vmovdqu	%ymm7, %ymm10
 	vpslld	$26, %ymm10, %ymm10
-	vpsrld	$6, %ymm9, %ymm9
-	vpor	%ymm10, %ymm9, %ymm9
-	vmovdqu	%ymm0, %ymm10
-	vmovdqu	%ymm10, %ymm11
-	vpslld	$21, %ymm11, %ymm11
-	vpsrld	$11, %ymm10, %ymm10
-	vpor	%ymm11, %ymm10, %ymm10
-	vpxor	%ymm10, %ymm9, %ymm9
-	vmovdqu	%ymm10, %ymm11
-	vpslld	$18, %ymm11, %ymm11
-	vpsrld	$14, %ymm10, %ymm10
-	vpor	%ymm11, %ymm10, %ymm7
+	vpsrld	$6, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm9
+	vmovdqu	%ymm0, %ymm7
+	vmovdqu	%ymm7, %ymm10
+	vpslld	$21, %ymm10, %ymm10
+	vpsrld	$11, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm7
+	vpxor	%ymm7, %ymm9, %ymm9
+	vmovdqu	%ymm7, %ymm10
+	vpslld	$18, %ymm10, %ymm10
+	vpsrld	$14, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm7
 	vpxor	%ymm7, %ymm9, %ymm7
 	vpaddd	%ymm7, %ymm1, %ymm7
 	vpaddd	%ymm7, %ymm4, %ymm1
 	vmovdqu	%ymm5, %ymm10
 	vpand	%ymm6, %ymm10, %ymm10
 	vmovdqu	%ymm5, %ymm4
-	vpand	%ymm8, %ymm4, %ymm4
+	vpand	%ymm3, %ymm4, %ymm4
 	vpxor	%ymm4, %ymm10, %ymm10
 	vmovdqu	%ymm6, %ymm4
-	vpand	%ymm8, %ymm4, %ymm4
+	vpand	%ymm3, %ymm4, %ymm4
 	vpxor	%ymm4, %ymm10, %ymm4
 	vpaddd	%ymm4, %ymm7, %ymm4
-	vmovdqu	%ymm5, %ymm9
-	vmovdqu	%ymm9, %ymm10
+	vmovdqu	%ymm5, %ymm7
+	vmovdqu	%ymm7, %ymm10
 	vpslld	$30, %ymm10, %ymm10
-	vpsrld	$2, %ymm9, %ymm9
-	vpor	%ymm10, %ymm9, %ymm9
-	vmovdqu	%ymm5, %ymm10
-	vmovdqu	%ymm10, %ymm11
-	vpslld	$19, %ymm11, %ymm11
-	vpsrld	$13, %ymm10, %ymm10
-	vpor	%ymm11, %ymm10, %ymm10
-	vpxor	%ymm10, %ymm9, %ymm9
-	vmovdqu	%ymm10, %ymm11
-	vpslld	$23, %ymm11, %ymm11
-	vpsrld	$9, %ymm10, %ymm10
-	vpor	%ymm11, %ymm10, %ymm7
+	vpsrld	$2, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm9
+	vmovdqu	%ymm5, %ymm7
+	vmovdqu	%ymm7, %ymm10
+	vpslld	$19, %ymm10, %ymm10
+	vpsrld	$13, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm7
+	vpxor	%ymm7, %ymm9, %ymm9
+	vmovdqu	%ymm7, %ymm10
+	vpslld	$23, %ymm10, %ymm10
+	vpsrld	$9, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm7
 	vpxor	%ymm7, %ymm9, %ymm7
 	vpaddd	%ymm7, %ymm4, %ymm4
 	vmovdqu	448(%rbp), %ymm7
-	vpaddd	%ymm7, %ymm3, %ymm3
-	vmovdqu	glob_data + 960(%rip), %ymm7
-	vpaddd	%ymm7, %ymm3, %ymm3
+	vpaddd	%ymm7, %ymm8, %ymm7
+	vmovdqu	glob_data + 960(%rip), %ymm8
+	vpaddd	%ymm8, %ymm7, %ymm7
 	vmovdqu	%ymm1, %ymm10
 	vpand	%ymm0, %ymm10, %ymm10
-	vmovdqu	glob_data + 448(%rip), %ymm7
-	vpxor	%ymm1, %ymm7, %ymm7
-	vpand	%ymm2, %ymm7, %ymm7
-	vpxor	%ymm7, %ymm10, %ymm7
-	vpaddd	%ymm7, %ymm3, %ymm7
-	vmovdqu	%ymm1, %ymm3
-	vmovdqu	%ymm3, %ymm10
+	vmovdqu	glob_data + 448(%rip), %ymm8
+	vpxor	%ymm1, %ymm8, %ymm8
+	vpand	%ymm2, %ymm8, %ymm8
+	vpxor	%ymm8, %ymm10, %ymm8
+	vpaddd	%ymm8, %ymm7, %ymm7
+	vmovdqu	%ymm1, %ymm8
+	vmovdqu	%ymm8, %ymm10
 	vpslld	$26, %ymm10, %ymm10
-	vpsrld	$6, %ymm3, %ymm3
-	vpor	%ymm10, %ymm3, %ymm9
-	vmovdqu	%ymm1, %ymm3
-	vmovdqu	%ymm3, %ymm10
+	vpsrld	$6, %ymm8, %ymm8
+	vpor	%ymm10, %ymm8, %ymm9
+	vmovdqu	%ymm1, %ymm8
+	vmovdqu	%ymm8, %ymm10
 	vpslld	$21, %ymm10, %ymm10
-	vpsrld	$11, %ymm3, %ymm3
-	vpor	%ymm10, %ymm3, %ymm3
-	vpxor	%ymm3, %ymm9, %ymm9
-	vmovdqu	%ymm3, %ymm10
+	vpsrld	$11, %ymm8, %ymm8
+	vpor	%ymm10, %ymm8, %ymm8
+	vpxor	%ymm8, %ymm9, %ymm9
+	vmovdqu	%ymm8, %ymm10
 	vpslld	$18, %ymm10, %ymm10
-	vpsrld	$14, %ymm3, %ymm3
-	vpor	%ymm10, %ymm3, %ymm3
-	vpxor	%ymm3, %ymm9, %ymm3
-	vpaddd	%ymm3, %ymm7, %ymm7
-	vpaddd	%ymm7, %ymm8, %ymm3
+	vpsrld	$14, %ymm8, %ymm8
+	vpor	%ymm10, %ymm8, %ymm8
+	vpxor	%ymm8, %ymm9, %ymm8
+	vpaddd	%ymm8, %ymm7, %ymm7
+	vpaddd	%ymm7, %ymm3, %ymm3
 	vmovdqu	%ymm4, %ymm10
 	vpand	%ymm5, %ymm10, %ymm10
 	vmovdqu	%ymm4, %ymm8
@@ -35454,24 +35645,24 @@ slh_dsa_sha2128s_keygen:
 	vpxor	%ymm3, %ymm7, %ymm7
 	vpand	%ymm0, %ymm7, %ymm7
 	vpxor	%ymm7, %ymm10, %ymm7
-	vpaddd	%ymm7, %ymm2, %ymm7
-	vmovdqu	%ymm3, %ymm2
-	vmovdqu	%ymm2, %ymm10
+	vpaddd	%ymm7, %ymm2, %ymm2
+	vmovdqu	%ymm3, %ymm7
+	vmovdqu	%ymm7, %ymm10
 	vpslld	$26, %ymm10, %ymm10
-	vpsrld	$6, %ymm2, %ymm2
-	vpor	%ymm10, %ymm2, %ymm9
-	vmovdqu	%ymm3, %ymm2
-	vmovdqu	%ymm2, %ymm10
+	vpsrld	$6, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm9
+	vmovdqu	%ymm3, %ymm7
+	vmovdqu	%ymm7, %ymm10
 	vpslld	$21, %ymm10, %ymm10
-	vpsrld	$11, %ymm2, %ymm2
-	vpor	%ymm10, %ymm2, %ymm2
-	vpxor	%ymm2, %ymm9, %ymm9
-	vmovdqu	%ymm2, %ymm10
+	vpsrld	$11, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm7
+	vpxor	%ymm7, %ymm9, %ymm9
+	vmovdqu	%ymm7, %ymm10
 	vpslld	$18, %ymm10, %ymm10
-	vpsrld	$14, %ymm2, %ymm2
-	vpor	%ymm10, %ymm2, %ymm2
-	vpxor	%ymm2, %ymm9, %ymm2
-	vpaddd	%ymm2, %ymm7, %ymm7
+	vpsrld	$14, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm7
+	vpxor	%ymm7, %ymm9, %ymm7
+	vpaddd	%ymm7, %ymm2, %ymm7
 	vpaddd	%ymm7, %ymm6, %ymm2
 	vmovdqu	%ymm8, %ymm10
 	vpand	%ymm4, %ymm10, %ymm10
@@ -35482,21 +35673,21 @@ slh_dsa_sha2128s_keygen:
 	vpand	%ymm5, %ymm6, %ymm6
 	vpxor	%ymm6, %ymm10, %ymm6
 	vpaddd	%ymm6, %ymm7, %ymm6
-	vmovdqu	%ymm8, %ymm9
-	vmovdqu	%ymm9, %ymm10
+	vmovdqu	%ymm8, %ymm7
+	vmovdqu	%ymm7, %ymm10
 	vpslld	$30, %ymm10, %ymm10
-	vpsrld	$2, %ymm9, %ymm9
-	vpor	%ymm10, %ymm9, %ymm9
-	vmovdqu	%ymm8, %ymm10
-	vmovdqu	%ymm10, %ymm11
-	vpslld	$19, %ymm11, %ymm11
-	vpsrld	$13, %ymm10, %ymm10
-	vpor	%ymm11, %ymm10, %ymm10
-	vpxor	%ymm10, %ymm9, %ymm9
-	vmovdqu	%ymm10, %ymm11
-	vpslld	$23, %ymm11, %ymm11
-	vpsrld	$9, %ymm10, %ymm10
-	vpor	%ymm11, %ymm10, %ymm7
+	vpsrld	$2, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm9
+	vmovdqu	%ymm8, %ymm7
+	vmovdqu	%ymm7, %ymm10
+	vpslld	$19, %ymm10, %ymm10
+	vpsrld	$13, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm7
+	vpxor	%ymm7, %ymm9, %ymm9
+	vmovdqu	%ymm7, %ymm10
+	vpslld	$23, %ymm10, %ymm10
+	vpsrld	$9, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm7
 	vpxor	%ymm7, %ymm9, %ymm7
 	vpaddd	%ymm7, %ymm6, %ymm6
 	vmovdqu	512(%rbp), %ymm7
@@ -35510,21 +35701,21 @@ slh_dsa_sha2128s_keygen:
 	vpand	%ymm1, %ymm7, %ymm7
 	vpxor	%ymm7, %ymm10, %ymm7
 	vpaddd	%ymm7, %ymm0, %ymm0
-	vmovdqu	%ymm2, %ymm9
-	vmovdqu	%ymm9, %ymm10
+	vmovdqu	%ymm2, %ymm7
+	vmovdqu	%ymm7, %ymm10
 	vpslld	$26, %ymm10, %ymm10
-	vpsrld	$6, %ymm9, %ymm9
-	vpor	%ymm10, %ymm9, %ymm9
-	vmovdqu	%ymm2, %ymm10
-	vmovdqu	%ymm10, %ymm11
-	vpslld	$21, %ymm11, %ymm11
-	vpsrld	$11, %ymm10, %ymm10
-	vpor	%ymm11, %ymm10, %ymm10
-	vpxor	%ymm10, %ymm9, %ymm9
-	vmovdqu	%ymm10, %ymm11
-	vpslld	$18, %ymm11, %ymm11
-	vpsrld	$14, %ymm10, %ymm10
-	vpor	%ymm11, %ymm10, %ymm7
+	vpsrld	$6, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm9
+	vmovdqu	%ymm2, %ymm7
+	vmovdqu	%ymm7, %ymm10
+	vpslld	$21, %ymm10, %ymm10
+	vpsrld	$11, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm7
+	vpxor	%ymm7, %ymm9, %ymm9
+	vmovdqu	%ymm7, %ymm10
+	vpslld	$18, %ymm10, %ymm10
+	vpsrld	$14, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm7
 	vpxor	%ymm7, %ymm9, %ymm7
 	vpaddd	%ymm7, %ymm0, %ymm7
 	vpaddd	%ymm7, %ymm5, %ymm0
@@ -35537,21 +35728,21 @@ slh_dsa_sha2128s_keygen:
 	vpand	%ymm4, %ymm5, %ymm5
 	vpxor	%ymm5, %ymm10, %ymm5
 	vpaddd	%ymm5, %ymm7, %ymm5
-	vmovdqu	%ymm6, %ymm9
-	vmovdqu	%ymm9, %ymm10
+	vmovdqu	%ymm6, %ymm7
+	vmovdqu	%ymm7, %ymm10
 	vpslld	$30, %ymm10, %ymm10
-	vpsrld	$2, %ymm9, %ymm9
-	vpor	%ymm10, %ymm9, %ymm9
-	vmovdqu	%ymm6, %ymm10
-	vmovdqu	%ymm10, %ymm11
-	vpslld	$19, %ymm11, %ymm11
-	vpsrld	$13, %ymm10, %ymm10
-	vpor	%ymm11, %ymm10, %ymm10
-	vpxor	%ymm10, %ymm9, %ymm9
-	vmovdqu	%ymm10, %ymm11
-	vpslld	$23, %ymm11, %ymm11
-	vpsrld	$9, %ymm10, %ymm10
-	vpor	%ymm11, %ymm10, %ymm7
+	vpsrld	$2, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm9
+	vmovdqu	%ymm6, %ymm7
+	vmovdqu	%ymm7, %ymm10
+	vpslld	$19, %ymm10, %ymm10
+	vpsrld	$13, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm7
+	vpxor	%ymm7, %ymm9, %ymm9
+	vmovdqu	%ymm7, %ymm10
+	vpslld	$23, %ymm10, %ymm10
+	vpsrld	$9, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm7
 	vpxor	%ymm7, %ymm9, %ymm7
 	vpaddd	%ymm7, %ymm5, %ymm5
 	vmovdqu	544(%rbp), %ymm7
@@ -35565,21 +35756,21 @@ slh_dsa_sha2128s_keygen:
 	vpand	%ymm3, %ymm7, %ymm7
 	vpxor	%ymm7, %ymm10, %ymm7
 	vpaddd	%ymm7, %ymm1, %ymm1
-	vmovdqu	%ymm0, %ymm9
-	vmovdqu	%ymm9, %ymm10
+	vmovdqu	%ymm0, %ymm7
+	vmovdqu	%ymm7, %ymm10
 	vpslld	$26, %ymm10, %ymm10
-	vpsrld	$6, %ymm9, %ymm9
-	vpor	%ymm10, %ymm9, %ymm9
-	vmovdqu	%ymm0, %ymm10
-	vmovdqu	%ymm10, %ymm11
-	vpslld	$21, %ymm11, %ymm11
-	vpsrld	$11, %ymm10, %ymm10
-	vpor	%ymm11, %ymm10, %ymm10
-	vpxor	%ymm10, %ymm9, %ymm9
-	vmovdqu	%ymm10, %ymm11
-	vpslld	$18, %ymm11, %ymm11
-	vpsrld	$14, %ymm10, %ymm10
-	vpor	%ymm11, %ymm10, %ymm7
+	vpsrld	$6, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm9
+	vmovdqu	%ymm0, %ymm7
+	vmovdqu	%ymm7, %ymm10
+	vpslld	$21, %ymm10, %ymm10
+	vpsrld	$11, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm7
+	vpxor	%ymm7, %ymm9, %ymm9
+	vmovdqu	%ymm7, %ymm10
+	vpslld	$18, %ymm10, %ymm10
+	vpsrld	$14, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm7
 	vpxor	%ymm7, %ymm9, %ymm7
 	vpaddd	%ymm7, %ymm1, %ymm7
 	vpaddd	%ymm7, %ymm4, %ymm1
@@ -35592,21 +35783,21 @@ slh_dsa_sha2128s_keygen:
 	vpand	%ymm8, %ymm4, %ymm4
 	vpxor	%ymm4, %ymm10, %ymm4
 	vpaddd	%ymm4, %ymm7, %ymm4
-	vmovdqu	%ymm5, %ymm9
-	vmovdqu	%ymm9, %ymm10
+	vmovdqu	%ymm5, %ymm7
+	vmovdqu	%ymm7, %ymm10
 	vpslld	$30, %ymm10, %ymm10
-	vpsrld	$2, %ymm9, %ymm9
-	vpor	%ymm10, %ymm9, %ymm9
-	vmovdqu	%ymm5, %ymm10
-	vmovdqu	%ymm10, %ymm11
-	vpslld	$19, %ymm11, %ymm11
-	vpsrld	$13, %ymm10, %ymm10
-	vpor	%ymm11, %ymm10, %ymm10
-	vpxor	%ymm10, %ymm9, %ymm9
-	vmovdqu	%ymm10, %ymm11
-	vpslld	$23, %ymm11, %ymm11
-	vpsrld	$9, %ymm10, %ymm10
-	vpor	%ymm11, %ymm10, %ymm7
+	vpsrld	$2, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm9
+	vmovdqu	%ymm5, %ymm7
+	vmovdqu	%ymm7, %ymm10
+	vpslld	$19, %ymm10, %ymm10
+	vpsrld	$13, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm7
+	vpxor	%ymm7, %ymm9, %ymm9
+	vmovdqu	%ymm7, %ymm10
+	vpslld	$23, %ymm10, %ymm10
+	vpsrld	$9, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm7
 	vpxor	%ymm7, %ymm9, %ymm7
 	vpaddd	%ymm7, %ymm4, %ymm4
 	vmovdqu	576(%rbp), %ymm7
@@ -35619,24 +35810,24 @@ slh_dsa_sha2128s_keygen:
 	vpxor	%ymm1, %ymm7, %ymm7
 	vpand	%ymm2, %ymm7, %ymm7
 	vpxor	%ymm7, %ymm10, %ymm7
-	vpaddd	%ymm7, %ymm3, %ymm7
-	vmovdqu	%ymm1, %ymm3
-	vmovdqu	%ymm3, %ymm10
+	vpaddd	%ymm7, %ymm3, %ymm3
+	vmovdqu	%ymm1, %ymm7
+	vmovdqu	%ymm7, %ymm10
 	vpslld	$26, %ymm10, %ymm10
-	vpsrld	$6, %ymm3, %ymm3
-	vpor	%ymm10, %ymm3, %ymm9
-	vmovdqu	%ymm1, %ymm3
-	vmovdqu	%ymm3, %ymm10
+	vpsrld	$6, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm9
+	vmovdqu	%ymm1, %ymm7
+	vmovdqu	%ymm7, %ymm10
 	vpslld	$21, %ymm10, %ymm10
-	vpsrld	$11, %ymm3, %ymm3
-	vpor	%ymm10, %ymm3, %ymm3
-	vpxor	%ymm3, %ymm9, %ymm9
-	vmovdqu	%ymm3, %ymm10
+	vpsrld	$11, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm7
+	vpxor	%ymm7, %ymm9, %ymm9
+	vmovdqu	%ymm7, %ymm10
 	vpslld	$18, %ymm10, %ymm10
-	vpsrld	$14, %ymm3, %ymm3
-	vpor	%ymm10, %ymm3, %ymm3
-	vpxor	%ymm3, %ymm9, %ymm3
-	vpaddd	%ymm3, %ymm7, %ymm7
+	vpsrld	$14, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm7
+	vpxor	%ymm7, %ymm9, %ymm7
+	vpaddd	%ymm7, %ymm3, %ymm7
 	vpaddd	%ymm7, %ymm8, %ymm3
 	vmovdqu	%ymm4, %ymm10
 	vpand	%ymm5, %ymm10, %ymm10
@@ -35674,24 +35865,24 @@ slh_dsa_sha2128s_keygen:
 	vpxor	%ymm3, %ymm7, %ymm7
 	vpand	%ymm0, %ymm7, %ymm7
 	vpxor	%ymm7, %ymm10, %ymm7
-	vpaddd	%ymm7, %ymm2, %ymm7
-	vmovdqu	%ymm3, %ymm2
-	vmovdqu	%ymm2, %ymm10
+	vpaddd	%ymm7, %ymm2, %ymm2
+	vmovdqu	%ymm3, %ymm7
+	vmovdqu	%ymm7, %ymm10
 	vpslld	$26, %ymm10, %ymm10
-	vpsrld	$6, %ymm2, %ymm2
-	vpor	%ymm10, %ymm2, %ymm9
-	vmovdqu	%ymm3, %ymm2
-	vmovdqu	%ymm2, %ymm10
+	vpsrld	$6, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm9
+	vmovdqu	%ymm3, %ymm7
+	vmovdqu	%ymm7, %ymm10
 	vpslld	$21, %ymm10, %ymm10
-	vpsrld	$11, %ymm2, %ymm2
-	vpor	%ymm10, %ymm2, %ymm2
-	vpxor	%ymm2, %ymm9, %ymm9
-	vmovdqu	%ymm2, %ymm10
+	vpsrld	$11, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm7
+	vpxor	%ymm7, %ymm9, %ymm9
+	vmovdqu	%ymm7, %ymm10
 	vpslld	$18, %ymm10, %ymm10
-	vpsrld	$14, %ymm2, %ymm2
-	vpor	%ymm10, %ymm2, %ymm2
-	vpxor	%ymm2, %ymm9, %ymm2
-	vpaddd	%ymm2, %ymm7, %ymm7
+	vpsrld	$14, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm7
+	vpxor	%ymm7, %ymm9, %ymm7
+	vpaddd	%ymm7, %ymm2, %ymm7
 	vpaddd	%ymm7, %ymm6, %ymm2
 	vmovdqu	%ymm8, %ymm10
 	vpand	%ymm4, %ymm10, %ymm10
@@ -35702,21 +35893,21 @@ slh_dsa_sha2128s_keygen:
 	vpand	%ymm5, %ymm6, %ymm6
 	vpxor	%ymm6, %ymm10, %ymm6
 	vpaddd	%ymm6, %ymm7, %ymm6
-	vmovdqu	%ymm8, %ymm9
-	vmovdqu	%ymm9, %ymm10
+	vmovdqu	%ymm8, %ymm7
+	vmovdqu	%ymm7, %ymm10
 	vpslld	$30, %ymm10, %ymm10
-	vpsrld	$2, %ymm9, %ymm9
-	vpor	%ymm10, %ymm9, %ymm9
-	vmovdqu	%ymm8, %ymm10
-	vmovdqu	%ymm10, %ymm11
-	vpslld	$19, %ymm11, %ymm11
-	vpsrld	$13, %ymm10, %ymm10
-	vpor	%ymm11, %ymm10, %ymm10
-	vpxor	%ymm10, %ymm9, %ymm9
-	vmovdqu	%ymm10, %ymm11
-	vpslld	$23, %ymm11, %ymm11
-	vpsrld	$9, %ymm10, %ymm10
-	vpor	%ymm11, %ymm10, %ymm7
+	vpsrld	$2, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm9
+	vmovdqu	%ymm8, %ymm7
+	vmovdqu	%ymm7, %ymm10
+	vpslld	$19, %ymm10, %ymm10
+	vpsrld	$13, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm7
+	vpxor	%ymm7, %ymm9, %ymm9
+	vmovdqu	%ymm7, %ymm10
+	vpslld	$23, %ymm10, %ymm10
+	vpsrld	$9, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm7
 	vpxor	%ymm7, %ymm9, %ymm7
 	vpaddd	%ymm7, %ymm6, %ymm6
 	vmovdqu	640(%rbp), %ymm7
@@ -35730,21 +35921,21 @@ slh_dsa_sha2128s_keygen:
 	vpand	%ymm1, %ymm7, %ymm7
 	vpxor	%ymm7, %ymm10, %ymm7
 	vpaddd	%ymm7, %ymm0, %ymm0
-	vmovdqu	%ymm2, %ymm9
-	vmovdqu	%ymm9, %ymm10
+	vmovdqu	%ymm2, %ymm7
+	vmovdqu	%ymm7, %ymm10
 	vpslld	$26, %ymm10, %ymm10
-	vpsrld	$6, %ymm9, %ymm9
-	vpor	%ymm10, %ymm9, %ymm9
-	vmovdqu	%ymm2, %ymm10
-	vmovdqu	%ymm10, %ymm11
-	vpslld	$21, %ymm11, %ymm11
-	vpsrld	$11, %ymm10, %ymm10
-	vpor	%ymm11, %ymm10, %ymm10
-	vpxor	%ymm10, %ymm9, %ymm9
-	vmovdqu	%ymm10, %ymm11
-	vpslld	$18, %ymm11, %ymm11
-	vpsrld	$14, %ymm10, %ymm10
-	vpor	%ymm11, %ymm10, %ymm7
+	vpsrld	$6, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm9
+	vmovdqu	%ymm2, %ymm7
+	vmovdqu	%ymm7, %ymm10
+	vpslld	$21, %ymm10, %ymm10
+	vpsrld	$11, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm7
+	vpxor	%ymm7, %ymm9, %ymm9
+	vmovdqu	%ymm7, %ymm10
+	vpslld	$18, %ymm10, %ymm10
+	vpsrld	$14, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm7
 	vpxor	%ymm7, %ymm9, %ymm7
 	vpaddd	%ymm7, %ymm0, %ymm7
 	vpaddd	%ymm7, %ymm5, %ymm0
@@ -35757,21 +35948,21 @@ slh_dsa_sha2128s_keygen:
 	vpand	%ymm4, %ymm5, %ymm5
 	vpxor	%ymm5, %ymm10, %ymm5
 	vpaddd	%ymm5, %ymm7, %ymm5
-	vmovdqu	%ymm6, %ymm9
-	vmovdqu	%ymm9, %ymm10
+	vmovdqu	%ymm6, %ymm7
+	vmovdqu	%ymm7, %ymm10
 	vpslld	$30, %ymm10, %ymm10
-	vpsrld	$2, %ymm9, %ymm9
-	vpor	%ymm10, %ymm9, %ymm9
-	vmovdqu	%ymm6, %ymm10
-	vmovdqu	%ymm10, %ymm11
-	vpslld	$19, %ymm11, %ymm11
-	vpsrld	$13, %ymm10, %ymm10
-	vpor	%ymm11, %ymm10, %ymm10
-	vpxor	%ymm10, %ymm9, %ymm9
-	vmovdqu	%ymm10, %ymm11
-	vpslld	$23, %ymm11, %ymm11
-	vpsrld	$9, %ymm10, %ymm10
-	vpor	%ymm11, %ymm10, %ymm7
+	vpsrld	$2, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm9
+	vmovdqu	%ymm6, %ymm7
+	vmovdqu	%ymm7, %ymm10
+	vpslld	$19, %ymm10, %ymm10
+	vpsrld	$13, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm7
+	vpxor	%ymm7, %ymm9, %ymm9
+	vmovdqu	%ymm7, %ymm10
+	vpslld	$23, %ymm10, %ymm10
+	vpsrld	$9, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm7
 	vpxor	%ymm7, %ymm9, %ymm7
 	vpaddd	%ymm7, %ymm5, %ymm5
 	vmovdqu	672(%rbp), %ymm7
@@ -35785,21 +35976,21 @@ slh_dsa_sha2128s_keygen:
 	vpand	%ymm3, %ymm7, %ymm7
 	vpxor	%ymm7, %ymm10, %ymm7
 	vpaddd	%ymm7, %ymm1, %ymm1
-	vmovdqu	%ymm0, %ymm9
-	vmovdqu	%ymm9, %ymm10
+	vmovdqu	%ymm0, %ymm7
+	vmovdqu	%ymm7, %ymm10
 	vpslld	$26, %ymm10, %ymm10
-	vpsrld	$6, %ymm9, %ymm9
-	vpor	%ymm10, %ymm9, %ymm9
-	vmovdqu	%ymm0, %ymm10
-	vmovdqu	%ymm10, %ymm11
-	vpslld	$21, %ymm11, %ymm11
-	vpsrld	$11, %ymm10, %ymm10
-	vpor	%ymm11, %ymm10, %ymm10
-	vpxor	%ymm10, %ymm9, %ymm9
-	vmovdqu	%ymm10, %ymm11
-	vpslld	$18, %ymm11, %ymm11
-	vpsrld	$14, %ymm10, %ymm10
-	vpor	%ymm11, %ymm10, %ymm7
+	vpsrld	$6, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm9
+	vmovdqu	%ymm0, %ymm7
+	vmovdqu	%ymm7, %ymm10
+	vpslld	$21, %ymm10, %ymm10
+	vpsrld	$11, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm7
+	vpxor	%ymm7, %ymm9, %ymm9
+	vmovdqu	%ymm7, %ymm10
+	vpslld	$18, %ymm10, %ymm10
+	vpsrld	$14, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm7
 	vpxor	%ymm7, %ymm9, %ymm7
 	vpaddd	%ymm7, %ymm1, %ymm7
 	vpaddd	%ymm7, %ymm4, %ymm1
@@ -35812,21 +36003,21 @@ slh_dsa_sha2128s_keygen:
 	vpand	%ymm8, %ymm4, %ymm4
 	vpxor	%ymm4, %ymm10, %ymm4
 	vpaddd	%ymm4, %ymm7, %ymm4
-	vmovdqu	%ymm5, %ymm9
-	vmovdqu	%ymm9, %ymm10
+	vmovdqu	%ymm5, %ymm7
+	vmovdqu	%ymm7, %ymm10
 	vpslld	$30, %ymm10, %ymm10
-	vpsrld	$2, %ymm9, %ymm9
-	vpor	%ymm10, %ymm9, %ymm9
-	vmovdqu	%ymm5, %ymm10
-	vmovdqu	%ymm10, %ymm11
-	vpslld	$19, %ymm11, %ymm11
-	vpsrld	$13, %ymm10, %ymm10
-	vpor	%ymm11, %ymm10, %ymm10
-	vpxor	%ymm10, %ymm9, %ymm9
-	vmovdqu	%ymm10, %ymm11
-	vpslld	$23, %ymm11, %ymm11
-	vpsrld	$9, %ymm10, %ymm10
-	vpor	%ymm11, %ymm10, %ymm7
+	vpsrld	$2, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm9
+	vmovdqu	%ymm5, %ymm7
+	vmovdqu	%ymm7, %ymm10
+	vpslld	$19, %ymm10, %ymm10
+	vpsrld	$13, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm7
+	vpxor	%ymm7, %ymm9, %ymm9
+	vmovdqu	%ymm7, %ymm10
+	vpslld	$23, %ymm10, %ymm10
+	vpsrld	$9, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm7
 	vpxor	%ymm7, %ymm9, %ymm7
 	vpaddd	%ymm7, %ymm4, %ymm4
 	vmovdqu	704(%rbp), %ymm7
@@ -35839,24 +36030,24 @@ slh_dsa_sha2128s_keygen:
 	vpxor	%ymm1, %ymm7, %ymm7
 	vpand	%ymm2, %ymm7, %ymm7
 	vpxor	%ymm7, %ymm10, %ymm7
-	vpaddd	%ymm7, %ymm3, %ymm7
-	vmovdqu	%ymm1, %ymm3
-	vmovdqu	%ymm3, %ymm10
+	vpaddd	%ymm7, %ymm3, %ymm3
+	vmovdqu	%ymm1, %ymm7
+	vmovdqu	%ymm7, %ymm10
 	vpslld	$26, %ymm10, %ymm10
-	vpsrld	$6, %ymm3, %ymm3
-	vpor	%ymm10, %ymm3, %ymm9
-	vmovdqu	%ymm1, %ymm3
-	vmovdqu	%ymm3, %ymm10
+	vpsrld	$6, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm9
+	vmovdqu	%ymm1, %ymm7
+	vmovdqu	%ymm7, %ymm10
 	vpslld	$21, %ymm10, %ymm10
-	vpsrld	$11, %ymm3, %ymm3
-	vpor	%ymm10, %ymm3, %ymm3
-	vpxor	%ymm3, %ymm9, %ymm9
-	vmovdqu	%ymm3, %ymm10
+	vpsrld	$11, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm7
+	vpxor	%ymm7, %ymm9, %ymm9
+	vmovdqu	%ymm7, %ymm10
 	vpslld	$18, %ymm10, %ymm10
-	vpsrld	$14, %ymm3, %ymm3
-	vpor	%ymm10, %ymm3, %ymm3
-	vpxor	%ymm3, %ymm9, %ymm3
-	vpaddd	%ymm3, %ymm7, %ymm7
+	vpsrld	$14, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm7
+	vpxor	%ymm7, %ymm9, %ymm7
+	vpaddd	%ymm7, %ymm3, %ymm7
 	vpaddd	%ymm7, %ymm8, %ymm3
 	vmovdqu	%ymm4, %ymm10
 	vpand	%ymm5, %ymm10, %ymm10
@@ -35894,24 +36085,24 @@ slh_dsa_sha2128s_keygen:
 	vpxor	%ymm3, %ymm7, %ymm7
 	vpand	%ymm0, %ymm7, %ymm7
 	vpxor	%ymm7, %ymm10, %ymm7
-	vpaddd	%ymm7, %ymm2, %ymm7
-	vmovdqu	%ymm3, %ymm2
-	vmovdqu	%ymm2, %ymm10
+	vpaddd	%ymm7, %ymm2, %ymm2
+	vmovdqu	%ymm3, %ymm7
+	vmovdqu	%ymm7, %ymm10
 	vpslld	$26, %ymm10, %ymm10
-	vpsrld	$6, %ymm2, %ymm2
-	vpor	%ymm10, %ymm2, %ymm9
-	vmovdqu	%ymm3, %ymm2
-	vmovdqu	%ymm2, %ymm10
+	vpsrld	$6, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm9
+	vmovdqu	%ymm3, %ymm7
+	vmovdqu	%ymm7, %ymm10
 	vpslld	$21, %ymm10, %ymm10
-	vpsrld	$11, %ymm2, %ymm2
-	vpor	%ymm10, %ymm2, %ymm2
-	vpxor	%ymm2, %ymm9, %ymm9
-	vmovdqu	%ymm2, %ymm10
+	vpsrld	$11, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm7
+	vpxor	%ymm7, %ymm9, %ymm9
+	vmovdqu	%ymm7, %ymm10
 	vpslld	$18, %ymm10, %ymm10
-	vpsrld	$14, %ymm2, %ymm2
-	vpor	%ymm10, %ymm2, %ymm2
-	vpxor	%ymm2, %ymm9, %ymm2
-	vpaddd	%ymm2, %ymm7, %ymm7
+	vpsrld	$14, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm7
+	vpxor	%ymm7, %ymm9, %ymm7
+	vpaddd	%ymm7, %ymm2, %ymm7
 	vpaddd	%ymm7, %ymm6, %ymm2
 	vmovdqu	%ymm8, %ymm10
 	vpand	%ymm4, %ymm10, %ymm10
@@ -35922,21 +36113,21 @@ slh_dsa_sha2128s_keygen:
 	vpand	%ymm5, %ymm6, %ymm6
 	vpxor	%ymm6, %ymm10, %ymm6
 	vpaddd	%ymm6, %ymm7, %ymm6
-	vmovdqu	%ymm8, %ymm9
-	vmovdqu	%ymm9, %ymm10
+	vmovdqu	%ymm8, %ymm7
+	vmovdqu	%ymm7, %ymm10
 	vpslld	$30, %ymm10, %ymm10
-	vpsrld	$2, %ymm9, %ymm9
-	vpor	%ymm10, %ymm9, %ymm9
-	vmovdqu	%ymm8, %ymm10
-	vmovdqu	%ymm10, %ymm11
-	vpslld	$19, %ymm11, %ymm11
-	vpsrld	$13, %ymm10, %ymm10
-	vpor	%ymm11, %ymm10, %ymm10
-	vpxor	%ymm10, %ymm9, %ymm9
-	vmovdqu	%ymm10, %ymm11
-	vpslld	$23, %ymm11, %ymm11
-	vpsrld	$9, %ymm10, %ymm10
-	vpor	%ymm11, %ymm10, %ymm7
+	vpsrld	$2, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm9
+	vmovdqu	%ymm8, %ymm7
+	vmovdqu	%ymm7, %ymm10
+	vpslld	$19, %ymm10, %ymm10
+	vpsrld	$13, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm7
+	vpxor	%ymm7, %ymm9, %ymm9
+	vmovdqu	%ymm7, %ymm10
+	vpslld	$23, %ymm10, %ymm10
+	vpsrld	$9, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm7
 	vpxor	%ymm7, %ymm9, %ymm7
 	vpaddd	%ymm7, %ymm6, %ymm6
 	vmovdqu	768(%rbp), %ymm7
@@ -35950,21 +36141,21 @@ slh_dsa_sha2128s_keygen:
 	vpand	%ymm1, %ymm7, %ymm7
 	vpxor	%ymm7, %ymm10, %ymm7
 	vpaddd	%ymm7, %ymm0, %ymm0
-	vmovdqu	%ymm2, %ymm9
-	vmovdqu	%ymm9, %ymm10
+	vmovdqu	%ymm2, %ymm7
+	vmovdqu	%ymm7, %ymm10
 	vpslld	$26, %ymm10, %ymm10
-	vpsrld	$6, %ymm9, %ymm9
-	vpor	%ymm10, %ymm9, %ymm9
-	vmovdqu	%ymm2, %ymm10
-	vmovdqu	%ymm10, %ymm11
-	vpslld	$21, %ymm11, %ymm11
-	vpsrld	$11, %ymm10, %ymm10
-	vpor	%ymm11, %ymm10, %ymm10
-	vpxor	%ymm10, %ymm9, %ymm9
-	vmovdqu	%ymm10, %ymm11
-	vpslld	$18, %ymm11, %ymm11
-	vpsrld	$14, %ymm10, %ymm10
-	vpor	%ymm11, %ymm10, %ymm7
+	vpsrld	$6, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm9
+	vmovdqu	%ymm2, %ymm7
+	vmovdqu	%ymm7, %ymm10
+	vpslld	$21, %ymm10, %ymm10
+	vpsrld	$11, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm7
+	vpxor	%ymm7, %ymm9, %ymm9
+	vmovdqu	%ymm7, %ymm10
+	vpslld	$18, %ymm10, %ymm10
+	vpsrld	$14, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm7
 	vpxor	%ymm7, %ymm9, %ymm7
 	vpaddd	%ymm7, %ymm0, %ymm7
 	vpaddd	%ymm7, %ymm5, %ymm0
@@ -35977,21 +36168,21 @@ slh_dsa_sha2128s_keygen:
 	vpand	%ymm4, %ymm5, %ymm5
 	vpxor	%ymm5, %ymm10, %ymm5
 	vpaddd	%ymm5, %ymm7, %ymm5
-	vmovdqu	%ymm6, %ymm9
-	vmovdqu	%ymm9, %ymm10
+	vmovdqu	%ymm6, %ymm7
+	vmovdqu	%ymm7, %ymm10
 	vpslld	$30, %ymm10, %ymm10
-	vpsrld	$2, %ymm9, %ymm9
-	vpor	%ymm10, %ymm9, %ymm9
-	vmovdqu	%ymm6, %ymm10
-	vmovdqu	%ymm10, %ymm11
-	vpslld	$19, %ymm11, %ymm11
-	vpsrld	$13, %ymm10, %ymm10
-	vpor	%ymm11, %ymm10, %ymm10
-	vpxor	%ymm10, %ymm9, %ymm9
-	vmovdqu	%ymm10, %ymm11
-	vpslld	$23, %ymm11, %ymm11
-	vpsrld	$9, %ymm10, %ymm10
-	vpor	%ymm11, %ymm10, %ymm7
+	vpsrld	$2, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm9
+	vmovdqu	%ymm6, %ymm7
+	vmovdqu	%ymm7, %ymm10
+	vpslld	$19, %ymm10, %ymm10
+	vpsrld	$13, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm7
+	vpxor	%ymm7, %ymm9, %ymm9
+	vmovdqu	%ymm7, %ymm10
+	vpslld	$23, %ymm10, %ymm10
+	vpsrld	$9, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm7
 	vpxor	%ymm7, %ymm9, %ymm7
 	vpaddd	%ymm7, %ymm5, %ymm5
 	vmovdqu	800(%rbp), %ymm7
@@ -36005,21 +36196,21 @@ slh_dsa_sha2128s_keygen:
 	vpand	%ymm3, %ymm7, %ymm7
 	vpxor	%ymm7, %ymm10, %ymm7
 	vpaddd	%ymm7, %ymm1, %ymm1
-	vmovdqu	%ymm0, %ymm9
-	vmovdqu	%ymm9, %ymm10
+	vmovdqu	%ymm0, %ymm7
+	vmovdqu	%ymm7, %ymm10
 	vpslld	$26, %ymm10, %ymm10
-	vpsrld	$6, %ymm9, %ymm9
-	vpor	%ymm10, %ymm9, %ymm9
-	vmovdqu	%ymm0, %ymm10
-	vmovdqu	%ymm10, %ymm11
-	vpslld	$21, %ymm11, %ymm11
-	vpsrld	$11, %ymm10, %ymm10
-	vpor	%ymm11, %ymm10, %ymm10
-	vpxor	%ymm10, %ymm9, %ymm9
-	vmovdqu	%ymm10, %ymm11
-	vpslld	$18, %ymm11, %ymm11
-	vpsrld	$14, %ymm10, %ymm10
-	vpor	%ymm11, %ymm10, %ymm7
+	vpsrld	$6, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm9
+	vmovdqu	%ymm0, %ymm7
+	vmovdqu	%ymm7, %ymm10
+	vpslld	$21, %ymm10, %ymm10
+	vpsrld	$11, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm7
+	vpxor	%ymm7, %ymm9, %ymm9
+	vmovdqu	%ymm7, %ymm10
+	vpslld	$18, %ymm10, %ymm10
+	vpsrld	$14, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm7
 	vpxor	%ymm7, %ymm9, %ymm7
 	vpaddd	%ymm7, %ymm1, %ymm7
 	vpaddd	%ymm7, %ymm4, %ymm1
@@ -36032,21 +36223,21 @@ slh_dsa_sha2128s_keygen:
 	vpand	%ymm8, %ymm4, %ymm4
 	vpxor	%ymm4, %ymm10, %ymm4
 	vpaddd	%ymm4, %ymm7, %ymm4
-	vmovdqu	%ymm5, %ymm9
-	vmovdqu	%ymm9, %ymm10
+	vmovdqu	%ymm5, %ymm7
+	vmovdqu	%ymm7, %ymm10
 	vpslld	$30, %ymm10, %ymm10
-	vpsrld	$2, %ymm9, %ymm9
-	vpor	%ymm10, %ymm9, %ymm9
-	vmovdqu	%ymm5, %ymm10
-	vmovdqu	%ymm10, %ymm11
-	vpslld	$19, %ymm11, %ymm11
-	vpsrld	$13, %ymm10, %ymm10
-	vpor	%ymm11, %ymm10, %ymm10
-	vpxor	%ymm10, %ymm9, %ymm9
-	vmovdqu	%ymm10, %ymm11
-	vpslld	$23, %ymm11, %ymm11
-	vpsrld	$9, %ymm10, %ymm10
-	vpor	%ymm11, %ymm10, %ymm7
+	vpsrld	$2, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm9
+	vmovdqu	%ymm5, %ymm7
+	vmovdqu	%ymm7, %ymm10
+	vpslld	$19, %ymm10, %ymm10
+	vpsrld	$13, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm7
+	vpxor	%ymm7, %ymm9, %ymm9
+	vmovdqu	%ymm7, %ymm10
+	vpslld	$23, %ymm10, %ymm10
+	vpsrld	$9, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm7
 	vpxor	%ymm7, %ymm9, %ymm7
 	vpaddd	%ymm7, %ymm4, %ymm4
 	vmovdqu	832(%rbp), %ymm7
@@ -36059,24 +36250,24 @@ slh_dsa_sha2128s_keygen:
 	vpxor	%ymm1, %ymm7, %ymm7
 	vpand	%ymm2, %ymm7, %ymm7
 	vpxor	%ymm7, %ymm10, %ymm7
-	vpaddd	%ymm7, %ymm3, %ymm7
-	vmovdqu	%ymm1, %ymm3
-	vmovdqu	%ymm3, %ymm10
+	vpaddd	%ymm7, %ymm3, %ymm3
+	vmovdqu	%ymm1, %ymm7
+	vmovdqu	%ymm7, %ymm10
 	vpslld	$26, %ymm10, %ymm10
-	vpsrld	$6, %ymm3, %ymm3
-	vpor	%ymm10, %ymm3, %ymm9
-	vmovdqu	%ymm1, %ymm3
-	vmovdqu	%ymm3, %ymm10
+	vpsrld	$6, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm9
+	vmovdqu	%ymm1, %ymm7
+	vmovdqu	%ymm7, %ymm10
 	vpslld	$21, %ymm10, %ymm10
-	vpsrld	$11, %ymm3, %ymm3
-	vpor	%ymm10, %ymm3, %ymm3
-	vpxor	%ymm3, %ymm9, %ymm9
-	vmovdqu	%ymm3, %ymm10
+	vpsrld	$11, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm7
+	vpxor	%ymm7, %ymm9, %ymm9
+	vmovdqu	%ymm7, %ymm10
 	vpslld	$18, %ymm10, %ymm10
-	vpsrld	$14, %ymm3, %ymm3
-	vpor	%ymm10, %ymm3, %ymm3
-	vpxor	%ymm3, %ymm9, %ymm3
-	vpaddd	%ymm3, %ymm7, %ymm7
+	vpsrld	$14, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm7
+	vpxor	%ymm7, %ymm9, %ymm7
+	vpaddd	%ymm7, %ymm3, %ymm7
 	vpaddd	%ymm7, %ymm8, %ymm3
 	vmovdqu	%ymm4, %ymm10
 	vpand	%ymm5, %ymm10, %ymm10
@@ -36114,24 +36305,24 @@ slh_dsa_sha2128s_keygen:
 	vpxor	%ymm3, %ymm7, %ymm7
 	vpand	%ymm0, %ymm7, %ymm7
 	vpxor	%ymm7, %ymm10, %ymm7
-	vpaddd	%ymm7, %ymm2, %ymm7
-	vmovdqu	%ymm3, %ymm2
-	vmovdqu	%ymm2, %ymm10
+	vpaddd	%ymm7, %ymm2, %ymm2
+	vmovdqu	%ymm3, %ymm7
+	vmovdqu	%ymm7, %ymm10
 	vpslld	$26, %ymm10, %ymm10
-	vpsrld	$6, %ymm2, %ymm2
-	vpor	%ymm10, %ymm2, %ymm9
-	vmovdqu	%ymm3, %ymm2
-	vmovdqu	%ymm2, %ymm10
+	vpsrld	$6, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm9
+	vmovdqu	%ymm3, %ymm7
+	vmovdqu	%ymm7, %ymm10
 	vpslld	$21, %ymm10, %ymm10
-	vpsrld	$11, %ymm2, %ymm2
-	vpor	%ymm10, %ymm2, %ymm2
-	vpxor	%ymm2, %ymm9, %ymm9
-	vmovdqu	%ymm2, %ymm10
+	vpsrld	$11, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm7
+	vpxor	%ymm7, %ymm9, %ymm9
+	vmovdqu	%ymm7, %ymm10
 	vpslld	$18, %ymm10, %ymm10
-	vpsrld	$14, %ymm2, %ymm2
-	vpor	%ymm10, %ymm2, %ymm2
-	vpxor	%ymm2, %ymm9, %ymm2
-	vpaddd	%ymm2, %ymm7, %ymm7
+	vpsrld	$14, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm7
+	vpxor	%ymm7, %ymm9, %ymm7
+	vpaddd	%ymm7, %ymm2, %ymm7
 	vpaddd	%ymm7, %ymm6, %ymm2
 	vmovdqu	%ymm8, %ymm10
 	vpand	%ymm4, %ymm10, %ymm10
@@ -36142,21 +36333,21 @@ slh_dsa_sha2128s_keygen:
 	vpand	%ymm5, %ymm6, %ymm6
 	vpxor	%ymm6, %ymm10, %ymm6
 	vpaddd	%ymm6, %ymm7, %ymm6
-	vmovdqu	%ymm8, %ymm9
-	vmovdqu	%ymm9, %ymm10
+	vmovdqu	%ymm8, %ymm7
+	vmovdqu	%ymm7, %ymm10
 	vpslld	$30, %ymm10, %ymm10
-	vpsrld	$2, %ymm9, %ymm9
-	vpor	%ymm10, %ymm9, %ymm9
-	vmovdqu	%ymm8, %ymm10
-	vmovdqu	%ymm10, %ymm11
-	vpslld	$19, %ymm11, %ymm11
-	vpsrld	$13, %ymm10, %ymm10
-	vpor	%ymm11, %ymm10, %ymm10
-	vpxor	%ymm10, %ymm9, %ymm9
-	vmovdqu	%ymm10, %ymm11
-	vpslld	$23, %ymm11, %ymm11
-	vpsrld	$9, %ymm10, %ymm10
-	vpor	%ymm11, %ymm10, %ymm7
+	vpsrld	$2, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm9
+	vmovdqu	%ymm8, %ymm7
+	vmovdqu	%ymm7, %ymm10
+	vpslld	$19, %ymm10, %ymm10
+	vpsrld	$13, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm7
+	vpxor	%ymm7, %ymm9, %ymm9
+	vmovdqu	%ymm7, %ymm10
+	vpslld	$23, %ymm10, %ymm10
+	vpsrld	$9, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm7
 	vpxor	%ymm7, %ymm9, %ymm7
 	vpaddd	%ymm7, %ymm6, %ymm6
 	vmovdqu	896(%rbp), %ymm7
@@ -36170,21 +36361,21 @@ slh_dsa_sha2128s_keygen:
 	vpand	%ymm1, %ymm7, %ymm7
 	vpxor	%ymm7, %ymm10, %ymm7
 	vpaddd	%ymm7, %ymm0, %ymm0
-	vmovdqu	%ymm2, %ymm9
-	vmovdqu	%ymm9, %ymm10
+	vmovdqu	%ymm2, %ymm7
+	vmovdqu	%ymm7, %ymm10
 	vpslld	$26, %ymm10, %ymm10
-	vpsrld	$6, %ymm9, %ymm9
-	vpor	%ymm10, %ymm9, %ymm9
-	vmovdqu	%ymm2, %ymm10
-	vmovdqu	%ymm10, %ymm11
-	vpslld	$21, %ymm11, %ymm11
-	vpsrld	$11, %ymm10, %ymm10
-	vpor	%ymm11, %ymm10, %ymm10
-	vpxor	%ymm10, %ymm9, %ymm9
-	vmovdqu	%ymm10, %ymm11
-	vpslld	$18, %ymm11, %ymm11
-	vpsrld	$14, %ymm10, %ymm10
-	vpor	%ymm11, %ymm10, %ymm7
+	vpsrld	$6, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm9
+	vmovdqu	%ymm2, %ymm7
+	vmovdqu	%ymm7, %ymm10
+	vpslld	$21, %ymm10, %ymm10
+	vpsrld	$11, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm7
+	vpxor	%ymm7, %ymm9, %ymm9
+	vmovdqu	%ymm7, %ymm10
+	vpslld	$18, %ymm10, %ymm10
+	vpsrld	$14, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm7
 	vpxor	%ymm7, %ymm9, %ymm7
 	vpaddd	%ymm7, %ymm0, %ymm7
 	vpaddd	%ymm7, %ymm5, %ymm0
@@ -36197,21 +36388,21 @@ slh_dsa_sha2128s_keygen:
 	vpand	%ymm4, %ymm5, %ymm5
 	vpxor	%ymm5, %ymm10, %ymm5
 	vpaddd	%ymm5, %ymm7, %ymm5
-	vmovdqu	%ymm6, %ymm9
-	vmovdqu	%ymm9, %ymm10
+	vmovdqu	%ymm6, %ymm7
+	vmovdqu	%ymm7, %ymm10
 	vpslld	$30, %ymm10, %ymm10
-	vpsrld	$2, %ymm9, %ymm9
-	vpor	%ymm10, %ymm9, %ymm9
-	vmovdqu	%ymm6, %ymm10
-	vmovdqu	%ymm10, %ymm11
-	vpslld	$19, %ymm11, %ymm11
-	vpsrld	$13, %ymm10, %ymm10
-	vpor	%ymm11, %ymm10, %ymm10
-	vpxor	%ymm10, %ymm9, %ymm9
-	vmovdqu	%ymm10, %ymm11
-	vpslld	$23, %ymm11, %ymm11
-	vpsrld	$9, %ymm10, %ymm10
-	vpor	%ymm11, %ymm10, %ymm7
+	vpsrld	$2, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm9
+	vmovdqu	%ymm6, %ymm7
+	vmovdqu	%ymm7, %ymm10
+	vpslld	$19, %ymm10, %ymm10
+	vpsrld	$13, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm7
+	vpxor	%ymm7, %ymm9, %ymm9
+	vmovdqu	%ymm7, %ymm10
+	vpslld	$23, %ymm10, %ymm10
+	vpsrld	$9, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm7
 	vpxor	%ymm7, %ymm9, %ymm7
 	vpaddd	%ymm7, %ymm5, %ymm5
 	vmovdqu	928(%rbp), %ymm7
@@ -36225,21 +36416,21 @@ slh_dsa_sha2128s_keygen:
 	vpand	%ymm3, %ymm7, %ymm7
 	vpxor	%ymm7, %ymm10, %ymm7
 	vpaddd	%ymm7, %ymm1, %ymm1
-	vmovdqu	%ymm0, %ymm9
-	vmovdqu	%ymm9, %ymm10
+	vmovdqu	%ymm0, %ymm7
+	vmovdqu	%ymm7, %ymm10
 	vpslld	$26, %ymm10, %ymm10
-	vpsrld	$6, %ymm9, %ymm9
-	vpor	%ymm10, %ymm9, %ymm9
-	vmovdqu	%ymm0, %ymm10
-	vmovdqu	%ymm10, %ymm11
-	vpslld	$21, %ymm11, %ymm11
-	vpsrld	$11, %ymm10, %ymm10
-	vpor	%ymm11, %ymm10, %ymm10
-	vpxor	%ymm10, %ymm9, %ymm9
-	vmovdqu	%ymm10, %ymm11
-	vpslld	$18, %ymm11, %ymm11
-	vpsrld	$14, %ymm10, %ymm10
-	vpor	%ymm11, %ymm10, %ymm7
+	vpsrld	$6, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm9
+	vmovdqu	%ymm0, %ymm7
+	vmovdqu	%ymm7, %ymm10
+	vpslld	$21, %ymm10, %ymm10
+	vpsrld	$11, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm7
+	vpxor	%ymm7, %ymm9, %ymm9
+	vmovdqu	%ymm7, %ymm10
+	vpslld	$18, %ymm10, %ymm10
+	vpsrld	$14, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm7
 	vpxor	%ymm7, %ymm9, %ymm7
 	vpaddd	%ymm7, %ymm1, %ymm7
 	vpaddd	%ymm7, %ymm4, %ymm1
@@ -36252,21 +36443,21 @@ slh_dsa_sha2128s_keygen:
 	vpand	%ymm8, %ymm4, %ymm4
 	vpxor	%ymm4, %ymm10, %ymm4
 	vpaddd	%ymm4, %ymm7, %ymm4
-	vmovdqu	%ymm5, %ymm9
-	vmovdqu	%ymm9, %ymm10
+	vmovdqu	%ymm5, %ymm7
+	vmovdqu	%ymm7, %ymm10
 	vpslld	$30, %ymm10, %ymm10
-	vpsrld	$2, %ymm9, %ymm9
-	vpor	%ymm10, %ymm9, %ymm9
-	vmovdqu	%ymm5, %ymm10
-	vmovdqu	%ymm10, %ymm11
-	vpslld	$19, %ymm11, %ymm11
-	vpsrld	$13, %ymm10, %ymm10
-	vpor	%ymm11, %ymm10, %ymm10
-	vpxor	%ymm10, %ymm9, %ymm9
-	vmovdqu	%ymm10, %ymm11
-	vpslld	$23, %ymm11, %ymm11
-	vpsrld	$9, %ymm10, %ymm10
-	vpor	%ymm11, %ymm10, %ymm7
+	vpsrld	$2, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm9
+	vmovdqu	%ymm5, %ymm7
+	vmovdqu	%ymm7, %ymm10
+	vpslld	$19, %ymm10, %ymm10
+	vpsrld	$13, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm7
+	vpxor	%ymm7, %ymm9, %ymm9
+	vmovdqu	%ymm7, %ymm10
+	vpslld	$23, %ymm10, %ymm10
+	vpsrld	$9, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm7
 	vpxor	%ymm7, %ymm9, %ymm7
 	vpaddd	%ymm7, %ymm4, %ymm4
 	vmovdqu	960(%rbp), %ymm7
@@ -36279,24 +36470,24 @@ slh_dsa_sha2128s_keygen:
 	vpxor	%ymm1, %ymm7, %ymm7
 	vpand	%ymm2, %ymm7, %ymm7
 	vpxor	%ymm7, %ymm10, %ymm7
-	vpaddd	%ymm7, %ymm3, %ymm7
-	vmovdqu	%ymm1, %ymm3
-	vmovdqu	%ymm3, %ymm10
+	vpaddd	%ymm7, %ymm3, %ymm3
+	vmovdqu	%ymm1, %ymm7
+	vmovdqu	%ymm7, %ymm10
 	vpslld	$26, %ymm10, %ymm10
-	vpsrld	$6, %ymm3, %ymm3
-	vpor	%ymm10, %ymm3, %ymm9
-	vmovdqu	%ymm1, %ymm3
-	vmovdqu	%ymm3, %ymm10
+	vpsrld	$6, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm9
+	vmovdqu	%ymm1, %ymm7
+	vmovdqu	%ymm7, %ymm10
 	vpslld	$21, %ymm10, %ymm10
-	vpsrld	$11, %ymm3, %ymm3
-	vpor	%ymm10, %ymm3, %ymm3
-	vpxor	%ymm3, %ymm9, %ymm9
-	vmovdqu	%ymm3, %ymm10
+	vpsrld	$11, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm7
+	vpxor	%ymm7, %ymm9, %ymm9
+	vmovdqu	%ymm7, %ymm10
 	vpslld	$18, %ymm10, %ymm10
-	vpsrld	$14, %ymm3, %ymm3
-	vpor	%ymm10, %ymm3, %ymm3
-	vpxor	%ymm3, %ymm9, %ymm3
-	vpaddd	%ymm3, %ymm7, %ymm7
+	vpsrld	$14, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm7
+	vpxor	%ymm7, %ymm9, %ymm7
+	vpaddd	%ymm7, %ymm3, %ymm7
 	vpaddd	%ymm7, %ymm8, %ymm3
 	vmovdqu	%ymm4, %ymm10
 	vpand	%ymm5, %ymm10, %ymm10
@@ -36334,24 +36525,24 @@ slh_dsa_sha2128s_keygen:
 	vpxor	%ymm3, %ymm7, %ymm7
 	vpand	%ymm0, %ymm7, %ymm7
 	vpxor	%ymm7, %ymm10, %ymm7
-	vpaddd	%ymm7, %ymm2, %ymm7
-	vmovdqu	%ymm3, %ymm2
-	vmovdqu	%ymm2, %ymm10
+	vpaddd	%ymm7, %ymm2, %ymm2
+	vmovdqu	%ymm3, %ymm7
+	vmovdqu	%ymm7, %ymm10
 	vpslld	$26, %ymm10, %ymm10
-	vpsrld	$6, %ymm2, %ymm2
-	vpor	%ymm10, %ymm2, %ymm9
-	vmovdqu	%ymm3, %ymm2
-	vmovdqu	%ymm2, %ymm10
+	vpsrld	$6, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm9
+	vmovdqu	%ymm3, %ymm7
+	vmovdqu	%ymm7, %ymm10
 	vpslld	$21, %ymm10, %ymm10
-	vpsrld	$11, %ymm2, %ymm2
-	vpor	%ymm10, %ymm2, %ymm2
-	vpxor	%ymm2, %ymm9, %ymm9
-	vmovdqu	%ymm2, %ymm10
+	vpsrld	$11, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm7
+	vpxor	%ymm7, %ymm9, %ymm9
+	vmovdqu	%ymm7, %ymm10
 	vpslld	$18, %ymm10, %ymm10
-	vpsrld	$14, %ymm2, %ymm2
-	vpor	%ymm10, %ymm2, %ymm2
-	vpxor	%ymm2, %ymm9, %ymm2
-	vpaddd	%ymm2, %ymm7, %ymm7
+	vpsrld	$14, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm7
+	vpxor	%ymm7, %ymm9, %ymm7
+	vpaddd	%ymm7, %ymm2, %ymm7
 	vpaddd	%ymm7, %ymm6, %ymm2
 	vmovdqu	%ymm8, %ymm10
 	vpand	%ymm4, %ymm10, %ymm10
@@ -36362,21 +36553,21 @@ slh_dsa_sha2128s_keygen:
 	vpand	%ymm5, %ymm6, %ymm6
 	vpxor	%ymm6, %ymm10, %ymm6
 	vpaddd	%ymm6, %ymm7, %ymm6
-	vmovdqu	%ymm8, %ymm9
-	vmovdqu	%ymm9, %ymm10
+	vmovdqu	%ymm8, %ymm7
+	vmovdqu	%ymm7, %ymm10
 	vpslld	$30, %ymm10, %ymm10
-	vpsrld	$2, %ymm9, %ymm9
-	vpor	%ymm10, %ymm9, %ymm9
-	vmovdqu	%ymm8, %ymm10
-	vmovdqu	%ymm10, %ymm11
-	vpslld	$19, %ymm11, %ymm11
-	vpsrld	$13, %ymm10, %ymm10
-	vpor	%ymm11, %ymm10, %ymm10
-	vpxor	%ymm10, %ymm9, %ymm9
-	vmovdqu	%ymm10, %ymm11
-	vpslld	$23, %ymm11, %ymm11
-	vpsrld	$9, %ymm10, %ymm10
-	vpor	%ymm11, %ymm10, %ymm7
+	vpsrld	$2, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm9
+	vmovdqu	%ymm8, %ymm7
+	vmovdqu	%ymm7, %ymm10
+	vpslld	$19, %ymm10, %ymm10
+	vpsrld	$13, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm7
+	vpxor	%ymm7, %ymm9, %ymm9
+	vmovdqu	%ymm7, %ymm10
+	vpslld	$23, %ymm10, %ymm10
+	vpsrld	$9, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm7
 	vpxor	%ymm7, %ymm9, %ymm7
 	vpaddd	%ymm7, %ymm6, %ymm6
 	vmovdqu	1024(%rbp), %ymm7
@@ -36390,21 +36581,21 @@ slh_dsa_sha2128s_keygen:
 	vpand	%ymm1, %ymm7, %ymm7
 	vpxor	%ymm7, %ymm10, %ymm7
 	vpaddd	%ymm7, %ymm0, %ymm0
-	vmovdqu	%ymm2, %ymm9
-	vmovdqu	%ymm9, %ymm10
+	vmovdqu	%ymm2, %ymm7
+	vmovdqu	%ymm7, %ymm10
 	vpslld	$26, %ymm10, %ymm10
-	vpsrld	$6, %ymm9, %ymm9
-	vpor	%ymm10, %ymm9, %ymm9
-	vmovdqu	%ymm2, %ymm10
-	vmovdqu	%ymm10, %ymm11
-	vpslld	$21, %ymm11, %ymm11
-	vpsrld	$11, %ymm10, %ymm10
-	vpor	%ymm11, %ymm10, %ymm10
-	vpxor	%ymm10, %ymm9, %ymm9
-	vmovdqu	%ymm10, %ymm11
-	vpslld	$18, %ymm11, %ymm11
-	vpsrld	$14, %ymm10, %ymm10
-	vpor	%ymm11, %ymm10, %ymm7
+	vpsrld	$6, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm9
+	vmovdqu	%ymm2, %ymm7
+	vmovdqu	%ymm7, %ymm10
+	vpslld	$21, %ymm10, %ymm10
+	vpsrld	$11, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm7
+	vpxor	%ymm7, %ymm9, %ymm9
+	vmovdqu	%ymm7, %ymm10
+	vpslld	$18, %ymm10, %ymm10
+	vpsrld	$14, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm7
 	vpxor	%ymm7, %ymm9, %ymm7
 	vpaddd	%ymm7, %ymm0, %ymm7
 	vpaddd	%ymm7, %ymm5, %ymm0
@@ -36417,21 +36608,21 @@ slh_dsa_sha2128s_keygen:
 	vpand	%ymm4, %ymm5, %ymm5
 	vpxor	%ymm5, %ymm10, %ymm5
 	vpaddd	%ymm5, %ymm7, %ymm5
-	vmovdqu	%ymm6, %ymm9
-	vmovdqu	%ymm9, %ymm10
+	vmovdqu	%ymm6, %ymm7
+	vmovdqu	%ymm7, %ymm10
 	vpslld	$30, %ymm10, %ymm10
-	vpsrld	$2, %ymm9, %ymm9
-	vpor	%ymm10, %ymm9, %ymm9
-	vmovdqu	%ymm6, %ymm10
-	vmovdqu	%ymm10, %ymm11
-	vpslld	$19, %ymm11, %ymm11
-	vpsrld	$13, %ymm10, %ymm10
-	vpor	%ymm11, %ymm10, %ymm10
-	vpxor	%ymm10, %ymm9, %ymm9
-	vmovdqu	%ymm10, %ymm11
-	vpslld	$23, %ymm11, %ymm11
-	vpsrld	$9, %ymm10, %ymm10
-	vpor	%ymm11, %ymm10, %ymm7
+	vpsrld	$2, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm9
+	vmovdqu	%ymm6, %ymm7
+	vmovdqu	%ymm7, %ymm10
+	vpslld	$19, %ymm10, %ymm10
+	vpsrld	$13, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm7
+	vpxor	%ymm7, %ymm9, %ymm9
+	vmovdqu	%ymm7, %ymm10
+	vpslld	$23, %ymm10, %ymm10
+	vpsrld	$9, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm7
 	vpxor	%ymm7, %ymm9, %ymm7
 	vpaddd	%ymm7, %ymm5, %ymm5
 	vmovdqu	1056(%rbp), %ymm7
@@ -36445,21 +36636,21 @@ slh_dsa_sha2128s_keygen:
 	vpand	%ymm3, %ymm7, %ymm7
 	vpxor	%ymm7, %ymm10, %ymm7
 	vpaddd	%ymm7, %ymm1, %ymm1
-	vmovdqu	%ymm0, %ymm9
-	vmovdqu	%ymm9, %ymm10
+	vmovdqu	%ymm0, %ymm7
+	vmovdqu	%ymm7, %ymm10
 	vpslld	$26, %ymm10, %ymm10
-	vpsrld	$6, %ymm9, %ymm9
-	vpor	%ymm10, %ymm9, %ymm9
-	vmovdqu	%ymm0, %ymm10
-	vmovdqu	%ymm10, %ymm11
-	vpslld	$21, %ymm11, %ymm11
-	vpsrld	$11, %ymm10, %ymm10
-	vpor	%ymm11, %ymm10, %ymm10
-	vpxor	%ymm10, %ymm9, %ymm9
-	vmovdqu	%ymm10, %ymm11
-	vpslld	$18, %ymm11, %ymm11
-	vpsrld	$14, %ymm10, %ymm10
-	vpor	%ymm11, %ymm10, %ymm7
+	vpsrld	$6, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm9
+	vmovdqu	%ymm0, %ymm7
+	vmovdqu	%ymm7, %ymm10
+	vpslld	$21, %ymm10, %ymm10
+	vpsrld	$11, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm7
+	vpxor	%ymm7, %ymm9, %ymm9
+	vmovdqu	%ymm7, %ymm10
+	vpslld	$18, %ymm10, %ymm10
+	vpsrld	$14, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm7
 	vpxor	%ymm7, %ymm9, %ymm7
 	vpaddd	%ymm7, %ymm1, %ymm7
 	vpaddd	%ymm7, %ymm4, %ymm1
@@ -36472,21 +36663,21 @@ slh_dsa_sha2128s_keygen:
 	vpand	%ymm8, %ymm4, %ymm4
 	vpxor	%ymm4, %ymm10, %ymm4
 	vpaddd	%ymm4, %ymm7, %ymm4
-	vmovdqu	%ymm5, %ymm9
-	vmovdqu	%ymm9, %ymm10
+	vmovdqu	%ymm5, %ymm7
+	vmovdqu	%ymm7, %ymm10
 	vpslld	$30, %ymm10, %ymm10
-	vpsrld	$2, %ymm9, %ymm9
-	vpor	%ymm10, %ymm9, %ymm9
-	vmovdqu	%ymm5, %ymm10
-	vmovdqu	%ymm10, %ymm11
-	vpslld	$19, %ymm11, %ymm11
-	vpsrld	$13, %ymm10, %ymm10
-	vpor	%ymm11, %ymm10, %ymm10
-	vpxor	%ymm10, %ymm9, %ymm9
-	vmovdqu	%ymm10, %ymm11
-	vpslld	$23, %ymm11, %ymm11
-	vpsrld	$9, %ymm10, %ymm10
-	vpor	%ymm11, %ymm10, %ymm7
+	vpsrld	$2, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm9
+	vmovdqu	%ymm5, %ymm7
+	vmovdqu	%ymm7, %ymm10
+	vpslld	$19, %ymm10, %ymm10
+	vpsrld	$13, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm7
+	vpxor	%ymm7, %ymm9, %ymm9
+	vmovdqu	%ymm7, %ymm10
+	vpslld	$23, %ymm10, %ymm10
+	vpsrld	$9, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm7
 	vpxor	%ymm7, %ymm9, %ymm7
 	vpaddd	%ymm7, %ymm4, %ymm4
 	vmovdqu	1088(%rbp), %ymm7
@@ -36499,24 +36690,24 @@ slh_dsa_sha2128s_keygen:
 	vpxor	%ymm1, %ymm7, %ymm7
 	vpand	%ymm2, %ymm7, %ymm7
 	vpxor	%ymm7, %ymm10, %ymm7
-	vpaddd	%ymm7, %ymm3, %ymm7
-	vmovdqu	%ymm1, %ymm3
-	vmovdqu	%ymm3, %ymm10
+	vpaddd	%ymm7, %ymm3, %ymm3
+	vmovdqu	%ymm1, %ymm7
+	vmovdqu	%ymm7, %ymm10
 	vpslld	$26, %ymm10, %ymm10
-	vpsrld	$6, %ymm3, %ymm3
-	vpor	%ymm10, %ymm3, %ymm9
-	vmovdqu	%ymm1, %ymm3
-	vmovdqu	%ymm3, %ymm10
+	vpsrld	$6, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm9
+	vmovdqu	%ymm1, %ymm7
+	vmovdqu	%ymm7, %ymm10
 	vpslld	$21, %ymm10, %ymm10
-	vpsrld	$11, %ymm3, %ymm3
-	vpor	%ymm10, %ymm3, %ymm3
-	vpxor	%ymm3, %ymm9, %ymm9
-	vmovdqu	%ymm3, %ymm10
+	vpsrld	$11, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm7
+	vpxor	%ymm7, %ymm9, %ymm9
+	vmovdqu	%ymm7, %ymm10
 	vpslld	$18, %ymm10, %ymm10
-	vpsrld	$14, %ymm3, %ymm3
-	vpor	%ymm10, %ymm3, %ymm3
-	vpxor	%ymm3, %ymm9, %ymm3
-	vpaddd	%ymm3, %ymm7, %ymm7
+	vpsrld	$14, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm7
+	vpxor	%ymm7, %ymm9, %ymm7
+	vpaddd	%ymm7, %ymm3, %ymm7
 	vpaddd	%ymm7, %ymm8, %ymm3
 	vmovdqu	%ymm4, %ymm10
 	vpand	%ymm5, %ymm10, %ymm10
@@ -36554,24 +36745,24 @@ slh_dsa_sha2128s_keygen:
 	vpxor	%ymm3, %ymm7, %ymm7
 	vpand	%ymm0, %ymm7, %ymm7
 	vpxor	%ymm7, %ymm10, %ymm7
-	vpaddd	%ymm7, %ymm2, %ymm7
-	vmovdqu	%ymm3, %ymm2
-	vmovdqu	%ymm2, %ymm10
+	vpaddd	%ymm7, %ymm2, %ymm2
+	vmovdqu	%ymm3, %ymm7
+	vmovdqu	%ymm7, %ymm10
 	vpslld	$26, %ymm10, %ymm10
-	vpsrld	$6, %ymm2, %ymm2
-	vpor	%ymm10, %ymm2, %ymm9
-	vmovdqu	%ymm3, %ymm2
-	vmovdqu	%ymm2, %ymm10
+	vpsrld	$6, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm9
+	vmovdqu	%ymm3, %ymm7
+	vmovdqu	%ymm7, %ymm10
 	vpslld	$21, %ymm10, %ymm10
-	vpsrld	$11, %ymm2, %ymm2
-	vpor	%ymm10, %ymm2, %ymm2
-	vpxor	%ymm2, %ymm9, %ymm9
-	vmovdqu	%ymm2, %ymm10
+	vpsrld	$11, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm7
+	vpxor	%ymm7, %ymm9, %ymm9
+	vmovdqu	%ymm7, %ymm10
 	vpslld	$18, %ymm10, %ymm10
-	vpsrld	$14, %ymm2, %ymm2
-	vpor	%ymm10, %ymm2, %ymm2
-	vpxor	%ymm2, %ymm9, %ymm2
-	vpaddd	%ymm2, %ymm7, %ymm7
+	vpsrld	$14, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm7
+	vpxor	%ymm7, %ymm9, %ymm7
+	vpaddd	%ymm7, %ymm2, %ymm7
 	vpaddd	%ymm7, %ymm6, %ymm2
 	vmovdqu	%ymm8, %ymm10
 	vpand	%ymm4, %ymm10, %ymm10
@@ -36582,21 +36773,21 @@ slh_dsa_sha2128s_keygen:
 	vpand	%ymm5, %ymm6, %ymm6
 	vpxor	%ymm6, %ymm10, %ymm6
 	vpaddd	%ymm6, %ymm7, %ymm6
-	vmovdqu	%ymm8, %ymm9
-	vmovdqu	%ymm9, %ymm10
+	vmovdqu	%ymm8, %ymm7
+	vmovdqu	%ymm7, %ymm10
 	vpslld	$30, %ymm10, %ymm10
-	vpsrld	$2, %ymm9, %ymm9
-	vpor	%ymm10, %ymm9, %ymm9
-	vmovdqu	%ymm8, %ymm10
-	vmovdqu	%ymm10, %ymm11
-	vpslld	$19, %ymm11, %ymm11
-	vpsrld	$13, %ymm10, %ymm10
-	vpor	%ymm11, %ymm10, %ymm10
-	vpxor	%ymm10, %ymm9, %ymm9
-	vmovdqu	%ymm10, %ymm11
-	vpslld	$23, %ymm11, %ymm11
-	vpsrld	$9, %ymm10, %ymm10
-	vpor	%ymm11, %ymm10, %ymm7
+	vpsrld	$2, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm9
+	vmovdqu	%ymm8, %ymm7
+	vmovdqu	%ymm7, %ymm10
+	vpslld	$19, %ymm10, %ymm10
+	vpsrld	$13, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm7
+	vpxor	%ymm7, %ymm9, %ymm9
+	vmovdqu	%ymm7, %ymm10
+	vpslld	$23, %ymm10, %ymm10
+	vpsrld	$9, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm7
 	vpxor	%ymm7, %ymm9, %ymm7
 	vpaddd	%ymm7, %ymm6, %ymm6
 	vmovdqu	1152(%rbp), %ymm7
@@ -36610,21 +36801,21 @@ slh_dsa_sha2128s_keygen:
 	vpand	%ymm1, %ymm7, %ymm7
 	vpxor	%ymm7, %ymm10, %ymm7
 	vpaddd	%ymm7, %ymm0, %ymm0
-	vmovdqu	%ymm2, %ymm9
-	vmovdqu	%ymm9, %ymm10
+	vmovdqu	%ymm2, %ymm7
+	vmovdqu	%ymm7, %ymm10
 	vpslld	$26, %ymm10, %ymm10
-	vpsrld	$6, %ymm9, %ymm9
-	vpor	%ymm10, %ymm9, %ymm9
-	vmovdqu	%ymm2, %ymm10
-	vmovdqu	%ymm10, %ymm11
-	vpslld	$21, %ymm11, %ymm11
-	vpsrld	$11, %ymm10, %ymm10
-	vpor	%ymm11, %ymm10, %ymm10
-	vpxor	%ymm10, %ymm9, %ymm9
-	vmovdqu	%ymm10, %ymm11
-	vpslld	$18, %ymm11, %ymm11
-	vpsrld	$14, %ymm10, %ymm10
-	vpor	%ymm11, %ymm10, %ymm7
+	vpsrld	$6, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm9
+	vmovdqu	%ymm2, %ymm7
+	vmovdqu	%ymm7, %ymm10
+	vpslld	$21, %ymm10, %ymm10
+	vpsrld	$11, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm7
+	vpxor	%ymm7, %ymm9, %ymm9
+	vmovdqu	%ymm7, %ymm10
+	vpslld	$18, %ymm10, %ymm10
+	vpsrld	$14, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm7
 	vpxor	%ymm7, %ymm9, %ymm7
 	vpaddd	%ymm7, %ymm0, %ymm7
 	vpaddd	%ymm7, %ymm5, %ymm0
@@ -36637,21 +36828,21 @@ slh_dsa_sha2128s_keygen:
 	vpand	%ymm4, %ymm5, %ymm5
 	vpxor	%ymm5, %ymm10, %ymm5
 	vpaddd	%ymm5, %ymm7, %ymm5
-	vmovdqu	%ymm6, %ymm9
-	vmovdqu	%ymm9, %ymm10
+	vmovdqu	%ymm6, %ymm7
+	vmovdqu	%ymm7, %ymm10
 	vpslld	$30, %ymm10, %ymm10
-	vpsrld	$2, %ymm9, %ymm9
-	vpor	%ymm10, %ymm9, %ymm9
-	vmovdqu	%ymm6, %ymm10
-	vmovdqu	%ymm10, %ymm11
-	vpslld	$19, %ymm11, %ymm11
-	vpsrld	$13, %ymm10, %ymm10
-	vpor	%ymm11, %ymm10, %ymm10
-	vpxor	%ymm10, %ymm9, %ymm9
-	vmovdqu	%ymm10, %ymm11
-	vpslld	$23, %ymm11, %ymm11
-	vpsrld	$9, %ymm10, %ymm10
-	vpor	%ymm11, %ymm10, %ymm7
+	vpsrld	$2, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm9
+	vmovdqu	%ymm6, %ymm7
+	vmovdqu	%ymm7, %ymm10
+	vpslld	$19, %ymm10, %ymm10
+	vpsrld	$13, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm7
+	vpxor	%ymm7, %ymm9, %ymm9
+	vmovdqu	%ymm7, %ymm10
+	vpslld	$23, %ymm10, %ymm10
+	vpsrld	$9, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm7
 	vpxor	%ymm7, %ymm9, %ymm7
 	vpaddd	%ymm7, %ymm5, %ymm5
 	vmovdqu	1184(%rbp), %ymm7
@@ -36665,21 +36856,21 @@ slh_dsa_sha2128s_keygen:
 	vpand	%ymm3, %ymm7, %ymm7
 	vpxor	%ymm7, %ymm10, %ymm7
 	vpaddd	%ymm7, %ymm1, %ymm1
-	vmovdqu	%ymm0, %ymm9
-	vmovdqu	%ymm9, %ymm10
+	vmovdqu	%ymm0, %ymm7
+	vmovdqu	%ymm7, %ymm10
 	vpslld	$26, %ymm10, %ymm10
-	vpsrld	$6, %ymm9, %ymm9
-	vpor	%ymm10, %ymm9, %ymm9
-	vmovdqu	%ymm0, %ymm10
-	vmovdqu	%ymm10, %ymm11
-	vpslld	$21, %ymm11, %ymm11
-	vpsrld	$11, %ymm10, %ymm10
-	vpor	%ymm11, %ymm10, %ymm10
-	vpxor	%ymm10, %ymm9, %ymm9
-	vmovdqu	%ymm10, %ymm11
-	vpslld	$18, %ymm11, %ymm11
-	vpsrld	$14, %ymm10, %ymm10
-	vpor	%ymm11, %ymm10, %ymm7
+	vpsrld	$6, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm9
+	vmovdqu	%ymm0, %ymm7
+	vmovdqu	%ymm7, %ymm10
+	vpslld	$21, %ymm10, %ymm10
+	vpsrld	$11, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm7
+	vpxor	%ymm7, %ymm9, %ymm9
+	vmovdqu	%ymm7, %ymm10
+	vpslld	$18, %ymm10, %ymm10
+	vpsrld	$14, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm7
 	vpxor	%ymm7, %ymm9, %ymm7
 	vpaddd	%ymm7, %ymm1, %ymm7
 	vpaddd	%ymm7, %ymm4, %ymm1
@@ -36692,21 +36883,21 @@ slh_dsa_sha2128s_keygen:
 	vpand	%ymm8, %ymm4, %ymm4
 	vpxor	%ymm4, %ymm10, %ymm4
 	vpaddd	%ymm4, %ymm7, %ymm4
-	vmovdqu	%ymm5, %ymm9
-	vmovdqu	%ymm9, %ymm10
+	vmovdqu	%ymm5, %ymm7
+	vmovdqu	%ymm7, %ymm10
 	vpslld	$30, %ymm10, %ymm10
-	vpsrld	$2, %ymm9, %ymm9
-	vpor	%ymm10, %ymm9, %ymm9
-	vmovdqu	%ymm5, %ymm10
-	vmovdqu	%ymm10, %ymm11
-	vpslld	$19, %ymm11, %ymm11
-	vpsrld	$13, %ymm10, %ymm10
-	vpor	%ymm11, %ymm10, %ymm10
-	vpxor	%ymm10, %ymm9, %ymm9
-	vmovdqu	%ymm10, %ymm11
-	vpslld	$23, %ymm11, %ymm11
-	vpsrld	$9, %ymm10, %ymm10
-	vpor	%ymm11, %ymm10, %ymm7
+	vpsrld	$2, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm9
+	vmovdqu	%ymm5, %ymm7
+	vmovdqu	%ymm7, %ymm10
+	vpslld	$19, %ymm10, %ymm10
+	vpsrld	$13, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm7
+	vpxor	%ymm7, %ymm9, %ymm9
+	vmovdqu	%ymm7, %ymm10
+	vpslld	$23, %ymm10, %ymm10
+	vpsrld	$9, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm7
 	vpxor	%ymm7, %ymm9, %ymm7
 	vpaddd	%ymm7, %ymm4, %ymm4
 	vmovdqu	1216(%rbp), %ymm7
@@ -36719,24 +36910,24 @@ slh_dsa_sha2128s_keygen:
 	vpxor	%ymm1, %ymm7, %ymm7
 	vpand	%ymm2, %ymm7, %ymm7
 	vpxor	%ymm7, %ymm10, %ymm7
-	vpaddd	%ymm7, %ymm3, %ymm7
-	vmovdqu	%ymm1, %ymm3
-	vmovdqu	%ymm3, %ymm10
+	vpaddd	%ymm7, %ymm3, %ymm3
+	vmovdqu	%ymm1, %ymm7
+	vmovdqu	%ymm7, %ymm10
 	vpslld	$26, %ymm10, %ymm10
-	vpsrld	$6, %ymm3, %ymm3
-	vpor	%ymm10, %ymm3, %ymm9
-	vmovdqu	%ymm1, %ymm3
-	vmovdqu	%ymm3, %ymm10
+	vpsrld	$6, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm9
+	vmovdqu	%ymm1, %ymm7
+	vmovdqu	%ymm7, %ymm10
 	vpslld	$21, %ymm10, %ymm10
-	vpsrld	$11, %ymm3, %ymm3
-	vpor	%ymm10, %ymm3, %ymm3
-	vpxor	%ymm3, %ymm9, %ymm9
-	vmovdqu	%ymm3, %ymm10
+	vpsrld	$11, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm7
+	vpxor	%ymm7, %ymm9, %ymm9
+	vmovdqu	%ymm7, %ymm10
 	vpslld	$18, %ymm10, %ymm10
-	vpsrld	$14, %ymm3, %ymm3
-	vpor	%ymm10, %ymm3, %ymm3
-	vpxor	%ymm3, %ymm9, %ymm3
-	vpaddd	%ymm3, %ymm7, %ymm7
+	vpsrld	$14, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm7
+	vpxor	%ymm7, %ymm9, %ymm7
+	vpaddd	%ymm7, %ymm3, %ymm7
 	vpaddd	%ymm7, %ymm8, %ymm3
 	vmovdqu	%ymm4, %ymm10
 	vpand	%ymm5, %ymm10, %ymm10
@@ -36774,24 +36965,24 @@ slh_dsa_sha2128s_keygen:
 	vpxor	%ymm3, %ymm7, %ymm7
 	vpand	%ymm0, %ymm7, %ymm7
 	vpxor	%ymm7, %ymm10, %ymm7
-	vpaddd	%ymm7, %ymm2, %ymm7
-	vmovdqu	%ymm3, %ymm2
-	vmovdqu	%ymm2, %ymm10
+	vpaddd	%ymm7, %ymm2, %ymm2
+	vmovdqu	%ymm3, %ymm7
+	vmovdqu	%ymm7, %ymm10
 	vpslld	$26, %ymm10, %ymm10
-	vpsrld	$6, %ymm2, %ymm2
-	vpor	%ymm10, %ymm2, %ymm9
-	vmovdqu	%ymm3, %ymm2
-	vmovdqu	%ymm2, %ymm10
+	vpsrld	$6, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm9
+	vmovdqu	%ymm3, %ymm7
+	vmovdqu	%ymm7, %ymm10
 	vpslld	$21, %ymm10, %ymm10
-	vpsrld	$11, %ymm2, %ymm2
-	vpor	%ymm10, %ymm2, %ymm2
-	vpxor	%ymm2, %ymm9, %ymm9
-	vmovdqu	%ymm2, %ymm10
+	vpsrld	$11, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm7
+	vpxor	%ymm7, %ymm9, %ymm9
+	vmovdqu	%ymm7, %ymm10
 	vpslld	$18, %ymm10, %ymm10
-	vpsrld	$14, %ymm2, %ymm2
-	vpor	%ymm10, %ymm2, %ymm2
-	vpxor	%ymm2, %ymm9, %ymm2
-	vpaddd	%ymm2, %ymm7, %ymm7
+	vpsrld	$14, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm7
+	vpxor	%ymm7, %ymm9, %ymm7
+	vpaddd	%ymm7, %ymm2, %ymm7
 	vpaddd	%ymm7, %ymm6, %ymm2
 	vmovdqu	%ymm8, %ymm10
 	vpand	%ymm4, %ymm10, %ymm10
@@ -36802,21 +36993,21 @@ slh_dsa_sha2128s_keygen:
 	vpand	%ymm5, %ymm6, %ymm6
 	vpxor	%ymm6, %ymm10, %ymm6
 	vpaddd	%ymm6, %ymm7, %ymm6
-	vmovdqu	%ymm8, %ymm9
-	vmovdqu	%ymm9, %ymm10
+	vmovdqu	%ymm8, %ymm7
+	vmovdqu	%ymm7, %ymm10
 	vpslld	$30, %ymm10, %ymm10
-	vpsrld	$2, %ymm9, %ymm9
-	vpor	%ymm10, %ymm9, %ymm9
-	vmovdqu	%ymm8, %ymm10
-	vmovdqu	%ymm10, %ymm11
-	vpslld	$19, %ymm11, %ymm11
-	vpsrld	$13, %ymm10, %ymm10
-	vpor	%ymm11, %ymm10, %ymm10
-	vpxor	%ymm10, %ymm9, %ymm9
-	vmovdqu	%ymm10, %ymm11
-	vpslld	$23, %ymm11, %ymm11
-	vpsrld	$9, %ymm10, %ymm10
-	vpor	%ymm11, %ymm10, %ymm7
+	vpsrld	$2, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm9
+	vmovdqu	%ymm8, %ymm7
+	vmovdqu	%ymm7, %ymm10
+	vpslld	$19, %ymm10, %ymm10
+	vpsrld	$13, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm7
+	vpxor	%ymm7, %ymm9, %ymm9
+	vmovdqu	%ymm7, %ymm10
+	vpslld	$23, %ymm10, %ymm10
+	vpsrld	$9, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm7
 	vpxor	%ymm7, %ymm9, %ymm7
 	vpaddd	%ymm7, %ymm6, %ymm6
 	vmovdqu	1280(%rbp), %ymm7
@@ -36830,21 +37021,21 @@ slh_dsa_sha2128s_keygen:
 	vpand	%ymm1, %ymm7, %ymm7
 	vpxor	%ymm7, %ymm10, %ymm7
 	vpaddd	%ymm7, %ymm0, %ymm0
-	vmovdqu	%ymm2, %ymm9
-	vmovdqu	%ymm9, %ymm10
+	vmovdqu	%ymm2, %ymm7
+	vmovdqu	%ymm7, %ymm10
 	vpslld	$26, %ymm10, %ymm10
-	vpsrld	$6, %ymm9, %ymm9
-	vpor	%ymm10, %ymm9, %ymm9
-	vmovdqu	%ymm2, %ymm10
-	vmovdqu	%ymm10, %ymm11
-	vpslld	$21, %ymm11, %ymm11
-	vpsrld	$11, %ymm10, %ymm10
-	vpor	%ymm11, %ymm10, %ymm10
-	vpxor	%ymm10, %ymm9, %ymm9
-	vmovdqu	%ymm10, %ymm11
-	vpslld	$18, %ymm11, %ymm11
-	vpsrld	$14, %ymm10, %ymm10
-	vpor	%ymm11, %ymm10, %ymm7
+	vpsrld	$6, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm9
+	vmovdqu	%ymm2, %ymm7
+	vmovdqu	%ymm7, %ymm10
+	vpslld	$21, %ymm10, %ymm10
+	vpsrld	$11, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm7
+	vpxor	%ymm7, %ymm9, %ymm9
+	vmovdqu	%ymm7, %ymm10
+	vpslld	$18, %ymm10, %ymm10
+	vpsrld	$14, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm7
 	vpxor	%ymm7, %ymm9, %ymm7
 	vpaddd	%ymm7, %ymm0, %ymm7
 	vpaddd	%ymm7, %ymm5, %ymm0
@@ -36857,21 +37048,21 @@ slh_dsa_sha2128s_keygen:
 	vpand	%ymm4, %ymm5, %ymm5
 	vpxor	%ymm5, %ymm10, %ymm5
 	vpaddd	%ymm5, %ymm7, %ymm5
-	vmovdqu	%ymm6, %ymm9
-	vmovdqu	%ymm9, %ymm10
+	vmovdqu	%ymm6, %ymm7
+	vmovdqu	%ymm7, %ymm10
 	vpslld	$30, %ymm10, %ymm10
-	vpsrld	$2, %ymm9, %ymm9
-	vpor	%ymm10, %ymm9, %ymm9
-	vmovdqu	%ymm6, %ymm10
-	vmovdqu	%ymm10, %ymm11
-	vpslld	$19, %ymm11, %ymm11
-	vpsrld	$13, %ymm10, %ymm10
-	vpor	%ymm11, %ymm10, %ymm10
-	vpxor	%ymm10, %ymm9, %ymm9
-	vmovdqu	%ymm10, %ymm11
-	vpslld	$23, %ymm11, %ymm11
-	vpsrld	$9, %ymm10, %ymm10
-	vpor	%ymm11, %ymm10, %ymm7
+	vpsrld	$2, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm9
+	vmovdqu	%ymm6, %ymm7
+	vmovdqu	%ymm7, %ymm10
+	vpslld	$19, %ymm10, %ymm10
+	vpsrld	$13, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm7
+	vpxor	%ymm7, %ymm9, %ymm9
+	vmovdqu	%ymm7, %ymm10
+	vpslld	$23, %ymm10, %ymm10
+	vpsrld	$9, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm7
 	vpxor	%ymm7, %ymm9, %ymm7
 	vpaddd	%ymm7, %ymm5, %ymm5
 	vmovdqu	1312(%rbp), %ymm7
@@ -36885,21 +37076,21 @@ slh_dsa_sha2128s_keygen:
 	vpand	%ymm3, %ymm7, %ymm7
 	vpxor	%ymm7, %ymm10, %ymm7
 	vpaddd	%ymm7, %ymm1, %ymm1
-	vmovdqu	%ymm0, %ymm9
-	vmovdqu	%ymm9, %ymm10
+	vmovdqu	%ymm0, %ymm7
+	vmovdqu	%ymm7, %ymm10
 	vpslld	$26, %ymm10, %ymm10
-	vpsrld	$6, %ymm9, %ymm9
-	vpor	%ymm10, %ymm9, %ymm9
-	vmovdqu	%ymm0, %ymm10
-	vmovdqu	%ymm10, %ymm11
-	vpslld	$21, %ymm11, %ymm11
-	vpsrld	$11, %ymm10, %ymm10
-	vpor	%ymm11, %ymm10, %ymm10
-	vpxor	%ymm10, %ymm9, %ymm9
-	vmovdqu	%ymm10, %ymm11
-	vpslld	$18, %ymm11, %ymm11
-	vpsrld	$14, %ymm10, %ymm10
-	vpor	%ymm11, %ymm10, %ymm7
+	vpsrld	$6, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm9
+	vmovdqu	%ymm0, %ymm7
+	vmovdqu	%ymm7, %ymm10
+	vpslld	$21, %ymm10, %ymm10
+	vpsrld	$11, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm7
+	vpxor	%ymm7, %ymm9, %ymm9
+	vmovdqu	%ymm7, %ymm10
+	vpslld	$18, %ymm10, %ymm10
+	vpsrld	$14, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm7
 	vpxor	%ymm7, %ymm9, %ymm7
 	vpaddd	%ymm7, %ymm1, %ymm7
 	vpaddd	%ymm7, %ymm4, %ymm1
@@ -36912,21 +37103,21 @@ slh_dsa_sha2128s_keygen:
 	vpand	%ymm8, %ymm4, %ymm4
 	vpxor	%ymm4, %ymm10, %ymm4
 	vpaddd	%ymm4, %ymm7, %ymm4
-	vmovdqu	%ymm5, %ymm9
-	vmovdqu	%ymm9, %ymm10
+	vmovdqu	%ymm5, %ymm7
+	vmovdqu	%ymm7, %ymm10
 	vpslld	$30, %ymm10, %ymm10
-	vpsrld	$2, %ymm9, %ymm9
-	vpor	%ymm10, %ymm9, %ymm9
-	vmovdqu	%ymm5, %ymm10
-	vmovdqu	%ymm10, %ymm11
-	vpslld	$19, %ymm11, %ymm11
-	vpsrld	$13, %ymm10, %ymm10
-	vpor	%ymm11, %ymm10, %ymm10
-	vpxor	%ymm10, %ymm9, %ymm9
-	vmovdqu	%ymm10, %ymm11
-	vpslld	$23, %ymm11, %ymm11
-	vpsrld	$9, %ymm10, %ymm10
-	vpor	%ymm11, %ymm10, %ymm7
+	vpsrld	$2, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm9
+	vmovdqu	%ymm5, %ymm7
+	vmovdqu	%ymm7, %ymm10
+	vpslld	$19, %ymm10, %ymm10
+	vpsrld	$13, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm7
+	vpxor	%ymm7, %ymm9, %ymm9
+	vmovdqu	%ymm7, %ymm10
+	vpslld	$23, %ymm10, %ymm10
+	vpsrld	$9, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm7
 	vpxor	%ymm7, %ymm9, %ymm7
 	vpaddd	%ymm7, %ymm4, %ymm4
 	vmovdqu	1344(%rbp), %ymm7
@@ -36939,24 +37130,24 @@ slh_dsa_sha2128s_keygen:
 	vpxor	%ymm1, %ymm7, %ymm7
 	vpand	%ymm2, %ymm7, %ymm7
 	vpxor	%ymm7, %ymm10, %ymm7
-	vpaddd	%ymm7, %ymm3, %ymm7
-	vmovdqu	%ymm1, %ymm3
-	vmovdqu	%ymm3, %ymm10
+	vpaddd	%ymm7, %ymm3, %ymm3
+	vmovdqu	%ymm1, %ymm7
+	vmovdqu	%ymm7, %ymm10
 	vpslld	$26, %ymm10, %ymm10
-	vpsrld	$6, %ymm3, %ymm3
-	vpor	%ymm10, %ymm3, %ymm9
-	vmovdqu	%ymm1, %ymm3
-	vmovdqu	%ymm3, %ymm10
+	vpsrld	$6, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm9
+	vmovdqu	%ymm1, %ymm7
+	vmovdqu	%ymm7, %ymm10
 	vpslld	$21, %ymm10, %ymm10
-	vpsrld	$11, %ymm3, %ymm3
-	vpor	%ymm10, %ymm3, %ymm3
-	vpxor	%ymm3, %ymm9, %ymm9
-	vmovdqu	%ymm3, %ymm10
+	vpsrld	$11, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm7
+	vpxor	%ymm7, %ymm9, %ymm9
+	vmovdqu	%ymm7, %ymm10
 	vpslld	$18, %ymm10, %ymm10
-	vpsrld	$14, %ymm3, %ymm3
-	vpor	%ymm10, %ymm3, %ymm3
-	vpxor	%ymm3, %ymm9, %ymm3
-	vpaddd	%ymm3, %ymm7, %ymm7
+	vpsrld	$14, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm7
+	vpxor	%ymm7, %ymm9, %ymm7
+	vpaddd	%ymm7, %ymm3, %ymm7
 	vpaddd	%ymm7, %ymm8, %ymm3
 	vmovdqu	%ymm4, %ymm10
 	vpand	%ymm5, %ymm10, %ymm10
@@ -36994,24 +37185,24 @@ slh_dsa_sha2128s_keygen:
 	vpxor	%ymm3, %ymm7, %ymm7
 	vpand	%ymm0, %ymm7, %ymm7
 	vpxor	%ymm7, %ymm10, %ymm7
-	vpaddd	%ymm7, %ymm2, %ymm7
-	vmovdqu	%ymm3, %ymm2
-	vmovdqu	%ymm2, %ymm10
+	vpaddd	%ymm7, %ymm2, %ymm2
+	vmovdqu	%ymm3, %ymm7
+	vmovdqu	%ymm7, %ymm10
 	vpslld	$26, %ymm10, %ymm10
-	vpsrld	$6, %ymm2, %ymm2
-	vpor	%ymm10, %ymm2, %ymm9
-	vmovdqu	%ymm3, %ymm2
-	vmovdqu	%ymm2, %ymm10
+	vpsrld	$6, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm9
+	vmovdqu	%ymm3, %ymm7
+	vmovdqu	%ymm7, %ymm10
 	vpslld	$21, %ymm10, %ymm10
-	vpsrld	$11, %ymm2, %ymm2
-	vpor	%ymm10, %ymm2, %ymm2
-	vpxor	%ymm2, %ymm9, %ymm9
-	vmovdqu	%ymm2, %ymm10
+	vpsrld	$11, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm7
+	vpxor	%ymm7, %ymm9, %ymm9
+	vmovdqu	%ymm7, %ymm10
 	vpslld	$18, %ymm10, %ymm10
-	vpsrld	$14, %ymm2, %ymm2
-	vpor	%ymm10, %ymm2, %ymm2
-	vpxor	%ymm2, %ymm9, %ymm2
-	vpaddd	%ymm2, %ymm7, %ymm7
+	vpsrld	$14, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm7
+	vpxor	%ymm7, %ymm9, %ymm7
+	vpaddd	%ymm7, %ymm2, %ymm7
 	vpaddd	%ymm7, %ymm6, %ymm2
 	vmovdqu	%ymm8, %ymm10
 	vpand	%ymm4, %ymm10, %ymm10
@@ -37022,21 +37213,21 @@ slh_dsa_sha2128s_keygen:
 	vpand	%ymm5, %ymm6, %ymm6
 	vpxor	%ymm6, %ymm10, %ymm6
 	vpaddd	%ymm6, %ymm7, %ymm6
-	vmovdqu	%ymm8, %ymm9
-	vmovdqu	%ymm9, %ymm10
+	vmovdqu	%ymm8, %ymm7
+	vmovdqu	%ymm7, %ymm10
 	vpslld	$30, %ymm10, %ymm10
-	vpsrld	$2, %ymm9, %ymm9
-	vpor	%ymm10, %ymm9, %ymm9
-	vmovdqu	%ymm8, %ymm10
-	vmovdqu	%ymm10, %ymm11
-	vpslld	$19, %ymm11, %ymm11
-	vpsrld	$13, %ymm10, %ymm10
-	vpor	%ymm11, %ymm10, %ymm10
-	vpxor	%ymm10, %ymm9, %ymm9
-	vmovdqu	%ymm10, %ymm11
-	vpslld	$23, %ymm11, %ymm11
-	vpsrld	$9, %ymm10, %ymm10
-	vpor	%ymm11, %ymm10, %ymm7
+	vpsrld	$2, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm9
+	vmovdqu	%ymm8, %ymm7
+	vmovdqu	%ymm7, %ymm10
+	vpslld	$19, %ymm10, %ymm10
+	vpsrld	$13, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm7
+	vpxor	%ymm7, %ymm9, %ymm9
+	vmovdqu	%ymm7, %ymm10
+	vpslld	$23, %ymm10, %ymm10
+	vpsrld	$9, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm7
 	vpxor	%ymm7, %ymm9, %ymm7
 	vpaddd	%ymm7, %ymm6, %ymm6
 	vmovdqu	1408(%rbp), %ymm7
@@ -37050,21 +37241,21 @@ slh_dsa_sha2128s_keygen:
 	vpand	%ymm1, %ymm7, %ymm7
 	vpxor	%ymm7, %ymm10, %ymm7
 	vpaddd	%ymm7, %ymm0, %ymm0
-	vmovdqu	%ymm2, %ymm9
-	vmovdqu	%ymm9, %ymm10
+	vmovdqu	%ymm2, %ymm7
+	vmovdqu	%ymm7, %ymm10
 	vpslld	$26, %ymm10, %ymm10
-	vpsrld	$6, %ymm9, %ymm9
-	vpor	%ymm10, %ymm9, %ymm9
-	vmovdqu	%ymm2, %ymm10
-	vmovdqu	%ymm10, %ymm11
-	vpslld	$21, %ymm11, %ymm11
-	vpsrld	$11, %ymm10, %ymm10
-	vpor	%ymm11, %ymm10, %ymm10
-	vpxor	%ymm10, %ymm9, %ymm9
-	vmovdqu	%ymm10, %ymm11
-	vpslld	$18, %ymm11, %ymm11
-	vpsrld	$14, %ymm10, %ymm10
-	vpor	%ymm11, %ymm10, %ymm7
+	vpsrld	$6, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm9
+	vmovdqu	%ymm2, %ymm7
+	vmovdqu	%ymm7, %ymm10
+	vpslld	$21, %ymm10, %ymm10
+	vpsrld	$11, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm7
+	vpxor	%ymm7, %ymm9, %ymm9
+	vmovdqu	%ymm7, %ymm10
+	vpslld	$18, %ymm10, %ymm10
+	vpsrld	$14, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm7
 	vpxor	%ymm7, %ymm9, %ymm7
 	vpaddd	%ymm7, %ymm0, %ymm7
 	vpaddd	%ymm7, %ymm5, %ymm0
@@ -37077,21 +37268,21 @@ slh_dsa_sha2128s_keygen:
 	vpand	%ymm4, %ymm5, %ymm5
 	vpxor	%ymm5, %ymm10, %ymm5
 	vpaddd	%ymm5, %ymm7, %ymm5
-	vmovdqu	%ymm6, %ymm9
-	vmovdqu	%ymm9, %ymm10
+	vmovdqu	%ymm6, %ymm7
+	vmovdqu	%ymm7, %ymm10
 	vpslld	$30, %ymm10, %ymm10
-	vpsrld	$2, %ymm9, %ymm9
-	vpor	%ymm10, %ymm9, %ymm9
-	vmovdqu	%ymm6, %ymm10
-	vmovdqu	%ymm10, %ymm11
-	vpslld	$19, %ymm11, %ymm11
-	vpsrld	$13, %ymm10, %ymm10
-	vpor	%ymm11, %ymm10, %ymm10
-	vpxor	%ymm10, %ymm9, %ymm9
-	vmovdqu	%ymm10, %ymm11
-	vpslld	$23, %ymm11, %ymm11
-	vpsrld	$9, %ymm10, %ymm10
-	vpor	%ymm11, %ymm10, %ymm7
+	vpsrld	$2, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm9
+	vmovdqu	%ymm6, %ymm7
+	vmovdqu	%ymm7, %ymm10
+	vpslld	$19, %ymm10, %ymm10
+	vpsrld	$13, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm7
+	vpxor	%ymm7, %ymm9, %ymm9
+	vmovdqu	%ymm7, %ymm10
+	vpslld	$23, %ymm10, %ymm10
+	vpsrld	$9, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm7
 	vpxor	%ymm7, %ymm9, %ymm7
 	vpaddd	%ymm7, %ymm5, %ymm5
 	vmovdqu	1440(%rbp), %ymm7
@@ -37105,21 +37296,21 @@ slh_dsa_sha2128s_keygen:
 	vpand	%ymm3, %ymm7, %ymm7
 	vpxor	%ymm7, %ymm10, %ymm7
 	vpaddd	%ymm7, %ymm1, %ymm1
-	vmovdqu	%ymm0, %ymm9
-	vmovdqu	%ymm9, %ymm10
+	vmovdqu	%ymm0, %ymm7
+	vmovdqu	%ymm7, %ymm10
 	vpslld	$26, %ymm10, %ymm10
-	vpsrld	$6, %ymm9, %ymm9
-	vpor	%ymm10, %ymm9, %ymm9
-	vmovdqu	%ymm0, %ymm10
-	vmovdqu	%ymm10, %ymm11
-	vpslld	$21, %ymm11, %ymm11
-	vpsrld	$11, %ymm10, %ymm10
-	vpor	%ymm11, %ymm10, %ymm10
-	vpxor	%ymm10, %ymm9, %ymm9
-	vmovdqu	%ymm10, %ymm11
-	vpslld	$18, %ymm11, %ymm11
-	vpsrld	$14, %ymm10, %ymm10
-	vpor	%ymm11, %ymm10, %ymm7
+	vpsrld	$6, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm9
+	vmovdqu	%ymm0, %ymm7
+	vmovdqu	%ymm7, %ymm10
+	vpslld	$21, %ymm10, %ymm10
+	vpsrld	$11, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm7
+	vpxor	%ymm7, %ymm9, %ymm9
+	vmovdqu	%ymm7, %ymm10
+	vpslld	$18, %ymm10, %ymm10
+	vpsrld	$14, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm7
 	vpxor	%ymm7, %ymm9, %ymm7
 	vpaddd	%ymm7, %ymm1, %ymm7
 	vpaddd	%ymm7, %ymm4, %ymm1
@@ -37132,21 +37323,21 @@ slh_dsa_sha2128s_keygen:
 	vpand	%ymm8, %ymm4, %ymm4
 	vpxor	%ymm4, %ymm10, %ymm4
 	vpaddd	%ymm4, %ymm7, %ymm4
-	vmovdqu	%ymm5, %ymm9
-	vmovdqu	%ymm9, %ymm10
+	vmovdqu	%ymm5, %ymm7
+	vmovdqu	%ymm7, %ymm10
 	vpslld	$30, %ymm10, %ymm10
-	vpsrld	$2, %ymm9, %ymm9
-	vpor	%ymm10, %ymm9, %ymm9
-	vmovdqu	%ymm5, %ymm10
-	vmovdqu	%ymm10, %ymm11
-	vpslld	$19, %ymm11, %ymm11
-	vpsrld	$13, %ymm10, %ymm10
-	vpor	%ymm11, %ymm10, %ymm10
-	vpxor	%ymm10, %ymm9, %ymm9
-	vmovdqu	%ymm10, %ymm11
-	vpslld	$23, %ymm11, %ymm11
-	vpsrld	$9, %ymm10, %ymm10
-	vpor	%ymm11, %ymm10, %ymm7
+	vpsrld	$2, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm9
+	vmovdqu	%ymm5, %ymm7
+	vmovdqu	%ymm7, %ymm10
+	vpslld	$19, %ymm10, %ymm10
+	vpsrld	$13, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm7
+	vpxor	%ymm7, %ymm9, %ymm9
+	vmovdqu	%ymm7, %ymm10
+	vpslld	$23, %ymm10, %ymm10
+	vpsrld	$9, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm7
 	vpxor	%ymm7, %ymm9, %ymm7
 	vpaddd	%ymm7, %ymm4, %ymm4
 	vmovdqu	1472(%rbp), %ymm7
@@ -37159,24 +37350,24 @@ slh_dsa_sha2128s_keygen:
 	vpxor	%ymm1, %ymm7, %ymm7
 	vpand	%ymm2, %ymm7, %ymm7
 	vpxor	%ymm7, %ymm10, %ymm7
-	vpaddd	%ymm7, %ymm3, %ymm7
-	vmovdqu	%ymm1, %ymm3
-	vmovdqu	%ymm3, %ymm10
+	vpaddd	%ymm7, %ymm3, %ymm3
+	vmovdqu	%ymm1, %ymm7
+	vmovdqu	%ymm7, %ymm10
 	vpslld	$26, %ymm10, %ymm10
-	vpsrld	$6, %ymm3, %ymm3
-	vpor	%ymm10, %ymm3, %ymm9
-	vmovdqu	%ymm1, %ymm3
-	vmovdqu	%ymm3, %ymm10
+	vpsrld	$6, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm9
+	vmovdqu	%ymm1, %ymm7
+	vmovdqu	%ymm7, %ymm10
 	vpslld	$21, %ymm10, %ymm10
-	vpsrld	$11, %ymm3, %ymm3
-	vpor	%ymm10, %ymm3, %ymm3
-	vpxor	%ymm3, %ymm9, %ymm9
-	vmovdqu	%ymm3, %ymm10
+	vpsrld	$11, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm7
+	vpxor	%ymm7, %ymm9, %ymm9
+	vmovdqu	%ymm7, %ymm10
 	vpslld	$18, %ymm10, %ymm10
-	vpsrld	$14, %ymm3, %ymm3
-	vpor	%ymm10, %ymm3, %ymm3
-	vpxor	%ymm3, %ymm9, %ymm3
-	vpaddd	%ymm3, %ymm7, %ymm7
+	vpsrld	$14, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm7
+	vpxor	%ymm7, %ymm9, %ymm7
+	vpaddd	%ymm7, %ymm3, %ymm7
 	vpaddd	%ymm7, %ymm8, %ymm3
 	vmovdqu	%ymm4, %ymm10
 	vpand	%ymm5, %ymm10, %ymm10
@@ -37214,24 +37405,24 @@ slh_dsa_sha2128s_keygen:
 	vpxor	%ymm3, %ymm7, %ymm7
 	vpand	%ymm0, %ymm7, %ymm7
 	vpxor	%ymm7, %ymm10, %ymm7
-	vpaddd	%ymm7, %ymm2, %ymm7
-	vmovdqu	%ymm3, %ymm2
-	vmovdqu	%ymm2, %ymm10
+	vpaddd	%ymm7, %ymm2, %ymm2
+	vmovdqu	%ymm3, %ymm7
+	vmovdqu	%ymm7, %ymm10
 	vpslld	$26, %ymm10, %ymm10
-	vpsrld	$6, %ymm2, %ymm2
-	vpor	%ymm10, %ymm2, %ymm9
-	vmovdqu	%ymm3, %ymm2
-	vmovdqu	%ymm2, %ymm10
+	vpsrld	$6, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm9
+	vmovdqu	%ymm3, %ymm7
+	vmovdqu	%ymm7, %ymm10
 	vpslld	$21, %ymm10, %ymm10
-	vpsrld	$11, %ymm2, %ymm2
-	vpor	%ymm10, %ymm2, %ymm2
-	vpxor	%ymm2, %ymm9, %ymm9
-	vmovdqu	%ymm2, %ymm10
+	vpsrld	$11, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm7
+	vpxor	%ymm7, %ymm9, %ymm9
+	vmovdqu	%ymm7, %ymm10
 	vpslld	$18, %ymm10, %ymm10
-	vpsrld	$14, %ymm2, %ymm2
-	vpor	%ymm10, %ymm2, %ymm2
-	vpxor	%ymm2, %ymm9, %ymm2
-	vpaddd	%ymm2, %ymm7, %ymm7
+	vpsrld	$14, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm7
+	vpxor	%ymm7, %ymm9, %ymm7
+	vpaddd	%ymm7, %ymm2, %ymm7
 	vpaddd	%ymm7, %ymm6, %ymm2
 	vmovdqu	%ymm8, %ymm10
 	vpand	%ymm4, %ymm10, %ymm10
@@ -37242,21 +37433,21 @@ slh_dsa_sha2128s_keygen:
 	vpand	%ymm5, %ymm6, %ymm6
 	vpxor	%ymm6, %ymm10, %ymm6
 	vpaddd	%ymm6, %ymm7, %ymm6
-	vmovdqu	%ymm8, %ymm9
-	vmovdqu	%ymm9, %ymm10
+	vmovdqu	%ymm8, %ymm7
+	vmovdqu	%ymm7, %ymm10
 	vpslld	$30, %ymm10, %ymm10
-	vpsrld	$2, %ymm9, %ymm9
-	vpor	%ymm10, %ymm9, %ymm9
-	vmovdqu	%ymm8, %ymm10
-	vmovdqu	%ymm10, %ymm11
-	vpslld	$19, %ymm11, %ymm11
-	vpsrld	$13, %ymm10, %ymm10
-	vpor	%ymm11, %ymm10, %ymm10
-	vpxor	%ymm10, %ymm9, %ymm9
-	vmovdqu	%ymm10, %ymm11
-	vpslld	$23, %ymm11, %ymm11
-	vpsrld	$9, %ymm10, %ymm10
-	vpor	%ymm11, %ymm10, %ymm7
+	vpsrld	$2, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm9
+	vmovdqu	%ymm8, %ymm7
+	vmovdqu	%ymm7, %ymm10
+	vpslld	$19, %ymm10, %ymm10
+	vpsrld	$13, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm7
+	vpxor	%ymm7, %ymm9, %ymm9
+	vmovdqu	%ymm7, %ymm10
+	vpslld	$23, %ymm10, %ymm10
+	vpsrld	$9, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm7
 	vpxor	%ymm7, %ymm9, %ymm7
 	vpaddd	%ymm7, %ymm6, %ymm6
 	vmovdqu	1536(%rbp), %ymm7
@@ -37270,21 +37461,21 @@ slh_dsa_sha2128s_keygen:
 	vpand	%ymm1, %ymm7, %ymm7
 	vpxor	%ymm7, %ymm10, %ymm7
 	vpaddd	%ymm7, %ymm0, %ymm0
-	vmovdqu	%ymm2, %ymm9
-	vmovdqu	%ymm9, %ymm10
+	vmovdqu	%ymm2, %ymm7
+	vmovdqu	%ymm7, %ymm10
 	vpslld	$26, %ymm10, %ymm10
-	vpsrld	$6, %ymm9, %ymm9
-	vpor	%ymm10, %ymm9, %ymm9
-	vmovdqu	%ymm2, %ymm10
-	vmovdqu	%ymm10, %ymm11
-	vpslld	$21, %ymm11, %ymm11
-	vpsrld	$11, %ymm10, %ymm10
-	vpor	%ymm11, %ymm10, %ymm10
-	vpxor	%ymm10, %ymm9, %ymm9
-	vmovdqu	%ymm10, %ymm11
-	vpslld	$18, %ymm11, %ymm11
-	vpsrld	$14, %ymm10, %ymm10
-	vpor	%ymm11, %ymm10, %ymm7
+	vpsrld	$6, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm9
+	vmovdqu	%ymm2, %ymm7
+	vmovdqu	%ymm7, %ymm10
+	vpslld	$21, %ymm10, %ymm10
+	vpsrld	$11, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm7
+	vpxor	%ymm7, %ymm9, %ymm9
+	vmovdqu	%ymm7, %ymm10
+	vpslld	$18, %ymm10, %ymm10
+	vpsrld	$14, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm7
 	vpxor	%ymm7, %ymm9, %ymm7
 	vpaddd	%ymm7, %ymm0, %ymm7
 	vpaddd	%ymm7, %ymm5, %ymm0
@@ -37297,21 +37488,21 @@ slh_dsa_sha2128s_keygen:
 	vpand	%ymm4, %ymm5, %ymm5
 	vpxor	%ymm5, %ymm10, %ymm5
 	vpaddd	%ymm5, %ymm7, %ymm5
-	vmovdqu	%ymm6, %ymm9
-	vmovdqu	%ymm9, %ymm10
+	vmovdqu	%ymm6, %ymm7
+	vmovdqu	%ymm7, %ymm10
 	vpslld	$30, %ymm10, %ymm10
-	vpsrld	$2, %ymm9, %ymm9
-	vpor	%ymm10, %ymm9, %ymm9
-	vmovdqu	%ymm6, %ymm10
-	vmovdqu	%ymm10, %ymm11
-	vpslld	$19, %ymm11, %ymm11
-	vpsrld	$13, %ymm10, %ymm10
-	vpor	%ymm11, %ymm10, %ymm10
-	vpxor	%ymm10, %ymm9, %ymm9
-	vmovdqu	%ymm10, %ymm11
-	vpslld	$23, %ymm11, %ymm11
-	vpsrld	$9, %ymm10, %ymm10
-	vpor	%ymm11, %ymm10, %ymm7
+	vpsrld	$2, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm9
+	vmovdqu	%ymm6, %ymm7
+	vmovdqu	%ymm7, %ymm10
+	vpslld	$19, %ymm10, %ymm10
+	vpsrld	$13, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm7
+	vpxor	%ymm7, %ymm9, %ymm9
+	vmovdqu	%ymm7, %ymm10
+	vpslld	$23, %ymm10, %ymm10
+	vpsrld	$9, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm7
 	vpxor	%ymm7, %ymm9, %ymm7
 	vpaddd	%ymm7, %ymm5, %ymm5
 	vmovdqu	1568(%rbp), %ymm7
@@ -37325,21 +37516,21 @@ slh_dsa_sha2128s_keygen:
 	vpand	%ymm3, %ymm7, %ymm7
 	vpxor	%ymm7, %ymm10, %ymm7
 	vpaddd	%ymm7, %ymm1, %ymm1
-	vmovdqu	%ymm0, %ymm9
-	vmovdqu	%ymm9, %ymm10
+	vmovdqu	%ymm0, %ymm7
+	vmovdqu	%ymm7, %ymm10
 	vpslld	$26, %ymm10, %ymm10
-	vpsrld	$6, %ymm9, %ymm9
-	vpor	%ymm10, %ymm9, %ymm9
-	vmovdqu	%ymm0, %ymm10
-	vmovdqu	%ymm10, %ymm11
-	vpslld	$21, %ymm11, %ymm11
-	vpsrld	$11, %ymm10, %ymm10
-	vpor	%ymm11, %ymm10, %ymm10
-	vpxor	%ymm10, %ymm9, %ymm9
-	vmovdqu	%ymm10, %ymm11
-	vpslld	$18, %ymm11, %ymm11
-	vpsrld	$14, %ymm10, %ymm10
-	vpor	%ymm11, %ymm10, %ymm7
+	vpsrld	$6, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm9
+	vmovdqu	%ymm0, %ymm7
+	vmovdqu	%ymm7, %ymm10
+	vpslld	$21, %ymm10, %ymm10
+	vpsrld	$11, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm7
+	vpxor	%ymm7, %ymm9, %ymm9
+	vmovdqu	%ymm7, %ymm10
+	vpslld	$18, %ymm10, %ymm10
+	vpsrld	$14, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm7
 	vpxor	%ymm7, %ymm9, %ymm7
 	vpaddd	%ymm7, %ymm1, %ymm7
 	vpaddd	%ymm7, %ymm4, %ymm1
@@ -37352,21 +37543,21 @@ slh_dsa_sha2128s_keygen:
 	vpand	%ymm8, %ymm4, %ymm4
 	vpxor	%ymm4, %ymm10, %ymm4
 	vpaddd	%ymm4, %ymm7, %ymm4
-	vmovdqu	%ymm5, %ymm9
-	vmovdqu	%ymm9, %ymm10
+	vmovdqu	%ymm5, %ymm7
+	vmovdqu	%ymm7, %ymm10
 	vpslld	$30, %ymm10, %ymm10
-	vpsrld	$2, %ymm9, %ymm9
-	vpor	%ymm10, %ymm9, %ymm9
-	vmovdqu	%ymm5, %ymm10
-	vmovdqu	%ymm10, %ymm11
-	vpslld	$19, %ymm11, %ymm11
-	vpsrld	$13, %ymm10, %ymm10
-	vpor	%ymm11, %ymm10, %ymm10
-	vpxor	%ymm10, %ymm9, %ymm9
-	vmovdqu	%ymm10, %ymm11
-	vpslld	$23, %ymm11, %ymm11
-	vpsrld	$9, %ymm10, %ymm10
-	vpor	%ymm11, %ymm10, %ymm7
+	vpsrld	$2, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm9
+	vmovdqu	%ymm5, %ymm7
+	vmovdqu	%ymm7, %ymm10
+	vpslld	$19, %ymm10, %ymm10
+	vpsrld	$13, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm7
+	vpxor	%ymm7, %ymm9, %ymm9
+	vmovdqu	%ymm7, %ymm10
+	vpslld	$23, %ymm10, %ymm10
+	vpsrld	$9, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm7
 	vpxor	%ymm7, %ymm9, %ymm7
 	vpaddd	%ymm7, %ymm4, %ymm4
 	vmovdqu	1600(%rbp), %ymm7
@@ -37379,24 +37570,24 @@ slh_dsa_sha2128s_keygen:
 	vpxor	%ymm1, %ymm7, %ymm7
 	vpand	%ymm2, %ymm7, %ymm7
 	vpxor	%ymm7, %ymm10, %ymm7
-	vpaddd	%ymm7, %ymm3, %ymm7
-	vmovdqu	%ymm1, %ymm3
-	vmovdqu	%ymm3, %ymm10
+	vpaddd	%ymm7, %ymm3, %ymm3
+	vmovdqu	%ymm1, %ymm7
+	vmovdqu	%ymm7, %ymm10
 	vpslld	$26, %ymm10, %ymm10
-	vpsrld	$6, %ymm3, %ymm3
-	vpor	%ymm10, %ymm3, %ymm9
-	vmovdqu	%ymm1, %ymm3
-	vmovdqu	%ymm3, %ymm10
+	vpsrld	$6, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm9
+	vmovdqu	%ymm1, %ymm7
+	vmovdqu	%ymm7, %ymm10
 	vpslld	$21, %ymm10, %ymm10
-	vpsrld	$11, %ymm3, %ymm3
-	vpor	%ymm10, %ymm3, %ymm3
-	vpxor	%ymm3, %ymm9, %ymm9
-	vmovdqu	%ymm3, %ymm10
+	vpsrld	$11, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm7
+	vpxor	%ymm7, %ymm9, %ymm9
+	vmovdqu	%ymm7, %ymm10
 	vpslld	$18, %ymm10, %ymm10
-	vpsrld	$14, %ymm3, %ymm3
-	vpor	%ymm10, %ymm3, %ymm3
-	vpxor	%ymm3, %ymm9, %ymm3
-	vpaddd	%ymm3, %ymm7, %ymm7
+	vpsrld	$14, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm7
+	vpxor	%ymm7, %ymm9, %ymm7
+	vpaddd	%ymm7, %ymm3, %ymm7
 	vpaddd	%ymm7, %ymm8, %ymm3
 	vmovdqu	%ymm4, %ymm10
 	vpand	%ymm5, %ymm10, %ymm10
@@ -37434,24 +37625,24 @@ slh_dsa_sha2128s_keygen:
 	vpxor	%ymm3, %ymm7, %ymm7
 	vpand	%ymm0, %ymm7, %ymm7
 	vpxor	%ymm7, %ymm10, %ymm7
-	vpaddd	%ymm7, %ymm2, %ymm7
-	vmovdqu	%ymm3, %ymm2
-	vmovdqu	%ymm2, %ymm10
+	vpaddd	%ymm7, %ymm2, %ymm2
+	vmovdqu	%ymm3, %ymm7
+	vmovdqu	%ymm7, %ymm10
 	vpslld	$26, %ymm10, %ymm10
-	vpsrld	$6, %ymm2, %ymm2
-	vpor	%ymm10, %ymm2, %ymm9
-	vmovdqu	%ymm3, %ymm2
-	vmovdqu	%ymm2, %ymm10
+	vpsrld	$6, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm9
+	vmovdqu	%ymm3, %ymm7
+	vmovdqu	%ymm7, %ymm10
 	vpslld	$21, %ymm10, %ymm10
-	vpsrld	$11, %ymm2, %ymm2
-	vpor	%ymm10, %ymm2, %ymm2
-	vpxor	%ymm2, %ymm9, %ymm9
-	vmovdqu	%ymm2, %ymm10
+	vpsrld	$11, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm7
+	vpxor	%ymm7, %ymm9, %ymm9
+	vmovdqu	%ymm7, %ymm10
 	vpslld	$18, %ymm10, %ymm10
-	vpsrld	$14, %ymm2, %ymm2
-	vpor	%ymm10, %ymm2, %ymm2
-	vpxor	%ymm2, %ymm9, %ymm2
-	vpaddd	%ymm2, %ymm7, %ymm7
+	vpsrld	$14, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm7
+	vpxor	%ymm7, %ymm9, %ymm7
+	vpaddd	%ymm7, %ymm2, %ymm7
 	vpaddd	%ymm7, %ymm6, %ymm2
 	vmovdqu	%ymm8, %ymm10
 	vpand	%ymm4, %ymm10, %ymm10
@@ -37462,21 +37653,21 @@ slh_dsa_sha2128s_keygen:
 	vpand	%ymm5, %ymm6, %ymm6
 	vpxor	%ymm6, %ymm10, %ymm6
 	vpaddd	%ymm6, %ymm7, %ymm6
-	vmovdqu	%ymm8, %ymm9
-	vmovdqu	%ymm9, %ymm10
+	vmovdqu	%ymm8, %ymm7
+	vmovdqu	%ymm7, %ymm10
 	vpslld	$30, %ymm10, %ymm10
-	vpsrld	$2, %ymm9, %ymm9
-	vpor	%ymm10, %ymm9, %ymm9
-	vmovdqu	%ymm8, %ymm10
-	vmovdqu	%ymm10, %ymm11
-	vpslld	$19, %ymm11, %ymm11
-	vpsrld	$13, %ymm10, %ymm10
-	vpor	%ymm11, %ymm10, %ymm10
-	vpxor	%ymm10, %ymm9, %ymm9
-	vmovdqu	%ymm10, %ymm11
-	vpslld	$23, %ymm11, %ymm11
-	vpsrld	$9, %ymm10, %ymm10
-	vpor	%ymm11, %ymm10, %ymm7
+	vpsrld	$2, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm9
+	vmovdqu	%ymm8, %ymm7
+	vmovdqu	%ymm7, %ymm10
+	vpslld	$19, %ymm10, %ymm10
+	vpsrld	$13, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm7
+	vpxor	%ymm7, %ymm9, %ymm9
+	vmovdqu	%ymm7, %ymm10
+	vpslld	$23, %ymm10, %ymm10
+	vpsrld	$9, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm7
 	vpxor	%ymm7, %ymm9, %ymm7
 	vpaddd	%ymm7, %ymm6, %ymm6
 	vmovdqu	1664(%rbp), %ymm7
@@ -37490,21 +37681,21 @@ slh_dsa_sha2128s_keygen:
 	vpand	%ymm1, %ymm7, %ymm7
 	vpxor	%ymm7, %ymm10, %ymm7
 	vpaddd	%ymm7, %ymm0, %ymm0
-	vmovdqu	%ymm2, %ymm9
-	vmovdqu	%ymm9, %ymm10
+	vmovdqu	%ymm2, %ymm7
+	vmovdqu	%ymm7, %ymm10
 	vpslld	$26, %ymm10, %ymm10
-	vpsrld	$6, %ymm9, %ymm9
-	vpor	%ymm10, %ymm9, %ymm9
-	vmovdqu	%ymm2, %ymm10
-	vmovdqu	%ymm10, %ymm11
-	vpslld	$21, %ymm11, %ymm11
-	vpsrld	$11, %ymm10, %ymm10
-	vpor	%ymm11, %ymm10, %ymm10
-	vpxor	%ymm10, %ymm9, %ymm9
-	vmovdqu	%ymm10, %ymm11
-	vpslld	$18, %ymm11, %ymm11
-	vpsrld	$14, %ymm10, %ymm10
-	vpor	%ymm11, %ymm10, %ymm7
+	vpsrld	$6, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm9
+	vmovdqu	%ymm2, %ymm7
+	vmovdqu	%ymm7, %ymm10
+	vpslld	$21, %ymm10, %ymm10
+	vpsrld	$11, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm7
+	vpxor	%ymm7, %ymm9, %ymm9
+	vmovdqu	%ymm7, %ymm10
+	vpslld	$18, %ymm10, %ymm10
+	vpsrld	$14, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm7
 	vpxor	%ymm7, %ymm9, %ymm7
 	vpaddd	%ymm7, %ymm0, %ymm7
 	vpaddd	%ymm7, %ymm5, %ymm0
@@ -37517,21 +37708,21 @@ slh_dsa_sha2128s_keygen:
 	vpand	%ymm4, %ymm5, %ymm5
 	vpxor	%ymm5, %ymm10, %ymm5
 	vpaddd	%ymm5, %ymm7, %ymm5
-	vmovdqu	%ymm6, %ymm9
-	vmovdqu	%ymm9, %ymm10
+	vmovdqu	%ymm6, %ymm7
+	vmovdqu	%ymm7, %ymm10
 	vpslld	$30, %ymm10, %ymm10
-	vpsrld	$2, %ymm9, %ymm9
-	vpor	%ymm10, %ymm9, %ymm9
-	vmovdqu	%ymm6, %ymm10
-	vmovdqu	%ymm10, %ymm11
-	vpslld	$19, %ymm11, %ymm11
-	vpsrld	$13, %ymm10, %ymm10
-	vpor	%ymm11, %ymm10, %ymm10
-	vpxor	%ymm10, %ymm9, %ymm9
-	vmovdqu	%ymm10, %ymm11
-	vpslld	$23, %ymm11, %ymm11
-	vpsrld	$9, %ymm10, %ymm10
-	vpor	%ymm11, %ymm10, %ymm7
+	vpsrld	$2, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm9
+	vmovdqu	%ymm6, %ymm7
+	vmovdqu	%ymm7, %ymm10
+	vpslld	$19, %ymm10, %ymm10
+	vpsrld	$13, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm7
+	vpxor	%ymm7, %ymm9, %ymm9
+	vmovdqu	%ymm7, %ymm10
+	vpslld	$23, %ymm10, %ymm10
+	vpsrld	$9, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm7
 	vpxor	%ymm7, %ymm9, %ymm7
 	vpaddd	%ymm7, %ymm5, %ymm5
 	vmovdqu	1696(%rbp), %ymm7
@@ -37545,21 +37736,21 @@ slh_dsa_sha2128s_keygen:
 	vpand	%ymm3, %ymm7, %ymm7
 	vpxor	%ymm7, %ymm10, %ymm7
 	vpaddd	%ymm7, %ymm1, %ymm1
-	vmovdqu	%ymm0, %ymm9
-	vmovdqu	%ymm9, %ymm10
+	vmovdqu	%ymm0, %ymm7
+	vmovdqu	%ymm7, %ymm10
 	vpslld	$26, %ymm10, %ymm10
-	vpsrld	$6, %ymm9, %ymm9
-	vpor	%ymm10, %ymm9, %ymm9
-	vmovdqu	%ymm0, %ymm10
-	vmovdqu	%ymm10, %ymm11
-	vpslld	$21, %ymm11, %ymm11
-	vpsrld	$11, %ymm10, %ymm10
-	vpor	%ymm11, %ymm10, %ymm10
-	vpxor	%ymm10, %ymm9, %ymm9
-	vmovdqu	%ymm10, %ymm11
-	vpslld	$18, %ymm11, %ymm11
-	vpsrld	$14, %ymm10, %ymm10
-	vpor	%ymm11, %ymm10, %ymm7
+	vpsrld	$6, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm9
+	vmovdqu	%ymm0, %ymm7
+	vmovdqu	%ymm7, %ymm10
+	vpslld	$21, %ymm10, %ymm10
+	vpsrld	$11, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm7
+	vpxor	%ymm7, %ymm9, %ymm9
+	vmovdqu	%ymm7, %ymm10
+	vpslld	$18, %ymm10, %ymm10
+	vpsrld	$14, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm7
 	vpxor	%ymm7, %ymm9, %ymm7
 	vpaddd	%ymm7, %ymm1, %ymm7
 	vpaddd	%ymm7, %ymm4, %ymm1
@@ -37572,21 +37763,21 @@ slh_dsa_sha2128s_keygen:
 	vpand	%ymm8, %ymm4, %ymm4
 	vpxor	%ymm4, %ymm10, %ymm4
 	vpaddd	%ymm4, %ymm7, %ymm4
-	vmovdqu	%ymm5, %ymm9
-	vmovdqu	%ymm9, %ymm10
+	vmovdqu	%ymm5, %ymm7
+	vmovdqu	%ymm7, %ymm10
 	vpslld	$30, %ymm10, %ymm10
-	vpsrld	$2, %ymm9, %ymm9
-	vpor	%ymm10, %ymm9, %ymm9
-	vmovdqu	%ymm5, %ymm10
-	vmovdqu	%ymm10, %ymm11
-	vpslld	$19, %ymm11, %ymm11
-	vpsrld	$13, %ymm10, %ymm10
-	vpor	%ymm11, %ymm10, %ymm10
-	vpxor	%ymm10, %ymm9, %ymm9
-	vmovdqu	%ymm10, %ymm11
-	vpslld	$23, %ymm11, %ymm11
-	vpsrld	$9, %ymm10, %ymm10
-	vpor	%ymm11, %ymm10, %ymm7
+	vpsrld	$2, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm9
+	vmovdqu	%ymm5, %ymm7
+	vmovdqu	%ymm7, %ymm10
+	vpslld	$19, %ymm10, %ymm10
+	vpsrld	$13, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm7
+	vpxor	%ymm7, %ymm9, %ymm9
+	vmovdqu	%ymm7, %ymm10
+	vpslld	$23, %ymm10, %ymm10
+	vpsrld	$9, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm7
 	vpxor	%ymm7, %ymm9, %ymm7
 	vpaddd	%ymm7, %ymm4, %ymm4
 	vmovdqu	1728(%rbp), %ymm7
@@ -37599,24 +37790,24 @@ slh_dsa_sha2128s_keygen:
 	vpxor	%ymm1, %ymm7, %ymm7
 	vpand	%ymm2, %ymm7, %ymm7
 	vpxor	%ymm7, %ymm10, %ymm7
-	vpaddd	%ymm7, %ymm3, %ymm7
-	vmovdqu	%ymm1, %ymm3
-	vmovdqu	%ymm3, %ymm10
+	vpaddd	%ymm7, %ymm3, %ymm3
+	vmovdqu	%ymm1, %ymm7
+	vmovdqu	%ymm7, %ymm10
 	vpslld	$26, %ymm10, %ymm10
-	vpsrld	$6, %ymm3, %ymm3
-	vpor	%ymm10, %ymm3, %ymm9
-	vmovdqu	%ymm1, %ymm3
-	vmovdqu	%ymm3, %ymm10
+	vpsrld	$6, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm9
+	vmovdqu	%ymm1, %ymm7
+	vmovdqu	%ymm7, %ymm10
 	vpslld	$21, %ymm10, %ymm10
-	vpsrld	$11, %ymm3, %ymm3
-	vpor	%ymm10, %ymm3, %ymm3
-	vpxor	%ymm3, %ymm9, %ymm9
-	vmovdqu	%ymm3, %ymm10
+	vpsrld	$11, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm7
+	vpxor	%ymm7, %ymm9, %ymm9
+	vmovdqu	%ymm7, %ymm10
 	vpslld	$18, %ymm10, %ymm10
-	vpsrld	$14, %ymm3, %ymm3
-	vpor	%ymm10, %ymm3, %ymm3
-	vpxor	%ymm3, %ymm9, %ymm3
-	vpaddd	%ymm3, %ymm7, %ymm7
+	vpsrld	$14, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm7
+	vpxor	%ymm7, %ymm9, %ymm7
+	vpaddd	%ymm7, %ymm3, %ymm7
 	vpaddd	%ymm7, %ymm8, %ymm3
 	vmovdqu	%ymm4, %ymm10
 	vpand	%ymm5, %ymm10, %ymm10
@@ -37654,24 +37845,24 @@ slh_dsa_sha2128s_keygen:
 	vpxor	%ymm3, %ymm7, %ymm7
 	vpand	%ymm0, %ymm7, %ymm7
 	vpxor	%ymm7, %ymm10, %ymm7
-	vpaddd	%ymm7, %ymm2, %ymm7
-	vmovdqu	%ymm3, %ymm2
-	vmovdqu	%ymm2, %ymm10
+	vpaddd	%ymm7, %ymm2, %ymm2
+	vmovdqu	%ymm3, %ymm7
+	vmovdqu	%ymm7, %ymm10
 	vpslld	$26, %ymm10, %ymm10
-	vpsrld	$6, %ymm2, %ymm2
-	vpor	%ymm10, %ymm2, %ymm9
-	vmovdqu	%ymm3, %ymm2
-	vmovdqu	%ymm2, %ymm10
+	vpsrld	$6, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm9
+	vmovdqu	%ymm3, %ymm7
+	vmovdqu	%ymm7, %ymm10
 	vpslld	$21, %ymm10, %ymm10
-	vpsrld	$11, %ymm2, %ymm2
-	vpor	%ymm10, %ymm2, %ymm2
-	vpxor	%ymm2, %ymm9, %ymm9
-	vmovdqu	%ymm2, %ymm10
+	vpsrld	$11, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm7
+	vpxor	%ymm7, %ymm9, %ymm9
+	vmovdqu	%ymm7, %ymm10
 	vpslld	$18, %ymm10, %ymm10
-	vpsrld	$14, %ymm2, %ymm2
-	vpor	%ymm10, %ymm2, %ymm2
-	vpxor	%ymm2, %ymm9, %ymm2
-	vpaddd	%ymm2, %ymm7, %ymm7
+	vpsrld	$14, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm7
+	vpxor	%ymm7, %ymm9, %ymm7
+	vpaddd	%ymm7, %ymm2, %ymm7
 	vpaddd	%ymm7, %ymm6, %ymm2
 	vmovdqu	%ymm8, %ymm10
 	vpand	%ymm4, %ymm10, %ymm10
@@ -37682,21 +37873,21 @@ slh_dsa_sha2128s_keygen:
 	vpand	%ymm5, %ymm6, %ymm6
 	vpxor	%ymm6, %ymm10, %ymm6
 	vpaddd	%ymm6, %ymm7, %ymm6
-	vmovdqu	%ymm8, %ymm9
-	vmovdqu	%ymm9, %ymm10
+	vmovdqu	%ymm8, %ymm7
+	vmovdqu	%ymm7, %ymm10
 	vpslld	$30, %ymm10, %ymm10
-	vpsrld	$2, %ymm9, %ymm9
-	vpor	%ymm10, %ymm9, %ymm9
-	vmovdqu	%ymm8, %ymm10
-	vmovdqu	%ymm10, %ymm11
-	vpslld	$19, %ymm11, %ymm11
-	vpsrld	$13, %ymm10, %ymm10
-	vpor	%ymm11, %ymm10, %ymm10
-	vpxor	%ymm10, %ymm9, %ymm9
-	vmovdqu	%ymm10, %ymm11
-	vpslld	$23, %ymm11, %ymm11
-	vpsrld	$9, %ymm10, %ymm10
-	vpor	%ymm11, %ymm10, %ymm7
+	vpsrld	$2, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm9
+	vmovdqu	%ymm8, %ymm7
+	vmovdqu	%ymm7, %ymm10
+	vpslld	$19, %ymm10, %ymm10
+	vpsrld	$13, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm7
+	vpxor	%ymm7, %ymm9, %ymm9
+	vmovdqu	%ymm7, %ymm10
+	vpslld	$23, %ymm10, %ymm10
+	vpsrld	$9, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm7
 	vpxor	%ymm7, %ymm9, %ymm7
 	vpaddd	%ymm7, %ymm6, %ymm6
 	vmovdqu	1792(%rbp), %ymm7
@@ -37710,21 +37901,21 @@ slh_dsa_sha2128s_keygen:
 	vpand	%ymm1, %ymm7, %ymm7
 	vpxor	%ymm7, %ymm10, %ymm7
 	vpaddd	%ymm7, %ymm0, %ymm0
-	vmovdqu	%ymm2, %ymm9
-	vmovdqu	%ymm9, %ymm10
+	vmovdqu	%ymm2, %ymm7
+	vmovdqu	%ymm7, %ymm10
 	vpslld	$26, %ymm10, %ymm10
-	vpsrld	$6, %ymm9, %ymm9
-	vpor	%ymm10, %ymm9, %ymm9
-	vmovdqu	%ymm2, %ymm10
-	vmovdqu	%ymm10, %ymm11
-	vpslld	$21, %ymm11, %ymm11
-	vpsrld	$11, %ymm10, %ymm10
-	vpor	%ymm11, %ymm10, %ymm10
-	vpxor	%ymm10, %ymm9, %ymm9
-	vmovdqu	%ymm10, %ymm11
-	vpslld	$18, %ymm11, %ymm11
-	vpsrld	$14, %ymm10, %ymm10
-	vpor	%ymm11, %ymm10, %ymm7
+	vpsrld	$6, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm9
+	vmovdqu	%ymm2, %ymm7
+	vmovdqu	%ymm7, %ymm10
+	vpslld	$21, %ymm10, %ymm10
+	vpsrld	$11, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm7
+	vpxor	%ymm7, %ymm9, %ymm9
+	vmovdqu	%ymm7, %ymm10
+	vpslld	$18, %ymm10, %ymm10
+	vpsrld	$14, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm7
 	vpxor	%ymm7, %ymm9, %ymm7
 	vpaddd	%ymm7, %ymm0, %ymm7
 	vpaddd	%ymm7, %ymm5, %ymm0
@@ -37737,21 +37928,21 @@ slh_dsa_sha2128s_keygen:
 	vpand	%ymm4, %ymm5, %ymm5
 	vpxor	%ymm5, %ymm10, %ymm5
 	vpaddd	%ymm5, %ymm7, %ymm5
-	vmovdqu	%ymm6, %ymm9
-	vmovdqu	%ymm9, %ymm10
+	vmovdqu	%ymm6, %ymm7
+	vmovdqu	%ymm7, %ymm10
 	vpslld	$30, %ymm10, %ymm10
-	vpsrld	$2, %ymm9, %ymm9
-	vpor	%ymm10, %ymm9, %ymm9
-	vmovdqu	%ymm6, %ymm10
-	vmovdqu	%ymm10, %ymm11
-	vpslld	$19, %ymm11, %ymm11
-	vpsrld	$13, %ymm10, %ymm10
-	vpor	%ymm11, %ymm10, %ymm10
-	vpxor	%ymm10, %ymm9, %ymm9
-	vmovdqu	%ymm10, %ymm11
-	vpslld	$23, %ymm11, %ymm11
-	vpsrld	$9, %ymm10, %ymm10
-	vpor	%ymm11, %ymm10, %ymm7
+	vpsrld	$2, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm9
+	vmovdqu	%ymm6, %ymm7
+	vmovdqu	%ymm7, %ymm10
+	vpslld	$19, %ymm10, %ymm10
+	vpsrld	$13, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm7
+	vpxor	%ymm7, %ymm9, %ymm9
+	vmovdqu	%ymm7, %ymm10
+	vpslld	$23, %ymm10, %ymm10
+	vpsrld	$9, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm7
 	vpxor	%ymm7, %ymm9, %ymm7
 	vpaddd	%ymm7, %ymm5, %ymm5
 	vmovdqu	1824(%rbp), %ymm7
@@ -37765,21 +37956,21 @@ slh_dsa_sha2128s_keygen:
 	vpand	%ymm3, %ymm7, %ymm7
 	vpxor	%ymm7, %ymm10, %ymm7
 	vpaddd	%ymm7, %ymm1, %ymm1
-	vmovdqu	%ymm0, %ymm9
-	vmovdqu	%ymm9, %ymm10
+	vmovdqu	%ymm0, %ymm7
+	vmovdqu	%ymm7, %ymm10
 	vpslld	$26, %ymm10, %ymm10
-	vpsrld	$6, %ymm9, %ymm9
-	vpor	%ymm10, %ymm9, %ymm9
-	vmovdqu	%ymm0, %ymm10
-	vmovdqu	%ymm10, %ymm11
-	vpslld	$21, %ymm11, %ymm11
-	vpsrld	$11, %ymm10, %ymm10
-	vpor	%ymm11, %ymm10, %ymm10
-	vpxor	%ymm10, %ymm9, %ymm9
-	vmovdqu	%ymm10, %ymm11
-	vpslld	$18, %ymm11, %ymm11
-	vpsrld	$14, %ymm10, %ymm10
-	vpor	%ymm11, %ymm10, %ymm7
+	vpsrld	$6, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm9
+	vmovdqu	%ymm0, %ymm7
+	vmovdqu	%ymm7, %ymm10
+	vpslld	$21, %ymm10, %ymm10
+	vpsrld	$11, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm7
+	vpxor	%ymm7, %ymm9, %ymm9
+	vmovdqu	%ymm7, %ymm10
+	vpslld	$18, %ymm10, %ymm10
+	vpsrld	$14, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm7
 	vpxor	%ymm7, %ymm9, %ymm7
 	vpaddd	%ymm7, %ymm1, %ymm7
 	vpaddd	%ymm7, %ymm4, %ymm1
@@ -37792,21 +37983,21 @@ slh_dsa_sha2128s_keygen:
 	vpand	%ymm8, %ymm4, %ymm4
 	vpxor	%ymm4, %ymm10, %ymm4
 	vpaddd	%ymm4, %ymm7, %ymm4
-	vmovdqu	%ymm5, %ymm9
-	vmovdqu	%ymm9, %ymm10
+	vmovdqu	%ymm5, %ymm7
+	vmovdqu	%ymm7, %ymm10
 	vpslld	$30, %ymm10, %ymm10
-	vpsrld	$2, %ymm9, %ymm9
-	vpor	%ymm10, %ymm9, %ymm9
-	vmovdqu	%ymm5, %ymm10
-	vmovdqu	%ymm10, %ymm11
-	vpslld	$19, %ymm11, %ymm11
-	vpsrld	$13, %ymm10, %ymm10
-	vpor	%ymm11, %ymm10, %ymm10
-	vpxor	%ymm10, %ymm9, %ymm9
-	vmovdqu	%ymm10, %ymm11
-	vpslld	$23, %ymm11, %ymm11
-	vpsrld	$9, %ymm10, %ymm10
-	vpor	%ymm11, %ymm10, %ymm7
+	vpsrld	$2, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm9
+	vmovdqu	%ymm5, %ymm7
+	vmovdqu	%ymm7, %ymm10
+	vpslld	$19, %ymm10, %ymm10
+	vpsrld	$13, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm7
+	vpxor	%ymm7, %ymm9, %ymm9
+	vmovdqu	%ymm7, %ymm10
+	vpslld	$23, %ymm10, %ymm10
+	vpsrld	$9, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm7
 	vpxor	%ymm7, %ymm9, %ymm7
 	vpaddd	%ymm7, %ymm4, %ymm4
 	vmovdqu	1856(%rbp), %ymm7
@@ -37819,24 +38010,24 @@ slh_dsa_sha2128s_keygen:
 	vpxor	%ymm1, %ymm7, %ymm7
 	vpand	%ymm2, %ymm7, %ymm7
 	vpxor	%ymm7, %ymm10, %ymm7
-	vpaddd	%ymm7, %ymm3, %ymm7
-	vmovdqu	%ymm1, %ymm3
-	vmovdqu	%ymm3, %ymm10
+	vpaddd	%ymm7, %ymm3, %ymm3
+	vmovdqu	%ymm1, %ymm7
+	vmovdqu	%ymm7, %ymm10
 	vpslld	$26, %ymm10, %ymm10
-	vpsrld	$6, %ymm3, %ymm3
-	vpor	%ymm10, %ymm3, %ymm9
-	vmovdqu	%ymm1, %ymm3
-	vmovdqu	%ymm3, %ymm10
+	vpsrld	$6, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm9
+	vmovdqu	%ymm1, %ymm7
+	vmovdqu	%ymm7, %ymm10
 	vpslld	$21, %ymm10, %ymm10
-	vpsrld	$11, %ymm3, %ymm3
-	vpor	%ymm10, %ymm3, %ymm3
-	vpxor	%ymm3, %ymm9, %ymm9
-	vmovdqu	%ymm3, %ymm10
+	vpsrld	$11, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm7
+	vpxor	%ymm7, %ymm9, %ymm9
+	vmovdqu	%ymm7, %ymm10
 	vpslld	$18, %ymm10, %ymm10
-	vpsrld	$14, %ymm3, %ymm3
-	vpor	%ymm10, %ymm3, %ymm3
-	vpxor	%ymm3, %ymm9, %ymm3
-	vpaddd	%ymm3, %ymm7, %ymm7
+	vpsrld	$14, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm7
+	vpxor	%ymm7, %ymm9, %ymm7
+	vpaddd	%ymm7, %ymm3, %ymm7
 	vpaddd	%ymm7, %ymm8, %ymm3
 	vmovdqu	%ymm4, %ymm10
 	vpand	%ymm5, %ymm10, %ymm10
@@ -37874,24 +38065,24 @@ slh_dsa_sha2128s_keygen:
 	vpxor	%ymm3, %ymm7, %ymm7
 	vpand	%ymm0, %ymm7, %ymm7
 	vpxor	%ymm7, %ymm10, %ymm7
-	vpaddd	%ymm7, %ymm2, %ymm7
-	vmovdqu	%ymm3, %ymm2
-	vmovdqu	%ymm2, %ymm10
+	vpaddd	%ymm7, %ymm2, %ymm2
+	vmovdqu	%ymm3, %ymm7
+	vmovdqu	%ymm7, %ymm10
 	vpslld	$26, %ymm10, %ymm10
-	vpsrld	$6, %ymm2, %ymm2
-	vpor	%ymm10, %ymm2, %ymm9
-	vmovdqu	%ymm3, %ymm2
-	vmovdqu	%ymm2, %ymm10
+	vpsrld	$6, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm9
+	vmovdqu	%ymm3, %ymm7
+	vmovdqu	%ymm7, %ymm10
 	vpslld	$21, %ymm10, %ymm10
-	vpsrld	$11, %ymm2, %ymm2
-	vpor	%ymm10, %ymm2, %ymm2
-	vpxor	%ymm2, %ymm9, %ymm9
-	vmovdqu	%ymm2, %ymm10
+	vpsrld	$11, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm7
+	vpxor	%ymm7, %ymm9, %ymm9
+	vmovdqu	%ymm7, %ymm10
 	vpslld	$18, %ymm10, %ymm10
-	vpsrld	$14, %ymm2, %ymm2
-	vpor	%ymm10, %ymm2, %ymm2
-	vpxor	%ymm2, %ymm9, %ymm2
-	vpaddd	%ymm2, %ymm7, %ymm7
+	vpsrld	$14, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm7
+	vpxor	%ymm7, %ymm9, %ymm7
+	vpaddd	%ymm7, %ymm2, %ymm7
 	vpaddd	%ymm7, %ymm6, %ymm2
 	vmovdqu	%ymm8, %ymm10
 	vpand	%ymm4, %ymm10, %ymm10
@@ -37902,21 +38093,21 @@ slh_dsa_sha2128s_keygen:
 	vpand	%ymm5, %ymm6, %ymm6
 	vpxor	%ymm6, %ymm10, %ymm6
 	vpaddd	%ymm6, %ymm7, %ymm6
-	vmovdqu	%ymm8, %ymm9
-	vmovdqu	%ymm9, %ymm10
+	vmovdqu	%ymm8, %ymm7
+	vmovdqu	%ymm7, %ymm10
 	vpslld	$30, %ymm10, %ymm10
-	vpsrld	$2, %ymm9, %ymm9
-	vpor	%ymm10, %ymm9, %ymm9
-	vmovdqu	%ymm8, %ymm10
-	vmovdqu	%ymm10, %ymm11
-	vpslld	$19, %ymm11, %ymm11
-	vpsrld	$13, %ymm10, %ymm10
-	vpor	%ymm11, %ymm10, %ymm10
-	vpxor	%ymm10, %ymm9, %ymm9
-	vmovdqu	%ymm10, %ymm11
-	vpslld	$23, %ymm11, %ymm11
-	vpsrld	$9, %ymm10, %ymm10
-	vpor	%ymm11, %ymm10, %ymm7
+	vpsrld	$2, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm9
+	vmovdqu	%ymm8, %ymm7
+	vmovdqu	%ymm7, %ymm10
+	vpslld	$19, %ymm10, %ymm10
+	vpsrld	$13, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm7
+	vpxor	%ymm7, %ymm9, %ymm9
+	vmovdqu	%ymm7, %ymm10
+	vpslld	$23, %ymm10, %ymm10
+	vpsrld	$9, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm7
 	vpxor	%ymm7, %ymm9, %ymm7
 	vpaddd	%ymm7, %ymm6, %ymm6
 	vmovdqu	1920(%rbp), %ymm7
@@ -37930,21 +38121,21 @@ slh_dsa_sha2128s_keygen:
 	vpand	%ymm1, %ymm7, %ymm7
 	vpxor	%ymm7, %ymm10, %ymm7
 	vpaddd	%ymm7, %ymm0, %ymm0
-	vmovdqu	%ymm2, %ymm9
-	vmovdqu	%ymm9, %ymm10
+	vmovdqu	%ymm2, %ymm7
+	vmovdqu	%ymm7, %ymm10
 	vpslld	$26, %ymm10, %ymm10
-	vpsrld	$6, %ymm9, %ymm9
-	vpor	%ymm10, %ymm9, %ymm9
-	vmovdqu	%ymm2, %ymm10
-	vmovdqu	%ymm10, %ymm11
-	vpslld	$21, %ymm11, %ymm11
-	vpsrld	$11, %ymm10, %ymm10
-	vpor	%ymm11, %ymm10, %ymm10
-	vpxor	%ymm10, %ymm9, %ymm9
-	vmovdqu	%ymm10, %ymm11
-	vpslld	$18, %ymm11, %ymm11
-	vpsrld	$14, %ymm10, %ymm10
-	vpor	%ymm11, %ymm10, %ymm7
+	vpsrld	$6, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm9
+	vmovdqu	%ymm2, %ymm7
+	vmovdqu	%ymm7, %ymm10
+	vpslld	$21, %ymm10, %ymm10
+	vpsrld	$11, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm7
+	vpxor	%ymm7, %ymm9, %ymm9
+	vmovdqu	%ymm7, %ymm10
+	vpslld	$18, %ymm10, %ymm10
+	vpsrld	$14, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm7
 	vpxor	%ymm7, %ymm9, %ymm7
 	vpaddd	%ymm7, %ymm0, %ymm7
 	vpaddd	%ymm7, %ymm5, %ymm0
@@ -37957,21 +38148,21 @@ slh_dsa_sha2128s_keygen:
 	vpand	%ymm4, %ymm5, %ymm5
 	vpxor	%ymm5, %ymm10, %ymm5
 	vpaddd	%ymm5, %ymm7, %ymm5
-	vmovdqu	%ymm6, %ymm9
-	vmovdqu	%ymm9, %ymm10
+	vmovdqu	%ymm6, %ymm7
+	vmovdqu	%ymm7, %ymm10
 	vpslld	$30, %ymm10, %ymm10
-	vpsrld	$2, %ymm9, %ymm9
-	vpor	%ymm10, %ymm9, %ymm9
-	vmovdqu	%ymm6, %ymm10
-	vmovdqu	%ymm10, %ymm11
-	vpslld	$19, %ymm11, %ymm11
-	vpsrld	$13, %ymm10, %ymm10
-	vpor	%ymm11, %ymm10, %ymm10
-	vpxor	%ymm10, %ymm9, %ymm9
-	vmovdqu	%ymm10, %ymm11
-	vpslld	$23, %ymm11, %ymm11
-	vpsrld	$9, %ymm10, %ymm10
-	vpor	%ymm11, %ymm10, %ymm7
+	vpsrld	$2, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm9
+	vmovdqu	%ymm6, %ymm7
+	vmovdqu	%ymm7, %ymm10
+	vpslld	$19, %ymm10, %ymm10
+	vpsrld	$13, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm7
+	vpxor	%ymm7, %ymm9, %ymm9
+	vmovdqu	%ymm7, %ymm10
+	vpslld	$23, %ymm10, %ymm10
+	vpsrld	$9, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm7
 	vpxor	%ymm7, %ymm9, %ymm7
 	vpaddd	%ymm7, %ymm5, %ymm5
 	vmovdqu	1952(%rbp), %ymm7
@@ -37985,21 +38176,21 @@ slh_dsa_sha2128s_keygen:
 	vpand	%ymm3, %ymm7, %ymm7
 	vpxor	%ymm7, %ymm10, %ymm7
 	vpaddd	%ymm7, %ymm1, %ymm1
-	vmovdqu	%ymm0, %ymm9
-	vmovdqu	%ymm9, %ymm10
+	vmovdqu	%ymm0, %ymm7
+	vmovdqu	%ymm7, %ymm10
 	vpslld	$26, %ymm10, %ymm10
-	vpsrld	$6, %ymm9, %ymm9
-	vpor	%ymm10, %ymm9, %ymm9
-	vmovdqu	%ymm0, %ymm10
-	vmovdqu	%ymm10, %ymm11
-	vpslld	$21, %ymm11, %ymm11
-	vpsrld	$11, %ymm10, %ymm10
-	vpor	%ymm11, %ymm10, %ymm10
-	vpxor	%ymm10, %ymm9, %ymm9
-	vmovdqu	%ymm10, %ymm11
-	vpslld	$18, %ymm11, %ymm11
-	vpsrld	$14, %ymm10, %ymm10
-	vpor	%ymm11, %ymm10, %ymm7
+	vpsrld	$6, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm9
+	vmovdqu	%ymm0, %ymm7
+	vmovdqu	%ymm7, %ymm10
+	vpslld	$21, %ymm10, %ymm10
+	vpsrld	$11, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm7
+	vpxor	%ymm7, %ymm9, %ymm9
+	vmovdqu	%ymm7, %ymm10
+	vpslld	$18, %ymm10, %ymm10
+	vpsrld	$14, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm7
 	vpxor	%ymm7, %ymm9, %ymm7
 	vpaddd	%ymm7, %ymm1, %ymm7
 	vpaddd	%ymm7, %ymm4, %ymm1
@@ -38012,21 +38203,21 @@ slh_dsa_sha2128s_keygen:
 	vpand	%ymm8, %ymm4, %ymm4
 	vpxor	%ymm4, %ymm10, %ymm4
 	vpaddd	%ymm4, %ymm7, %ymm4
-	vmovdqu	%ymm5, %ymm9
-	vmovdqu	%ymm9, %ymm10
+	vmovdqu	%ymm5, %ymm7
+	vmovdqu	%ymm7, %ymm10
 	vpslld	$30, %ymm10, %ymm10
-	vpsrld	$2, %ymm9, %ymm9
-	vpor	%ymm10, %ymm9, %ymm9
-	vmovdqu	%ymm5, %ymm10
-	vmovdqu	%ymm10, %ymm11
-	vpslld	$19, %ymm11, %ymm11
-	vpsrld	$13, %ymm10, %ymm10
-	vpor	%ymm11, %ymm10, %ymm10
-	vpxor	%ymm10, %ymm9, %ymm9
-	vmovdqu	%ymm10, %ymm11
-	vpslld	$23, %ymm11, %ymm11
-	vpsrld	$9, %ymm10, %ymm10
-	vpor	%ymm11, %ymm10, %ymm7
+	vpsrld	$2, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm9
+	vmovdqu	%ymm5, %ymm7
+	vmovdqu	%ymm7, %ymm10
+	vpslld	$19, %ymm10, %ymm10
+	vpsrld	$13, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm7
+	vpxor	%ymm7, %ymm9, %ymm9
+	vmovdqu	%ymm7, %ymm10
+	vpslld	$23, %ymm10, %ymm10
+	vpsrld	$9, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm7
 	vpxor	%ymm7, %ymm9, %ymm7
 	vpaddd	%ymm7, %ymm4, %ymm4
 	vmovdqu	1984(%rbp), %ymm7
@@ -38039,24 +38230,24 @@ slh_dsa_sha2128s_keygen:
 	vpxor	%ymm1, %ymm7, %ymm7
 	vpand	%ymm2, %ymm7, %ymm7
 	vpxor	%ymm7, %ymm10, %ymm7
-	vpaddd	%ymm7, %ymm3, %ymm7
-	vmovdqu	%ymm1, %ymm3
-	vmovdqu	%ymm3, %ymm10
+	vpaddd	%ymm7, %ymm3, %ymm3
+	vmovdqu	%ymm1, %ymm7
+	vmovdqu	%ymm7, %ymm10
 	vpslld	$26, %ymm10, %ymm10
-	vpsrld	$6, %ymm3, %ymm3
-	vpor	%ymm10, %ymm3, %ymm9
-	vmovdqu	%ymm1, %ymm3
-	vmovdqu	%ymm3, %ymm10
+	vpsrld	$6, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm9
+	vmovdqu	%ymm1, %ymm7
+	vmovdqu	%ymm7, %ymm10
 	vpslld	$21, %ymm10, %ymm10
-	vpsrld	$11, %ymm3, %ymm3
-	vpor	%ymm10, %ymm3, %ymm3
-	vpxor	%ymm3, %ymm9, %ymm9
-	vmovdqu	%ymm3, %ymm10
+	vpsrld	$11, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm7
+	vpxor	%ymm7, %ymm9, %ymm9
+	vmovdqu	%ymm7, %ymm10
 	vpslld	$18, %ymm10, %ymm10
-	vpsrld	$14, %ymm3, %ymm3
-	vpor	%ymm10, %ymm3, %ymm3
-	vpxor	%ymm3, %ymm9, %ymm3
-	vpaddd	%ymm3, %ymm7, %ymm7
+	vpsrld	$14, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm7
+	vpxor	%ymm7, %ymm9, %ymm7
+	vpaddd	%ymm7, %ymm3, %ymm7
 	vpaddd	%ymm7, %ymm8, %ymm3
 	vmovdqu	%ymm4, %ymm10
 	vpand	%ymm5, %ymm10, %ymm10
@@ -38094,24 +38285,24 @@ slh_dsa_sha2128s_keygen:
 	vpxor	%ymm3, %ymm7, %ymm7
 	vpand	%ymm0, %ymm7, %ymm7
 	vpxor	%ymm7, %ymm10, %ymm7
-	vpaddd	%ymm7, %ymm2, %ymm7
-	vmovdqu	%ymm3, %ymm2
-	vmovdqu	%ymm2, %ymm10
+	vpaddd	%ymm7, %ymm2, %ymm2
+	vmovdqu	%ymm3, %ymm7
+	vmovdqu	%ymm7, %ymm10
 	vpslld	$26, %ymm10, %ymm10
-	vpsrld	$6, %ymm2, %ymm2
-	vpor	%ymm10, %ymm2, %ymm9
-	vmovdqu	%ymm3, %ymm2
-	vmovdqu	%ymm2, %ymm10
+	vpsrld	$6, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm9
+	vmovdqu	%ymm3, %ymm7
+	vmovdqu	%ymm7, %ymm10
 	vpslld	$21, %ymm10, %ymm10
-	vpsrld	$11, %ymm2, %ymm2
-	vpor	%ymm10, %ymm2, %ymm2
-	vpxor	%ymm2, %ymm9, %ymm9
-	vmovdqu	%ymm2, %ymm10
+	vpsrld	$11, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm7
+	vpxor	%ymm7, %ymm9, %ymm9
+	vmovdqu	%ymm7, %ymm10
 	vpslld	$18, %ymm10, %ymm10
-	vpsrld	$14, %ymm2, %ymm2
-	vpor	%ymm10, %ymm2, %ymm2
-	vpxor	%ymm2, %ymm9, %ymm2
-	vpaddd	%ymm2, %ymm7, %ymm2
+	vpsrld	$14, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm7
+	vpxor	%ymm7, %ymm9, %ymm7
+	vpaddd	%ymm7, %ymm2, %ymm2
 	vpaddd	%ymm2, %ymm6, %ymm6
 	vmovdqu	%ymm8, %ymm10
 	vpand	%ymm4, %ymm10, %ymm10
@@ -38122,56 +38313,57 @@ slh_dsa_sha2128s_keygen:
 	vpand	%ymm5, %ymm7, %ymm7
 	vpxor	%ymm7, %ymm10, %ymm7
 	vpaddd	%ymm7, %ymm2, %ymm2
-	vmovdqu	%ymm8, %ymm9
-	vmovdqu	%ymm9, %ymm10
+	vmovdqu	%ymm8, %ymm7
+	vmovdqu	%ymm7, %ymm10
 	vpslld	$30, %ymm10, %ymm10
-	vpsrld	$2, %ymm9, %ymm9
-	vpor	%ymm10, %ymm9, %ymm9
-	vmovdqu	%ymm8, %ymm10
-	vmovdqu	%ymm10, %ymm11
-	vpslld	$19, %ymm11, %ymm11
-	vpsrld	$13, %ymm10, %ymm10
-	vpor	%ymm11, %ymm10, %ymm10
-	vpxor	%ymm10, %ymm9, %ymm9
-	vmovdqu	%ymm10, %ymm11
-	vpslld	$23, %ymm11, %ymm11
-	vpsrld	$9, %ymm10, %ymm10
-	vpor	%ymm11, %ymm10, %ymm7
+	vpsrld	$2, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm9
+	vmovdqu	%ymm8, %ymm7
+	vmovdqu	%ymm7, %ymm10
+	vpslld	$19, %ymm10, %ymm10
+	vpsrld	$13, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm7
+	vpxor	%ymm7, %ymm9, %ymm9
+	vmovdqu	%ymm7, %ymm10
+	vpslld	$23, %ymm10, %ymm10
+	vpsrld	$9, %ymm7, %ymm7
+	vpor	%ymm10, %ymm7, %ymm7
 	vpxor	%ymm7, %ymm9, %ymm7
 	vpaddd	%ymm7, %ymm2, %ymm2
-	vmovdqu	32(%rsp), %ymm7
-	vpaddd	%ymm7, %ymm2, %ymm2
-	vmovdqu	64(%rsp), %ymm7
-	vpaddd	%ymm7, %ymm8, %ymm8
-	vmovdqu	96(%rsp), %ymm7
-	vpaddd	%ymm7, %ymm4, %ymm4
-	vmovdqu	128(%rsp), %ymm7
-	vpaddd	%ymm7, %ymm5, %ymm5
-	vmovdqu	160(%rsp), %ymm7
-	vpaddd	%ymm7, %ymm6, %ymm6
-	vmovdqu	192(%rsp), %ymm7
-	vpaddd	%ymm7, %ymm3, %ymm3
-	vmovdqu	224(%rsp), %ymm7
-	vpaddd	%ymm7, %ymm1, %ymm1
-	vmovdqu	256(%rsp), %ymm7
-	vpaddd	%ymm7, %ymm0, %ymm0
-	vmovdqu	glob_data + 480(%rip), %ymm7
-	vmovdqu	%ymm7, (%rbp)
-	vmovdqu	%ymm7, 32(%rbp)
-	vmovdqu	%ymm7, 64(%rbp)
-	vmovdqu	%ymm7, 96(%rbp)
-	vmovdqu	%ymm7, 128(%rbp)
-	vmovdqu	%ymm7, 160(%rbp)
-	vmovdqu	%ymm7, 192(%rbp)
-	vmovdqu	%ymm7, 224(%rbp)
-	vmovdqu	%ymm7, 256(%rbp)
-	vmovdqu	%ymm7, 288(%rbp)
-	vmovdqu	%ymm7, 320(%rbp)
-	vmovdqu	%ymm7, 352(%rbp)
-	vmovdqu	%ymm7, 384(%rbp)
-	vmovdqu	%ymm7, 416(%rbp)
-	vmovdqu	%ymm7, 448(%rbp)
-	vmovdqu	%ymm7, 480(%rbp)
+	vmovdqu	%ymm4, %ymm7
+	vmovdqu	32(%rsp), %ymm4
+	vpaddd	%ymm4, %ymm2, %ymm2
+	vmovdqu	64(%rsp), %ymm4
+	vpaddd	%ymm4, %ymm8, %ymm4
+	vmovdqu	96(%rsp), %ymm8
+	vpaddd	%ymm8, %ymm7, %ymm7
+	vmovdqu	128(%rsp), %ymm8
+	vpaddd	%ymm8, %ymm5, %ymm5
+	vmovdqu	160(%rsp), %ymm8
+	vpaddd	%ymm8, %ymm6, %ymm6
+	vmovdqu	192(%rsp), %ymm8
+	vpaddd	%ymm8, %ymm3, %ymm3
+	vmovdqu	224(%rsp), %ymm8
+	vpaddd	%ymm8, %ymm1, %ymm1
+	vmovdqu	256(%rsp), %ymm8
+	vpaddd	%ymm8, %ymm0, %ymm0
+	vmovdqu	glob_data + 480(%rip), %ymm8
+	vmovdqu	%ymm8, (%rbp)
+	vmovdqu	%ymm8, 32(%rbp)
+	vmovdqu	%ymm8, 64(%rbp)
+	vmovdqu	%ymm8, 96(%rbp)
+	vmovdqu	%ymm8, 128(%rbp)
+	vmovdqu	%ymm8, 160(%rbp)
+	vmovdqu	%ymm8, 192(%rbp)
+	vmovdqu	%ymm8, 224(%rbp)
+	vmovdqu	%ymm8, 256(%rbp)
+	vmovdqu	%ymm8, 288(%rbp)
+	vmovdqu	%ymm8, 320(%rbp)
+	vmovdqu	%ymm8, 352(%rbp)
+	vmovdqu	%ymm8, 384(%rbp)
+	vmovdqu	%ymm8, 416(%rbp)
+	vmovdqu	%ymm8, 448(%rbp)
+	vmovdqu	%ymm8, 480(%rbp)
 	vpextrd	$0, %xmm2, %r12d
 	bswapl	%r12d
 	movl	%r12d, (%rcx)
@@ -38197,19 +38389,19 @@ slh_dsa_sha2128s_keygen:
 	vpextrd	$3, %xmm2, %r12d
 	bswapl	%r12d
 	movl	%r12d, (%r11)
-	vpextrd	$0, %xmm8, %r12d
+	vpextrd	$0, %xmm4, %r12d
 	bswapl	%r12d
 	movl	%r12d, 4(%rcx)
-	vpextrd	$1, %xmm8, %r12d
+	vpextrd	$1, %xmm4, %r12d
 	bswapl	%r12d
 	movl	%r12d, 4(%rdx)
-	vpextrd	$2, %xmm8, %r12d
+	vpextrd	$2, %xmm4, %r12d
 	bswapl	%r12d
 	movl	%r12d, 4(%rsi)
-	vpextrd	$3, %xmm8, %r12d
+	vpextrd	$3, %xmm4, %r12d
 	bswapl	%r12d
 	movl	%r12d, 4(%rdi)
-	vextracti128	$1, %ymm8, %xmm2
+	vextracti128	$1, %ymm4, %xmm2
 	vpextrd	$0, %xmm2, %r12d
 	bswapl	%r12d
 	movl	%r12d, 4(%r8)
@@ -38222,19 +38414,19 @@ slh_dsa_sha2128s_keygen:
 	vpextrd	$3, %xmm2, %r12d
 	bswapl	%r12d
 	movl	%r12d, 4(%r11)
-	vpextrd	$0, %xmm4, %r12d
+	vpextrd	$0, %xmm7, %r12d
 	bswapl	%r12d
 	movl	%r12d, 8(%rcx)
-	vpextrd	$1, %xmm4, %r12d
+	vpextrd	$1, %xmm7, %r12d
 	bswapl	%r12d
 	movl	%r12d, 8(%rdx)
-	vpextrd	$2, %xmm4, %r12d
+	vpextrd	$2, %xmm7, %r12d
 	bswapl	%r12d
 	movl	%r12d, 8(%rsi)
-	vpextrd	$3, %xmm4, %r12d
+	vpextrd	$3, %xmm7, %r12d
 	bswapl	%r12d
 	movl	%r12d, 8(%rdi)
-	vextracti128	$1, %ymm4, %xmm2
+	vextracti128	$1, %ymm7, %xmm2
 	vpextrd	$0, %xmm2, %r12d
 	bswapl	%r12d
 	movl	%r12d, 8(%r8)
@@ -38410,37 +38602,41 @@ slh_dsa_sha2128s_keygen:
 	movq	$0, %rbp
 	ret
 .Lsha256_compress_fors__sha256_cached$1:
-	movq	%rcx, 48(%rsp)
-	movq	$246, %rcx
-	addq	$64, %rcx
-	shlq	$3, %rcx
-	movq	%rcx, 56(%rsp)
+	movq	%rax, %mm1
 	leaq	16(%rsp), %rcx
-	movl	(%rdx), %edi
-	movl	%edi, (%rcx)
-	movl	4(%rdx), %edi
-	movl	%edi, 4(%rcx)
-	movl	8(%rdx), %edi
-	movl	%edi, 8(%rcx)
-	movl	12(%rdx), %edi
-	movl	%edi, 12(%rcx)
-	movl	16(%rdx), %edi
-	movl	%edi, 16(%rcx)
-	movl	20(%rdx), %edi
-	movl	%edi, 20(%rcx)
-	movl	24(%rdx), %edi
-	movl	%edi, 24(%rcx)
+	movl	(%rdx), %r8d
+	movl	%r8d, (%rcx)
+	movl	4(%rdx), %r8d
+	movl	%r8d, 4(%rcx)
+	movl	8(%rdx), %r8d
+	movl	%r8d, 8(%rcx)
+	movl	12(%rdx), %r8d
+	movl	%r8d, 12(%rcx)
+	movl	16(%rdx), %r8d
+	movl	%r8d, 16(%rcx)
+	movl	20(%rdx), %r8d
+	movl	%r8d, 20(%rcx)
+	movl	24(%rdx), %r8d
+	movl	%r8d, 24(%rcx)
 	movl	28(%rdx), %edx
 	movl	%edx, 28(%rcx)
-	movq	%rsi, 64(%rsp)
+	movq	%rsi, %mm2
 	leaq	-232(%rsp), %rsp
 	call	.Lsha256_compress_fors___blocks_0_ref_array$1
 .Lsha256_compress_fors__sha256_cached$9:
 	leaq	232(%rsp), %rsp
-	movq	64(%rsp), %rdx
-	movq	56(%rsp), %r9
+	movq	%mm2, %rdx
+	movq	$246, %rdi
+	addq	$64, %rdi
+	shlq	$3, %rdi
 	movq	$54, %rax
 	movq	$0, %rsi
+	movl	%esi, 48(%rsp)
+	movl	%esi, 52(%rsp)
+	movl	%esi, 56(%rsp)
+	movl	%esi, 60(%rsp)
+	movl	%esi, 64(%rsp)
+	movl	%esi, 68(%rsp)
 	movl	%esi, 72(%rsp)
 	movl	%esi, 76(%rsp)
 	movl	%esi, 80(%rsp)
@@ -38467,72 +38663,66 @@ slh_dsa_sha2128s_keygen:
 	movl	%esi, 164(%rsp)
 	movl	%esi, 168(%rsp)
 	movl	%esi, 172(%rsp)
-	movl	%esi, 176(%rsp)
-	movl	%esi, 180(%rsp)
-	movl	%esi, 184(%rsp)
-	movl	%esi, 188(%rsp)
-	movl	%esi, 192(%rsp)
-	movl	%esi, 196(%rsp)
 	jmp 	.Lsha256_compress_fors__sha256_cached$7
 .Lsha256_compress_fors__sha256_cached$8:
-	movq	%r8, %rdi
-	addq	%rsi, %rdi
-	movb	(%rdx,%rdi), %dil
-	movb	%dil, 72(%rsp,%rsi)
+	movq	%r10, %r9
+	addq	%rsi, %r9
+	movb	(%rdx,%r9), %r8b
+	movb	%r8b, 48(%rsp,%rsi)
 	incq	%rsi
 .Lsha256_compress_fors__sha256_cached$7:
 	cmpq	%rax, %rsi
 	jb  	.Lsha256_compress_fors__sha256_cached$8
-	movb	$128, 72(%rsp,%rsi)
+	movb	$128, 48(%rsp,%rsi)
 	cmpq	$56, %rax
 	jb  	.Lsha256_compress_fors__sha256_cached$5
 	movq	$120, %r11
 	movq	$2, %rdx
-	movq	$127, %rax
+	movq	$127, %rsi
 	jmp 	.Lsha256_compress_fors__sha256_cached$3
 .Lsha256_compress_fors__sha256_cached$5:
 	movq	$56, %r11
 	movq	$1, %rdx
-	movq	$63, %rax
+	movq	$63, %rsi
 .Lsha256_compress_fors__sha256_cached$6:
 	jmp 	.Lsha256_compress_fors__sha256_cached$3
 .Lsha256_compress_fors__sha256_cached$4:
-	movb	%r9b, 72(%rsp,%rax)
-	shrq	$8, %r9
-	decq	%rax
+	movb	%dil, 48(%rsp,%rsi)
+	shrq	$8, %rdi
+	decq	%rsi
 .Lsha256_compress_fors__sha256_cached$3:
-	cmpq	%r11, %rax
+	cmpq	%r11, %rsi
 	jnb 	.Lsha256_compress_fors__sha256_cached$4
-	leaq	72(%rsp), %rsi
+	leaq	48(%rsp), %rsi
 	leaq	-216(%rsp), %rsp
 	call	.L_blocks_1_ref$1
 .Lsha256_compress_fors__sha256_cached$2:
 	leaq	216(%rsp), %rsp
-	movq	48(%rsp), %rcx
-	movl	16(%rsp), %edi
-	bswapl	%edi
-	movl	%edi, (%rcx)
-	movl	20(%rsp), %edi
-	bswapl	%edi
-	movl	%edi, 4(%rcx)
-	movl	24(%rsp), %edi
-	bswapl	%edi
-	movl	%edi, 8(%rcx)
-	movl	28(%rsp), %edi
-	bswapl	%edi
-	movl	%edi, 12(%rcx)
-	movl	32(%rsp), %edi
-	bswapl	%edi
-	movl	%edi, 16(%rcx)
-	movl	36(%rsp), %edi
-	bswapl	%edi
-	movl	%edi, 20(%rcx)
-	movl	40(%rsp), %edi
-	bswapl	%edi
-	movl	%edi, 24(%rcx)
-	movl	44(%rsp), %edi
-	bswapl	%edi
-	movl	%edi, 28(%rcx)
+	movq	%mm1, %rax
+	movl	16(%rsp), %r8d
+	bswapl	%r8d
+	movl	%r8d, (%rax)
+	movl	20(%rsp), %r8d
+	bswapl	%r8d
+	movl	%r8d, 4(%rax)
+	movl	24(%rsp), %r8d
+	bswapl	%r8d
+	movl	%r8d, 8(%rax)
+	movl	28(%rsp), %r8d
+	bswapl	%r8d
+	movl	%r8d, 12(%rax)
+	movl	32(%rsp), %r8d
+	bswapl	%r8d
+	movl	%r8d, 16(%rax)
+	movl	36(%rsp), %r8d
+	bswapl	%r8d
+	movl	%r8d, 20(%rax)
+	movl	40(%rsp), %r8d
+	bswapl	%r8d
+	movl	%r8d, 24(%rax)
+	movl	44(%rsp), %r8d
+	bswapl	%r8d
+	movl	%r8d, 28(%rax)
 	ret
 .Lsha256_compress_fors___blocks_0_ref_array$1:
 	movq	$0, %rax
@@ -38541,38 +38731,38 @@ slh_dsa_sha2128s_keygen:
 	movq	208(%rsp), %rcx
 	jmp 	.Lsha256_compress_fors___blocks_0_ref_array$3
 .Lsha256_compress_fors___blocks_0_ref_array$4:
-	movq	(%rsi,%rax), %rdi
-	movq	%rdi, 80(%rsp)
-	movq	8(%rsi,%rax), %rdi
-	movq	%rdi, 88(%rsp)
-	movq	16(%rsi,%rax), %rdi
-	movq	%rdi, 96(%rsp)
-	movq	24(%rsi,%rax), %rdi
-	movq	%rdi, 104(%rsp)
-	movq	32(%rsi,%rax), %rdi
-	movq	%rdi, 112(%rsp)
-	movq	40(%rsi,%rax), %rdi
-	movq	%rdi, 120(%rsp)
-	movq	48(%rsi,%rax), %rdi
-	movq	%rdi, 128(%rsp)
-	movq	56(%rsi,%rax), %rdi
-	movq	%rdi, 136(%rsp)
-	movq	64(%rsi,%rax), %rdi
-	movq	%rdi, 144(%rsp)
-	movq	72(%rsi,%rax), %rdi
-	movq	%rdi, 152(%rsp)
-	movq	80(%rsi,%rax), %rdi
-	movq	%rdi, 160(%rsp)
-	movq	88(%rsi,%rax), %rdi
-	movq	%rdi, 168(%rsp)
-	movq	96(%rsi,%rax), %rdi
-	movq	%rdi, 176(%rsp)
-	movq	104(%rsi,%rax), %rdi
-	movq	%rdi, 184(%rsp)
-	movq	112(%rsi,%rax), %rdi
-	movq	%rdi, 192(%rsp)
-	movq	120(%rsi,%rax), %rdi
-	movq	%rdi, 200(%rsp)
+	movq	(%rsi,%rax), %r8
+	movq	%r8, 80(%rsp)
+	movq	8(%rsi,%rax), %r8
+	movq	%r8, 88(%rsp)
+	movq	16(%rsi,%rax), %r8
+	movq	%r8, 96(%rsp)
+	movq	24(%rsi,%rax), %r8
+	movq	%r8, 104(%rsp)
+	movq	32(%rsi,%rax), %r8
+	movq	%r8, 112(%rsp)
+	movq	40(%rsi,%rax), %r8
+	movq	%r8, 120(%rsp)
+	movq	48(%rsi,%rax), %r8
+	movq	%r8, 128(%rsp)
+	movq	56(%rsi,%rax), %r8
+	movq	%r8, 136(%rsp)
+	movq	64(%rsi,%rax), %r8
+	movq	%r8, 144(%rsp)
+	movq	72(%rsi,%rax), %r8
+	movq	%r8, 152(%rsp)
+	movq	80(%rsi,%rax), %r8
+	movq	%r8, 160(%rsp)
+	movq	88(%rsi,%rax), %r8
+	movq	%r8, 168(%rsp)
+	movq	96(%rsi,%rax), %r8
+	movq	%r8, 176(%rsp)
+	movq	104(%rsi,%rax), %r8
+	movq	%r8, 184(%rsp)
+	movq	112(%rsi,%rax), %r8
+	movq	%r8, 192(%rsp)
+	movq	120(%rsi,%rax), %r8
+	movq	%r8, 200(%rsp)
 	movq	%rsi, 208(%rsp)
 	movq	%rax, 216(%rsp)
 	movq	%rdx, 224(%rsp)
@@ -38584,6 +38774,8 @@ slh_dsa_sha2128s_keygen:
 	movq	208(%rsp), %rsi
 	movq	216(%rsp), %rax
 	movq	224(%rsp), %rdx
+	lfence
+	movq	$0, %rdi
 	addq	$128, %rax
 	addq	$-128, %rdx
 .Lsha256_compress_fors___blocks_0_ref_array$3:
@@ -38611,41 +38803,47 @@ slh_dsa_sha2128s_keygen:
 	call	.Lsha256_avx__sha256_compress_avx$1
 .Lsha256_compress_fors___blocks_0_ref_array$2:
 	leaq	104(%rsp), %rsp
-	movq	224(%rsp), %r8
-	addq	$64, %r8
+	movq	224(%rsp), %r10
+	lfence
+	movq	$0, %rdx
+	addq	$64, %r10
 	ret
 .Lsha256_compress_wots__sha256_cached$1:
-	movq	%rcx, 48(%rsp)
-	movq	$582, %rcx
-	addq	$64, %rcx
-	shlq	$3, %rcx
-	movq	%rcx, 56(%rsp)
+	movq	%rax, %mm1
 	leaq	16(%rsp), %rcx
-	movl	(%rdx), %edi
-	movl	%edi, (%rcx)
-	movl	4(%rdx), %edi
-	movl	%edi, 4(%rcx)
-	movl	8(%rdx), %edi
-	movl	%edi, 8(%rcx)
-	movl	12(%rdx), %edi
-	movl	%edi, 12(%rcx)
-	movl	16(%rdx), %edi
-	movl	%edi, 16(%rcx)
-	movl	20(%rdx), %edi
-	movl	%edi, 20(%rcx)
-	movl	24(%rdx), %edi
-	movl	%edi, 24(%rcx)
+	movl	(%rdx), %r8d
+	movl	%r8d, (%rcx)
+	movl	4(%rdx), %r8d
+	movl	%r8d, 4(%rcx)
+	movl	8(%rdx), %r8d
+	movl	%r8d, 8(%rcx)
+	movl	12(%rdx), %r8d
+	movl	%r8d, 12(%rcx)
+	movl	16(%rdx), %r8d
+	movl	%r8d, 16(%rcx)
+	movl	20(%rdx), %r8d
+	movl	%r8d, 20(%rcx)
+	movl	24(%rdx), %r8d
+	movl	%r8d, 24(%rcx)
 	movl	28(%rdx), %edx
 	movl	%edx, 28(%rcx)
-	movq	%rsi, 64(%rsp)
+	movq	%rsi, %mm2
 	leaq	-232(%rsp), %rsp
 	call	.Lsha256_compress_wots___blocks_0_ref_array$1
 .Lsha256_compress_wots__sha256_cached$9:
 	leaq	232(%rsp), %rsp
-	movq	64(%rsp), %rdx
-	movq	56(%rsp), %r9
+	movq	%mm2, %rdx
+	movq	$582, %rdi
+	addq	$64, %rdi
+	shlq	$3, %rdi
 	movq	$6, %rax
 	movq	$0, %rsi
+	movl	%esi, 48(%rsp)
+	movl	%esi, 52(%rsp)
+	movl	%esi, 56(%rsp)
+	movl	%esi, 60(%rsp)
+	movl	%esi, 64(%rsp)
+	movl	%esi, 68(%rsp)
 	movl	%esi, 72(%rsp)
 	movl	%esi, 76(%rsp)
 	movl	%esi, 80(%rsp)
@@ -38672,72 +38870,66 @@ slh_dsa_sha2128s_keygen:
 	movl	%esi, 164(%rsp)
 	movl	%esi, 168(%rsp)
 	movl	%esi, 172(%rsp)
-	movl	%esi, 176(%rsp)
-	movl	%esi, 180(%rsp)
-	movl	%esi, 184(%rsp)
-	movl	%esi, 188(%rsp)
-	movl	%esi, 192(%rsp)
-	movl	%esi, 196(%rsp)
 	jmp 	.Lsha256_compress_wots__sha256_cached$7
 .Lsha256_compress_wots__sha256_cached$8:
-	movq	%r8, %rdi
-	addq	%rsi, %rdi
-	movb	(%rdx,%rdi), %dil
-	movb	%dil, 72(%rsp,%rsi)
+	movq	%r10, %r9
+	addq	%rsi, %r9
+	movb	(%rdx,%r9), %r8b
+	movb	%r8b, 48(%rsp,%rsi)
 	incq	%rsi
 .Lsha256_compress_wots__sha256_cached$7:
 	cmpq	%rax, %rsi
 	jb  	.Lsha256_compress_wots__sha256_cached$8
-	movb	$128, 72(%rsp,%rsi)
+	movb	$128, 48(%rsp,%rsi)
 	cmpq	$56, %rax
 	jb  	.Lsha256_compress_wots__sha256_cached$5
 	movq	$120, %r11
 	movq	$2, %rdx
-	movq	$127, %rax
+	movq	$127, %rsi
 	jmp 	.Lsha256_compress_wots__sha256_cached$3
 .Lsha256_compress_wots__sha256_cached$5:
 	movq	$56, %r11
 	movq	$1, %rdx
-	movq	$63, %rax
+	movq	$63, %rsi
 .Lsha256_compress_wots__sha256_cached$6:
 	jmp 	.Lsha256_compress_wots__sha256_cached$3
 .Lsha256_compress_wots__sha256_cached$4:
-	movb	%r9b, 72(%rsp,%rax)
-	shrq	$8, %r9
-	decq	%rax
+	movb	%dil, 48(%rsp,%rsi)
+	shrq	$8, %rdi
+	decq	%rsi
 .Lsha256_compress_wots__sha256_cached$3:
-	cmpq	%r11, %rax
+	cmpq	%r11, %rsi
 	jnb 	.Lsha256_compress_wots__sha256_cached$4
-	leaq	72(%rsp), %rsi
+	leaq	48(%rsp), %rsi
 	leaq	-216(%rsp), %rsp
 	call	.L_blocks_1_ref$1
 .Lsha256_compress_wots__sha256_cached$2:
 	leaq	216(%rsp), %rsp
-	movq	48(%rsp), %rcx
-	movl	16(%rsp), %edi
-	bswapl	%edi
-	movl	%edi, (%rcx)
-	movl	20(%rsp), %edi
-	bswapl	%edi
-	movl	%edi, 4(%rcx)
-	movl	24(%rsp), %edi
-	bswapl	%edi
-	movl	%edi, 8(%rcx)
-	movl	28(%rsp), %edi
-	bswapl	%edi
-	movl	%edi, 12(%rcx)
-	movl	32(%rsp), %edi
-	bswapl	%edi
-	movl	%edi, 16(%rcx)
-	movl	36(%rsp), %edi
-	bswapl	%edi
-	movl	%edi, 20(%rcx)
-	movl	40(%rsp), %edi
-	bswapl	%edi
-	movl	%edi, 24(%rcx)
-	movl	44(%rsp), %edi
-	bswapl	%edi
-	movl	%edi, 28(%rcx)
+	movq	%mm1, %rax
+	movl	16(%rsp), %r8d
+	bswapl	%r8d
+	movl	%r8d, (%rax)
+	movl	20(%rsp), %r8d
+	bswapl	%r8d
+	movl	%r8d, 4(%rax)
+	movl	24(%rsp), %r8d
+	bswapl	%r8d
+	movl	%r8d, 8(%rax)
+	movl	28(%rsp), %r8d
+	bswapl	%r8d
+	movl	%r8d, 12(%rax)
+	movl	32(%rsp), %r8d
+	bswapl	%r8d
+	movl	%r8d, 16(%rax)
+	movl	36(%rsp), %r8d
+	bswapl	%r8d
+	movl	%r8d, 20(%rax)
+	movl	40(%rsp), %r8d
+	bswapl	%r8d
+	movl	%r8d, 24(%rax)
+	movl	44(%rsp), %r8d
+	bswapl	%r8d
+	movl	%r8d, 28(%rax)
 	ret
 .Lsha256_compress_wots___blocks_0_ref_array$1:
 	movq	$0, %rax
@@ -38746,38 +38938,38 @@ slh_dsa_sha2128s_keygen:
 	movq	208(%rsp), %rcx
 	jmp 	.Lsha256_compress_wots___blocks_0_ref_array$3
 .Lsha256_compress_wots___blocks_0_ref_array$4:
-	movq	(%rsi,%rax), %rdi
-	movq	%rdi, 80(%rsp)
-	movq	8(%rsi,%rax), %rdi
-	movq	%rdi, 88(%rsp)
-	movq	16(%rsi,%rax), %rdi
-	movq	%rdi, 96(%rsp)
-	movq	24(%rsi,%rax), %rdi
-	movq	%rdi, 104(%rsp)
-	movq	32(%rsi,%rax), %rdi
-	movq	%rdi, 112(%rsp)
-	movq	40(%rsi,%rax), %rdi
-	movq	%rdi, 120(%rsp)
-	movq	48(%rsi,%rax), %rdi
-	movq	%rdi, 128(%rsp)
-	movq	56(%rsi,%rax), %rdi
-	movq	%rdi, 136(%rsp)
-	movq	64(%rsi,%rax), %rdi
-	movq	%rdi, 144(%rsp)
-	movq	72(%rsi,%rax), %rdi
-	movq	%rdi, 152(%rsp)
-	movq	80(%rsi,%rax), %rdi
-	movq	%rdi, 160(%rsp)
-	movq	88(%rsi,%rax), %rdi
-	movq	%rdi, 168(%rsp)
-	movq	96(%rsi,%rax), %rdi
-	movq	%rdi, 176(%rsp)
-	movq	104(%rsi,%rax), %rdi
-	movq	%rdi, 184(%rsp)
-	movq	112(%rsi,%rax), %rdi
-	movq	%rdi, 192(%rsp)
-	movq	120(%rsi,%rax), %rdi
-	movq	%rdi, 200(%rsp)
+	movq	(%rsi,%rax), %r8
+	movq	%r8, 80(%rsp)
+	movq	8(%rsi,%rax), %r8
+	movq	%r8, 88(%rsp)
+	movq	16(%rsi,%rax), %r8
+	movq	%r8, 96(%rsp)
+	movq	24(%rsi,%rax), %r8
+	movq	%r8, 104(%rsp)
+	movq	32(%rsi,%rax), %r8
+	movq	%r8, 112(%rsp)
+	movq	40(%rsi,%rax), %r8
+	movq	%r8, 120(%rsp)
+	movq	48(%rsi,%rax), %r8
+	movq	%r8, 128(%rsp)
+	movq	56(%rsi,%rax), %r8
+	movq	%r8, 136(%rsp)
+	movq	64(%rsi,%rax), %r8
+	movq	%r8, 144(%rsp)
+	movq	72(%rsi,%rax), %r8
+	movq	%r8, 152(%rsp)
+	movq	80(%rsi,%rax), %r8
+	movq	%r8, 160(%rsp)
+	movq	88(%rsi,%rax), %r8
+	movq	%r8, 168(%rsp)
+	movq	96(%rsi,%rax), %r8
+	movq	%r8, 176(%rsp)
+	movq	104(%rsi,%rax), %r8
+	movq	%r8, 184(%rsp)
+	movq	112(%rsi,%rax), %r8
+	movq	%r8, 192(%rsp)
+	movq	120(%rsi,%rax), %r8
+	movq	%r8, 200(%rsp)
 	movq	%rsi, 208(%rsp)
 	movq	%rax, 216(%rsp)
 	movq	%rdx, 224(%rsp)
@@ -38789,6 +38981,8 @@ slh_dsa_sha2128s_keygen:
 	movq	208(%rsp), %rsi
 	movq	216(%rsp), %rax
 	movq	224(%rsp), %rdx
+	lfence
+	movq	$0, %rdi
 	addq	$128, %rax
 	addq	$-128, %rdx
 .Lsha256_compress_wots___blocks_0_ref_array$3:
@@ -38816,84 +39010,84 @@ slh_dsa_sha2128s_keygen:
 	call	.Lsha256_avx__sha256_compress_avx$1
 .Lsha256_compress_wots___blocks_0_ref_array$2:
 	leaq	104(%rsp), %rsp
-	movq	224(%rsp), %r8
-	addq	$64, %r8
+	movq	224(%rsp), %r10
+	lfence
+	movq	$0, %rdx
+	addq	$64, %r10
 	ret
 .Lsha256_tl_2n__sha256_cached$1:
-	movq	%rcx, 48(%rsp)
-	movq	$54, %rcx
-	addq	$64, %rcx
-	shlq	$3, %rcx
-	movq	%rcx, 56(%rsp)
+	movq	%rdi, %mm1
 	leaq	16(%rsp), %rcx
-	movl	(%rdi), %edx
+	movl	(%r8), %edx
 	movl	%edx, (%rcx)
-	movl	4(%rdi), %edx
+	movl	4(%r8), %edx
 	movl	%edx, 4(%rcx)
-	movl	8(%rdi), %edx
+	movl	8(%r8), %edx
 	movl	%edx, 8(%rcx)
-	movl	12(%rdi), %edx
+	movl	12(%r8), %edx
 	movl	%edx, 12(%rcx)
-	movl	16(%rdi), %edx
+	movl	16(%r8), %edx
 	movl	%edx, 16(%rcx)
-	movl	20(%rdi), %edx
+	movl	20(%r8), %edx
 	movl	%edx, 20(%rcx)
-	movl	24(%rdi), %edx
+	movl	24(%r8), %edx
 	movl	%edx, 24(%rcx)
-	movl	28(%rdi), %edx
+	movl	28(%r8), %edx
 	movl	%edx, 28(%rcx)
-	movq	%rsi, 64(%rsp)
+	movq	%rsi, %mm2
 	leaq	-8(%rsp), %rsp
 	call	.Lsha256_tl_2n___blocks_0_ref_array$1
 .Lsha256_tl_2n__sha256_cached$9:
 	leaq	8(%rsp), %rsp
-	movq	64(%rsp), %rdx
-	movq	56(%rsp), %r9
+	movq	%mm2, %rdx
+	movq	$54, %rdi
+	addq	$64, %rdi
+	shlq	$3, %rdi
 	movq	$54, %rsi
-	movq	$0, %rdi
-	movl	%edi, 72(%rsp)
-	movl	%edi, 76(%rsp)
-	movl	%edi, 80(%rsp)
-	movl	%edi, 84(%rsp)
-	movl	%edi, 88(%rsp)
-	movl	%edi, 92(%rsp)
-	movl	%edi, 96(%rsp)
-	movl	%edi, 100(%rsp)
-	movl	%edi, 104(%rsp)
-	movl	%edi, 108(%rsp)
-	movl	%edi, 112(%rsp)
-	movl	%edi, 116(%rsp)
-	movl	%edi, 120(%rsp)
-	movl	%edi, 124(%rsp)
-	movl	%edi, 128(%rsp)
-	movl	%edi, 132(%rsp)
-	movl	%edi, 136(%rsp)
-	movl	%edi, 140(%rsp)
-	movl	%edi, 144(%rsp)
-	movl	%edi, 148(%rsp)
-	movl	%edi, 152(%rsp)
-	movl	%edi, 156(%rsp)
-	movl	%edi, 160(%rsp)
-	movl	%edi, 164(%rsp)
-	movl	%edi, 168(%rsp)
-	movl	%edi, 172(%rsp)
-	movl	%edi, 176(%rsp)
-	movl	%edi, 180(%rsp)
-	movl	%edi, 184(%rsp)
-	movl	%edi, 188(%rsp)
-	movl	%edi, 192(%rsp)
-	movl	%edi, 196(%rsp)
+	movq	$0, %r8
+	movl	%r8d, 48(%rsp)
+	movl	%r8d, 52(%rsp)
+	movl	%r8d, 56(%rsp)
+	movl	%r8d, 60(%rsp)
+	movl	%r8d, 64(%rsp)
+	movl	%r8d, 68(%rsp)
+	movl	%r8d, 72(%rsp)
+	movl	%r8d, 76(%rsp)
+	movl	%r8d, 80(%rsp)
+	movl	%r8d, 84(%rsp)
+	movl	%r8d, 88(%rsp)
+	movl	%r8d, 92(%rsp)
+	movl	%r8d, 96(%rsp)
+	movl	%r8d, 100(%rsp)
+	movl	%r8d, 104(%rsp)
+	movl	%r8d, 108(%rsp)
+	movl	%r8d, 112(%rsp)
+	movl	%r8d, 116(%rsp)
+	movl	%r8d, 120(%rsp)
+	movl	%r8d, 124(%rsp)
+	movl	%r8d, 128(%rsp)
+	movl	%r8d, 132(%rsp)
+	movl	%r8d, 136(%rsp)
+	movl	%r8d, 140(%rsp)
+	movl	%r8d, 144(%rsp)
+	movl	%r8d, 148(%rsp)
+	movl	%r8d, 152(%rsp)
+	movl	%r8d, 156(%rsp)
+	movl	%r8d, 160(%rsp)
+	movl	%r8d, 164(%rsp)
+	movl	%r8d, 168(%rsp)
+	movl	%r8d, 172(%rsp)
 	jmp 	.Lsha256_tl_2n__sha256_cached$7
 .Lsha256_tl_2n__sha256_cached$8:
-	movq	%r10, %r8
-	addq	%rdi, %r8
-	movb	(%rdx,%r8), %r8b
-	movb	%r8b, 72(%rsp,%rdi)
-	incq	%rdi
+	movq	%r10, %r9
+	addq	%r8, %r9
+	movb	(%rdx,%r9), %r9b
+	movb	%r9b, 48(%rsp,%r8)
+	incq	%r8
 .Lsha256_tl_2n__sha256_cached$7:
-	cmpq	%rsi, %rdi
+	cmpq	%rsi, %r8
 	jb  	.Lsha256_tl_2n__sha256_cached$8
-	movb	$128, 72(%rsp,%rdi)
+	movb	$128, 48(%rsp,%r8)
 	cmpq	$56, %rsi
 	jb  	.Lsha256_tl_2n__sha256_cached$5
 	movq	$120, %r11
@@ -38907,42 +39101,42 @@ slh_dsa_sha2128s_keygen:
 .Lsha256_tl_2n__sha256_cached$6:
 	jmp 	.Lsha256_tl_2n__sha256_cached$3
 .Lsha256_tl_2n__sha256_cached$4:
-	movb	%r9b, 72(%rsp,%rsi)
-	shrq	$8, %r9
+	movb	%dil, 48(%rsp,%rsi)
+	shrq	$8, %rdi
 	decq	%rsi
 .Lsha256_tl_2n__sha256_cached$3:
 	cmpq	%r11, %rsi
 	jnb 	.Lsha256_tl_2n__sha256_cached$4
-	leaq	72(%rsp), %rsi
+	leaq	48(%rsp), %rsi
 	leaq	-216(%rsp), %rsp
 	call	.L_blocks_1_ref$1
 .Lsha256_tl_2n__sha256_cached$2:
 	leaq	216(%rsp), %rsp
-	movq	48(%rsp), %rcx
-	movl	16(%rsp), %edi
-	bswapl	%edi
-	movl	%edi, (%rcx)
-	movl	20(%rsp), %edi
-	bswapl	%edi
-	movl	%edi, 4(%rcx)
-	movl	24(%rsp), %edi
-	bswapl	%edi
-	movl	%edi, 8(%rcx)
-	movl	28(%rsp), %edi
-	bswapl	%edi
-	movl	%edi, 12(%rcx)
-	movl	32(%rsp), %edi
-	bswapl	%edi
-	movl	%edi, 16(%rcx)
-	movl	36(%rsp), %edi
-	bswapl	%edi
-	movl	%edi, 20(%rcx)
-	movl	40(%rsp), %edi
-	bswapl	%edi
-	movl	%edi, 24(%rcx)
-	movl	44(%rsp), %edi
-	bswapl	%edi
-	movl	%edi, 28(%rcx)
+	movq	%mm1, %rdi
+	movl	16(%rsp), %r8d
+	bswapl	%r8d
+	movl	%r8d, (%rdi)
+	movl	20(%rsp), %r8d
+	bswapl	%r8d
+	movl	%r8d, 4(%rdi)
+	movl	24(%rsp), %r8d
+	bswapl	%r8d
+	movl	%r8d, 8(%rdi)
+	movl	28(%rsp), %r8d
+	bswapl	%r8d
+	movl	%r8d, 12(%rdi)
+	movl	32(%rsp), %r8d
+	bswapl	%r8d
+	movl	%r8d, 16(%rdi)
+	movl	36(%rsp), %r8d
+	bswapl	%r8d
+	movl	%r8d, 20(%rdi)
+	movl	40(%rsp), %r8d
+	bswapl	%r8d
+	movl	%r8d, 24(%rdi)
+	movl	44(%rsp), %r8d
+	bswapl	%r8d
+	movl	%r8d, 28(%rdi)
 	ret
 .Lsha256_tl_2n___blocks_0_ref_array$1:
 	movq	$0, %r10
@@ -38950,37 +39144,41 @@ slh_dsa_sha2128s_keygen:
 	movq	8(%rsp), %rcx
 	ret
 .Lsha256_tl_1n__sha256_cached$1:
-	movq	%rcx, 48(%rsp)
-	movq	$38, %rcx
-	addq	$64, %rcx
-	shlq	$3, %rcx
-	movq	%rcx, 56(%rsp)
+	movq	%rax, %mm1
 	leaq	16(%rsp), %rcx
-	movl	(%rax), %edx
+	movl	(%r8), %edx
 	movl	%edx, (%rcx)
-	movl	4(%rax), %edx
+	movl	4(%r8), %edx
 	movl	%edx, 4(%rcx)
-	movl	8(%rax), %edx
+	movl	8(%r8), %edx
 	movl	%edx, 8(%rcx)
-	movl	12(%rax), %edx
+	movl	12(%r8), %edx
 	movl	%edx, 12(%rcx)
-	movl	16(%rax), %edx
+	movl	16(%r8), %edx
 	movl	%edx, 16(%rcx)
-	movl	20(%rax), %edx
+	movl	20(%r8), %edx
 	movl	%edx, 20(%rcx)
-	movl	24(%rax), %edx
+	movl	24(%r8), %edx
 	movl	%edx, 24(%rcx)
-	movl	28(%rax), %edx
+	movl	28(%r8), %edx
 	movl	%edx, 28(%rcx)
-	movq	%rsi, 64(%rsp)
+	movq	%rsi, %mm2
 	leaq	-8(%rsp), %rsp
 	call	.Lsha256_tl_1n___blocks_0_ref_array$1
 .Lsha256_tl_1n__sha256_cached$9:
 	leaq	8(%rsp), %rsp
-	movq	64(%rsp), %rdx
-	movq	56(%rsp), %r9
+	movq	%mm2, %rdx
+	movq	$38, %rdi
+	addq	$64, %rdi
+	shlq	$3, %rdi
 	movq	$38, %rax
 	movq	$0, %rsi
+	movl	%esi, 48(%rsp)
+	movl	%esi, 52(%rsp)
+	movl	%esi, 56(%rsp)
+	movl	%esi, 60(%rsp)
+	movl	%esi, 64(%rsp)
+	movl	%esi, 68(%rsp)
 	movl	%esi, 72(%rsp)
 	movl	%esi, 76(%rsp)
 	movl	%esi, 80(%rsp)
@@ -39007,80 +39205,74 @@ slh_dsa_sha2128s_keygen:
 	movl	%esi, 164(%rsp)
 	movl	%esi, 168(%rsp)
 	movl	%esi, 172(%rsp)
-	movl	%esi, 176(%rsp)
-	movl	%esi, 180(%rsp)
-	movl	%esi, 184(%rsp)
-	movl	%esi, 188(%rsp)
-	movl	%esi, 192(%rsp)
-	movl	%esi, 196(%rsp)
 	jmp 	.Lsha256_tl_1n__sha256_cached$7
 .Lsha256_tl_1n__sha256_cached$8:
-	movq	%r8, %rdi
-	addq	%rsi, %rdi
-	movb	(%rdx,%rdi), %dil
-	movb	%dil, 72(%rsp,%rsi)
+	movq	%r10, %r9
+	addq	%rsi, %r9
+	movb	(%rdx,%r9), %r8b
+	movb	%r8b, 48(%rsp,%rsi)
 	incq	%rsi
 .Lsha256_tl_1n__sha256_cached$7:
 	cmpq	%rax, %rsi
 	jb  	.Lsha256_tl_1n__sha256_cached$8
-	movb	$128, 72(%rsp,%rsi)
+	movb	$128, 48(%rsp,%rsi)
 	cmpq	$56, %rax
 	jb  	.Lsha256_tl_1n__sha256_cached$5
 	movq	$120, %r11
 	movq	$2, %rdx
-	movq	$127, %rax
+	movq	$127, %rsi
 	jmp 	.Lsha256_tl_1n__sha256_cached$3
 .Lsha256_tl_1n__sha256_cached$5:
 	movq	$56, %r11
 	movq	$1, %rdx
-	movq	$63, %rax
+	movq	$63, %rsi
 .Lsha256_tl_1n__sha256_cached$6:
 	jmp 	.Lsha256_tl_1n__sha256_cached$3
 .Lsha256_tl_1n__sha256_cached$4:
-	movb	%r9b, 72(%rsp,%rax)
-	shrq	$8, %r9
-	decq	%rax
+	movb	%dil, 48(%rsp,%rsi)
+	shrq	$8, %rdi
+	decq	%rsi
 .Lsha256_tl_1n__sha256_cached$3:
-	cmpq	%r11, %rax
+	cmpq	%r11, %rsi
 	jnb 	.Lsha256_tl_1n__sha256_cached$4
-	leaq	72(%rsp), %rsi
+	leaq	48(%rsp), %rsi
 	leaq	-216(%rsp), %rsp
 	call	.L_blocks_1_ref$1
 .Lsha256_tl_1n__sha256_cached$2:
 	leaq	216(%rsp), %rsp
-	movq	48(%rsp), %rcx
-	movl	16(%rsp), %edi
-	bswapl	%edi
-	movl	%edi, (%rcx)
-	movl	20(%rsp), %edi
-	bswapl	%edi
-	movl	%edi, 4(%rcx)
-	movl	24(%rsp), %edi
-	bswapl	%edi
-	movl	%edi, 8(%rcx)
-	movl	28(%rsp), %edi
-	bswapl	%edi
-	movl	%edi, 12(%rcx)
-	movl	32(%rsp), %edi
-	bswapl	%edi
-	movl	%edi, 16(%rcx)
-	movl	36(%rsp), %edi
-	bswapl	%edi
-	movl	%edi, 20(%rcx)
-	movl	40(%rsp), %edi
-	bswapl	%edi
-	movl	%edi, 24(%rcx)
-	movl	44(%rsp), %edi
-	bswapl	%edi
-	movl	%edi, 28(%rcx)
+	movq	%mm1, %rax
+	movl	16(%rsp), %r8d
+	bswapl	%r8d
+	movl	%r8d, (%rax)
+	movl	20(%rsp), %r8d
+	bswapl	%r8d
+	movl	%r8d, 4(%rax)
+	movl	24(%rsp), %r8d
+	bswapl	%r8d
+	movl	%r8d, 8(%rax)
+	movl	28(%rsp), %r8d
+	bswapl	%r8d
+	movl	%r8d, 12(%rax)
+	movl	32(%rsp), %r8d
+	bswapl	%r8d
+	movl	%r8d, 16(%rax)
+	movl	36(%rsp), %r8d
+	bswapl	%r8d
+	movl	%r8d, 20(%rax)
+	movl	40(%rsp), %r8d
+	bswapl	%r8d
+	movl	%r8d, 24(%rax)
+	movl	44(%rsp), %r8d
+	bswapl	%r8d
+	movl	%r8d, 28(%rax)
 	ret
 .Lsha256_tl_1n___blocks_0_ref_array$1:
-	movq	$0, %r8
+	movq	$0, %r10
 	movq	%rcx, 8(%rsp)
 	movq	8(%rsp), %rcx
 	ret
 .Lsha256_mgf1_seed__sha256$1:
-	movq	%rcx, 48(%rsp)
+	movq	%rax, 48(%rsp)
 	movq	$68, %rcx
 	shlq	$3, %rcx
 	movq	%rcx, 56(%rsp)
@@ -39101,110 +39293,114 @@ slh_dsa_sha2128s_keygen:
 	leaq	104(%rsp), %rsp
 	movq	$64, %rax
 	movq	64(%rsp), %rdx
-	movq	56(%rsp), %r9
+	movq	56(%rsp), %rdi
+	lfence
+	movq	$0, %rsi
 	movq	$4, %rsi
-	movq	$0, %rdi
-	movl	%edi, 72(%rsp)
-	movl	%edi, 76(%rsp)
-	movl	%edi, 80(%rsp)
-	movl	%edi, 84(%rsp)
-	movl	%edi, 88(%rsp)
-	movl	%edi, 92(%rsp)
-	movl	%edi, 96(%rsp)
-	movl	%edi, 100(%rsp)
-	movl	%edi, 104(%rsp)
-	movl	%edi, 108(%rsp)
-	movl	%edi, 112(%rsp)
-	movl	%edi, 116(%rsp)
-	movl	%edi, 120(%rsp)
-	movl	%edi, 124(%rsp)
-	movl	%edi, 128(%rsp)
-	movl	%edi, 132(%rsp)
-	movl	%edi, 136(%rsp)
-	movl	%edi, 140(%rsp)
-	movl	%edi, 144(%rsp)
-	movl	%edi, 148(%rsp)
-	movl	%edi, 152(%rsp)
-	movl	%edi, 156(%rsp)
-	movl	%edi, 160(%rsp)
-	movl	%edi, 164(%rsp)
-	movl	%edi, 168(%rsp)
-	movl	%edi, 172(%rsp)
-	movl	%edi, 176(%rsp)
-	movl	%edi, 180(%rsp)
-	movl	%edi, 184(%rsp)
-	movl	%edi, 188(%rsp)
-	movl	%edi, 192(%rsp)
-	movl	%edi, 196(%rsp)
+	movq	$0, %r8
+	movl	%r8d, 72(%rsp)
+	movl	%r8d, 76(%rsp)
+	movl	%r8d, 80(%rsp)
+	movl	%r8d, 84(%rsp)
+	movl	%r8d, 88(%rsp)
+	movl	%r8d, 92(%rsp)
+	movl	%r8d, 96(%rsp)
+	movl	%r8d, 100(%rsp)
+	movl	%r8d, 104(%rsp)
+	movl	%r8d, 108(%rsp)
+	movl	%r8d, 112(%rsp)
+	movl	%r8d, 116(%rsp)
+	movl	%r8d, 120(%rsp)
+	movl	%r8d, 124(%rsp)
+	movl	%r8d, 128(%rsp)
+	movl	%r8d, 132(%rsp)
+	movl	%r8d, 136(%rsp)
+	movl	%r8d, 140(%rsp)
+	movl	%r8d, 144(%rsp)
+	movl	%r8d, 148(%rsp)
+	movl	%r8d, 152(%rsp)
+	movl	%r8d, 156(%rsp)
+	movl	%r8d, 160(%rsp)
+	movl	%r8d, 164(%rsp)
+	movl	%r8d, 168(%rsp)
+	movl	%r8d, 172(%rsp)
+	movl	%r8d, 176(%rsp)
+	movl	%r8d, 180(%rsp)
+	movl	%r8d, 184(%rsp)
+	movl	%r8d, 188(%rsp)
+	movl	%r8d, 192(%rsp)
+	movl	%r8d, 196(%rsp)
 	jmp 	.Lsha256_mgf1_seed__sha256$7
 .Lsha256_mgf1_seed__sha256$8:
-	movq	%rax, %r8
-	addq	%rdi, %r8
-	movb	(%rdx,%r8), %r8b
-	movb	%r8b, 72(%rsp,%rdi)
-	incq	%rdi
+	movq	%rax, %r9
+	addq	%r8, %r9
+	movb	(%rdx,%r9), %r9b
+	movb	%r9b, 72(%rsp,%r8)
+	incq	%r8
 .Lsha256_mgf1_seed__sha256$7:
-	cmpq	%rsi, %rdi
+	cmpq	%rsi, %r8
 	jb  	.Lsha256_mgf1_seed__sha256$8
-	movb	$128, 72(%rsp,%rdi)
+	movb	$128, 72(%rsp,%r8)
 	cmpq	$56, %rsi
 	jb  	.Lsha256_mgf1_seed__sha256$5
 	movq	$120, %r11
 	movq	$2, %rdx
-	movq	$127, %rax
+	movq	$127, %rsi
 	jmp 	.Lsha256_mgf1_seed__sha256$3
 .Lsha256_mgf1_seed__sha256$5:
 	movq	$56, %r11
 	movq	$1, %rdx
-	movq	$63, %rax
+	movq	$63, %rsi
 .Lsha256_mgf1_seed__sha256$6:
 	jmp 	.Lsha256_mgf1_seed__sha256$3
 .Lsha256_mgf1_seed__sha256$4:
-	movb	%r9b, 72(%rsp,%rax)
-	shrq	$8, %r9
-	decq	%rax
+	movb	%dil, 72(%rsp,%rsi)
+	shrq	$8, %rdi
+	decq	%rsi
 .Lsha256_mgf1_seed__sha256$3:
-	cmpq	%r11, %rax
+	cmpq	%r11, %rsi
 	jnb 	.Lsha256_mgf1_seed__sha256$4
 	leaq	72(%rsp), %rsi
 	leaq	-216(%rsp), %rsp
 	call	.L_blocks_1_ref$1
 .Lsha256_mgf1_seed__sha256$2:
 	leaq	216(%rsp), %rsp
-	movq	48(%rsp), %rcx
-	movl	16(%rsp), %edi
-	bswapl	%edi
-	movl	%edi, (%rcx)
-	movl	20(%rsp), %edi
-	bswapl	%edi
-	movl	%edi, 4(%rcx)
-	movl	24(%rsp), %edi
-	bswapl	%edi
-	movl	%edi, 8(%rcx)
-	movl	28(%rsp), %edi
-	bswapl	%edi
-	movl	%edi, 12(%rcx)
-	movl	32(%rsp), %edi
-	bswapl	%edi
-	movl	%edi, 16(%rcx)
-	movl	36(%rsp), %edi
-	bswapl	%edi
-	movl	%edi, 20(%rcx)
-	movl	40(%rsp), %edi
-	bswapl	%edi
-	movl	%edi, 24(%rcx)
-	movl	44(%rsp), %edi
-	bswapl	%edi
-	movl	%edi, 28(%rcx)
+	movq	48(%rsp), %rax
+	lfence
+	movq	$0, %r8
+	movl	16(%rsp), %r8d
+	bswapl	%r8d
+	movl	%r8d, (%rax)
+	movl	20(%rsp), %r8d
+	bswapl	%r8d
+	movl	%r8d, 4(%rax)
+	movl	24(%rsp), %r8d
+	bswapl	%r8d
+	movl	%r8d, 8(%rax)
+	movl	28(%rsp), %r8d
+	bswapl	%r8d
+	movl	%r8d, 12(%rax)
+	movl	32(%rsp), %r8d
+	bswapl	%r8d
+	movl	%r8d, 16(%rax)
+	movl	36(%rsp), %r8d
+	bswapl	%r8d
+	movl	%r8d, 20(%rax)
+	movl	40(%rsp), %r8d
+	bswapl	%r8d
+	movl	%r8d, 24(%rax)
+	movl	44(%rsp), %r8d
+	bswapl	%r8d
+	movl	%r8d, 28(%rax)
 	ret
 .Lsha256_mgf1_msg__sha256_absorb$1:
-	movq	%rdi, 8(%rsp)
-	movq	$48, %r9
-	addq	%r11, %r9
-	addq	%rcx, %r9
-	addq	$2, %r9
-	shlq	$3, %r9
-	movq	%r9, 16(%rsp)
+	movq	%r11, 8(%rsp)
+	movq	$48, %r8
+	addq	%rcx, %r8
+	addq	%rsi, %r8
+	addq	$2, %r8
+	shlq	$3, %r8
+	movq	%r8, 16(%rsp)
 	movl	$1779033703, 56(%rsp)
 	movl	$-1150833019, 60(%rsp)
 	movl	$1013904242, 64(%rsp)
@@ -39213,11 +39409,11 @@ slh_dsa_sha2128s_keygen:
 	movl	$-1694144372, 76(%rsp)
 	movl	$528734635, 80(%rsp)
 	movl	$1541459225, 84(%rsp)
-	leaq	56(%rsp), %rdi
+	leaq	56(%rsp), %r8
 	movq	%rax, 24(%rsp)
-	movq	%r11, 32(%rsp)
+	movq	%rcx, 32(%rsp)
 	movq	%rdx, 40(%rsp)
-	movq	%rcx, 48(%rsp)
+	movq	%rsi, 48(%rsp)
 	movq	$0, %rdx
 	leaq	88(%rsp), %rax
 	leaq	-32(%rsp), %rsp
@@ -39236,6 +39432,8 @@ slh_dsa_sha2128s_keygen:
 	movq	$0, %rdx
 .Lsha256_mgf1_msg__sha256_absorb$7:
 	movq	32(%rsp), %rcx
+	lfence
+	movq	$0, %rax
 	movb	%cl, 88(%rsp,%rdx)
 	incq	%rdx
 	cmpq	$64, %rdx
@@ -39248,6 +39446,8 @@ slh_dsa_sha2128s_keygen:
 	movq	$0, %rdx
 .Lsha256_mgf1_msg__sha256_absorb$5:
 	movq	24(%rsp), %r10
+	lfence
+	movq	$0, %rax
 	leaq	88(%rsp), %rax
 	leaq	-24(%rsp), %rsp
 	call	.Lsha256_mgf1_msg__absorb_pointer$1
@@ -39255,42 +39455,48 @@ slh_dsa_sha2128s_keygen:
 	leaq	24(%rsp), %rsp
 	movq	40(%rsp), %r10
 	movq	48(%rsp), %rcx
+	lfence
+	movq	$0, %rax
 	leaq	88(%rsp), %rax
 	leaq	-24(%rsp), %rsp
 	call	.Lsha256_mgf1_msg__absorb_pointer$1
 .Lsha256_mgf1_msg__sha256_absorb$3:
 	leaq	24(%rsp), %rsp
 	movq	16(%rsp), %rcx
+	lfence
+	movq	$0, %rax
 	leaq	88(%rsp), %rax
 	leaq	-8(%rsp), %rsp
 	call	.Lsha256_mgf1_msg__finish$1
 .Lsha256_mgf1_msg__sha256_absorb$2:
 	leaq	8(%rsp), %rsp
-	movq	8(%rsp), %rcx
-	movl	56(%rsp), %edi
-	bswapl	%edi
-	movl	%edi, (%rcx)
-	movl	60(%rsp), %edi
-	bswapl	%edi
-	movl	%edi, 4(%rcx)
-	movl	64(%rsp), %edi
-	bswapl	%edi
-	movl	%edi, 8(%rcx)
-	movl	68(%rsp), %edi
-	bswapl	%edi
-	movl	%edi, 12(%rcx)
-	movl	72(%rsp), %edi
-	bswapl	%edi
-	movl	%edi, 16(%rcx)
-	movl	76(%rsp), %edi
-	bswapl	%edi
-	movl	%edi, 20(%rcx)
-	movl	80(%rsp), %edi
-	bswapl	%edi
-	movl	%edi, 24(%rcx)
-	movl	84(%rsp), %edi
-	bswapl	%edi
-	movl	%edi, 28(%rcx)
+	movq	8(%rsp), %rax
+	lfence
+	movq	$0, %rcx
+	movl	56(%rsp), %r8d
+	bswapl	%r8d
+	movl	%r8d, (%rax)
+	movl	60(%rsp), %r8d
+	bswapl	%r8d
+	movl	%r8d, 4(%rax)
+	movl	64(%rsp), %r8d
+	bswapl	%r8d
+	movl	%r8d, 8(%rax)
+	movl	68(%rsp), %r8d
+	bswapl	%r8d
+	movl	%r8d, 12(%rax)
+	movl	72(%rsp), %r8d
+	bswapl	%r8d
+	movl	%r8d, 16(%rax)
+	movl	76(%rsp), %r8d
+	bswapl	%r8d
+	movl	%r8d, 20(%rax)
+	movl	80(%rsp), %r8d
+	bswapl	%r8d
+	movl	%r8d, 24(%rax)
+	movl	84(%rsp), %r8d
+	bswapl	%r8d
+	movl	%r8d, 28(%rax)
 	ret
 .Lsha256_mgf1_msg__finish$1:
 	movq	%rcx, 8(%rsp)
@@ -39336,6 +39542,8 @@ slh_dsa_sha2128s_keygen:
 	jb  	.Lsha256_mgf1_msg__finish$8
 .Lsha256_mgf1_msg__finish$6:
 	movq	8(%rsp), %rcx
+	lfence
+	movq	$0, %rdx
 	movq	$63, %rdx
 	jmp 	.Lsha256_mgf1_msg__finish$3
 .Lsha256_mgf1_msg__finish$4:
@@ -39352,67 +39560,71 @@ slh_dsa_sha2128s_keygen:
 	ret
 .Lsha256_mgf1_msg__absorb_fixed$1:
 	movq	$0, %r10
-	movq	$48, %r9
+	movq	$48, %rsi
 	movq	$64, %rcx
 	subq	%rdx, %rcx
-	cmpq	%rcx, %r9
+	cmpq	%rcx, %rsi
 	jb  	.Lsha256_mgf1_msg__absorb_fixed$4
 	jmp 	.Lsha256_mgf1_msg__absorb_fixed$11
 .Lsha256_mgf1_msg__absorb_fixed$12:
-	movb	(%rsi,%r10), %r8b
-	movb	%r8b, (%rax,%rdx)
+	movb	(%rdi,%r10), %r9b
+	movb	%r9b, (%rax,%rdx)
 	incq	%rdx
 	incq	%r10
 .Lsha256_mgf1_msg__absorb_fixed$11:
 	cmpq	$64, %rdx
 	jb  	.Lsha256_mgf1_msg__absorb_fixed$12
-	movq	%rsi, 8(%rsp)
+	movq	%rdi, 8(%rsp)
 	movq	%r10, 16(%rsp)
-	movq	%r9, 24(%rsp)
+	movq	%rsi, 24(%rsp)
 	movq	%rcx, 32(%rsp)
 	leaq	-8(%rsp), %rsp
 	call	.Lsha256_mgf1_msg__compress$1
 .Lsha256_mgf1_msg__absorb_fixed$10:
 	leaq	8(%rsp), %rsp
-	movq	8(%rsp), %rsi
+	movq	8(%rsp), %rdi
 	movq	16(%rsp), %r10
-	movq	24(%rsp), %r9
+	movq	24(%rsp), %rsi
 	movq	32(%rsp), %rcx
+	lfence
 	movq	$0, %rdx
-	subq	%rcx, %r9
+	movq	$0, %rdx
+	subq	%rcx, %rsi
 .Lsha256_mgf1_msg__absorb_fixed$9:
 	jmp 	.Lsha256_mgf1_msg__absorb_fixed$4
 .Lsha256_mgf1_msg__absorb_fixed$5:
 	jmp 	.Lsha256_mgf1_msg__absorb_fixed$7
 .Lsha256_mgf1_msg__absorb_fixed$8:
-	movb	(%rsi,%r10), %r8b
-	movb	%r8b, (%rax,%rdx)
+	movb	(%rdi,%r10), %r9b
+	movb	%r9b, (%rax,%rdx)
 	incq	%rdx
 	incq	%r10
 .Lsha256_mgf1_msg__absorb_fixed$7:
 	cmpq	$64, %rdx
 	jb  	.Lsha256_mgf1_msg__absorb_fixed$8
-	movq	%rsi, 32(%rsp)
+	movq	%rdi, 32(%rsp)
 	movq	%r10, 24(%rsp)
-	movq	%r9, 16(%rsp)
+	movq	%rsi, 16(%rsp)
 	leaq	-8(%rsp), %rsp
 	call	.Lsha256_mgf1_msg__compress$1
 .Lsha256_mgf1_msg__absorb_fixed$6:
 	leaq	8(%rsp), %rsp
-	movq	32(%rsp), %rsi
+	movq	32(%rsp), %rdi
 	movq	24(%rsp), %r10
-	movq	16(%rsp), %r9
+	movq	16(%rsp), %rsi
+	lfence
+	movq	$0, %rcx
 	movq	$0, %rdx
-	addq	$-64, %r9
+	addq	$-64, %rsi
 .Lsha256_mgf1_msg__absorb_fixed$4:
-	cmpq	$64, %r9
+	cmpq	$64, %rsi
 	jnb 	.Lsha256_mgf1_msg__absorb_fixed$7
 	movq	%rdx, %rcx
-	addq	%r9, %rcx
+	addq	%rsi, %rcx
 	jmp 	.Lsha256_mgf1_msg__absorb_fixed$2
 .Lsha256_mgf1_msg__absorb_fixed$3:
-	movb	(%rsi,%r10), %r8b
-	movb	%r8b, (%rax,%rdx)
+	movb	(%rdi,%r10), %r9b
+	movb	%r9b, (%rax,%rdx)
 	incq	%rdx
 	incq	%r10
 .Lsha256_mgf1_msg__absorb_fixed$2:
@@ -39426,8 +39638,8 @@ slh_dsa_sha2128s_keygen:
 	jb  	.Lsha256_mgf1_msg__absorb_pointer$4
 	jmp 	.Lsha256_mgf1_msg__absorb_pointer$11
 .Lsha256_mgf1_msg__absorb_pointer$12:
-	movb	(%r10), %r8b
-	movb	%r8b, (%rax,%rdx)
+	movb	(%r10), %r9b
+	movb	%r9b, (%rax,%rdx)
 	incq	%rdx
 	incq	%r10
 .Lsha256_mgf1_msg__absorb_pointer$11:
@@ -39443,6 +39655,8 @@ slh_dsa_sha2128s_keygen:
 	movq	8(%rsp), %r10
 	movq	16(%rsp), %rcx
 	movq	24(%rsp), %rsi
+	lfence
+	movq	$0, %rdx
 	movq	$0, %rdx
 	subq	%rsi, %rcx
 .Lsha256_mgf1_msg__absorb_pointer$9:
@@ -39450,8 +39664,8 @@ slh_dsa_sha2128s_keygen:
 .Lsha256_mgf1_msg__absorb_pointer$5:
 	jmp 	.Lsha256_mgf1_msg__absorb_pointer$7
 .Lsha256_mgf1_msg__absorb_pointer$8:
-	movb	(%r10), %sil
-	movb	%sil, (%rax,%rdx)
+	movb	(%r10), %r9b
+	movb	%r9b, (%rax,%rdx)
 	incq	%rdx
 	incq	%r10
 .Lsha256_mgf1_msg__absorb_pointer$7:
@@ -39465,6 +39679,8 @@ slh_dsa_sha2128s_keygen:
 	leaq	8(%rsp), %rsp
 	movq	24(%rsp), %r10
 	movq	16(%rsp), %rcx
+	lfence
+	movq	$0, %rdx
 	movq	$0, %rdx
 	addq	$-64, %rcx
 .Lsha256_mgf1_msg__absorb_pointer$4:
@@ -39474,8 +39690,8 @@ slh_dsa_sha2128s_keygen:
 	addq	%rcx, %rsi
 	jmp 	.Lsha256_mgf1_msg__absorb_pointer$2
 .Lsha256_mgf1_msg__absorb_pointer$3:
-	movb	(%r10), %r8b
-	movb	%r8b, (%rax,%rdx)
+	movb	(%r10), %r9b
+	movb	%r9b, (%rax,%rdx)
 	incq	%rdx
 	incq	%r10
 .Lsha256_mgf1_msg__absorb_pointer$2:
@@ -39484,7 +39700,7 @@ slh_dsa_sha2128s_keygen:
 	ret
 .Lsha256_mgf1_msg__compress$1:
 	leaq	glob_data + 3504(%rip), %rdx
-	movq	%rdi, 8(%rsp)
+	movq	%r8, 8(%rsp)
 	movq	8(%rsp), %rbp
 	movl	(%rax), %esi
 	bswapl	%esi
@@ -39537,961 +39753,961 @@ slh_dsa_sha2128s_keygen:
 	movl	56(%rax), %r10d
 	movl	%r10d, %r8d
 	rorl	$17, %r8d
-	movl	%r10d, %r9d
-	rorl	$19, %r9d
-	xorl	%r9d, %r8d
+	movl	%r10d, %edi
+	rorl	$19, %edi
+	xorl	%edi, %r8d
 	shrl	$10, %r10d
 	xorl	%r10d, %r8d
 	addl	36(%rax), %r8d
 	movl	4(%rax), %r10d
+	movl	%r10d, %edi
+	rorl	$7, %edi
 	movl	%r10d, %r9d
-	rorl	$7, %r9d
-	movl	%r10d, %r11d
-	rorl	$18, %r11d
-	xorl	%r11d, %r9d
+	rorl	$18, %r9d
+	xorl	%r9d, %edi
 	shrl	$3, %r10d
-	xorl	%r10d, %r9d
-	addl	%r9d, %r8d
+	xorl	%r10d, %edi
+	addl	%edi, %r8d
 	addl	(%rax), %r8d
 	movl	%r8d, 64(%rax)
 	movl	60(%rax), %r10d
 	movl	%r10d, %r8d
 	rorl	$17, %r8d
-	movl	%r10d, %r9d
-	rorl	$19, %r9d
-	xorl	%r9d, %r8d
+	movl	%r10d, %edi
+	rorl	$19, %edi
+	xorl	%edi, %r8d
 	shrl	$10, %r10d
 	xorl	%r10d, %r8d
 	addl	40(%rax), %r8d
 	movl	8(%rax), %r10d
+	movl	%r10d, %edi
+	rorl	$7, %edi
 	movl	%r10d, %r9d
-	rorl	$7, %r9d
-	movl	%r10d, %r11d
-	rorl	$18, %r11d
-	xorl	%r11d, %r9d
+	rorl	$18, %r9d
+	xorl	%r9d, %edi
 	shrl	$3, %r10d
-	xorl	%r10d, %r9d
-	addl	%r9d, %r8d
+	xorl	%r10d, %edi
+	addl	%edi, %r8d
 	addl	4(%rax), %r8d
 	movl	%r8d, 68(%rax)
 	movl	64(%rax), %r10d
 	movl	%r10d, %r8d
 	rorl	$17, %r8d
-	movl	%r10d, %r9d
-	rorl	$19, %r9d
-	xorl	%r9d, %r8d
+	movl	%r10d, %edi
+	rorl	$19, %edi
+	xorl	%edi, %r8d
 	shrl	$10, %r10d
 	xorl	%r10d, %r8d
 	addl	44(%rax), %r8d
 	movl	12(%rax), %r10d
+	movl	%r10d, %edi
+	rorl	$7, %edi
 	movl	%r10d, %r9d
-	rorl	$7, %r9d
-	movl	%r10d, %r11d
-	rorl	$18, %r11d
-	xorl	%r11d, %r9d
+	rorl	$18, %r9d
+	xorl	%r9d, %edi
 	shrl	$3, %r10d
-	xorl	%r10d, %r9d
-	addl	%r9d, %r8d
+	xorl	%r10d, %edi
+	addl	%edi, %r8d
 	addl	8(%rax), %r8d
 	movl	%r8d, 72(%rax)
 	movl	68(%rax), %r10d
 	movl	%r10d, %r8d
 	rorl	$17, %r8d
-	movl	%r10d, %r9d
-	rorl	$19, %r9d
-	xorl	%r9d, %r8d
+	movl	%r10d, %edi
+	rorl	$19, %edi
+	xorl	%edi, %r8d
 	shrl	$10, %r10d
 	xorl	%r10d, %r8d
 	addl	48(%rax), %r8d
 	movl	16(%rax), %r10d
+	movl	%r10d, %edi
+	rorl	$7, %edi
 	movl	%r10d, %r9d
-	rorl	$7, %r9d
-	movl	%r10d, %r11d
-	rorl	$18, %r11d
-	xorl	%r11d, %r9d
+	rorl	$18, %r9d
+	xorl	%r9d, %edi
 	shrl	$3, %r10d
-	xorl	%r10d, %r9d
-	addl	%r9d, %r8d
+	xorl	%r10d, %edi
+	addl	%edi, %r8d
 	addl	12(%rax), %r8d
 	movl	%r8d, 76(%rax)
 	movl	72(%rax), %r10d
 	movl	%r10d, %r8d
 	rorl	$17, %r8d
-	movl	%r10d, %r9d
-	rorl	$19, %r9d
-	xorl	%r9d, %r8d
+	movl	%r10d, %edi
+	rorl	$19, %edi
+	xorl	%edi, %r8d
 	shrl	$10, %r10d
 	xorl	%r10d, %r8d
 	addl	52(%rax), %r8d
 	movl	20(%rax), %r10d
+	movl	%r10d, %edi
+	rorl	$7, %edi
 	movl	%r10d, %r9d
-	rorl	$7, %r9d
-	movl	%r10d, %r11d
-	rorl	$18, %r11d
-	xorl	%r11d, %r9d
+	rorl	$18, %r9d
+	xorl	%r9d, %edi
 	shrl	$3, %r10d
-	xorl	%r10d, %r9d
-	addl	%r9d, %r8d
+	xorl	%r10d, %edi
+	addl	%edi, %r8d
 	addl	16(%rax), %r8d
 	movl	%r8d, 80(%rax)
 	movl	76(%rax), %r10d
 	movl	%r10d, %r8d
 	rorl	$17, %r8d
-	movl	%r10d, %r9d
-	rorl	$19, %r9d
-	xorl	%r9d, %r8d
+	movl	%r10d, %edi
+	rorl	$19, %edi
+	xorl	%edi, %r8d
 	shrl	$10, %r10d
 	xorl	%r10d, %r8d
 	addl	56(%rax), %r8d
 	movl	24(%rax), %r10d
+	movl	%r10d, %edi
+	rorl	$7, %edi
 	movl	%r10d, %r9d
-	rorl	$7, %r9d
-	movl	%r10d, %r11d
-	rorl	$18, %r11d
-	xorl	%r11d, %r9d
+	rorl	$18, %r9d
+	xorl	%r9d, %edi
 	shrl	$3, %r10d
-	xorl	%r10d, %r9d
-	addl	%r9d, %r8d
+	xorl	%r10d, %edi
+	addl	%edi, %r8d
 	addl	20(%rax), %r8d
 	movl	%r8d, 84(%rax)
 	movl	80(%rax), %r10d
 	movl	%r10d, %r8d
 	rorl	$17, %r8d
-	movl	%r10d, %r9d
-	rorl	$19, %r9d
-	xorl	%r9d, %r8d
+	movl	%r10d, %edi
+	rorl	$19, %edi
+	xorl	%edi, %r8d
 	shrl	$10, %r10d
 	xorl	%r10d, %r8d
 	addl	60(%rax), %r8d
 	movl	28(%rax), %r10d
+	movl	%r10d, %edi
+	rorl	$7, %edi
 	movl	%r10d, %r9d
-	rorl	$7, %r9d
-	movl	%r10d, %r11d
-	rorl	$18, %r11d
-	xorl	%r11d, %r9d
+	rorl	$18, %r9d
+	xorl	%r9d, %edi
 	shrl	$3, %r10d
-	xorl	%r10d, %r9d
-	addl	%r9d, %r8d
+	xorl	%r10d, %edi
+	addl	%edi, %r8d
 	addl	24(%rax), %r8d
 	movl	%r8d, 88(%rax)
 	movl	84(%rax), %r10d
 	movl	%r10d, %r8d
 	rorl	$17, %r8d
-	movl	%r10d, %r9d
-	rorl	$19, %r9d
-	xorl	%r9d, %r8d
+	movl	%r10d, %edi
+	rorl	$19, %edi
+	xorl	%edi, %r8d
 	shrl	$10, %r10d
 	xorl	%r10d, %r8d
 	addl	64(%rax), %r8d
 	movl	32(%rax), %r10d
+	movl	%r10d, %edi
+	rorl	$7, %edi
 	movl	%r10d, %r9d
-	rorl	$7, %r9d
-	movl	%r10d, %r11d
-	rorl	$18, %r11d
-	xorl	%r11d, %r9d
+	rorl	$18, %r9d
+	xorl	%r9d, %edi
 	shrl	$3, %r10d
-	xorl	%r10d, %r9d
-	addl	%r9d, %r8d
+	xorl	%r10d, %edi
+	addl	%edi, %r8d
 	addl	28(%rax), %r8d
 	movl	%r8d, 92(%rax)
 	movl	88(%rax), %r10d
 	movl	%r10d, %r8d
 	rorl	$17, %r8d
-	movl	%r10d, %r9d
-	rorl	$19, %r9d
-	xorl	%r9d, %r8d
+	movl	%r10d, %edi
+	rorl	$19, %edi
+	xorl	%edi, %r8d
 	shrl	$10, %r10d
 	xorl	%r10d, %r8d
 	addl	68(%rax), %r8d
 	movl	36(%rax), %r10d
+	movl	%r10d, %edi
+	rorl	$7, %edi
 	movl	%r10d, %r9d
-	rorl	$7, %r9d
-	movl	%r10d, %r11d
-	rorl	$18, %r11d
-	xorl	%r11d, %r9d
+	rorl	$18, %r9d
+	xorl	%r9d, %edi
 	shrl	$3, %r10d
-	xorl	%r10d, %r9d
-	addl	%r9d, %r8d
+	xorl	%r10d, %edi
+	addl	%edi, %r8d
 	addl	32(%rax), %r8d
 	movl	%r8d, 96(%rax)
 	movl	92(%rax), %r10d
 	movl	%r10d, %r8d
 	rorl	$17, %r8d
-	movl	%r10d, %r9d
-	rorl	$19, %r9d
-	xorl	%r9d, %r8d
+	movl	%r10d, %edi
+	rorl	$19, %edi
+	xorl	%edi, %r8d
 	shrl	$10, %r10d
 	xorl	%r10d, %r8d
 	addl	72(%rax), %r8d
 	movl	40(%rax), %r10d
+	movl	%r10d, %edi
+	rorl	$7, %edi
 	movl	%r10d, %r9d
-	rorl	$7, %r9d
-	movl	%r10d, %r11d
-	rorl	$18, %r11d
-	xorl	%r11d, %r9d
+	rorl	$18, %r9d
+	xorl	%r9d, %edi
 	shrl	$3, %r10d
-	xorl	%r10d, %r9d
-	addl	%r9d, %r8d
+	xorl	%r10d, %edi
+	addl	%edi, %r8d
 	addl	36(%rax), %r8d
 	movl	%r8d, 100(%rax)
 	movl	96(%rax), %r10d
 	movl	%r10d, %r8d
 	rorl	$17, %r8d
-	movl	%r10d, %r9d
-	rorl	$19, %r9d
-	xorl	%r9d, %r8d
+	movl	%r10d, %edi
+	rorl	$19, %edi
+	xorl	%edi, %r8d
 	shrl	$10, %r10d
 	xorl	%r10d, %r8d
 	addl	76(%rax), %r8d
 	movl	44(%rax), %r10d
+	movl	%r10d, %edi
+	rorl	$7, %edi
 	movl	%r10d, %r9d
-	rorl	$7, %r9d
-	movl	%r10d, %r11d
-	rorl	$18, %r11d
-	xorl	%r11d, %r9d
+	rorl	$18, %r9d
+	xorl	%r9d, %edi
 	shrl	$3, %r10d
-	xorl	%r10d, %r9d
-	addl	%r9d, %r8d
+	xorl	%r10d, %edi
+	addl	%edi, %r8d
 	addl	40(%rax), %r8d
 	movl	%r8d, 104(%rax)
 	movl	100(%rax), %r10d
 	movl	%r10d, %r8d
 	rorl	$17, %r8d
-	movl	%r10d, %r9d
-	rorl	$19, %r9d
-	xorl	%r9d, %r8d
+	movl	%r10d, %edi
+	rorl	$19, %edi
+	xorl	%edi, %r8d
 	shrl	$10, %r10d
 	xorl	%r10d, %r8d
 	addl	80(%rax), %r8d
 	movl	48(%rax), %r10d
+	movl	%r10d, %edi
+	rorl	$7, %edi
 	movl	%r10d, %r9d
-	rorl	$7, %r9d
-	movl	%r10d, %r11d
-	rorl	$18, %r11d
-	xorl	%r11d, %r9d
+	rorl	$18, %r9d
+	xorl	%r9d, %edi
 	shrl	$3, %r10d
-	xorl	%r10d, %r9d
-	addl	%r9d, %r8d
+	xorl	%r10d, %edi
+	addl	%edi, %r8d
 	addl	44(%rax), %r8d
 	movl	%r8d, 108(%rax)
 	movl	104(%rax), %r10d
 	movl	%r10d, %r8d
 	rorl	$17, %r8d
-	movl	%r10d, %r9d
-	rorl	$19, %r9d
-	xorl	%r9d, %r8d
+	movl	%r10d, %edi
+	rorl	$19, %edi
+	xorl	%edi, %r8d
 	shrl	$10, %r10d
 	xorl	%r10d, %r8d
 	addl	84(%rax), %r8d
 	movl	52(%rax), %r10d
+	movl	%r10d, %edi
+	rorl	$7, %edi
 	movl	%r10d, %r9d
-	rorl	$7, %r9d
-	movl	%r10d, %r11d
-	rorl	$18, %r11d
-	xorl	%r11d, %r9d
+	rorl	$18, %r9d
+	xorl	%r9d, %edi
 	shrl	$3, %r10d
-	xorl	%r10d, %r9d
-	addl	%r9d, %r8d
+	xorl	%r10d, %edi
+	addl	%edi, %r8d
 	addl	48(%rax), %r8d
 	movl	%r8d, 112(%rax)
 	movl	108(%rax), %r10d
 	movl	%r10d, %r8d
 	rorl	$17, %r8d
-	movl	%r10d, %r9d
-	rorl	$19, %r9d
-	xorl	%r9d, %r8d
+	movl	%r10d, %edi
+	rorl	$19, %edi
+	xorl	%edi, %r8d
 	shrl	$10, %r10d
 	xorl	%r10d, %r8d
 	addl	88(%rax), %r8d
 	movl	56(%rax), %r10d
+	movl	%r10d, %edi
+	rorl	$7, %edi
 	movl	%r10d, %r9d
-	rorl	$7, %r9d
-	movl	%r10d, %r11d
-	rorl	$18, %r11d
-	xorl	%r11d, %r9d
+	rorl	$18, %r9d
+	xorl	%r9d, %edi
 	shrl	$3, %r10d
-	xorl	%r10d, %r9d
-	addl	%r9d, %r8d
+	xorl	%r10d, %edi
+	addl	%edi, %r8d
 	addl	52(%rax), %r8d
 	movl	%r8d, 116(%rax)
 	movl	112(%rax), %r10d
 	movl	%r10d, %r8d
 	rorl	$17, %r8d
-	movl	%r10d, %r9d
-	rorl	$19, %r9d
-	xorl	%r9d, %r8d
+	movl	%r10d, %edi
+	rorl	$19, %edi
+	xorl	%edi, %r8d
 	shrl	$10, %r10d
 	xorl	%r10d, %r8d
 	addl	92(%rax), %r8d
 	movl	60(%rax), %r10d
+	movl	%r10d, %edi
+	rorl	$7, %edi
 	movl	%r10d, %r9d
-	rorl	$7, %r9d
-	movl	%r10d, %r11d
-	rorl	$18, %r11d
-	xorl	%r11d, %r9d
+	rorl	$18, %r9d
+	xorl	%r9d, %edi
 	shrl	$3, %r10d
-	xorl	%r10d, %r9d
-	addl	%r9d, %r8d
+	xorl	%r10d, %edi
+	addl	%edi, %r8d
 	addl	56(%rax), %r8d
 	movl	%r8d, 120(%rax)
 	movl	116(%rax), %r10d
 	movl	%r10d, %r8d
 	rorl	$17, %r8d
-	movl	%r10d, %r9d
-	rorl	$19, %r9d
-	xorl	%r9d, %r8d
+	movl	%r10d, %edi
+	rorl	$19, %edi
+	xorl	%edi, %r8d
 	shrl	$10, %r10d
 	xorl	%r10d, %r8d
 	addl	96(%rax), %r8d
 	movl	64(%rax), %r10d
+	movl	%r10d, %edi
+	rorl	$7, %edi
 	movl	%r10d, %r9d
-	rorl	$7, %r9d
-	movl	%r10d, %r11d
-	rorl	$18, %r11d
-	xorl	%r11d, %r9d
+	rorl	$18, %r9d
+	xorl	%r9d, %edi
 	shrl	$3, %r10d
-	xorl	%r10d, %r9d
-	addl	%r9d, %r8d
+	xorl	%r10d, %edi
+	addl	%edi, %r8d
 	addl	60(%rax), %r8d
 	movl	%r8d, 124(%rax)
 	movl	120(%rax), %r10d
 	movl	%r10d, %r8d
 	rorl	$17, %r8d
-	movl	%r10d, %r9d
-	rorl	$19, %r9d
-	xorl	%r9d, %r8d
+	movl	%r10d, %edi
+	rorl	$19, %edi
+	xorl	%edi, %r8d
 	shrl	$10, %r10d
 	xorl	%r10d, %r8d
 	addl	100(%rax), %r8d
 	movl	68(%rax), %r10d
+	movl	%r10d, %edi
+	rorl	$7, %edi
 	movl	%r10d, %r9d
-	rorl	$7, %r9d
-	movl	%r10d, %r11d
-	rorl	$18, %r11d
-	xorl	%r11d, %r9d
+	rorl	$18, %r9d
+	xorl	%r9d, %edi
 	shrl	$3, %r10d
-	xorl	%r10d, %r9d
-	addl	%r9d, %r8d
+	xorl	%r10d, %edi
+	addl	%edi, %r8d
 	addl	64(%rax), %r8d
 	movl	%r8d, 128(%rax)
 	movl	124(%rax), %r10d
 	movl	%r10d, %r8d
 	rorl	$17, %r8d
-	movl	%r10d, %r9d
-	rorl	$19, %r9d
-	xorl	%r9d, %r8d
+	movl	%r10d, %edi
+	rorl	$19, %edi
+	xorl	%edi, %r8d
 	shrl	$10, %r10d
 	xorl	%r10d, %r8d
 	addl	104(%rax), %r8d
 	movl	72(%rax), %r10d
+	movl	%r10d, %edi
+	rorl	$7, %edi
 	movl	%r10d, %r9d
-	rorl	$7, %r9d
-	movl	%r10d, %r11d
-	rorl	$18, %r11d
-	xorl	%r11d, %r9d
+	rorl	$18, %r9d
+	xorl	%r9d, %edi
 	shrl	$3, %r10d
-	xorl	%r10d, %r9d
-	addl	%r9d, %r8d
+	xorl	%r10d, %edi
+	addl	%edi, %r8d
 	addl	68(%rax), %r8d
 	movl	%r8d, 132(%rax)
 	movl	128(%rax), %r10d
 	movl	%r10d, %r8d
 	rorl	$17, %r8d
-	movl	%r10d, %r9d
-	rorl	$19, %r9d
-	xorl	%r9d, %r8d
+	movl	%r10d, %edi
+	rorl	$19, %edi
+	xorl	%edi, %r8d
 	shrl	$10, %r10d
 	xorl	%r10d, %r8d
 	addl	108(%rax), %r8d
 	movl	76(%rax), %r10d
+	movl	%r10d, %edi
+	rorl	$7, %edi
 	movl	%r10d, %r9d
-	rorl	$7, %r9d
-	movl	%r10d, %r11d
-	rorl	$18, %r11d
-	xorl	%r11d, %r9d
+	rorl	$18, %r9d
+	xorl	%r9d, %edi
 	shrl	$3, %r10d
-	xorl	%r10d, %r9d
-	addl	%r9d, %r8d
+	xorl	%r10d, %edi
+	addl	%edi, %r8d
 	addl	72(%rax), %r8d
 	movl	%r8d, 136(%rax)
 	movl	132(%rax), %r10d
 	movl	%r10d, %r8d
 	rorl	$17, %r8d
-	movl	%r10d, %r9d
-	rorl	$19, %r9d
-	xorl	%r9d, %r8d
+	movl	%r10d, %edi
+	rorl	$19, %edi
+	xorl	%edi, %r8d
 	shrl	$10, %r10d
 	xorl	%r10d, %r8d
 	addl	112(%rax), %r8d
 	movl	80(%rax), %r10d
+	movl	%r10d, %edi
+	rorl	$7, %edi
 	movl	%r10d, %r9d
-	rorl	$7, %r9d
-	movl	%r10d, %r11d
-	rorl	$18, %r11d
-	xorl	%r11d, %r9d
+	rorl	$18, %r9d
+	xorl	%r9d, %edi
 	shrl	$3, %r10d
-	xorl	%r10d, %r9d
-	addl	%r9d, %r8d
+	xorl	%r10d, %edi
+	addl	%edi, %r8d
 	addl	76(%rax), %r8d
 	movl	%r8d, 140(%rax)
 	movl	136(%rax), %r10d
 	movl	%r10d, %r8d
 	rorl	$17, %r8d
-	movl	%r10d, %r9d
-	rorl	$19, %r9d
-	xorl	%r9d, %r8d
+	movl	%r10d, %edi
+	rorl	$19, %edi
+	xorl	%edi, %r8d
 	shrl	$10, %r10d
 	xorl	%r10d, %r8d
 	addl	116(%rax), %r8d
 	movl	84(%rax), %r10d
+	movl	%r10d, %edi
+	rorl	$7, %edi
 	movl	%r10d, %r9d
-	rorl	$7, %r9d
-	movl	%r10d, %r11d
-	rorl	$18, %r11d
-	xorl	%r11d, %r9d
+	rorl	$18, %r9d
+	xorl	%r9d, %edi
 	shrl	$3, %r10d
-	xorl	%r10d, %r9d
-	addl	%r9d, %r8d
+	xorl	%r10d, %edi
+	addl	%edi, %r8d
 	addl	80(%rax), %r8d
 	movl	%r8d, 144(%rax)
 	movl	140(%rax), %r10d
 	movl	%r10d, %r8d
 	rorl	$17, %r8d
-	movl	%r10d, %r9d
-	rorl	$19, %r9d
-	xorl	%r9d, %r8d
+	movl	%r10d, %edi
+	rorl	$19, %edi
+	xorl	%edi, %r8d
 	shrl	$10, %r10d
 	xorl	%r10d, %r8d
 	addl	120(%rax), %r8d
 	movl	88(%rax), %r10d
+	movl	%r10d, %edi
+	rorl	$7, %edi
 	movl	%r10d, %r9d
-	rorl	$7, %r9d
-	movl	%r10d, %r11d
-	rorl	$18, %r11d
-	xorl	%r11d, %r9d
+	rorl	$18, %r9d
+	xorl	%r9d, %edi
 	shrl	$3, %r10d
-	xorl	%r10d, %r9d
-	addl	%r9d, %r8d
+	xorl	%r10d, %edi
+	addl	%edi, %r8d
 	addl	84(%rax), %r8d
 	movl	%r8d, 148(%rax)
 	movl	144(%rax), %r10d
 	movl	%r10d, %r8d
 	rorl	$17, %r8d
-	movl	%r10d, %r9d
-	rorl	$19, %r9d
-	xorl	%r9d, %r8d
+	movl	%r10d, %edi
+	rorl	$19, %edi
+	xorl	%edi, %r8d
 	shrl	$10, %r10d
 	xorl	%r10d, %r8d
 	addl	124(%rax), %r8d
 	movl	92(%rax), %r10d
+	movl	%r10d, %edi
+	rorl	$7, %edi
 	movl	%r10d, %r9d
-	rorl	$7, %r9d
-	movl	%r10d, %r11d
-	rorl	$18, %r11d
-	xorl	%r11d, %r9d
+	rorl	$18, %r9d
+	xorl	%r9d, %edi
 	shrl	$3, %r10d
-	xorl	%r10d, %r9d
-	addl	%r9d, %r8d
+	xorl	%r10d, %edi
+	addl	%edi, %r8d
 	addl	88(%rax), %r8d
 	movl	%r8d, 152(%rax)
 	movl	148(%rax), %r10d
 	movl	%r10d, %r8d
 	rorl	$17, %r8d
-	movl	%r10d, %r9d
-	rorl	$19, %r9d
-	xorl	%r9d, %r8d
+	movl	%r10d, %edi
+	rorl	$19, %edi
+	xorl	%edi, %r8d
 	shrl	$10, %r10d
 	xorl	%r10d, %r8d
 	addl	128(%rax), %r8d
 	movl	96(%rax), %r10d
+	movl	%r10d, %edi
+	rorl	$7, %edi
 	movl	%r10d, %r9d
-	rorl	$7, %r9d
-	movl	%r10d, %r11d
-	rorl	$18, %r11d
-	xorl	%r11d, %r9d
+	rorl	$18, %r9d
+	xorl	%r9d, %edi
 	shrl	$3, %r10d
-	xorl	%r10d, %r9d
-	addl	%r9d, %r8d
+	xorl	%r10d, %edi
+	addl	%edi, %r8d
 	addl	92(%rax), %r8d
 	movl	%r8d, 156(%rax)
 	movl	152(%rax), %r10d
 	movl	%r10d, %r8d
 	rorl	$17, %r8d
-	movl	%r10d, %r9d
-	rorl	$19, %r9d
-	xorl	%r9d, %r8d
+	movl	%r10d, %edi
+	rorl	$19, %edi
+	xorl	%edi, %r8d
 	shrl	$10, %r10d
 	xorl	%r10d, %r8d
 	addl	132(%rax), %r8d
 	movl	100(%rax), %r10d
+	movl	%r10d, %edi
+	rorl	$7, %edi
 	movl	%r10d, %r9d
-	rorl	$7, %r9d
-	movl	%r10d, %r11d
-	rorl	$18, %r11d
-	xorl	%r11d, %r9d
+	rorl	$18, %r9d
+	xorl	%r9d, %edi
 	shrl	$3, %r10d
-	xorl	%r10d, %r9d
-	addl	%r9d, %r8d
+	xorl	%r10d, %edi
+	addl	%edi, %r8d
 	addl	96(%rax), %r8d
 	movl	%r8d, 160(%rax)
 	movl	156(%rax), %r10d
 	movl	%r10d, %r8d
 	rorl	$17, %r8d
-	movl	%r10d, %r9d
-	rorl	$19, %r9d
-	xorl	%r9d, %r8d
+	movl	%r10d, %edi
+	rorl	$19, %edi
+	xorl	%edi, %r8d
 	shrl	$10, %r10d
 	xorl	%r10d, %r8d
 	addl	136(%rax), %r8d
 	movl	104(%rax), %r10d
+	movl	%r10d, %edi
+	rorl	$7, %edi
 	movl	%r10d, %r9d
-	rorl	$7, %r9d
-	movl	%r10d, %r11d
-	rorl	$18, %r11d
-	xorl	%r11d, %r9d
+	rorl	$18, %r9d
+	xorl	%r9d, %edi
 	shrl	$3, %r10d
-	xorl	%r10d, %r9d
-	addl	%r9d, %r8d
+	xorl	%r10d, %edi
+	addl	%edi, %r8d
 	addl	100(%rax), %r8d
 	movl	%r8d, 164(%rax)
 	movl	160(%rax), %r10d
 	movl	%r10d, %r8d
 	rorl	$17, %r8d
-	movl	%r10d, %r9d
-	rorl	$19, %r9d
-	xorl	%r9d, %r8d
+	movl	%r10d, %edi
+	rorl	$19, %edi
+	xorl	%edi, %r8d
 	shrl	$10, %r10d
 	xorl	%r10d, %r8d
 	addl	140(%rax), %r8d
 	movl	108(%rax), %r10d
+	movl	%r10d, %edi
+	rorl	$7, %edi
 	movl	%r10d, %r9d
-	rorl	$7, %r9d
-	movl	%r10d, %r11d
-	rorl	$18, %r11d
-	xorl	%r11d, %r9d
+	rorl	$18, %r9d
+	xorl	%r9d, %edi
 	shrl	$3, %r10d
-	xorl	%r10d, %r9d
-	addl	%r9d, %r8d
+	xorl	%r10d, %edi
+	addl	%edi, %r8d
 	addl	104(%rax), %r8d
 	movl	%r8d, 168(%rax)
 	movl	164(%rax), %r10d
 	movl	%r10d, %r8d
 	rorl	$17, %r8d
-	movl	%r10d, %r9d
-	rorl	$19, %r9d
-	xorl	%r9d, %r8d
+	movl	%r10d, %edi
+	rorl	$19, %edi
+	xorl	%edi, %r8d
 	shrl	$10, %r10d
 	xorl	%r10d, %r8d
 	addl	144(%rax), %r8d
 	movl	112(%rax), %r10d
+	movl	%r10d, %edi
+	rorl	$7, %edi
 	movl	%r10d, %r9d
-	rorl	$7, %r9d
-	movl	%r10d, %r11d
-	rorl	$18, %r11d
-	xorl	%r11d, %r9d
+	rorl	$18, %r9d
+	xorl	%r9d, %edi
 	shrl	$3, %r10d
-	xorl	%r10d, %r9d
-	addl	%r9d, %r8d
+	xorl	%r10d, %edi
+	addl	%edi, %r8d
 	addl	108(%rax), %r8d
 	movl	%r8d, 172(%rax)
 	movl	168(%rax), %r10d
 	movl	%r10d, %r8d
 	rorl	$17, %r8d
-	movl	%r10d, %r9d
-	rorl	$19, %r9d
-	xorl	%r9d, %r8d
+	movl	%r10d, %edi
+	rorl	$19, %edi
+	xorl	%edi, %r8d
 	shrl	$10, %r10d
 	xorl	%r10d, %r8d
 	addl	148(%rax), %r8d
 	movl	116(%rax), %r10d
+	movl	%r10d, %edi
+	rorl	$7, %edi
 	movl	%r10d, %r9d
-	rorl	$7, %r9d
-	movl	%r10d, %r11d
-	rorl	$18, %r11d
-	xorl	%r11d, %r9d
+	rorl	$18, %r9d
+	xorl	%r9d, %edi
 	shrl	$3, %r10d
-	xorl	%r10d, %r9d
-	addl	%r9d, %r8d
+	xorl	%r10d, %edi
+	addl	%edi, %r8d
 	addl	112(%rax), %r8d
 	movl	%r8d, 176(%rax)
 	movl	172(%rax), %r10d
 	movl	%r10d, %r8d
 	rorl	$17, %r8d
-	movl	%r10d, %r9d
-	rorl	$19, %r9d
-	xorl	%r9d, %r8d
+	movl	%r10d, %edi
+	rorl	$19, %edi
+	xorl	%edi, %r8d
 	shrl	$10, %r10d
 	xorl	%r10d, %r8d
 	addl	152(%rax), %r8d
 	movl	120(%rax), %r10d
+	movl	%r10d, %edi
+	rorl	$7, %edi
 	movl	%r10d, %r9d
-	rorl	$7, %r9d
-	movl	%r10d, %r11d
-	rorl	$18, %r11d
-	xorl	%r11d, %r9d
+	rorl	$18, %r9d
+	xorl	%r9d, %edi
 	shrl	$3, %r10d
-	xorl	%r10d, %r9d
-	addl	%r9d, %r8d
+	xorl	%r10d, %edi
+	addl	%edi, %r8d
 	addl	116(%rax), %r8d
 	movl	%r8d, 180(%rax)
 	movl	176(%rax), %r10d
 	movl	%r10d, %r8d
 	rorl	$17, %r8d
-	movl	%r10d, %r9d
-	rorl	$19, %r9d
-	xorl	%r9d, %r8d
+	movl	%r10d, %edi
+	rorl	$19, %edi
+	xorl	%edi, %r8d
 	shrl	$10, %r10d
 	xorl	%r10d, %r8d
 	addl	156(%rax), %r8d
 	movl	124(%rax), %r10d
+	movl	%r10d, %edi
+	rorl	$7, %edi
 	movl	%r10d, %r9d
-	rorl	$7, %r9d
-	movl	%r10d, %r11d
-	rorl	$18, %r11d
-	xorl	%r11d, %r9d
+	rorl	$18, %r9d
+	xorl	%r9d, %edi
 	shrl	$3, %r10d
-	xorl	%r10d, %r9d
-	addl	%r9d, %r8d
+	xorl	%r10d, %edi
+	addl	%edi, %r8d
 	addl	120(%rax), %r8d
 	movl	%r8d, 184(%rax)
 	movl	180(%rax), %r10d
 	movl	%r10d, %r8d
 	rorl	$17, %r8d
-	movl	%r10d, %r9d
-	rorl	$19, %r9d
-	xorl	%r9d, %r8d
+	movl	%r10d, %edi
+	rorl	$19, %edi
+	xorl	%edi, %r8d
 	shrl	$10, %r10d
 	xorl	%r10d, %r8d
 	addl	160(%rax), %r8d
 	movl	128(%rax), %r10d
+	movl	%r10d, %edi
+	rorl	$7, %edi
 	movl	%r10d, %r9d
-	rorl	$7, %r9d
-	movl	%r10d, %r11d
-	rorl	$18, %r11d
-	xorl	%r11d, %r9d
+	rorl	$18, %r9d
+	xorl	%r9d, %edi
 	shrl	$3, %r10d
-	xorl	%r10d, %r9d
-	addl	%r9d, %r8d
+	xorl	%r10d, %edi
+	addl	%edi, %r8d
 	addl	124(%rax), %r8d
 	movl	%r8d, 188(%rax)
 	movl	184(%rax), %r10d
 	movl	%r10d, %r8d
 	rorl	$17, %r8d
-	movl	%r10d, %r9d
-	rorl	$19, %r9d
-	xorl	%r9d, %r8d
+	movl	%r10d, %edi
+	rorl	$19, %edi
+	xorl	%edi, %r8d
 	shrl	$10, %r10d
 	xorl	%r10d, %r8d
 	addl	164(%rax), %r8d
 	movl	132(%rax), %r10d
+	movl	%r10d, %edi
+	rorl	$7, %edi
 	movl	%r10d, %r9d
-	rorl	$7, %r9d
-	movl	%r10d, %r11d
-	rorl	$18, %r11d
-	xorl	%r11d, %r9d
+	rorl	$18, %r9d
+	xorl	%r9d, %edi
 	shrl	$3, %r10d
-	xorl	%r10d, %r9d
-	addl	%r9d, %r8d
+	xorl	%r10d, %edi
+	addl	%edi, %r8d
 	addl	128(%rax), %r8d
 	movl	%r8d, 192(%rax)
 	movl	188(%rax), %r10d
 	movl	%r10d, %r8d
 	rorl	$17, %r8d
-	movl	%r10d, %r9d
-	rorl	$19, %r9d
-	xorl	%r9d, %r8d
+	movl	%r10d, %edi
+	rorl	$19, %edi
+	xorl	%edi, %r8d
 	shrl	$10, %r10d
 	xorl	%r10d, %r8d
 	addl	168(%rax), %r8d
 	movl	136(%rax), %r10d
+	movl	%r10d, %edi
+	rorl	$7, %edi
 	movl	%r10d, %r9d
-	rorl	$7, %r9d
-	movl	%r10d, %r11d
-	rorl	$18, %r11d
-	xorl	%r11d, %r9d
+	rorl	$18, %r9d
+	xorl	%r9d, %edi
 	shrl	$3, %r10d
-	xorl	%r10d, %r9d
-	addl	%r9d, %r8d
+	xorl	%r10d, %edi
+	addl	%edi, %r8d
 	addl	132(%rax), %r8d
 	movl	%r8d, 196(%rax)
 	movl	192(%rax), %r10d
 	movl	%r10d, %r8d
 	rorl	$17, %r8d
-	movl	%r10d, %r9d
-	rorl	$19, %r9d
-	xorl	%r9d, %r8d
+	movl	%r10d, %edi
+	rorl	$19, %edi
+	xorl	%edi, %r8d
 	shrl	$10, %r10d
 	xorl	%r10d, %r8d
 	addl	172(%rax), %r8d
 	movl	140(%rax), %r10d
+	movl	%r10d, %edi
+	rorl	$7, %edi
 	movl	%r10d, %r9d
-	rorl	$7, %r9d
-	movl	%r10d, %r11d
-	rorl	$18, %r11d
-	xorl	%r11d, %r9d
+	rorl	$18, %r9d
+	xorl	%r9d, %edi
 	shrl	$3, %r10d
-	xorl	%r10d, %r9d
-	addl	%r9d, %r8d
+	xorl	%r10d, %edi
+	addl	%edi, %r8d
 	addl	136(%rax), %r8d
 	movl	%r8d, 200(%rax)
 	movl	196(%rax), %r10d
 	movl	%r10d, %r8d
 	rorl	$17, %r8d
-	movl	%r10d, %r9d
-	rorl	$19, %r9d
-	xorl	%r9d, %r8d
+	movl	%r10d, %edi
+	rorl	$19, %edi
+	xorl	%edi, %r8d
 	shrl	$10, %r10d
 	xorl	%r10d, %r8d
 	addl	176(%rax), %r8d
 	movl	144(%rax), %r10d
+	movl	%r10d, %edi
+	rorl	$7, %edi
 	movl	%r10d, %r9d
-	rorl	$7, %r9d
-	movl	%r10d, %r11d
-	rorl	$18, %r11d
-	xorl	%r11d, %r9d
+	rorl	$18, %r9d
+	xorl	%r9d, %edi
 	shrl	$3, %r10d
-	xorl	%r10d, %r9d
-	addl	%r9d, %r8d
+	xorl	%r10d, %edi
+	addl	%edi, %r8d
 	addl	140(%rax), %r8d
 	movl	%r8d, 204(%rax)
 	movl	200(%rax), %r10d
 	movl	%r10d, %r8d
 	rorl	$17, %r8d
-	movl	%r10d, %r9d
-	rorl	$19, %r9d
-	xorl	%r9d, %r8d
+	movl	%r10d, %edi
+	rorl	$19, %edi
+	xorl	%edi, %r8d
 	shrl	$10, %r10d
 	xorl	%r10d, %r8d
 	addl	180(%rax), %r8d
 	movl	148(%rax), %r10d
+	movl	%r10d, %edi
+	rorl	$7, %edi
 	movl	%r10d, %r9d
-	rorl	$7, %r9d
-	movl	%r10d, %r11d
-	rorl	$18, %r11d
-	xorl	%r11d, %r9d
+	rorl	$18, %r9d
+	xorl	%r9d, %edi
 	shrl	$3, %r10d
-	xorl	%r10d, %r9d
-	addl	%r9d, %r8d
+	xorl	%r10d, %edi
+	addl	%edi, %r8d
 	addl	144(%rax), %r8d
 	movl	%r8d, 208(%rax)
 	movl	204(%rax), %r10d
 	movl	%r10d, %r8d
 	rorl	$17, %r8d
-	movl	%r10d, %r9d
-	rorl	$19, %r9d
-	xorl	%r9d, %r8d
+	movl	%r10d, %edi
+	rorl	$19, %edi
+	xorl	%edi, %r8d
 	shrl	$10, %r10d
 	xorl	%r10d, %r8d
 	addl	184(%rax), %r8d
 	movl	152(%rax), %r10d
+	movl	%r10d, %edi
+	rorl	$7, %edi
 	movl	%r10d, %r9d
-	rorl	$7, %r9d
-	movl	%r10d, %r11d
-	rorl	$18, %r11d
-	xorl	%r11d, %r9d
+	rorl	$18, %r9d
+	xorl	%r9d, %edi
 	shrl	$3, %r10d
-	xorl	%r10d, %r9d
-	addl	%r9d, %r8d
+	xorl	%r10d, %edi
+	addl	%edi, %r8d
 	addl	148(%rax), %r8d
 	movl	%r8d, 212(%rax)
 	movl	208(%rax), %r10d
 	movl	%r10d, %r8d
 	rorl	$17, %r8d
-	movl	%r10d, %r9d
-	rorl	$19, %r9d
-	xorl	%r9d, %r8d
+	movl	%r10d, %edi
+	rorl	$19, %edi
+	xorl	%edi, %r8d
 	shrl	$10, %r10d
 	xorl	%r10d, %r8d
 	addl	188(%rax), %r8d
 	movl	156(%rax), %r10d
+	movl	%r10d, %edi
+	rorl	$7, %edi
 	movl	%r10d, %r9d
-	rorl	$7, %r9d
-	movl	%r10d, %r11d
-	rorl	$18, %r11d
-	xorl	%r11d, %r9d
+	rorl	$18, %r9d
+	xorl	%r9d, %edi
 	shrl	$3, %r10d
-	xorl	%r10d, %r9d
-	addl	%r9d, %r8d
+	xorl	%r10d, %edi
+	addl	%edi, %r8d
 	addl	152(%rax), %r8d
 	movl	%r8d, 216(%rax)
 	movl	212(%rax), %r10d
 	movl	%r10d, %r8d
 	rorl	$17, %r8d
-	movl	%r10d, %r9d
-	rorl	$19, %r9d
-	xorl	%r9d, %r8d
+	movl	%r10d, %edi
+	rorl	$19, %edi
+	xorl	%edi, %r8d
 	shrl	$10, %r10d
 	xorl	%r10d, %r8d
 	addl	192(%rax), %r8d
 	movl	160(%rax), %r10d
+	movl	%r10d, %edi
+	rorl	$7, %edi
 	movl	%r10d, %r9d
-	rorl	$7, %r9d
-	movl	%r10d, %r11d
-	rorl	$18, %r11d
-	xorl	%r11d, %r9d
+	rorl	$18, %r9d
+	xorl	%r9d, %edi
 	shrl	$3, %r10d
-	xorl	%r10d, %r9d
-	addl	%r9d, %r8d
+	xorl	%r10d, %edi
+	addl	%edi, %r8d
 	addl	156(%rax), %r8d
 	movl	%r8d, 220(%rax)
 	movl	216(%rax), %r10d
 	movl	%r10d, %r8d
 	rorl	$17, %r8d
-	movl	%r10d, %r9d
-	rorl	$19, %r9d
-	xorl	%r9d, %r8d
+	movl	%r10d, %edi
+	rorl	$19, %edi
+	xorl	%edi, %r8d
 	shrl	$10, %r10d
 	xorl	%r10d, %r8d
 	addl	196(%rax), %r8d
 	movl	164(%rax), %r10d
+	movl	%r10d, %edi
+	rorl	$7, %edi
 	movl	%r10d, %r9d
-	rorl	$7, %r9d
-	movl	%r10d, %r11d
-	rorl	$18, %r11d
-	xorl	%r11d, %r9d
+	rorl	$18, %r9d
+	xorl	%r9d, %edi
 	shrl	$3, %r10d
-	xorl	%r10d, %r9d
-	addl	%r9d, %r8d
+	xorl	%r10d, %edi
+	addl	%edi, %r8d
 	addl	160(%rax), %r8d
 	movl	%r8d, 224(%rax)
 	movl	220(%rax), %r10d
 	movl	%r10d, %r8d
 	rorl	$17, %r8d
-	movl	%r10d, %r9d
-	rorl	$19, %r9d
-	xorl	%r9d, %r8d
+	movl	%r10d, %edi
+	rorl	$19, %edi
+	xorl	%edi, %r8d
 	shrl	$10, %r10d
 	xorl	%r10d, %r8d
 	addl	200(%rax), %r8d
 	movl	168(%rax), %r10d
+	movl	%r10d, %edi
+	rorl	$7, %edi
 	movl	%r10d, %r9d
-	rorl	$7, %r9d
-	movl	%r10d, %r11d
-	rorl	$18, %r11d
-	xorl	%r11d, %r9d
+	rorl	$18, %r9d
+	xorl	%r9d, %edi
 	shrl	$3, %r10d
-	xorl	%r10d, %r9d
-	addl	%r9d, %r8d
+	xorl	%r10d, %edi
+	addl	%edi, %r8d
 	addl	164(%rax), %r8d
 	movl	%r8d, 228(%rax)
 	movl	224(%rax), %r10d
 	movl	%r10d, %r8d
 	rorl	$17, %r8d
-	movl	%r10d, %r9d
-	rorl	$19, %r9d
-	xorl	%r9d, %r8d
+	movl	%r10d, %edi
+	rorl	$19, %edi
+	xorl	%edi, %r8d
 	shrl	$10, %r10d
 	xorl	%r10d, %r8d
 	addl	204(%rax), %r8d
 	movl	172(%rax), %r10d
+	movl	%r10d, %edi
+	rorl	$7, %edi
 	movl	%r10d, %r9d
-	rorl	$7, %r9d
-	movl	%r10d, %r11d
-	rorl	$18, %r11d
-	xorl	%r11d, %r9d
+	rorl	$18, %r9d
+	xorl	%r9d, %edi
 	shrl	$3, %r10d
-	xorl	%r10d, %r9d
-	addl	%r9d, %r8d
+	xorl	%r10d, %edi
+	addl	%edi, %r8d
 	addl	168(%rax), %r8d
 	movl	%r8d, 232(%rax)
 	movl	228(%rax), %r10d
 	movl	%r10d, %r8d
 	rorl	$17, %r8d
-	movl	%r10d, %r9d
-	rorl	$19, %r9d
-	xorl	%r9d, %r8d
+	movl	%r10d, %edi
+	rorl	$19, %edi
+	xorl	%edi, %r8d
 	shrl	$10, %r10d
 	xorl	%r10d, %r8d
 	addl	208(%rax), %r8d
 	movl	176(%rax), %r10d
+	movl	%r10d, %edi
+	rorl	$7, %edi
 	movl	%r10d, %r9d
-	rorl	$7, %r9d
-	movl	%r10d, %r11d
-	rorl	$18, %r11d
-	xorl	%r11d, %r9d
+	rorl	$18, %r9d
+	xorl	%r9d, %edi
 	shrl	$3, %r10d
-	xorl	%r10d, %r9d
-	addl	%r9d, %r8d
+	xorl	%r10d, %edi
+	addl	%edi, %r8d
 	addl	172(%rax), %r8d
 	movl	%r8d, 236(%rax)
 	movl	232(%rax), %r10d
 	movl	%r10d, %r8d
 	rorl	$17, %r8d
-	movl	%r10d, %r9d
-	rorl	$19, %r9d
-	xorl	%r9d, %r8d
+	movl	%r10d, %edi
+	rorl	$19, %edi
+	xorl	%edi, %r8d
 	shrl	$10, %r10d
 	xorl	%r10d, %r8d
 	addl	212(%rax), %r8d
 	movl	180(%rax), %r10d
+	movl	%r10d, %edi
+	rorl	$7, %edi
 	movl	%r10d, %r9d
-	rorl	$7, %r9d
-	movl	%r10d, %r11d
-	rorl	$18, %r11d
-	xorl	%r11d, %r9d
+	rorl	$18, %r9d
+	xorl	%r9d, %edi
 	shrl	$3, %r10d
-	xorl	%r10d, %r9d
-	addl	%r9d, %r8d
+	xorl	%r10d, %edi
+	addl	%edi, %r8d
 	addl	176(%rax), %r8d
 	movl	%r8d, 240(%rax)
 	movl	236(%rax), %r10d
 	movl	%r10d, %r8d
 	rorl	$17, %r8d
-	movl	%r10d, %r9d
-	rorl	$19, %r9d
-	xorl	%r9d, %r8d
+	movl	%r10d, %edi
+	rorl	$19, %edi
+	xorl	%edi, %r8d
 	shrl	$10, %r10d
 	xorl	%r10d, %r8d
 	addl	216(%rax), %r8d
 	movl	184(%rax), %r10d
+	movl	%r10d, %edi
+	rorl	$7, %edi
 	movl	%r10d, %r9d
-	rorl	$7, %r9d
-	movl	%r10d, %r11d
-	rorl	$18, %r11d
-	xorl	%r11d, %r9d
+	rorl	$18, %r9d
+	xorl	%r9d, %edi
 	shrl	$3, %r10d
-	xorl	%r10d, %r9d
-	addl	%r9d, %r8d
+	xorl	%r10d, %edi
+	addl	%edi, %r8d
 	addl	180(%rax), %r8d
 	movl	%r8d, 244(%rax)
 	movl	240(%rax), %r10d
 	movl	%r10d, %r8d
 	rorl	$17, %r8d
-	movl	%r10d, %r9d
-	rorl	$19, %r9d
-	xorl	%r9d, %r8d
+	movl	%r10d, %edi
+	rorl	$19, %edi
+	xorl	%edi, %r8d
 	shrl	$10, %r10d
 	xorl	%r10d, %r8d
 	addl	220(%rax), %r8d
 	movl	188(%rax), %r10d
+	movl	%r10d, %edi
+	rorl	$7, %edi
 	movl	%r10d, %r9d
-	rorl	$7, %r9d
-	movl	%r10d, %r11d
-	rorl	$18, %r11d
-	xorl	%r11d, %r9d
+	rorl	$18, %r9d
+	xorl	%r9d, %edi
 	shrl	$3, %r10d
-	xorl	%r10d, %r9d
-	addl	%r9d, %r8d
+	xorl	%r10d, %edi
+	addl	%edi, %r8d
 	addl	184(%rax), %r8d
 	movl	%r8d, 248(%rax)
 	movl	244(%rax), %r10d
 	movl	%r10d, %r8d
 	rorl	$17, %r8d
-	movl	%r10d, %r9d
-	rorl	$19, %r9d
-	xorl	%r9d, %r8d
+	movl	%r10d, %edi
+	rorl	$19, %edi
+	xorl	%edi, %r8d
 	shrl	$10, %r10d
 	xorl	%r10d, %r8d
 	addl	224(%rax), %r8d
 	movl	192(%rax), %r10d
+	movl	%r10d, %edi
+	rorl	$7, %edi
 	movl	%r10d, %r9d
-	rorl	$7, %r9d
-	movl	%r10d, %r11d
-	rorl	$18, %r11d
-	xorl	%r11d, %r9d
+	rorl	$18, %r9d
+	xorl	%r9d, %edi
 	shrl	$3, %r10d
-	xorl	%r10d, %r9d
-	addl	%r9d, %r8d
+	xorl	%r10d, %edi
+	addl	%edi, %r8d
 	addl	188(%rax), %r8d
 	movl	%r8d, 252(%rax)
 	movl	(%rbp), %ebx
@@ -40573,10 +40789,10 @@ slh_dsa_sha2128s_keygen:
 	movl	%r9d, 20(%rdx)
 	movl	%r10d, 24(%rdx)
 	movl	%r12d, 28(%rdx)
-	movq	%rdx, %rdi
+	movq	%rdx, %r8
 	ret
 .Lsha256_hmac_outer__sha256$1:
-	movq	%rcx, 48(%rsp)
+	movq	%rax, 48(%rsp)
 	movq	$96, %rcx
 	shlq	$3, %rcx
 	movq	%rcx, 56(%rsp)
@@ -40597,110 +40813,114 @@ slh_dsa_sha2128s_keygen:
 	leaq	104(%rsp), %rsp
 	movq	$64, %rax
 	movq	64(%rsp), %rdx
-	movq	56(%rsp), %r9
+	movq	56(%rsp), %rdi
+	lfence
+	movq	$0, %rsi
 	movq	$32, %rsi
-	movq	$0, %rdi
-	movl	%edi, 72(%rsp)
-	movl	%edi, 76(%rsp)
-	movl	%edi, 80(%rsp)
-	movl	%edi, 84(%rsp)
-	movl	%edi, 88(%rsp)
-	movl	%edi, 92(%rsp)
-	movl	%edi, 96(%rsp)
-	movl	%edi, 100(%rsp)
-	movl	%edi, 104(%rsp)
-	movl	%edi, 108(%rsp)
-	movl	%edi, 112(%rsp)
-	movl	%edi, 116(%rsp)
-	movl	%edi, 120(%rsp)
-	movl	%edi, 124(%rsp)
-	movl	%edi, 128(%rsp)
-	movl	%edi, 132(%rsp)
-	movl	%edi, 136(%rsp)
-	movl	%edi, 140(%rsp)
-	movl	%edi, 144(%rsp)
-	movl	%edi, 148(%rsp)
-	movl	%edi, 152(%rsp)
-	movl	%edi, 156(%rsp)
-	movl	%edi, 160(%rsp)
-	movl	%edi, 164(%rsp)
-	movl	%edi, 168(%rsp)
-	movl	%edi, 172(%rsp)
-	movl	%edi, 176(%rsp)
-	movl	%edi, 180(%rsp)
-	movl	%edi, 184(%rsp)
-	movl	%edi, 188(%rsp)
-	movl	%edi, 192(%rsp)
-	movl	%edi, 196(%rsp)
+	movq	$0, %r8
+	movl	%r8d, 72(%rsp)
+	movl	%r8d, 76(%rsp)
+	movl	%r8d, 80(%rsp)
+	movl	%r8d, 84(%rsp)
+	movl	%r8d, 88(%rsp)
+	movl	%r8d, 92(%rsp)
+	movl	%r8d, 96(%rsp)
+	movl	%r8d, 100(%rsp)
+	movl	%r8d, 104(%rsp)
+	movl	%r8d, 108(%rsp)
+	movl	%r8d, 112(%rsp)
+	movl	%r8d, 116(%rsp)
+	movl	%r8d, 120(%rsp)
+	movl	%r8d, 124(%rsp)
+	movl	%r8d, 128(%rsp)
+	movl	%r8d, 132(%rsp)
+	movl	%r8d, 136(%rsp)
+	movl	%r8d, 140(%rsp)
+	movl	%r8d, 144(%rsp)
+	movl	%r8d, 148(%rsp)
+	movl	%r8d, 152(%rsp)
+	movl	%r8d, 156(%rsp)
+	movl	%r8d, 160(%rsp)
+	movl	%r8d, 164(%rsp)
+	movl	%r8d, 168(%rsp)
+	movl	%r8d, 172(%rsp)
+	movl	%r8d, 176(%rsp)
+	movl	%r8d, 180(%rsp)
+	movl	%r8d, 184(%rsp)
+	movl	%r8d, 188(%rsp)
+	movl	%r8d, 192(%rsp)
+	movl	%r8d, 196(%rsp)
 	jmp 	.Lsha256_hmac_outer__sha256$7
 .Lsha256_hmac_outer__sha256$8:
-	movq	%rax, %r8
-	addq	%rdi, %r8
-	movb	(%rdx,%r8), %r8b
-	movb	%r8b, 72(%rsp,%rdi)
-	incq	%rdi
+	movq	%rax, %r9
+	addq	%r8, %r9
+	movb	(%rdx,%r9), %r9b
+	movb	%r9b, 72(%rsp,%r8)
+	incq	%r8
 .Lsha256_hmac_outer__sha256$7:
-	cmpq	%rsi, %rdi
+	cmpq	%rsi, %r8
 	jb  	.Lsha256_hmac_outer__sha256$8
-	movb	$128, 72(%rsp,%rdi)
+	movb	$128, 72(%rsp,%r8)
 	cmpq	$56, %rsi
 	jb  	.Lsha256_hmac_outer__sha256$5
 	movq	$120, %r11
 	movq	$2, %rdx
-	movq	$127, %rax
+	movq	$127, %rsi
 	jmp 	.Lsha256_hmac_outer__sha256$3
 .Lsha256_hmac_outer__sha256$5:
 	movq	$56, %r11
 	movq	$1, %rdx
-	movq	$63, %rax
+	movq	$63, %rsi
 .Lsha256_hmac_outer__sha256$6:
 	jmp 	.Lsha256_hmac_outer__sha256$3
 .Lsha256_hmac_outer__sha256$4:
-	movb	%r9b, 72(%rsp,%rax)
-	shrq	$8, %r9
-	decq	%rax
+	movb	%dil, 72(%rsp,%rsi)
+	shrq	$8, %rdi
+	decq	%rsi
 .Lsha256_hmac_outer__sha256$3:
-	cmpq	%r11, %rax
+	cmpq	%r11, %rsi
 	jnb 	.Lsha256_hmac_outer__sha256$4
 	leaq	72(%rsp), %rsi
 	leaq	-216(%rsp), %rsp
 	call	.L_blocks_1_ref$1
 .Lsha256_hmac_outer__sha256$2:
 	leaq	216(%rsp), %rsp
-	movq	48(%rsp), %rcx
-	movl	16(%rsp), %edi
-	bswapl	%edi
-	movl	%edi, (%rcx)
-	movl	20(%rsp), %edi
-	bswapl	%edi
-	movl	%edi, 4(%rcx)
-	movl	24(%rsp), %edi
-	bswapl	%edi
-	movl	%edi, 8(%rcx)
-	movl	28(%rsp), %edi
-	bswapl	%edi
-	movl	%edi, 12(%rcx)
-	movl	32(%rsp), %edi
-	bswapl	%edi
-	movl	%edi, 16(%rcx)
-	movl	36(%rsp), %edi
-	bswapl	%edi
-	movl	%edi, 20(%rcx)
-	movl	40(%rsp), %edi
-	bswapl	%edi
-	movl	%edi, 24(%rcx)
-	movl	44(%rsp), %edi
-	bswapl	%edi
-	movl	%edi, 28(%rcx)
+	movq	48(%rsp), %rax
+	lfence
+	movq	$0, %r8
+	movl	16(%rsp), %r8d
+	bswapl	%r8d
+	movl	%r8d, (%rax)
+	movl	20(%rsp), %r8d
+	bswapl	%r8d
+	movl	%r8d, 4(%rax)
+	movl	24(%rsp), %r8d
+	bswapl	%r8d
+	movl	%r8d, 8(%rax)
+	movl	28(%rsp), %r8d
+	bswapl	%r8d
+	movl	%r8d, 12(%rax)
+	movl	32(%rsp), %r8d
+	bswapl	%r8d
+	movl	%r8d, 16(%rax)
+	movl	36(%rsp), %r8d
+	bswapl	%r8d
+	movl	%r8d, 20(%rax)
+	movl	40(%rsp), %r8d
+	bswapl	%r8d
+	movl	%r8d, 24(%rax)
+	movl	44(%rsp), %r8d
+	bswapl	%r8d
+	movl	%r8d, 28(%rax)
 	ret
 .Lsha256_hmac_inner__sha256_absorb$1:
 	movq	%r11, 8(%rsp)
-	movq	$80, %r9
-	addq	%rdx, %r9
-	addq	%rsi, %r9
-	addq	$2, %r9
-	shlq	$3, %r9
-	movq	%r9, 16(%rsp)
+	movq	$80, %rsi
+	addq	%rcx, %rsi
+	addq	%r8, %rsi
+	addq	$2, %rsi
+	shlq	$3, %rsi
+	movq	%rsi, 16(%rsp)
 	movl	$1779033703, 56(%rsp)
 	movl	$-1150833019, 60(%rsp)
 	movl	$1013904242, 64(%rsp)
@@ -40709,11 +40929,11 @@ slh_dsa_sha2128s_keygen:
 	movl	$-1694144372, 76(%rsp)
 	movl	$528734635, 80(%rsp)
 	movl	$1541459225, 84(%rsp)
-	leaq	56(%rsp), %r9
-	movq	%rcx, 24(%rsp)
-	movq	%rdx, 32(%rsp)
-	movq	%rdi, 40(%rsp)
-	movq	%rsi, 48(%rsp)
+	leaq	56(%rsp), %rsi
+	movq	%rax, 24(%rsp)
+	movq	%rcx, 32(%rsp)
+	movq	%rdx, 40(%rsp)
+	movq	%r8, 48(%rsp)
 	movq	$0, %rdx
 	leaq	88(%rsp), %rax
 	leaq	-32(%rsp), %rsp
@@ -40732,6 +40952,8 @@ slh_dsa_sha2128s_keygen:
 	movq	$0, %rdx
 .Lsha256_hmac_inner__sha256_absorb$7:
 	movq	32(%rsp), %rcx
+	lfence
+	movq	$0, %rax
 	movb	%cl, 88(%rsp,%rdx)
 	incq	%rdx
 	cmpq	$64, %rdx
@@ -40744,6 +40966,8 @@ slh_dsa_sha2128s_keygen:
 	movq	$0, %rdx
 .Lsha256_hmac_inner__sha256_absorb$5:
 	movq	24(%rsp), %r10
+	lfence
+	movq	$0, %rax
 	leaq	88(%rsp), %rax
 	leaq	-24(%rsp), %rsp
 	call	.Lsha256_hmac_inner__absorb_pointer$1
@@ -40751,42 +40975,48 @@ slh_dsa_sha2128s_keygen:
 	leaq	24(%rsp), %rsp
 	movq	40(%rsp), %r10
 	movq	48(%rsp), %rcx
+	lfence
+	movq	$0, %rax
 	leaq	88(%rsp), %rax
 	leaq	-24(%rsp), %rsp
 	call	.Lsha256_hmac_inner__absorb_pointer$1
 .Lsha256_hmac_inner__sha256_absorb$3:
 	leaq	24(%rsp), %rsp
 	movq	16(%rsp), %rcx
+	lfence
+	movq	$0, %rax
 	leaq	88(%rsp), %rax
 	leaq	-8(%rsp), %rsp
 	call	.Lsha256_hmac_inner__finish$1
 .Lsha256_hmac_inner__sha256_absorb$2:
 	leaq	8(%rsp), %rsp
-	movq	8(%rsp), %rcx
-	movl	56(%rsp), %edi
-	bswapl	%edi
-	movl	%edi, (%rcx)
-	movl	60(%rsp), %edi
-	bswapl	%edi
-	movl	%edi, 4(%rcx)
-	movl	64(%rsp), %edi
-	bswapl	%edi
-	movl	%edi, 8(%rcx)
-	movl	68(%rsp), %edi
-	bswapl	%edi
-	movl	%edi, 12(%rcx)
-	movl	72(%rsp), %edi
-	bswapl	%edi
-	movl	%edi, 16(%rcx)
-	movl	76(%rsp), %edi
-	bswapl	%edi
-	movl	%edi, 20(%rcx)
-	movl	80(%rsp), %edi
-	bswapl	%edi
-	movl	%edi, 24(%rcx)
-	movl	84(%rsp), %edi
-	bswapl	%edi
-	movl	%edi, 28(%rcx)
+	movq	8(%rsp), %rax
+	lfence
+	movq	$0, %rcx
+	movl	56(%rsp), %r8d
+	bswapl	%r8d
+	movl	%r8d, (%rax)
+	movl	60(%rsp), %r8d
+	bswapl	%r8d
+	movl	%r8d, 4(%rax)
+	movl	64(%rsp), %r8d
+	bswapl	%r8d
+	movl	%r8d, 8(%rax)
+	movl	68(%rsp), %r8d
+	bswapl	%r8d
+	movl	%r8d, 12(%rax)
+	movl	72(%rsp), %r8d
+	bswapl	%r8d
+	movl	%r8d, 16(%rax)
+	movl	76(%rsp), %r8d
+	bswapl	%r8d
+	movl	%r8d, 20(%rax)
+	movl	80(%rsp), %r8d
+	bswapl	%r8d
+	movl	%r8d, 24(%rax)
+	movl	84(%rsp), %r8d
+	bswapl	%r8d
+	movl	%r8d, 28(%rax)
 	ret
 .Lsha256_hmac_inner__finish$1:
 	movq	%rcx, 8(%rsp)
@@ -40832,6 +41062,8 @@ slh_dsa_sha2128s_keygen:
 	jb  	.Lsha256_hmac_inner__finish$8
 .Lsha256_hmac_inner__finish$6:
 	movq	8(%rsp), %rcx
+	lfence
+	movq	$0, %rdx
 	movq	$63, %rdx
 	jmp 	.Lsha256_hmac_inner__finish$3
 .Lsha256_hmac_inner__finish$4:
@@ -40848,67 +41080,71 @@ slh_dsa_sha2128s_keygen:
 	ret
 .Lsha256_hmac_inner__absorb_fixed$1:
 	movq	$0, %r10
-	movq	$80, %rdi
+	movq	$80, %r9
 	movq	$64, %rcx
 	subq	%rdx, %rcx
-	cmpq	%rcx, %rdi
+	cmpq	%rcx, %r9
 	jb  	.Lsha256_hmac_inner__absorb_fixed$4
 	jmp 	.Lsha256_hmac_inner__absorb_fixed$11
 .Lsha256_hmac_inner__absorb_fixed$12:
-	movb	(%r8,%r10), %sil
-	movb	%sil, (%rax,%rdx)
+	movb	(%rdi,%r10), %r8b
+	movb	%r8b, (%rax,%rdx)
 	incq	%rdx
 	incq	%r10
 .Lsha256_hmac_inner__absorb_fixed$11:
 	cmpq	$64, %rdx
 	jb  	.Lsha256_hmac_inner__absorb_fixed$12
-	movq	%r8, 8(%rsp)
+	movq	%rdi, 8(%rsp)
 	movq	%r10, 16(%rsp)
-	movq	%rdi, 24(%rsp)
+	movq	%r9, 24(%rsp)
 	movq	%rcx, 32(%rsp)
 	leaq	-8(%rsp), %rsp
 	call	.Lsha256_hmac_inner__compress$1
 .Lsha256_hmac_inner__absorb_fixed$10:
 	leaq	8(%rsp), %rsp
-	movq	8(%rsp), %r8
+	movq	8(%rsp), %rdi
 	movq	16(%rsp), %r10
-	movq	24(%rsp), %rdi
+	movq	24(%rsp), %r9
 	movq	32(%rsp), %rcx
+	lfence
 	movq	$0, %rdx
-	subq	%rcx, %rdi
+	movq	$0, %rdx
+	subq	%rcx, %r9
 .Lsha256_hmac_inner__absorb_fixed$9:
 	jmp 	.Lsha256_hmac_inner__absorb_fixed$4
 .Lsha256_hmac_inner__absorb_fixed$5:
 	jmp 	.Lsha256_hmac_inner__absorb_fixed$7
 .Lsha256_hmac_inner__absorb_fixed$8:
-	movb	(%r8,%r10), %sil
-	movb	%sil, (%rax,%rdx)
+	movb	(%rdi,%r10), %r8b
+	movb	%r8b, (%rax,%rdx)
 	incq	%rdx
 	incq	%r10
 .Lsha256_hmac_inner__absorb_fixed$7:
 	cmpq	$64, %rdx
 	jb  	.Lsha256_hmac_inner__absorb_fixed$8
-	movq	%r8, 32(%rsp)
+	movq	%rdi, 32(%rsp)
 	movq	%r10, 24(%rsp)
-	movq	%rdi, 16(%rsp)
+	movq	%r9, 16(%rsp)
 	leaq	-8(%rsp), %rsp
 	call	.Lsha256_hmac_inner__compress$1
 .Lsha256_hmac_inner__absorb_fixed$6:
 	leaq	8(%rsp), %rsp
-	movq	32(%rsp), %r8
+	movq	32(%rsp), %rdi
 	movq	24(%rsp), %r10
-	movq	16(%rsp), %rdi
+	movq	16(%rsp), %r9
+	lfence
+	movq	$0, %rcx
 	movq	$0, %rdx
-	addq	$-64, %rdi
+	addq	$-64, %r9
 .Lsha256_hmac_inner__absorb_fixed$4:
-	cmpq	$64, %rdi
+	cmpq	$64, %r9
 	jnb 	.Lsha256_hmac_inner__absorb_fixed$7
 	movq	%rdx, %rcx
-	addq	%rdi, %rcx
+	addq	%r9, %rcx
 	jmp 	.Lsha256_hmac_inner__absorb_fixed$2
 .Lsha256_hmac_inner__absorb_fixed$3:
-	movb	(%r8,%r10), %sil
-	movb	%sil, (%rax,%rdx)
+	movb	(%rdi,%r10), %r8b
+	movb	%r8b, (%rax,%rdx)
 	incq	%rdx
 	incq	%r10
 .Lsha256_hmac_inner__absorb_fixed$2:
@@ -40916,14 +41152,14 @@ slh_dsa_sha2128s_keygen:
 	jb  	.Lsha256_hmac_inner__absorb_fixed$3
 	ret
 .Lsha256_hmac_inner__absorb_pointer$1:
-	movq	$64, %rsi
-	subq	%rdx, %rsi
-	cmpq	%rsi, %rcx
+	movq	$64, %rdi
+	subq	%rdx, %rdi
+	cmpq	%rdi, %rcx
 	jb  	.Lsha256_hmac_inner__absorb_pointer$4
 	jmp 	.Lsha256_hmac_inner__absorb_pointer$11
 .Lsha256_hmac_inner__absorb_pointer$12:
-	movb	(%r10), %dil
-	movb	%dil, (%rax,%rdx)
+	movb	(%r10), %r8b
+	movb	%r8b, (%rax,%rdx)
 	incq	%rdx
 	incq	%r10
 .Lsha256_hmac_inner__absorb_pointer$11:
@@ -40931,23 +41167,25 @@ slh_dsa_sha2128s_keygen:
 	jb  	.Lsha256_hmac_inner__absorb_pointer$12
 	movq	%r10, 8(%rsp)
 	movq	%rcx, 16(%rsp)
-	movq	%rsi, 24(%rsp)
+	movq	%rdi, 24(%rsp)
 	leaq	-8(%rsp), %rsp
 	call	.Lsha256_hmac_inner__compress$1
 .Lsha256_hmac_inner__absorb_pointer$10:
 	leaq	8(%rsp), %rsp
 	movq	8(%rsp), %r10
 	movq	16(%rsp), %rcx
-	movq	24(%rsp), %rsi
+	movq	24(%rsp), %rdi
+	lfence
 	movq	$0, %rdx
-	subq	%rsi, %rcx
+	movq	$0, %rdx
+	subq	%rdi, %rcx
 .Lsha256_hmac_inner__absorb_pointer$9:
 	jmp 	.Lsha256_hmac_inner__absorb_pointer$4
 .Lsha256_hmac_inner__absorb_pointer$5:
 	jmp 	.Lsha256_hmac_inner__absorb_pointer$7
 .Lsha256_hmac_inner__absorb_pointer$8:
-	movb	(%r10), %sil
-	movb	%sil, (%rax,%rdx)
+	movb	(%r10), %r8b
+	movb	%r8b, (%rax,%rdx)
 	incq	%rdx
 	incq	%r10
 .Lsha256_hmac_inner__absorb_pointer$7:
@@ -40961,26 +41199,28 @@ slh_dsa_sha2128s_keygen:
 	leaq	8(%rsp), %rsp
 	movq	24(%rsp), %r10
 	movq	16(%rsp), %rcx
+	lfence
+	movq	$0, %rdx
 	movq	$0, %rdx
 	addq	$-64, %rcx
 .Lsha256_hmac_inner__absorb_pointer$4:
 	cmpq	$64, %rcx
 	jnb 	.Lsha256_hmac_inner__absorb_pointer$7
-	movq	%rdx, %rsi
-	addq	%rcx, %rsi
+	movq	%rdx, %rdi
+	addq	%rcx, %rdi
 	jmp 	.Lsha256_hmac_inner__absorb_pointer$2
 .Lsha256_hmac_inner__absorb_pointer$3:
-	movb	(%r10), %dil
-	movb	%dil, (%rax,%rdx)
+	movb	(%r10), %r8b
+	movb	%r8b, (%rax,%rdx)
 	incq	%rdx
 	incq	%r10
 .Lsha256_hmac_inner__absorb_pointer$2:
-	cmpq	%rsi, %rdx
+	cmpq	%rdi, %rdx
 	jb  	.Lsha256_hmac_inner__absorb_pointer$3
 	ret
 .Lsha256_hmac_inner__compress$1:
 	leaq	glob_data + 3504(%rip), %rdx
-	movq	%r9, 8(%rsp)
+	movq	%rsi, 8(%rsp)
 	movq	8(%rsp), %rbp
 	movl	(%rax), %esi
 	bswapl	%esi
@@ -41033,961 +41273,961 @@ slh_dsa_sha2128s_keygen:
 	movl	56(%rax), %r10d
 	movl	%r10d, %r8d
 	rorl	$17, %r8d
-	movl	%r10d, %r9d
-	rorl	$19, %r9d
-	xorl	%r9d, %r8d
+	movl	%r10d, %edi
+	rorl	$19, %edi
+	xorl	%edi, %r8d
 	shrl	$10, %r10d
 	xorl	%r10d, %r8d
 	addl	36(%rax), %r8d
 	movl	4(%rax), %r10d
+	movl	%r10d, %edi
+	rorl	$7, %edi
 	movl	%r10d, %r9d
-	rorl	$7, %r9d
-	movl	%r10d, %r11d
-	rorl	$18, %r11d
-	xorl	%r11d, %r9d
+	rorl	$18, %r9d
+	xorl	%r9d, %edi
 	shrl	$3, %r10d
-	xorl	%r10d, %r9d
-	addl	%r9d, %r8d
+	xorl	%r10d, %edi
+	addl	%edi, %r8d
 	addl	(%rax), %r8d
 	movl	%r8d, 64(%rax)
 	movl	60(%rax), %r10d
 	movl	%r10d, %r8d
 	rorl	$17, %r8d
-	movl	%r10d, %r9d
-	rorl	$19, %r9d
-	xorl	%r9d, %r8d
+	movl	%r10d, %edi
+	rorl	$19, %edi
+	xorl	%edi, %r8d
 	shrl	$10, %r10d
 	xorl	%r10d, %r8d
 	addl	40(%rax), %r8d
 	movl	8(%rax), %r10d
+	movl	%r10d, %edi
+	rorl	$7, %edi
 	movl	%r10d, %r9d
-	rorl	$7, %r9d
-	movl	%r10d, %r11d
-	rorl	$18, %r11d
-	xorl	%r11d, %r9d
+	rorl	$18, %r9d
+	xorl	%r9d, %edi
 	shrl	$3, %r10d
-	xorl	%r10d, %r9d
-	addl	%r9d, %r8d
+	xorl	%r10d, %edi
+	addl	%edi, %r8d
 	addl	4(%rax), %r8d
 	movl	%r8d, 68(%rax)
 	movl	64(%rax), %r10d
 	movl	%r10d, %r8d
 	rorl	$17, %r8d
-	movl	%r10d, %r9d
-	rorl	$19, %r9d
-	xorl	%r9d, %r8d
+	movl	%r10d, %edi
+	rorl	$19, %edi
+	xorl	%edi, %r8d
 	shrl	$10, %r10d
 	xorl	%r10d, %r8d
 	addl	44(%rax), %r8d
 	movl	12(%rax), %r10d
+	movl	%r10d, %edi
+	rorl	$7, %edi
 	movl	%r10d, %r9d
-	rorl	$7, %r9d
-	movl	%r10d, %r11d
-	rorl	$18, %r11d
-	xorl	%r11d, %r9d
+	rorl	$18, %r9d
+	xorl	%r9d, %edi
 	shrl	$3, %r10d
-	xorl	%r10d, %r9d
-	addl	%r9d, %r8d
+	xorl	%r10d, %edi
+	addl	%edi, %r8d
 	addl	8(%rax), %r8d
 	movl	%r8d, 72(%rax)
 	movl	68(%rax), %r10d
 	movl	%r10d, %r8d
 	rorl	$17, %r8d
-	movl	%r10d, %r9d
-	rorl	$19, %r9d
-	xorl	%r9d, %r8d
+	movl	%r10d, %edi
+	rorl	$19, %edi
+	xorl	%edi, %r8d
 	shrl	$10, %r10d
 	xorl	%r10d, %r8d
 	addl	48(%rax), %r8d
 	movl	16(%rax), %r10d
+	movl	%r10d, %edi
+	rorl	$7, %edi
 	movl	%r10d, %r9d
-	rorl	$7, %r9d
-	movl	%r10d, %r11d
-	rorl	$18, %r11d
-	xorl	%r11d, %r9d
+	rorl	$18, %r9d
+	xorl	%r9d, %edi
 	shrl	$3, %r10d
-	xorl	%r10d, %r9d
-	addl	%r9d, %r8d
+	xorl	%r10d, %edi
+	addl	%edi, %r8d
 	addl	12(%rax), %r8d
 	movl	%r8d, 76(%rax)
 	movl	72(%rax), %r10d
 	movl	%r10d, %r8d
 	rorl	$17, %r8d
-	movl	%r10d, %r9d
-	rorl	$19, %r9d
-	xorl	%r9d, %r8d
+	movl	%r10d, %edi
+	rorl	$19, %edi
+	xorl	%edi, %r8d
 	shrl	$10, %r10d
 	xorl	%r10d, %r8d
 	addl	52(%rax), %r8d
 	movl	20(%rax), %r10d
+	movl	%r10d, %edi
+	rorl	$7, %edi
 	movl	%r10d, %r9d
-	rorl	$7, %r9d
-	movl	%r10d, %r11d
-	rorl	$18, %r11d
-	xorl	%r11d, %r9d
+	rorl	$18, %r9d
+	xorl	%r9d, %edi
 	shrl	$3, %r10d
-	xorl	%r10d, %r9d
-	addl	%r9d, %r8d
+	xorl	%r10d, %edi
+	addl	%edi, %r8d
 	addl	16(%rax), %r8d
 	movl	%r8d, 80(%rax)
 	movl	76(%rax), %r10d
 	movl	%r10d, %r8d
 	rorl	$17, %r8d
-	movl	%r10d, %r9d
-	rorl	$19, %r9d
-	xorl	%r9d, %r8d
+	movl	%r10d, %edi
+	rorl	$19, %edi
+	xorl	%edi, %r8d
 	shrl	$10, %r10d
 	xorl	%r10d, %r8d
 	addl	56(%rax), %r8d
 	movl	24(%rax), %r10d
+	movl	%r10d, %edi
+	rorl	$7, %edi
 	movl	%r10d, %r9d
-	rorl	$7, %r9d
-	movl	%r10d, %r11d
-	rorl	$18, %r11d
-	xorl	%r11d, %r9d
+	rorl	$18, %r9d
+	xorl	%r9d, %edi
 	shrl	$3, %r10d
-	xorl	%r10d, %r9d
-	addl	%r9d, %r8d
+	xorl	%r10d, %edi
+	addl	%edi, %r8d
 	addl	20(%rax), %r8d
 	movl	%r8d, 84(%rax)
 	movl	80(%rax), %r10d
 	movl	%r10d, %r8d
 	rorl	$17, %r8d
-	movl	%r10d, %r9d
-	rorl	$19, %r9d
-	xorl	%r9d, %r8d
+	movl	%r10d, %edi
+	rorl	$19, %edi
+	xorl	%edi, %r8d
 	shrl	$10, %r10d
 	xorl	%r10d, %r8d
 	addl	60(%rax), %r8d
 	movl	28(%rax), %r10d
+	movl	%r10d, %edi
+	rorl	$7, %edi
 	movl	%r10d, %r9d
-	rorl	$7, %r9d
-	movl	%r10d, %r11d
-	rorl	$18, %r11d
-	xorl	%r11d, %r9d
+	rorl	$18, %r9d
+	xorl	%r9d, %edi
 	shrl	$3, %r10d
-	xorl	%r10d, %r9d
-	addl	%r9d, %r8d
+	xorl	%r10d, %edi
+	addl	%edi, %r8d
 	addl	24(%rax), %r8d
 	movl	%r8d, 88(%rax)
 	movl	84(%rax), %r10d
 	movl	%r10d, %r8d
 	rorl	$17, %r8d
-	movl	%r10d, %r9d
-	rorl	$19, %r9d
-	xorl	%r9d, %r8d
+	movl	%r10d, %edi
+	rorl	$19, %edi
+	xorl	%edi, %r8d
 	shrl	$10, %r10d
 	xorl	%r10d, %r8d
 	addl	64(%rax), %r8d
 	movl	32(%rax), %r10d
+	movl	%r10d, %edi
+	rorl	$7, %edi
 	movl	%r10d, %r9d
-	rorl	$7, %r9d
-	movl	%r10d, %r11d
-	rorl	$18, %r11d
-	xorl	%r11d, %r9d
+	rorl	$18, %r9d
+	xorl	%r9d, %edi
 	shrl	$3, %r10d
-	xorl	%r10d, %r9d
-	addl	%r9d, %r8d
+	xorl	%r10d, %edi
+	addl	%edi, %r8d
 	addl	28(%rax), %r8d
 	movl	%r8d, 92(%rax)
 	movl	88(%rax), %r10d
 	movl	%r10d, %r8d
 	rorl	$17, %r8d
-	movl	%r10d, %r9d
-	rorl	$19, %r9d
-	xorl	%r9d, %r8d
+	movl	%r10d, %edi
+	rorl	$19, %edi
+	xorl	%edi, %r8d
 	shrl	$10, %r10d
 	xorl	%r10d, %r8d
 	addl	68(%rax), %r8d
 	movl	36(%rax), %r10d
+	movl	%r10d, %edi
+	rorl	$7, %edi
 	movl	%r10d, %r9d
-	rorl	$7, %r9d
-	movl	%r10d, %r11d
-	rorl	$18, %r11d
-	xorl	%r11d, %r9d
+	rorl	$18, %r9d
+	xorl	%r9d, %edi
 	shrl	$3, %r10d
-	xorl	%r10d, %r9d
-	addl	%r9d, %r8d
+	xorl	%r10d, %edi
+	addl	%edi, %r8d
 	addl	32(%rax), %r8d
 	movl	%r8d, 96(%rax)
 	movl	92(%rax), %r10d
 	movl	%r10d, %r8d
 	rorl	$17, %r8d
-	movl	%r10d, %r9d
-	rorl	$19, %r9d
-	xorl	%r9d, %r8d
+	movl	%r10d, %edi
+	rorl	$19, %edi
+	xorl	%edi, %r8d
 	shrl	$10, %r10d
 	xorl	%r10d, %r8d
 	addl	72(%rax), %r8d
 	movl	40(%rax), %r10d
+	movl	%r10d, %edi
+	rorl	$7, %edi
 	movl	%r10d, %r9d
-	rorl	$7, %r9d
-	movl	%r10d, %r11d
-	rorl	$18, %r11d
-	xorl	%r11d, %r9d
+	rorl	$18, %r9d
+	xorl	%r9d, %edi
 	shrl	$3, %r10d
-	xorl	%r10d, %r9d
-	addl	%r9d, %r8d
+	xorl	%r10d, %edi
+	addl	%edi, %r8d
 	addl	36(%rax), %r8d
 	movl	%r8d, 100(%rax)
 	movl	96(%rax), %r10d
 	movl	%r10d, %r8d
 	rorl	$17, %r8d
-	movl	%r10d, %r9d
-	rorl	$19, %r9d
-	xorl	%r9d, %r8d
+	movl	%r10d, %edi
+	rorl	$19, %edi
+	xorl	%edi, %r8d
 	shrl	$10, %r10d
 	xorl	%r10d, %r8d
 	addl	76(%rax), %r8d
 	movl	44(%rax), %r10d
+	movl	%r10d, %edi
+	rorl	$7, %edi
 	movl	%r10d, %r9d
-	rorl	$7, %r9d
-	movl	%r10d, %r11d
-	rorl	$18, %r11d
-	xorl	%r11d, %r9d
+	rorl	$18, %r9d
+	xorl	%r9d, %edi
 	shrl	$3, %r10d
-	xorl	%r10d, %r9d
-	addl	%r9d, %r8d
+	xorl	%r10d, %edi
+	addl	%edi, %r8d
 	addl	40(%rax), %r8d
 	movl	%r8d, 104(%rax)
 	movl	100(%rax), %r10d
 	movl	%r10d, %r8d
 	rorl	$17, %r8d
-	movl	%r10d, %r9d
-	rorl	$19, %r9d
-	xorl	%r9d, %r8d
+	movl	%r10d, %edi
+	rorl	$19, %edi
+	xorl	%edi, %r8d
 	shrl	$10, %r10d
 	xorl	%r10d, %r8d
 	addl	80(%rax), %r8d
 	movl	48(%rax), %r10d
+	movl	%r10d, %edi
+	rorl	$7, %edi
 	movl	%r10d, %r9d
-	rorl	$7, %r9d
-	movl	%r10d, %r11d
-	rorl	$18, %r11d
-	xorl	%r11d, %r9d
+	rorl	$18, %r9d
+	xorl	%r9d, %edi
 	shrl	$3, %r10d
-	xorl	%r10d, %r9d
-	addl	%r9d, %r8d
+	xorl	%r10d, %edi
+	addl	%edi, %r8d
 	addl	44(%rax), %r8d
 	movl	%r8d, 108(%rax)
 	movl	104(%rax), %r10d
 	movl	%r10d, %r8d
 	rorl	$17, %r8d
-	movl	%r10d, %r9d
-	rorl	$19, %r9d
-	xorl	%r9d, %r8d
+	movl	%r10d, %edi
+	rorl	$19, %edi
+	xorl	%edi, %r8d
 	shrl	$10, %r10d
 	xorl	%r10d, %r8d
 	addl	84(%rax), %r8d
 	movl	52(%rax), %r10d
+	movl	%r10d, %edi
+	rorl	$7, %edi
 	movl	%r10d, %r9d
-	rorl	$7, %r9d
-	movl	%r10d, %r11d
-	rorl	$18, %r11d
-	xorl	%r11d, %r9d
+	rorl	$18, %r9d
+	xorl	%r9d, %edi
 	shrl	$3, %r10d
-	xorl	%r10d, %r9d
-	addl	%r9d, %r8d
+	xorl	%r10d, %edi
+	addl	%edi, %r8d
 	addl	48(%rax), %r8d
 	movl	%r8d, 112(%rax)
 	movl	108(%rax), %r10d
 	movl	%r10d, %r8d
 	rorl	$17, %r8d
-	movl	%r10d, %r9d
-	rorl	$19, %r9d
-	xorl	%r9d, %r8d
+	movl	%r10d, %edi
+	rorl	$19, %edi
+	xorl	%edi, %r8d
 	shrl	$10, %r10d
 	xorl	%r10d, %r8d
 	addl	88(%rax), %r8d
 	movl	56(%rax), %r10d
+	movl	%r10d, %edi
+	rorl	$7, %edi
 	movl	%r10d, %r9d
-	rorl	$7, %r9d
-	movl	%r10d, %r11d
-	rorl	$18, %r11d
-	xorl	%r11d, %r9d
+	rorl	$18, %r9d
+	xorl	%r9d, %edi
 	shrl	$3, %r10d
-	xorl	%r10d, %r9d
-	addl	%r9d, %r8d
+	xorl	%r10d, %edi
+	addl	%edi, %r8d
 	addl	52(%rax), %r8d
 	movl	%r8d, 116(%rax)
 	movl	112(%rax), %r10d
 	movl	%r10d, %r8d
 	rorl	$17, %r8d
-	movl	%r10d, %r9d
-	rorl	$19, %r9d
-	xorl	%r9d, %r8d
+	movl	%r10d, %edi
+	rorl	$19, %edi
+	xorl	%edi, %r8d
 	shrl	$10, %r10d
 	xorl	%r10d, %r8d
 	addl	92(%rax), %r8d
 	movl	60(%rax), %r10d
+	movl	%r10d, %edi
+	rorl	$7, %edi
 	movl	%r10d, %r9d
-	rorl	$7, %r9d
-	movl	%r10d, %r11d
-	rorl	$18, %r11d
-	xorl	%r11d, %r9d
+	rorl	$18, %r9d
+	xorl	%r9d, %edi
 	shrl	$3, %r10d
-	xorl	%r10d, %r9d
-	addl	%r9d, %r8d
+	xorl	%r10d, %edi
+	addl	%edi, %r8d
 	addl	56(%rax), %r8d
 	movl	%r8d, 120(%rax)
 	movl	116(%rax), %r10d
 	movl	%r10d, %r8d
 	rorl	$17, %r8d
-	movl	%r10d, %r9d
-	rorl	$19, %r9d
-	xorl	%r9d, %r8d
+	movl	%r10d, %edi
+	rorl	$19, %edi
+	xorl	%edi, %r8d
 	shrl	$10, %r10d
 	xorl	%r10d, %r8d
 	addl	96(%rax), %r8d
 	movl	64(%rax), %r10d
+	movl	%r10d, %edi
+	rorl	$7, %edi
 	movl	%r10d, %r9d
-	rorl	$7, %r9d
-	movl	%r10d, %r11d
-	rorl	$18, %r11d
-	xorl	%r11d, %r9d
+	rorl	$18, %r9d
+	xorl	%r9d, %edi
 	shrl	$3, %r10d
-	xorl	%r10d, %r9d
-	addl	%r9d, %r8d
+	xorl	%r10d, %edi
+	addl	%edi, %r8d
 	addl	60(%rax), %r8d
 	movl	%r8d, 124(%rax)
 	movl	120(%rax), %r10d
 	movl	%r10d, %r8d
 	rorl	$17, %r8d
-	movl	%r10d, %r9d
-	rorl	$19, %r9d
-	xorl	%r9d, %r8d
+	movl	%r10d, %edi
+	rorl	$19, %edi
+	xorl	%edi, %r8d
 	shrl	$10, %r10d
 	xorl	%r10d, %r8d
 	addl	100(%rax), %r8d
 	movl	68(%rax), %r10d
+	movl	%r10d, %edi
+	rorl	$7, %edi
 	movl	%r10d, %r9d
-	rorl	$7, %r9d
-	movl	%r10d, %r11d
-	rorl	$18, %r11d
-	xorl	%r11d, %r9d
+	rorl	$18, %r9d
+	xorl	%r9d, %edi
 	shrl	$3, %r10d
-	xorl	%r10d, %r9d
-	addl	%r9d, %r8d
+	xorl	%r10d, %edi
+	addl	%edi, %r8d
 	addl	64(%rax), %r8d
 	movl	%r8d, 128(%rax)
 	movl	124(%rax), %r10d
 	movl	%r10d, %r8d
 	rorl	$17, %r8d
-	movl	%r10d, %r9d
-	rorl	$19, %r9d
-	xorl	%r9d, %r8d
+	movl	%r10d, %edi
+	rorl	$19, %edi
+	xorl	%edi, %r8d
 	shrl	$10, %r10d
 	xorl	%r10d, %r8d
 	addl	104(%rax), %r8d
 	movl	72(%rax), %r10d
+	movl	%r10d, %edi
+	rorl	$7, %edi
 	movl	%r10d, %r9d
-	rorl	$7, %r9d
-	movl	%r10d, %r11d
-	rorl	$18, %r11d
-	xorl	%r11d, %r9d
+	rorl	$18, %r9d
+	xorl	%r9d, %edi
 	shrl	$3, %r10d
-	xorl	%r10d, %r9d
-	addl	%r9d, %r8d
+	xorl	%r10d, %edi
+	addl	%edi, %r8d
 	addl	68(%rax), %r8d
 	movl	%r8d, 132(%rax)
 	movl	128(%rax), %r10d
 	movl	%r10d, %r8d
 	rorl	$17, %r8d
-	movl	%r10d, %r9d
-	rorl	$19, %r9d
-	xorl	%r9d, %r8d
+	movl	%r10d, %edi
+	rorl	$19, %edi
+	xorl	%edi, %r8d
 	shrl	$10, %r10d
 	xorl	%r10d, %r8d
 	addl	108(%rax), %r8d
 	movl	76(%rax), %r10d
+	movl	%r10d, %edi
+	rorl	$7, %edi
 	movl	%r10d, %r9d
-	rorl	$7, %r9d
-	movl	%r10d, %r11d
-	rorl	$18, %r11d
-	xorl	%r11d, %r9d
+	rorl	$18, %r9d
+	xorl	%r9d, %edi
 	shrl	$3, %r10d
-	xorl	%r10d, %r9d
-	addl	%r9d, %r8d
+	xorl	%r10d, %edi
+	addl	%edi, %r8d
 	addl	72(%rax), %r8d
 	movl	%r8d, 136(%rax)
 	movl	132(%rax), %r10d
 	movl	%r10d, %r8d
 	rorl	$17, %r8d
-	movl	%r10d, %r9d
-	rorl	$19, %r9d
-	xorl	%r9d, %r8d
+	movl	%r10d, %edi
+	rorl	$19, %edi
+	xorl	%edi, %r8d
 	shrl	$10, %r10d
 	xorl	%r10d, %r8d
 	addl	112(%rax), %r8d
 	movl	80(%rax), %r10d
+	movl	%r10d, %edi
+	rorl	$7, %edi
 	movl	%r10d, %r9d
-	rorl	$7, %r9d
-	movl	%r10d, %r11d
-	rorl	$18, %r11d
-	xorl	%r11d, %r9d
+	rorl	$18, %r9d
+	xorl	%r9d, %edi
 	shrl	$3, %r10d
-	xorl	%r10d, %r9d
-	addl	%r9d, %r8d
+	xorl	%r10d, %edi
+	addl	%edi, %r8d
 	addl	76(%rax), %r8d
 	movl	%r8d, 140(%rax)
 	movl	136(%rax), %r10d
 	movl	%r10d, %r8d
 	rorl	$17, %r8d
-	movl	%r10d, %r9d
-	rorl	$19, %r9d
-	xorl	%r9d, %r8d
+	movl	%r10d, %edi
+	rorl	$19, %edi
+	xorl	%edi, %r8d
 	shrl	$10, %r10d
 	xorl	%r10d, %r8d
 	addl	116(%rax), %r8d
 	movl	84(%rax), %r10d
+	movl	%r10d, %edi
+	rorl	$7, %edi
 	movl	%r10d, %r9d
-	rorl	$7, %r9d
-	movl	%r10d, %r11d
-	rorl	$18, %r11d
-	xorl	%r11d, %r9d
+	rorl	$18, %r9d
+	xorl	%r9d, %edi
 	shrl	$3, %r10d
-	xorl	%r10d, %r9d
-	addl	%r9d, %r8d
+	xorl	%r10d, %edi
+	addl	%edi, %r8d
 	addl	80(%rax), %r8d
 	movl	%r8d, 144(%rax)
 	movl	140(%rax), %r10d
 	movl	%r10d, %r8d
 	rorl	$17, %r8d
-	movl	%r10d, %r9d
-	rorl	$19, %r9d
-	xorl	%r9d, %r8d
+	movl	%r10d, %edi
+	rorl	$19, %edi
+	xorl	%edi, %r8d
 	shrl	$10, %r10d
 	xorl	%r10d, %r8d
 	addl	120(%rax), %r8d
 	movl	88(%rax), %r10d
+	movl	%r10d, %edi
+	rorl	$7, %edi
 	movl	%r10d, %r9d
-	rorl	$7, %r9d
-	movl	%r10d, %r11d
-	rorl	$18, %r11d
-	xorl	%r11d, %r9d
+	rorl	$18, %r9d
+	xorl	%r9d, %edi
 	shrl	$3, %r10d
-	xorl	%r10d, %r9d
-	addl	%r9d, %r8d
+	xorl	%r10d, %edi
+	addl	%edi, %r8d
 	addl	84(%rax), %r8d
 	movl	%r8d, 148(%rax)
 	movl	144(%rax), %r10d
 	movl	%r10d, %r8d
 	rorl	$17, %r8d
-	movl	%r10d, %r9d
-	rorl	$19, %r9d
-	xorl	%r9d, %r8d
+	movl	%r10d, %edi
+	rorl	$19, %edi
+	xorl	%edi, %r8d
 	shrl	$10, %r10d
 	xorl	%r10d, %r8d
 	addl	124(%rax), %r8d
 	movl	92(%rax), %r10d
+	movl	%r10d, %edi
+	rorl	$7, %edi
 	movl	%r10d, %r9d
-	rorl	$7, %r9d
-	movl	%r10d, %r11d
-	rorl	$18, %r11d
-	xorl	%r11d, %r9d
+	rorl	$18, %r9d
+	xorl	%r9d, %edi
 	shrl	$3, %r10d
-	xorl	%r10d, %r9d
-	addl	%r9d, %r8d
+	xorl	%r10d, %edi
+	addl	%edi, %r8d
 	addl	88(%rax), %r8d
 	movl	%r8d, 152(%rax)
 	movl	148(%rax), %r10d
 	movl	%r10d, %r8d
 	rorl	$17, %r8d
-	movl	%r10d, %r9d
-	rorl	$19, %r9d
-	xorl	%r9d, %r8d
+	movl	%r10d, %edi
+	rorl	$19, %edi
+	xorl	%edi, %r8d
 	shrl	$10, %r10d
 	xorl	%r10d, %r8d
 	addl	128(%rax), %r8d
 	movl	96(%rax), %r10d
+	movl	%r10d, %edi
+	rorl	$7, %edi
 	movl	%r10d, %r9d
-	rorl	$7, %r9d
-	movl	%r10d, %r11d
-	rorl	$18, %r11d
-	xorl	%r11d, %r9d
+	rorl	$18, %r9d
+	xorl	%r9d, %edi
 	shrl	$3, %r10d
-	xorl	%r10d, %r9d
-	addl	%r9d, %r8d
+	xorl	%r10d, %edi
+	addl	%edi, %r8d
 	addl	92(%rax), %r8d
 	movl	%r8d, 156(%rax)
 	movl	152(%rax), %r10d
 	movl	%r10d, %r8d
 	rorl	$17, %r8d
-	movl	%r10d, %r9d
-	rorl	$19, %r9d
-	xorl	%r9d, %r8d
+	movl	%r10d, %edi
+	rorl	$19, %edi
+	xorl	%edi, %r8d
 	shrl	$10, %r10d
 	xorl	%r10d, %r8d
 	addl	132(%rax), %r8d
 	movl	100(%rax), %r10d
+	movl	%r10d, %edi
+	rorl	$7, %edi
 	movl	%r10d, %r9d
-	rorl	$7, %r9d
-	movl	%r10d, %r11d
-	rorl	$18, %r11d
-	xorl	%r11d, %r9d
+	rorl	$18, %r9d
+	xorl	%r9d, %edi
 	shrl	$3, %r10d
-	xorl	%r10d, %r9d
-	addl	%r9d, %r8d
+	xorl	%r10d, %edi
+	addl	%edi, %r8d
 	addl	96(%rax), %r8d
 	movl	%r8d, 160(%rax)
 	movl	156(%rax), %r10d
 	movl	%r10d, %r8d
 	rorl	$17, %r8d
-	movl	%r10d, %r9d
-	rorl	$19, %r9d
-	xorl	%r9d, %r8d
+	movl	%r10d, %edi
+	rorl	$19, %edi
+	xorl	%edi, %r8d
 	shrl	$10, %r10d
 	xorl	%r10d, %r8d
 	addl	136(%rax), %r8d
 	movl	104(%rax), %r10d
+	movl	%r10d, %edi
+	rorl	$7, %edi
 	movl	%r10d, %r9d
-	rorl	$7, %r9d
-	movl	%r10d, %r11d
-	rorl	$18, %r11d
-	xorl	%r11d, %r9d
+	rorl	$18, %r9d
+	xorl	%r9d, %edi
 	shrl	$3, %r10d
-	xorl	%r10d, %r9d
-	addl	%r9d, %r8d
+	xorl	%r10d, %edi
+	addl	%edi, %r8d
 	addl	100(%rax), %r8d
 	movl	%r8d, 164(%rax)
 	movl	160(%rax), %r10d
 	movl	%r10d, %r8d
 	rorl	$17, %r8d
-	movl	%r10d, %r9d
-	rorl	$19, %r9d
-	xorl	%r9d, %r8d
+	movl	%r10d, %edi
+	rorl	$19, %edi
+	xorl	%edi, %r8d
 	shrl	$10, %r10d
 	xorl	%r10d, %r8d
 	addl	140(%rax), %r8d
 	movl	108(%rax), %r10d
+	movl	%r10d, %edi
+	rorl	$7, %edi
 	movl	%r10d, %r9d
-	rorl	$7, %r9d
-	movl	%r10d, %r11d
-	rorl	$18, %r11d
-	xorl	%r11d, %r9d
+	rorl	$18, %r9d
+	xorl	%r9d, %edi
 	shrl	$3, %r10d
-	xorl	%r10d, %r9d
-	addl	%r9d, %r8d
+	xorl	%r10d, %edi
+	addl	%edi, %r8d
 	addl	104(%rax), %r8d
 	movl	%r8d, 168(%rax)
 	movl	164(%rax), %r10d
 	movl	%r10d, %r8d
 	rorl	$17, %r8d
-	movl	%r10d, %r9d
-	rorl	$19, %r9d
-	xorl	%r9d, %r8d
+	movl	%r10d, %edi
+	rorl	$19, %edi
+	xorl	%edi, %r8d
 	shrl	$10, %r10d
 	xorl	%r10d, %r8d
 	addl	144(%rax), %r8d
 	movl	112(%rax), %r10d
+	movl	%r10d, %edi
+	rorl	$7, %edi
 	movl	%r10d, %r9d
-	rorl	$7, %r9d
-	movl	%r10d, %r11d
-	rorl	$18, %r11d
-	xorl	%r11d, %r9d
+	rorl	$18, %r9d
+	xorl	%r9d, %edi
 	shrl	$3, %r10d
-	xorl	%r10d, %r9d
-	addl	%r9d, %r8d
+	xorl	%r10d, %edi
+	addl	%edi, %r8d
 	addl	108(%rax), %r8d
 	movl	%r8d, 172(%rax)
 	movl	168(%rax), %r10d
 	movl	%r10d, %r8d
 	rorl	$17, %r8d
-	movl	%r10d, %r9d
-	rorl	$19, %r9d
-	xorl	%r9d, %r8d
+	movl	%r10d, %edi
+	rorl	$19, %edi
+	xorl	%edi, %r8d
 	shrl	$10, %r10d
 	xorl	%r10d, %r8d
 	addl	148(%rax), %r8d
 	movl	116(%rax), %r10d
+	movl	%r10d, %edi
+	rorl	$7, %edi
 	movl	%r10d, %r9d
-	rorl	$7, %r9d
-	movl	%r10d, %r11d
-	rorl	$18, %r11d
-	xorl	%r11d, %r9d
+	rorl	$18, %r9d
+	xorl	%r9d, %edi
 	shrl	$3, %r10d
-	xorl	%r10d, %r9d
-	addl	%r9d, %r8d
+	xorl	%r10d, %edi
+	addl	%edi, %r8d
 	addl	112(%rax), %r8d
 	movl	%r8d, 176(%rax)
 	movl	172(%rax), %r10d
 	movl	%r10d, %r8d
 	rorl	$17, %r8d
-	movl	%r10d, %r9d
-	rorl	$19, %r9d
-	xorl	%r9d, %r8d
+	movl	%r10d, %edi
+	rorl	$19, %edi
+	xorl	%edi, %r8d
 	shrl	$10, %r10d
 	xorl	%r10d, %r8d
 	addl	152(%rax), %r8d
 	movl	120(%rax), %r10d
+	movl	%r10d, %edi
+	rorl	$7, %edi
 	movl	%r10d, %r9d
-	rorl	$7, %r9d
-	movl	%r10d, %r11d
-	rorl	$18, %r11d
-	xorl	%r11d, %r9d
+	rorl	$18, %r9d
+	xorl	%r9d, %edi
 	shrl	$3, %r10d
-	xorl	%r10d, %r9d
-	addl	%r9d, %r8d
+	xorl	%r10d, %edi
+	addl	%edi, %r8d
 	addl	116(%rax), %r8d
 	movl	%r8d, 180(%rax)
 	movl	176(%rax), %r10d
 	movl	%r10d, %r8d
 	rorl	$17, %r8d
-	movl	%r10d, %r9d
-	rorl	$19, %r9d
-	xorl	%r9d, %r8d
+	movl	%r10d, %edi
+	rorl	$19, %edi
+	xorl	%edi, %r8d
 	shrl	$10, %r10d
 	xorl	%r10d, %r8d
 	addl	156(%rax), %r8d
 	movl	124(%rax), %r10d
+	movl	%r10d, %edi
+	rorl	$7, %edi
 	movl	%r10d, %r9d
-	rorl	$7, %r9d
-	movl	%r10d, %r11d
-	rorl	$18, %r11d
-	xorl	%r11d, %r9d
+	rorl	$18, %r9d
+	xorl	%r9d, %edi
 	shrl	$3, %r10d
-	xorl	%r10d, %r9d
-	addl	%r9d, %r8d
+	xorl	%r10d, %edi
+	addl	%edi, %r8d
 	addl	120(%rax), %r8d
 	movl	%r8d, 184(%rax)
 	movl	180(%rax), %r10d
 	movl	%r10d, %r8d
 	rorl	$17, %r8d
-	movl	%r10d, %r9d
-	rorl	$19, %r9d
-	xorl	%r9d, %r8d
+	movl	%r10d, %edi
+	rorl	$19, %edi
+	xorl	%edi, %r8d
 	shrl	$10, %r10d
 	xorl	%r10d, %r8d
 	addl	160(%rax), %r8d
 	movl	128(%rax), %r10d
+	movl	%r10d, %edi
+	rorl	$7, %edi
 	movl	%r10d, %r9d
-	rorl	$7, %r9d
-	movl	%r10d, %r11d
-	rorl	$18, %r11d
-	xorl	%r11d, %r9d
+	rorl	$18, %r9d
+	xorl	%r9d, %edi
 	shrl	$3, %r10d
-	xorl	%r10d, %r9d
-	addl	%r9d, %r8d
+	xorl	%r10d, %edi
+	addl	%edi, %r8d
 	addl	124(%rax), %r8d
 	movl	%r8d, 188(%rax)
 	movl	184(%rax), %r10d
 	movl	%r10d, %r8d
 	rorl	$17, %r8d
-	movl	%r10d, %r9d
-	rorl	$19, %r9d
-	xorl	%r9d, %r8d
+	movl	%r10d, %edi
+	rorl	$19, %edi
+	xorl	%edi, %r8d
 	shrl	$10, %r10d
 	xorl	%r10d, %r8d
 	addl	164(%rax), %r8d
 	movl	132(%rax), %r10d
+	movl	%r10d, %edi
+	rorl	$7, %edi
 	movl	%r10d, %r9d
-	rorl	$7, %r9d
-	movl	%r10d, %r11d
-	rorl	$18, %r11d
-	xorl	%r11d, %r9d
+	rorl	$18, %r9d
+	xorl	%r9d, %edi
 	shrl	$3, %r10d
-	xorl	%r10d, %r9d
-	addl	%r9d, %r8d
+	xorl	%r10d, %edi
+	addl	%edi, %r8d
 	addl	128(%rax), %r8d
 	movl	%r8d, 192(%rax)
 	movl	188(%rax), %r10d
 	movl	%r10d, %r8d
 	rorl	$17, %r8d
-	movl	%r10d, %r9d
-	rorl	$19, %r9d
-	xorl	%r9d, %r8d
+	movl	%r10d, %edi
+	rorl	$19, %edi
+	xorl	%edi, %r8d
 	shrl	$10, %r10d
 	xorl	%r10d, %r8d
 	addl	168(%rax), %r8d
 	movl	136(%rax), %r10d
+	movl	%r10d, %edi
+	rorl	$7, %edi
 	movl	%r10d, %r9d
-	rorl	$7, %r9d
-	movl	%r10d, %r11d
-	rorl	$18, %r11d
-	xorl	%r11d, %r9d
+	rorl	$18, %r9d
+	xorl	%r9d, %edi
 	shrl	$3, %r10d
-	xorl	%r10d, %r9d
-	addl	%r9d, %r8d
+	xorl	%r10d, %edi
+	addl	%edi, %r8d
 	addl	132(%rax), %r8d
 	movl	%r8d, 196(%rax)
 	movl	192(%rax), %r10d
 	movl	%r10d, %r8d
 	rorl	$17, %r8d
-	movl	%r10d, %r9d
-	rorl	$19, %r9d
-	xorl	%r9d, %r8d
+	movl	%r10d, %edi
+	rorl	$19, %edi
+	xorl	%edi, %r8d
 	shrl	$10, %r10d
 	xorl	%r10d, %r8d
 	addl	172(%rax), %r8d
 	movl	140(%rax), %r10d
+	movl	%r10d, %edi
+	rorl	$7, %edi
 	movl	%r10d, %r9d
-	rorl	$7, %r9d
-	movl	%r10d, %r11d
-	rorl	$18, %r11d
-	xorl	%r11d, %r9d
+	rorl	$18, %r9d
+	xorl	%r9d, %edi
 	shrl	$3, %r10d
-	xorl	%r10d, %r9d
-	addl	%r9d, %r8d
+	xorl	%r10d, %edi
+	addl	%edi, %r8d
 	addl	136(%rax), %r8d
 	movl	%r8d, 200(%rax)
 	movl	196(%rax), %r10d
 	movl	%r10d, %r8d
 	rorl	$17, %r8d
-	movl	%r10d, %r9d
-	rorl	$19, %r9d
-	xorl	%r9d, %r8d
+	movl	%r10d, %edi
+	rorl	$19, %edi
+	xorl	%edi, %r8d
 	shrl	$10, %r10d
 	xorl	%r10d, %r8d
 	addl	176(%rax), %r8d
 	movl	144(%rax), %r10d
+	movl	%r10d, %edi
+	rorl	$7, %edi
 	movl	%r10d, %r9d
-	rorl	$7, %r9d
-	movl	%r10d, %r11d
-	rorl	$18, %r11d
-	xorl	%r11d, %r9d
+	rorl	$18, %r9d
+	xorl	%r9d, %edi
 	shrl	$3, %r10d
-	xorl	%r10d, %r9d
-	addl	%r9d, %r8d
+	xorl	%r10d, %edi
+	addl	%edi, %r8d
 	addl	140(%rax), %r8d
 	movl	%r8d, 204(%rax)
 	movl	200(%rax), %r10d
 	movl	%r10d, %r8d
 	rorl	$17, %r8d
-	movl	%r10d, %r9d
-	rorl	$19, %r9d
-	xorl	%r9d, %r8d
+	movl	%r10d, %edi
+	rorl	$19, %edi
+	xorl	%edi, %r8d
 	shrl	$10, %r10d
 	xorl	%r10d, %r8d
 	addl	180(%rax), %r8d
 	movl	148(%rax), %r10d
+	movl	%r10d, %edi
+	rorl	$7, %edi
 	movl	%r10d, %r9d
-	rorl	$7, %r9d
-	movl	%r10d, %r11d
-	rorl	$18, %r11d
-	xorl	%r11d, %r9d
+	rorl	$18, %r9d
+	xorl	%r9d, %edi
 	shrl	$3, %r10d
-	xorl	%r10d, %r9d
-	addl	%r9d, %r8d
+	xorl	%r10d, %edi
+	addl	%edi, %r8d
 	addl	144(%rax), %r8d
 	movl	%r8d, 208(%rax)
 	movl	204(%rax), %r10d
 	movl	%r10d, %r8d
 	rorl	$17, %r8d
-	movl	%r10d, %r9d
-	rorl	$19, %r9d
-	xorl	%r9d, %r8d
+	movl	%r10d, %edi
+	rorl	$19, %edi
+	xorl	%edi, %r8d
 	shrl	$10, %r10d
 	xorl	%r10d, %r8d
 	addl	184(%rax), %r8d
 	movl	152(%rax), %r10d
+	movl	%r10d, %edi
+	rorl	$7, %edi
 	movl	%r10d, %r9d
-	rorl	$7, %r9d
-	movl	%r10d, %r11d
-	rorl	$18, %r11d
-	xorl	%r11d, %r9d
+	rorl	$18, %r9d
+	xorl	%r9d, %edi
 	shrl	$3, %r10d
-	xorl	%r10d, %r9d
-	addl	%r9d, %r8d
+	xorl	%r10d, %edi
+	addl	%edi, %r8d
 	addl	148(%rax), %r8d
 	movl	%r8d, 212(%rax)
 	movl	208(%rax), %r10d
 	movl	%r10d, %r8d
 	rorl	$17, %r8d
-	movl	%r10d, %r9d
-	rorl	$19, %r9d
-	xorl	%r9d, %r8d
+	movl	%r10d, %edi
+	rorl	$19, %edi
+	xorl	%edi, %r8d
 	shrl	$10, %r10d
 	xorl	%r10d, %r8d
 	addl	188(%rax), %r8d
 	movl	156(%rax), %r10d
+	movl	%r10d, %edi
+	rorl	$7, %edi
 	movl	%r10d, %r9d
-	rorl	$7, %r9d
-	movl	%r10d, %r11d
-	rorl	$18, %r11d
-	xorl	%r11d, %r9d
+	rorl	$18, %r9d
+	xorl	%r9d, %edi
 	shrl	$3, %r10d
-	xorl	%r10d, %r9d
-	addl	%r9d, %r8d
+	xorl	%r10d, %edi
+	addl	%edi, %r8d
 	addl	152(%rax), %r8d
 	movl	%r8d, 216(%rax)
 	movl	212(%rax), %r10d
 	movl	%r10d, %r8d
 	rorl	$17, %r8d
-	movl	%r10d, %r9d
-	rorl	$19, %r9d
-	xorl	%r9d, %r8d
+	movl	%r10d, %edi
+	rorl	$19, %edi
+	xorl	%edi, %r8d
 	shrl	$10, %r10d
 	xorl	%r10d, %r8d
 	addl	192(%rax), %r8d
 	movl	160(%rax), %r10d
+	movl	%r10d, %edi
+	rorl	$7, %edi
 	movl	%r10d, %r9d
-	rorl	$7, %r9d
-	movl	%r10d, %r11d
-	rorl	$18, %r11d
-	xorl	%r11d, %r9d
+	rorl	$18, %r9d
+	xorl	%r9d, %edi
 	shrl	$3, %r10d
-	xorl	%r10d, %r9d
-	addl	%r9d, %r8d
+	xorl	%r10d, %edi
+	addl	%edi, %r8d
 	addl	156(%rax), %r8d
 	movl	%r8d, 220(%rax)
 	movl	216(%rax), %r10d
 	movl	%r10d, %r8d
 	rorl	$17, %r8d
-	movl	%r10d, %r9d
-	rorl	$19, %r9d
-	xorl	%r9d, %r8d
+	movl	%r10d, %edi
+	rorl	$19, %edi
+	xorl	%edi, %r8d
 	shrl	$10, %r10d
 	xorl	%r10d, %r8d
 	addl	196(%rax), %r8d
 	movl	164(%rax), %r10d
+	movl	%r10d, %edi
+	rorl	$7, %edi
 	movl	%r10d, %r9d
-	rorl	$7, %r9d
-	movl	%r10d, %r11d
-	rorl	$18, %r11d
-	xorl	%r11d, %r9d
+	rorl	$18, %r9d
+	xorl	%r9d, %edi
 	shrl	$3, %r10d
-	xorl	%r10d, %r9d
-	addl	%r9d, %r8d
+	xorl	%r10d, %edi
+	addl	%edi, %r8d
 	addl	160(%rax), %r8d
 	movl	%r8d, 224(%rax)
 	movl	220(%rax), %r10d
 	movl	%r10d, %r8d
 	rorl	$17, %r8d
-	movl	%r10d, %r9d
-	rorl	$19, %r9d
-	xorl	%r9d, %r8d
+	movl	%r10d, %edi
+	rorl	$19, %edi
+	xorl	%edi, %r8d
 	shrl	$10, %r10d
 	xorl	%r10d, %r8d
 	addl	200(%rax), %r8d
 	movl	168(%rax), %r10d
+	movl	%r10d, %edi
+	rorl	$7, %edi
 	movl	%r10d, %r9d
-	rorl	$7, %r9d
-	movl	%r10d, %r11d
-	rorl	$18, %r11d
-	xorl	%r11d, %r9d
+	rorl	$18, %r9d
+	xorl	%r9d, %edi
 	shrl	$3, %r10d
-	xorl	%r10d, %r9d
-	addl	%r9d, %r8d
+	xorl	%r10d, %edi
+	addl	%edi, %r8d
 	addl	164(%rax), %r8d
 	movl	%r8d, 228(%rax)
 	movl	224(%rax), %r10d
 	movl	%r10d, %r8d
 	rorl	$17, %r8d
-	movl	%r10d, %r9d
-	rorl	$19, %r9d
-	xorl	%r9d, %r8d
+	movl	%r10d, %edi
+	rorl	$19, %edi
+	xorl	%edi, %r8d
 	shrl	$10, %r10d
 	xorl	%r10d, %r8d
 	addl	204(%rax), %r8d
 	movl	172(%rax), %r10d
+	movl	%r10d, %edi
+	rorl	$7, %edi
 	movl	%r10d, %r9d
-	rorl	$7, %r9d
-	movl	%r10d, %r11d
-	rorl	$18, %r11d
-	xorl	%r11d, %r9d
+	rorl	$18, %r9d
+	xorl	%r9d, %edi
 	shrl	$3, %r10d
-	xorl	%r10d, %r9d
-	addl	%r9d, %r8d
+	xorl	%r10d, %edi
+	addl	%edi, %r8d
 	addl	168(%rax), %r8d
 	movl	%r8d, 232(%rax)
 	movl	228(%rax), %r10d
 	movl	%r10d, %r8d
 	rorl	$17, %r8d
-	movl	%r10d, %r9d
-	rorl	$19, %r9d
-	xorl	%r9d, %r8d
+	movl	%r10d, %edi
+	rorl	$19, %edi
+	xorl	%edi, %r8d
 	shrl	$10, %r10d
 	xorl	%r10d, %r8d
 	addl	208(%rax), %r8d
 	movl	176(%rax), %r10d
+	movl	%r10d, %edi
+	rorl	$7, %edi
 	movl	%r10d, %r9d
-	rorl	$7, %r9d
-	movl	%r10d, %r11d
-	rorl	$18, %r11d
-	xorl	%r11d, %r9d
+	rorl	$18, %r9d
+	xorl	%r9d, %edi
 	shrl	$3, %r10d
-	xorl	%r10d, %r9d
-	addl	%r9d, %r8d
+	xorl	%r10d, %edi
+	addl	%edi, %r8d
 	addl	172(%rax), %r8d
 	movl	%r8d, 236(%rax)
 	movl	232(%rax), %r10d
 	movl	%r10d, %r8d
 	rorl	$17, %r8d
-	movl	%r10d, %r9d
-	rorl	$19, %r9d
-	xorl	%r9d, %r8d
+	movl	%r10d, %edi
+	rorl	$19, %edi
+	xorl	%edi, %r8d
 	shrl	$10, %r10d
 	xorl	%r10d, %r8d
 	addl	212(%rax), %r8d
 	movl	180(%rax), %r10d
+	movl	%r10d, %edi
+	rorl	$7, %edi
 	movl	%r10d, %r9d
-	rorl	$7, %r9d
-	movl	%r10d, %r11d
-	rorl	$18, %r11d
-	xorl	%r11d, %r9d
+	rorl	$18, %r9d
+	xorl	%r9d, %edi
 	shrl	$3, %r10d
-	xorl	%r10d, %r9d
-	addl	%r9d, %r8d
+	xorl	%r10d, %edi
+	addl	%edi, %r8d
 	addl	176(%rax), %r8d
 	movl	%r8d, 240(%rax)
 	movl	236(%rax), %r10d
 	movl	%r10d, %r8d
 	rorl	$17, %r8d
-	movl	%r10d, %r9d
-	rorl	$19, %r9d
-	xorl	%r9d, %r8d
+	movl	%r10d, %edi
+	rorl	$19, %edi
+	xorl	%edi, %r8d
 	shrl	$10, %r10d
 	xorl	%r10d, %r8d
 	addl	216(%rax), %r8d
 	movl	184(%rax), %r10d
+	movl	%r10d, %edi
+	rorl	$7, %edi
 	movl	%r10d, %r9d
-	rorl	$7, %r9d
-	movl	%r10d, %r11d
-	rorl	$18, %r11d
-	xorl	%r11d, %r9d
+	rorl	$18, %r9d
+	xorl	%r9d, %edi
 	shrl	$3, %r10d
-	xorl	%r10d, %r9d
-	addl	%r9d, %r8d
+	xorl	%r10d, %edi
+	addl	%edi, %r8d
 	addl	180(%rax), %r8d
 	movl	%r8d, 244(%rax)
 	movl	240(%rax), %r10d
 	movl	%r10d, %r8d
 	rorl	$17, %r8d
-	movl	%r10d, %r9d
-	rorl	$19, %r9d
-	xorl	%r9d, %r8d
+	movl	%r10d, %edi
+	rorl	$19, %edi
+	xorl	%edi, %r8d
 	shrl	$10, %r10d
 	xorl	%r10d, %r8d
 	addl	220(%rax), %r8d
 	movl	188(%rax), %r10d
+	movl	%r10d, %edi
+	rorl	$7, %edi
 	movl	%r10d, %r9d
-	rorl	$7, %r9d
-	movl	%r10d, %r11d
-	rorl	$18, %r11d
-	xorl	%r11d, %r9d
+	rorl	$18, %r9d
+	xorl	%r9d, %edi
 	shrl	$3, %r10d
-	xorl	%r10d, %r9d
-	addl	%r9d, %r8d
+	xorl	%r10d, %edi
+	addl	%edi, %r8d
 	addl	184(%rax), %r8d
 	movl	%r8d, 248(%rax)
 	movl	244(%rax), %r10d
 	movl	%r10d, %r8d
 	rorl	$17, %r8d
-	movl	%r10d, %r9d
-	rorl	$19, %r9d
-	xorl	%r9d, %r8d
+	movl	%r10d, %edi
+	rorl	$19, %edi
+	xorl	%edi, %r8d
 	shrl	$10, %r10d
 	xorl	%r10d, %r8d
 	addl	224(%rax), %r8d
 	movl	192(%rax), %r10d
+	movl	%r10d, %edi
+	rorl	$7, %edi
 	movl	%r10d, %r9d
-	rorl	$7, %r9d
-	movl	%r10d, %r11d
-	rorl	$18, %r11d
-	xorl	%r11d, %r9d
+	rorl	$18, %r9d
+	xorl	%r9d, %edi
 	shrl	$3, %r10d
-	xorl	%r10d, %r9d
-	addl	%r9d, %r8d
+	xorl	%r10d, %edi
+	addl	%edi, %r8d
 	addl	188(%rax), %r8d
 	movl	%r8d, 252(%rax)
 	movl	(%rbp), %ebx
@@ -42069,7 +42309,7 @@ slh_dsa_sha2128s_keygen:
 	movl	%r9d, 20(%rdx)
 	movl	%r10d, 24(%rdx)
 	movl	%r12d, 28(%rdx)
-	movq	%rdx, %r9
+	movq	%rdx, %rsi
 	ret
 .L_blocks_1_ref$1:
 	movq	%rcx, 208(%rsp)
@@ -42188,10 +42428,10 @@ slh_dsa_sha2128s_keygen:
 	vextracti128	$1, %ymm4, %xmm4
 	vmovdqu	%xmm4, 48(%rdi)
 	leaq	16(%rsp), %rdi
-	vmovdqu	(%rcx), %xmm5
-	vmovdqu	%xmm5, (%rdi)
-	vmovdqu	16(%rcx), %xmm5
-	vmovdqu	%xmm5, 16(%rdi)
+	vmovdqu	(%rcx), %xmm4
+	vmovdqu	%xmm4, (%rdi)
+	vmovdqu	16(%rcx), %xmm4
+	vmovdqu	%xmm4, 16(%rdi)
 	leaq	16(%rsp), %rdx
 	leaq	48(%rsp), %rsi
 	leaq	112(%rsp), %rdi
@@ -42219,8 +42459,8 @@ slh_dsa_sha2128s_keygen:
 	vpslld	$11, %ymm7, %ymm7
 	vpsrld	$10, %ymm10, %ymm9
 	vpsrlq	$17, %ymm10, %ymm10
-	vpxor	%ymm7, %ymm8, %ymm7
-	vpaddd	%ymm7, %ymm0, %ymm0
+	vpxor	%ymm7, %ymm8, %ymm8
+	vpaddd	%ymm8, %ymm0, %ymm0
 	vpxor	%ymm10, %ymm9, %ymm9
 	vpsrlq	$2, %ymm10, %ymm8
 	vpxor	%ymm8, %ymm9, %ymm9
@@ -42231,14 +42471,14 @@ slh_dsa_sha2128s_keygen:
 	vpsrlq	$17, %ymm8, %ymm8
 	vpxor	%ymm8, %ymm9, %ymm9
 	vpsrlq	$2, %ymm8, %ymm8
-	vpxor	%ymm8, %ymm9, %ymm7
-	vpshufb	%ymm5, %ymm7, %ymm7
-	vpaddd	%ymm7, %ymm0, %ymm0
-	vmovdqu	%ymm0, %ymm7
+	vpxor	%ymm8, %ymm9, %ymm8
+	vpshufb	%ymm5, %ymm8, %ymm8
+	vpaddd	%ymm8, %ymm0, %ymm0
+	vmovdqu	%ymm0, %ymm8
 	vmovdqu	%ymm1, %ymm0
 	vmovdqu	%ymm2, %ymm1
 	vmovdqu	%ymm3, %ymm2
-	vmovdqu	%ymm7, %ymm3
+	vmovdqu	%ymm8, %ymm3
 	vpaddd	%ymm6, %ymm3, %ymm6
 	movl	(%rsi,%r11), %ebx
 	movl	16(%rdx), %ebp
@@ -42496,8 +42736,8 @@ slh_dsa_sha2128s_keygen:
 	vpslld	$11, %ymm7, %ymm7
 	vpsrld	$10, %ymm10, %ymm9
 	vpsrlq	$17, %ymm10, %ymm10
-	vpxor	%ymm7, %ymm8, %ymm7
-	vpaddd	%ymm7, %ymm0, %ymm0
+	vpxor	%ymm7, %ymm8, %ymm8
+	vpaddd	%ymm8, %ymm0, %ymm0
 	vpxor	%ymm10, %ymm9, %ymm9
 	vpsrlq	$2, %ymm10, %ymm8
 	vpxor	%ymm8, %ymm9, %ymm9
@@ -42508,14 +42748,14 @@ slh_dsa_sha2128s_keygen:
 	vpsrlq	$17, %ymm8, %ymm8
 	vpxor	%ymm8, %ymm9, %ymm9
 	vpsrlq	$2, %ymm8, %ymm8
-	vpxor	%ymm8, %ymm9, %ymm7
-	vpshufb	%ymm5, %ymm7, %ymm7
-	vpaddd	%ymm7, %ymm0, %ymm0
-	vmovdqu	%ymm0, %ymm7
+	vpxor	%ymm8, %ymm9, %ymm8
+	vpshufb	%ymm5, %ymm8, %ymm8
+	vpaddd	%ymm8, %ymm0, %ymm0
+	vmovdqu	%ymm0, %ymm8
 	vmovdqu	%ymm1, %ymm0
 	vmovdqu	%ymm2, %ymm1
 	vmovdqu	%ymm3, %ymm2
-	vmovdqu	%ymm7, %ymm3
+	vmovdqu	%ymm8, %ymm3
 	vpaddd	%ymm6, %ymm3, %ymm6
 	movl	(%rsi,%r11), %ebx
 	movl	16(%rdx), %ebp
@@ -42773,8 +43013,8 @@ slh_dsa_sha2128s_keygen:
 	vpslld	$11, %ymm7, %ymm7
 	vpsrld	$10, %ymm10, %ymm9
 	vpsrlq	$17, %ymm10, %ymm10
-	vpxor	%ymm7, %ymm8, %ymm7
-	vpaddd	%ymm7, %ymm0, %ymm0
+	vpxor	%ymm7, %ymm8, %ymm8
+	vpaddd	%ymm8, %ymm0, %ymm0
 	vpxor	%ymm10, %ymm9, %ymm9
 	vpsrlq	$2, %ymm10, %ymm8
 	vpxor	%ymm8, %ymm9, %ymm9
@@ -42785,14 +43025,14 @@ slh_dsa_sha2128s_keygen:
 	vpsrlq	$17, %ymm8, %ymm8
 	vpxor	%ymm8, %ymm9, %ymm9
 	vpsrlq	$2, %ymm8, %ymm8
-	vpxor	%ymm8, %ymm9, %ymm7
-	vpshufb	%ymm5, %ymm7, %ymm7
-	vpaddd	%ymm7, %ymm0, %ymm0
-	vmovdqu	%ymm0, %ymm7
+	vpxor	%ymm8, %ymm9, %ymm8
+	vpshufb	%ymm5, %ymm8, %ymm8
+	vpaddd	%ymm8, %ymm0, %ymm0
+	vmovdqu	%ymm0, %ymm8
 	vmovdqu	%ymm1, %ymm0
 	vmovdqu	%ymm2, %ymm1
 	vmovdqu	%ymm3, %ymm2
-	vmovdqu	%ymm7, %ymm3
+	vmovdqu	%ymm8, %ymm3
 	vpaddd	%ymm6, %ymm3, %ymm6
 	movl	(%rsi,%r11), %ebx
 	movl	16(%rdx), %ebp
@@ -47552,45 +47792,45 @@ slh_dsa_sha2128s_keygen:
 	movl	%r9d, (%rdx)
 	movl	252(%rdi), %esi
 	movl	16(%rdx), %r10d
-	movl	%r10d, %r8d
-	rorl	$6, %r8d
 	movl	%r10d, %edi
-	rorl	$11, %edi
-	xorl	%edi, %r8d
+	rorl	$6, %edi
+	movl	%r10d, %r8d
+	rorl	$11, %r8d
+	xorl	%r8d, %edi
 	rorl	$25, %r10d
-	xorl	%r10d, %r8d
-	addl	28(%rdx), %r8d
-	addl	%esi, %r8d
+	xorl	%r10d, %edi
+	addl	28(%rdx), %edi
+	addl	%esi, %edi
 	movl	16(%rdx), %esi
-	movl	20(%rdx), %r9d
+	movl	20(%rdx), %r8d
 	movl	24(%rdx), %r11d
 	movl	%esi, %r10d
-	andl	%r9d, %r10d
+	andl	%r8d, %r10d
 	notl	%esi
 	andl	%r11d, %esi
 	xorl	%esi, %r10d
-	addl	%r10d, %r8d
-	addl	%r8d, 12(%rdx)
+	addl	%r10d, %edi
+	addl	%edi, 12(%rdx)
 	movl	(%rdx), %esi
-	movl	4(%rdx), %r9d
+	movl	4(%rdx), %r8d
 	movl	8(%rdx), %r11d
 	movl	%esi, %r10d
-	andl	%r9d, %r10d
-	movl	%esi, %edi
-	andl	%r11d, %edi
-	xorl	%edi, %r10d
+	andl	%r8d, %r10d
+	movl	%esi, %r9d
 	andl	%r11d, %r9d
 	xorl	%r9d, %r10d
-	addl	%r10d, %r8d
+	andl	%r11d, %r8d
+	xorl	%r8d, %r10d
+	addl	%r10d, %edi
+	movl	%esi, %r8d
+	rorl	$2, %r8d
 	movl	%esi, %r9d
-	rorl	$2, %r9d
-	movl	%esi, %edi
-	rorl	$13, %edi
-	xorl	%edi, %r9d
+	rorl	$13, %r9d
+	xorl	%r9d, %r8d
 	rorl	$22, %esi
-	xorl	%esi, %r9d
-	addl	%r9d, %r8d
-	movl	%r8d, 28(%rdx)
+	xorl	%esi, %r8d
+	addl	%r8d, %edi
+	movl	%edi, 28(%rdx)
 	movl	28(%rdx), %r9d
 	movl	24(%rdx), %r10d
 	movl	%r10d, 28(%rdx)
@@ -47665,8 +47905,8 @@ slh_dsa_sha2128s_keygen:
 	vpslld	$11, %xmm7, %xmm7
 	vpsrld	$10, %xmm10, %xmm9
 	vpsrlq	$17, %xmm10, %xmm10
-	vpxor	%xmm7, %xmm8, %xmm7
-	vpaddd	%xmm7, %xmm0, %xmm0
+	vpxor	%xmm7, %xmm8, %xmm8
+	vpaddd	%xmm8, %xmm0, %xmm0
 	vpxor	%xmm10, %xmm9, %xmm9
 	vpsrlq	$2, %xmm10, %xmm8
 	vpxor	%xmm8, %xmm9, %xmm9
@@ -47677,14 +47917,14 @@ slh_dsa_sha2128s_keygen:
 	vpsrlq	$17, %xmm8, %xmm8
 	vpxor	%xmm8, %xmm9, %xmm9
 	vpsrlq	$2, %xmm8, %xmm8
-	vpxor	%xmm8, %xmm9, %xmm7
-	vpshufb	%xmm5, %xmm7, %xmm7
-	vpaddd	%xmm7, %xmm0, %xmm0
-	vmovdqu	%xmm0, %xmm7
+	vpxor	%xmm8, %xmm9, %xmm8
+	vpshufb	%xmm5, %xmm8, %xmm8
+	vpaddd	%xmm8, %xmm0, %xmm0
+	vmovdqu	%xmm0, %xmm8
 	vmovdqu	%xmm1, %xmm0
 	vmovdqu	%xmm2, %xmm1
 	vmovdqu	%xmm3, %xmm2
-	vmovdqu	%xmm7, %xmm3
+	vmovdqu	%xmm8, %xmm3
 	vpaddd	%xmm6, %xmm3, %xmm6
 	movl	(%rdi,%r11), %r10d
 	movl	16(%rsi), %ebx
@@ -47937,8 +48177,8 @@ slh_dsa_sha2128s_keygen:
 	vpslld	$11, %xmm7, %xmm7
 	vpsrld	$10, %xmm10, %xmm9
 	vpsrlq	$17, %xmm10, %xmm10
-	vpxor	%xmm7, %xmm8, %xmm7
-	vpaddd	%xmm7, %xmm0, %xmm0
+	vpxor	%xmm7, %xmm8, %xmm8
+	vpaddd	%xmm8, %xmm0, %xmm0
 	vpxor	%xmm10, %xmm9, %xmm9
 	vpsrlq	$2, %xmm10, %xmm8
 	vpxor	%xmm8, %xmm9, %xmm9
@@ -47949,14 +48189,14 @@ slh_dsa_sha2128s_keygen:
 	vpsrlq	$17, %xmm8, %xmm8
 	vpxor	%xmm8, %xmm9, %xmm9
 	vpsrlq	$2, %xmm8, %xmm8
-	vpxor	%xmm8, %xmm9, %xmm7
-	vpshufb	%xmm5, %xmm7, %xmm7
-	vpaddd	%xmm7, %xmm0, %xmm0
-	vmovdqu	%xmm0, %xmm7
+	vpxor	%xmm8, %xmm9, %xmm8
+	vpshufb	%xmm5, %xmm8, %xmm8
+	vpaddd	%xmm8, %xmm0, %xmm0
+	vmovdqu	%xmm0, %xmm8
 	vmovdqu	%xmm1, %xmm0
 	vmovdqu	%xmm2, %xmm1
 	vmovdqu	%xmm3, %xmm2
-	vmovdqu	%xmm7, %xmm3
+	vmovdqu	%xmm8, %xmm3
 	vpaddd	%xmm6, %xmm3, %xmm6
 	movl	(%rdi,%r11), %r10d
 	movl	16(%rsi), %ebx
@@ -48209,8 +48449,8 @@ slh_dsa_sha2128s_keygen:
 	vpslld	$11, %xmm7, %xmm7
 	vpsrld	$10, %xmm10, %xmm9
 	vpsrlq	$17, %xmm10, %xmm10
-	vpxor	%xmm7, %xmm8, %xmm7
-	vpaddd	%xmm7, %xmm0, %xmm0
+	vpxor	%xmm7, %xmm8, %xmm8
+	vpaddd	%xmm8, %xmm0, %xmm0
 	vpxor	%xmm10, %xmm9, %xmm9
 	vpsrlq	$2, %xmm10, %xmm8
 	vpxor	%xmm8, %xmm9, %xmm9
@@ -48221,14 +48461,14 @@ slh_dsa_sha2128s_keygen:
 	vpsrlq	$17, %xmm8, %xmm8
 	vpxor	%xmm8, %xmm9, %xmm9
 	vpsrlq	$2, %xmm8, %xmm8
-	vpxor	%xmm8, %xmm9, %xmm7
-	vpshufb	%xmm5, %xmm7, %xmm7
-	vpaddd	%xmm7, %xmm0, %xmm0
-	vmovdqu	%xmm0, %xmm7
+	vpxor	%xmm8, %xmm9, %xmm8
+	vpshufb	%xmm5, %xmm8, %xmm8
+	vpaddd	%xmm8, %xmm0, %xmm0
+	vmovdqu	%xmm0, %xmm8
 	vmovdqu	%xmm1, %xmm0
 	vmovdqu	%xmm2, %xmm1
 	vmovdqu	%xmm3, %xmm2
-	vmovdqu	%xmm7, %xmm3
+	vmovdqu	%xmm8, %xmm3
 	vpaddd	%xmm6, %xmm3, %xmm6
 	movl	(%rdi,%r11), %r10d
 	movl	16(%rsi), %ebx
@@ -49322,60 +49562,60 @@ slh_dsa_sha2128s_keygen:
 	movl	%r9d, (%rsi)
 	movl	60(%rdi), %r8d
 	movl	16(%rsi), %r10d
-	movl	%r10d, %r9d
-	rorl	$6, %r9d
 	movl	%r10d, %edi
-	rorl	$11, %edi
-	xorl	%edi, %r9d
+	rorl	$6, %edi
+	movl	%r10d, %r9d
+	rorl	$11, %r9d
+	xorl	%r9d, %edi
 	rorl	$25, %r10d
-	xorl	%r10d, %r9d
-	addl	28(%rsi), %r9d
-	addl	%r8d, %r9d
+	xorl	%r10d, %edi
+	addl	28(%rsi), %edi
+	addl	%r8d, %edi
 	movl	16(%rsi), %r8d
-	movl	20(%rsi), %r10d
+	movl	20(%rsi), %r9d
 	movl	24(%rsi), %r11d
-	movl	%r8d, %edi
-	andl	%r10d, %edi
+	movl	%r8d, %r10d
+	andl	%r9d, %r10d
 	notl	%r8d
 	andl	%r11d, %r8d
-	xorl	%r8d, %edi
-	addl	%edi, %r9d
-	addl	%r9d, 12(%rsi)
+	xorl	%r8d, %r10d
+	addl	%r10d, %edi
+	addl	%edi, 12(%rsi)
 	movl	(%rsi), %r8d
-	movl	4(%rsi), %r10d
+	movl	4(%rsi), %r9d
 	movl	8(%rsi), %r11d
-	movl	%r8d, %edi
-	andl	%r10d, %edi
+	movl	%r8d, %r10d
+	andl	%r9d, %r10d
 	movl	%r8d, %ebx
 	andl	%r11d, %ebx
-	xorl	%ebx, %edi
-	andl	%r11d, %r10d
-	xorl	%r10d, %edi
-	addl	%edi, %r9d
+	xorl	%ebx, %r10d
+	andl	%r11d, %r9d
+	xorl	%r9d, %r10d
+	addl	%r10d, %edi
+	movl	%r8d, %r9d
+	rorl	$2, %r9d
 	movl	%r8d, %r10d
-	rorl	$2, %r10d
-	movl	%r8d, %edi
-	rorl	$13, %edi
-	xorl	%edi, %r10d
+	rorl	$13, %r10d
+	xorl	%r10d, %r9d
 	rorl	$22, %r8d
-	xorl	%r8d, %r10d
-	addl	%r10d, %r9d
-	movl	%r9d, 28(%rsi)
-	movl	28(%rsi), %r9d
-	movl	24(%rsi), %edi
+	xorl	%r8d, %r9d
+	addl	%r9d, %edi
 	movl	%edi, 28(%rsi)
-	movl	20(%rsi), %edi
-	movl	%edi, 24(%rsi)
-	movl	16(%rsi), %edi
-	movl	%edi, 20(%rsi)
-	movl	12(%rsi), %edi
-	movl	%edi, 16(%rsi)
-	movl	8(%rsi), %edi
-	movl	%edi, 12(%rsi)
-	movl	4(%rsi), %edi
-	movl	%edi, 8(%rsi)
-	movl	(%rsi), %edi
-	movl	%edi, 4(%rsi)
+	movl	28(%rsi), %r9d
+	movl	24(%rsi), %r10d
+	movl	%r10d, 28(%rsi)
+	movl	20(%rsi), %r10d
+	movl	%r10d, 24(%rsi)
+	movl	16(%rsi), %r10d
+	movl	%r10d, 20(%rsi)
+	movl	12(%rsi), %r10d
+	movl	%r10d, 16(%rsi)
+	movl	8(%rsi), %r10d
+	movl	%r10d, 12(%rsi)
+	movl	4(%rsi), %r10d
+	movl	%r10d, 8(%rsi)
+	movl	(%rsi), %r10d
+	movl	%r10d, 4(%rsi)
 	movl	%r9d, (%rsi)
 	leaq	16(%rsp), %rsi
 	vmovdqu	(%rsi), %xmm3

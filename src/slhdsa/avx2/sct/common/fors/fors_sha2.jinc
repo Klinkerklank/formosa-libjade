@@ -163,6 +163,7 @@ fn fors_node(
     reg u64 bits;        // number of bits consumed
     reg u32 avail_nodes; // temporary variable for computing whether there are enough nodes on the current layer to parallel hash
 
+    node_addr = 0; // assigned in the loops below; initialised for the SCT checker
     layer = 0; // iterate over the layers
     while (layer <= z) {
 
@@ -202,13 +203,16 @@ fn fors_node(
                 () = #spill(adrs, i, node, node_addr, sha2_state_caches);
                 flat_tree[node_addr : SPX_N] = __fors_skgen(flat_tree[node_addr : SPX_N], skseed, adrs, node, sha2_state_caches);
                 () = #unspill(adrs, i, node, node_addr, sha2_state_caches);
+                _ = #init_msf(); // the unspilled values are public after the fence
 
                 // compute the hash of the FORS secret key value
                 () = #spill(adrs, i, node, node_addr, sha2_state_caches);
                 flat_tree[node_addr : SPX_N] = __F(flat_tree[node_addr : SPX_N], adrs, sha2_state_caches);
                 () = #unspill(adrs, i, node, node_addr, sha2_state_caches);
+                _ = #init_msf(); // the unspilled values are public after the fence
                 
                 () = #unspill(layer);
+                _ = #init_msf(); // the unspilled values are public after the fence
 
                 // advance to the next node in the layer
                 node += 1;
@@ -257,20 +261,24 @@ fn fors_node(
 
                     // absorb all children
                     () = #unspill(lnode);
+                    _ = #init_msf(); // the unspilled values are public after the fence
                     children = flat_tree[lnode : 2*SHA2_H_PARA_DEG*SPX_N];
                     state, schedule, sch_idx, bits = __H_children(state, schedule, sch_idx, bits, children);
                     flat_tree[lnode : 2*SHA2_H_PARA_DEG*SPX_N] = children;
 
                     // finalise and write the digests
                     () = #unspill(node_addr);
+                    _ = #init_msf(); // the unspilled values are public after the fence
                     nodes = flat_tree[node_addr : SHA2_H_PARA_DEG*SPX_N];
                     nodes, schedule = __H_digests(state, schedule, sch_idx, bits, nodes);
                     flat_tree[node_addr : SHA2_H_PARA_DEG*SPX_N] = nodes;
                     
                     () = #unspill(adrs, i, sha2_state_caches);
+                    _ = #init_msf(); // the unspilled values are public after the fence
                 
                     // advance to the next uncomputed node in the layer
                     () = #unspill(node);
+                    _ = #init_msf(); // the unspilled values are public after the fence
                     node += SHA2_H_PARA_DEG;
 
                 } else {
@@ -291,24 +299,29 @@ fn fors_node(
                     tree_node = __H(tree_node, adrs, buf_l, buf_r, sha2_state_caches);
                     flat_tree[node_addr : SPX_N] = tree_node; // redesignate the pointer so the region of the full array is not partial
                     () = #unspill(adrs, i, node, sha2_state_caches, node_addr);
+                    _ = #init_msf(); // the unspilled values are public after the fence
 
                     // advance to the next node in the layer
                     node += 1;
                 }
 
                 () = #unspill(layer);
+                _ = #init_msf(); // the unspilled values are public after the fence
             }
 
             () = #unspill(skseed, rightmost);
+            _ = #init_msf(); // the unspilled values are public after the fence
         }
 
         () = #unspill(z);
+        _ = #init_msf(); // the unspilled values are public after the fence
 
         // advance to the next layer
         layer += 1;
     }
 
     () = #unspill(root);
+    _ = #init_msf(); // the unspilled values are public after the fence
 
     // write the target node value to the output,
     // and the target node was the last node written to flat_tree,
@@ -376,18 +389,21 @@ fn fors_sign(
         idx_leaf = i;           // idx_leaf = 2^a
         idx_leaf <<= SPX_A;     // idx_leaf = i*(2^a)
         idx_leaf += indices[i]; // idx_leaf = i*(2^a) + indices[i]
+        _ = #init_msf(); // the FORS index, loaded from memory, is public after the fence
 
         // compute the i-th FORS tree's secret key value
         node = sig_fors[offset : SPX_N]; // get the pointer to the subarray so the full array can be spilled
         () = #spill(skseed, adrs, sig_fors, i, offset, sha2_state_caches);
         node = __fors_skgen(node, skseed, adrs, idx_leaf, sha2_state_caches);
         () = #unspill(skseed, adrs, sig_fors, i, offset, sha2_state_caches);
+        _ = #init_msf(); // the unspilled values are public after the fence
         sig_fors[offset : SPX_N] = node; // redesignate the pointer so the region of the full array is not partial
 
         offset += SPX_N; // one n-byte secret key value has been written
 
         // compute the sibling node's horizontal index
         s = indices[i]; // s = indices[i]
+        _ = #init_msf(); // the FORS index, loaded from memory, is public after the fence
         s ^= 1;         // s = indices[i] XOR 1
 
         // compute and store the authentication path AUTH for the i-th tree in the forest
@@ -408,9 +424,11 @@ fn fors_sign(
             () = #spill(sig_fors, sha2_state_caches);
             node, adrs = __fors_node(node, skseed, idx_sib, j, adrs, sha2_state_caches);
             () = #unspill(sig_fors, sha2_state_caches);
+            _ = #init_msf(); // the unspilled values are public after the fence
             sig_fors[offset : SPX_N] = node; // redesignate the pointer so the region of the full array is not partial
 
             () = #unspill(skseed, i, j, offset, s);
+            _ = #init_msf(); // the unspilled values are public after the fence
 
             // update the sibling node's horizontal index for the next iteration
             s >>= 1; // s = floor(indices[i] / 2^j)
@@ -506,17 +524,20 @@ fn fors_pkfromsig(
         idx_leaf = i;           // idx_leaf = 2^a
         idx_leaf <<= SPX_A;     // idx_leaf = i*(2^a)
         idx_leaf += indices[i]; // idx_leaf = i*(2^a) + indices[i]
+        _ = #init_msf(); // the FORS index, loaded from memory, is public after the fence
         adrs = __adrs_set_tree_index(adrs, idx_leaf);
 
         // compute the hash of the FORS secret key value
         () = #spill(adrs, sig_fors, i, offset, sha2_state_caches);
         node0 = __F(node0, adrs, sha2_state_caches);
         () = #unspill(adrs, sig_fors, i, offset, sha2_state_caches);
+        _ = #init_msf(); // the unspilled values are public after the fence
 
         offset += SPX_N; // one n-byte secret key value has been consumed
 
         // compute the authentication path node's horizontal index
         idx_auth = indices[i];
+        _ = #init_msf(); // the FORS index, loaded from memory, is public after the fence
 
         // compute the authentication path nodes for the i-th tree in the forest
         j = 0; // iterator over the authentication path nodes
@@ -562,11 +583,13 @@ fn fors_pkfromsig(
             () = #spill(adrs, sig_fors, i, offset, sha2_state_caches);
             node1 = __H(node1, adrs, buf0, buf1, sha2_state_caches);
             () = #unspill(adrs, sig_fors, i, offset, sha2_state_caches);
+            _ = #init_msf(); // the unspilled values are public after the fence
 
             // save the parent node's value to become the next iteration's child node
             node0 = __copy_nbytes(node0, node1);
 
             () = #unspill(j, idx_auth);
+            _ = #init_msf(); // the unspilled values are public after the fence
 
             // update the authentication path node's horizontal index for the next iteration
             idx_auth >>= 1; // idx_auth = floor(indices[i] / 2^j)
@@ -576,6 +599,7 @@ fn fors_pkfromsig(
         }
 
         () = #unspill(offset_roots);
+        _ = #init_msf(); // the unspilled values are public after the fence
 
         // copy the last-computed node (the root) to roots
         roots[offset_roots : SPX_N] = __copy_nbytes(roots[offset_roots : SPX_N], node0);
@@ -593,6 +617,7 @@ fn fors_pkfromsig(
     forspkadrs = __adrs_set_key_pair_addr(forspkadrs, kpa);
 
     () = #unspill(pk_fors);
+    _ = #init_msf(); // the unspilled values are public after the fence
 
     pk_fors = __T_k(pk_fors, forspkadrs, roots, sha2_state_caches);
 

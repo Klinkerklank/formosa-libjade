@@ -28,7 +28,7 @@
  *       - the FORS signature and each XMSS signature as they are computed, and
  *         the signature, which are output;
  *     - in verify, the message digest, as in sign.
- *   The implementation is checked for CT, not yet for SCT. */
+ *   The implementation is checked for CT and SCT. */
 #ifndef SLHDSASHA2128F_AVX2_H
 #define SLHDSASHA2128F_AVX2_H
 

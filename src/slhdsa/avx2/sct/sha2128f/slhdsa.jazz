@@ -9,7 +9,11 @@ from Common require "slhdsa.jinc"
 // See src/include/slhdsasha2128f.h for the sizes of the buffers expected by these functions.
 
 // Algorithm 21 of FIPS 205 (slh_keygen), with randomness = SK.seed || SK.prf || PK.seed.
-#[ct = "public * secret * secret -> public * secret"]
+#[sct="{ptr: transient, val: transient} *
+       {ptr: transient, val: secret} *
+       {ptr: transient, val: secret} ->
+       {ptr: transient, val: transient} *
+       {ptr: transient, val: secret}"]
 export fn slh_dsa_sha2128f_keygen(
     reg ptr u8[SPX_PKBYTES] verification_key,
     reg ptr u8[SPX_SKBYTES] signing_key,
@@ -23,7 +27,13 @@ export fn slh_dsa_sha2128f_keygen(
 }
 
 // Algorithm 22 of FIPS 205 (slh_sign), with randomness = opt_rand (PK.seed for the deterministic variant).
-#[ct = "public * secret * public * public * public * secret -> public * public"]
+#[sct="{ptr: transient, val: transient} *
+       {ptr: transient, val: secret} *
+       {ptr: transient, val: transient} *
+       transient *
+       transient *
+       {ptr: transient, val: secret} ->
+       {ptr: transient, val: transient} * public"]
 export fn slh_dsa_sha2128f_sign(
     reg ptr u8[SPX_SIG] signature,
     reg ptr u8[SPX_SKBYTES] signing_key,
@@ -41,7 +51,12 @@ export fn slh_dsa_sha2128f_sign(
 }
 
 // Algorithm 24 of FIPS 205 (slh_verify).
-#[ct = "public * public * public * public * public -> public"]
+#[sct="{ptr: transient, val: transient} *
+       {ptr: transient, val: transient} *
+       transient *
+       transient *
+       {ptr: transient, val: transient} ->
+       public"]
 export fn slh_dsa_sha2128f_verify(
     reg ptr u8[SPX_PKBYTES] verification_key,
     reg ptr u64[2] context,

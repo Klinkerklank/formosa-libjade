@@ -89,6 +89,7 @@ fn absorb_pointer(
     () = #spill(in_ptr, in_len, avail);
     Hp, W = compress(Hp, W);
     () = #unspill(in_ptr, in_len, avail);
+    _ = #init_msf(); // the unspilled values are public after the fence
 
     idx_W = 0;
     in_len -= avail; // 'avail' number of bytes consumed
@@ -107,6 +108,7 @@ fn absorb_pointer(
     () = #spill(in_ptr, in_len);
     Hp, W = compress(Hp, W);
     () = #unspill(in_ptr, in_len);
+    _ = #init_msf(); // the unspilled values are public after the fence
 
     idx_W = 0;
     in_len -= 128; // 128 bytes consumed
@@ -154,6 +156,7 @@ fn absorb_fixed(
     () = #spill(prefix, in_ptr, in_len, avail);
     Hp, W = compress(Hp, W);
     () = #unspill(prefix, in_ptr, in_len, avail);
+    _ = #init_msf(); // the unspilled values are public after the fence
 
     idx_W = 0;
     in_len -= avail; // 'avail' number of bytes consumed
@@ -172,6 +175,7 @@ fn absorb_fixed(
     () = #spill(prefix, in_ptr, in_len);
     Hp, W = compress(Hp, W);
     () = #unspill(prefix, in_ptr, in_len);
+    _ = #init_msf(); // the unspilled values are public after the fence
 
     idx_W = 0;
     in_len -= 128; // 128 bytes consumed
@@ -234,6 +238,7 @@ fn finish(
   }
 
   () = #unspill(bits);
+  _ = #init_msf(); // the unspilled values are public after the fence
 
   // set the length encoding
   // length encoding is 64 bits = 8 bytes
@@ -295,6 +300,7 @@ fn sha512_absorb(
   }
   
   () = #unspill(ctx_len);
+  _ = #init_msf(); // the unspilled values are public after the fence
 
   // add the context length
   W[:u8 idx_W] = (8u) ctx_len;
@@ -307,20 +313,24 @@ fn sha512_absorb(
   }
 
   () = #unspill(ctx_ptr);
+  _ = #init_msf(); // the unspilled values are public after the fence
 
   // absorb the variable-sized context
   Hp, W, idx_W = absorb_pointer(Hp, W, idx_W, ctx_ptr, ctx_len);
   
   () = #unspill(msg_ptr, msg_len);
+  _ = #init_msf(); // the unspilled values are public after the fence
 
   // absorb the variable-sized message
   Hp, W, idx_W = absorb_pointer(Hp, W, idx_W, msg_ptr, msg_len);
 
   () = #unspill(bits);
+  _ = #init_msf(); // the unspilled values are public after the fence
   Hp, W = finish(Hp, W, idx_W, bits);
 
   H = Hp;
   () = #unspill(out);
+  _ = #init_msf(); // the unspilled values are public after the fence
   out = __SHA512_store_ref_array(out, H);
   return out;
 }

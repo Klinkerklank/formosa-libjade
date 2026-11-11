@@ -82,12 +82,14 @@ fn ht_sign(
     sig_xmss, adrs = __xmss_sign(sig_xmss, pk_fors, skseed, idx_leaf, pkseed, adrs);
     () = #declassify(sig_xmss); // part of the signature, public
     () = #unspill(sig_ht, skseed, pkseed, pk_fors, idx_leaf);
+    _ = #init_msf(); // the unspilled values are public after the fence
     sig_ht[0 : XMSS_SIG] = sig_xmss; // redesignate the pointer so the region of the full array is not partial
 
     // compute the lowest-layer XMSS tree root based on the first XMSS signature
     () = #spill(skseed, pkseed, sig_ht);
     root, adrs = __xmss_pkfromsig(root, idx_leaf, sig_xmss, pk_fors, pkseed, adrs);
     () = #unspill(skseed, pkseed, sig_ht);
+    _ = #init_msf(); // the unspilled values are public after the fence
 
     // iteratively compute the XMSS signatures that sign the root of the previous XMSS tree
     offset = XMSS_SIG; // next signature will get placed immediately adjoining the previous one
@@ -113,6 +115,7 @@ fn ht_sign(
         sig_xmss, adrs = __xmss_sign(sig_xmss, root_prev, skseed, idx_leaf, pkseed, adrs);
         () = #declassify(sig_xmss); // part of the signature, public
         () = #unspill(sig_ht, pkseed, j, offset, idx_leaf);
+        _ = #init_msf(); // the unspilled values are public after the fence
         sig_ht[offset : XMSS_SIG] = sig_xmss; // redesignate the pointer so the region of the full array is not partial
 
         // compute the current XMSS tree's root, unless it's the topmost layer
@@ -121,9 +124,11 @@ fn ht_sign(
             () = #spill(pkseed, sig_ht, j, offset);
             root, adrs = __xmss_pkfromsig(root, idx_leaf, sig_xmss, root_prev, pkseed, adrs);
             () = #unspill(pkseed, sig_ht, j, offset);
+            _ = #init_msf(); // the unspilled values are public after the fence
         }
 
         () = #unspill(skseed);
+        _ = #init_msf(); // the unspilled values are public after the fence
 
         offset += XMSS_SIG; // next signature will get placed immediately adjoining the previous one
         j += 1; // advance to the next layer
@@ -199,6 +204,7 @@ fn ht_verify(
     () = #spill(pkseed, sig_ht);
     root, adrs = __xmss_pkfromsig(root, idx_leaf, sig_xmss, pk_fors, pkseed, adrs);
     () = #unspill(pkseed, sig_ht);
+    _ = #init_msf(); // the unspilled values are public after the fence
 
     // iteratively compute the XMSS tree roots based on the XMSS signatures
     offset = XMSS_SIG; // next signature is immediately adjoining the previous one
@@ -225,14 +231,17 @@ fn ht_verify(
         () = #spill(pkseed, sig_ht);
         root, adrs = __xmss_pkfromsig(root, idx_leaf, sig_xmss, root_prev, pkseed, adrs);
         () = #unspill(pkseed, sig_ht);
+        _ = #init_msf(); // the unspilled values are public after the fence
 
         () = #unspill(j, offset);
+        _ = #init_msf(); // the unspilled values are public after the fence
 
         offset += XMSS_SIG; // next signature is immediately adjoining the previous one
         j += 1; // advance to the next layer
     }
 
     () = #unspill(pkroot);
+    _ = #init_msf(); // the unspilled values are public after the fence
 
     // compare the computed hypertree root and the claimed PK.root
     res_u8 = __memcmp(pkroot, root);

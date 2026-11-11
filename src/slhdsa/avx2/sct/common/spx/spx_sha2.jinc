@@ -130,6 +130,7 @@ fn slh_keygen_internal_(
     () = #spill(sk, pk, skseed);
     sha2_state_caches = init_cache(sha2_state_caches, pkseed);
     () = #unspill(sk, pk, skseed);
+    _ = #init_msf(); // the unspilled values are public after the fence
 
     // initialise ADRS to the all-zero string
     adrs = __adrs_init(adrs);
@@ -147,6 +148,7 @@ fn slh_keygen_internal_(
     () = #spill(sk, pk);
     pkroot, adrs = __xmss_node(pkroot, skseed, i, z, adrs, sha2_state_caches);
     () = #unspill(sk, pk);
+    _ = #init_msf(); // the unspilled values are public after the fence
     sk[3*SPX_N : SPX_N] = pkroot; // redesignate the pointer so the region of the full array is not partial
 
     pk[SPX_N : SPX_N] = __copy_nbytes(pk[SPX_N : SPX_N], pkroot[0 : SPX_N]); // copy PK.root to PK
@@ -224,9 +226,11 @@ fn slh_sign_internal_(
     () = #spill(sig_slh, sk);
     r = __PRF_msg(r, skprf, addrnd, ctx_ptr, ctx_len, msg_ptr, msg_len);
     () = #unspill(sig_slh, sk);
+    _ = #init_msf(); // the unspilled values are public after the fence
     sig_slh[0 : SPX_N] = r;  // redesignate the pointer so the region of the full array is not partial
 
     () = #unspill(ctx_ptr, ctx_len, msg_ptr, msg_len);
+    _ = #init_msf(); // the unspilled values are public after the fence
 
     // separate PK.seed and PK.root from the overall secret key
     pkseed = sk[2*SPX_N : SPX_N];
@@ -238,6 +242,7 @@ fn slh_sign_internal_(
     digest = __H_msg(digest, r, pkseed, pkroot, ctx_ptr, ctx_len, msg_ptr, msg_len);
     () = #declassify(digest); // a function of public values: R, PK.seed, PK.root, M'
     () = #unspill(pkseed, sig_slh, sk);
+    _ = #init_msf(); // the unspilled values are public after the fence
 
     // separate the message digest into disjoint bytestrings needed for individual processing
     md           = digest[0                             : SPX_MD_LEN      ];
@@ -261,6 +266,7 @@ fn slh_sign_internal_(
     () = #spill(skseed, sig_slh, md, idx_leaf);
     sha2_state_caches = init_cache(sha2_state_caches, pkseed);
     () = #unspill(skseed, sig_slh, md, idx_leaf);
+    _ = #init_msf(); // the unspilled values are public after the fence
 
     // compute the FORS signature
     sig_fors = sig_slh[SPX_N : FORS_SIG]; // get the pointer to the subarray so the full array can be spilled
@@ -268,18 +274,21 @@ fn slh_sign_internal_(
     sig_fors, adrs = __fors_sign(sig_fors, md, skseed, adrs, sha2_state_caches);
     () = #declassify(sig_fors); // part of the signature, public
     () = #unspill(skseed, sig_slh, md, idx_leaf);
+    _ = #init_msf(); // the unspilled values are public after the fence
     sig_slh[SPX_N : FORS_SIG] = sig_fors; // redesignate the pointer so the region of the full array is not partial
 
     // compute the FORS public key based on the FORS signature
     () = #spill(skseed, sig_slh, idx_leaf);
     pk_fors, adrs = __fors_pkfromsig(pk_fors, sig_fors, md, adrs, sha2_state_caches);
     () = #unspill(skseed, sig_slh, idx_leaf);
+    _ = #init_msf(); // the unspilled values are public after the fence
 
     // compute the hypertree signature on the FORS public key
     sig_ht = sig_slh[SPX_N + FORS_SIG : HT_SIG]; // get the pointer to the subarray so the full array can be spilled
     () = #spill(skseed, sig_slh);
     sig_ht = __ht_sign(sig_ht, pk_fors, skseed, idx_tree, idx_leaf, sha2_state_caches);
     () = #unspill(skseed, sig_slh);
+    _ = #init_msf(); // the unspilled values are public after the fence
     sig_slh[SPX_N + FORS_SIG : HT_SIG] = sig_ht; // redesignate the pointer so the region of the full array is not partial
 
     () = #declassify(sig_slh); // the signature is public
@@ -356,6 +365,7 @@ fn slh_verify_internal_(
     digest = __H_msg(digest, r, pkseed, pkroot, ctx_ptr, ctx_len, msg_ptr, msg_len);
     () = #declassify(digest); // a function of public values: R, PK.seed, PK.root, M'
     () = #unspill(pkseed, pkroot, sig_slh);
+    _ = #init_msf(); // the unspilled values are public after the fence
 
     // separate the message digest into disjoint bytestrings needed for individual processing
     md           = digest[0                             : SPX_MD_LEN      ];
@@ -376,6 +386,7 @@ fn slh_verify_internal_(
     () = #spill(pkroot, sig_slh, idx_leaf);
     sha2_state_caches = init_cache(sha2_state_caches, pkseed);
     () = #unspill(pkroot, sig_slh, idx_leaf);
+    _ = #init_msf(); // the unspilled values are public after the fence
 
     // extract the FORS signature from the overall signature
     sig_fors = sig_slh[SPX_N : FORS_SIG];
@@ -384,6 +395,7 @@ fn slh_verify_internal_(
     () = #spill(pkroot, sig_slh, idx_leaf);
     pk_fors, adrs = __fors_pkfromsig(pk_fors, sig_fors, md, adrs, sha2_state_caches);
     () = #unspill(pkroot, sig_slh, idx_leaf);
+    _ = #init_msf(); // the unspilled values are public after the fence
 
     // verify the hypertree signature on the FORS public key
     res = __ht_verify(pk_fors, sig_slh[SPX_N + FORS_SIG : HT_SIG], idx_tree, idx_leaf, pkroot, sha2_state_caches);

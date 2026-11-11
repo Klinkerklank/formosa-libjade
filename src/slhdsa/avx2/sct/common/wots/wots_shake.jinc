@@ -95,14 +95,14 @@ fn __chain_lengths(
 +-------------------------------------------------------------*/
 fn chain(
     reg ptr u8[SPX_N] out,    // out: hash of previous chain value (also input: chain is in-place)
-    reg u32 i,                // position in the chain
+    #[spill_to_mmx] reg u32 i,                // position in the chain
     reg u32 steps,            // number of hash evaluations to do
-    reg ptr u8[SPX_N] pkseed, // PK.seed
-    reg ptr u32[8] adrs       // ADRS
+    #[spill_to_mmx] reg ptr u8[SPX_N] pkseed, // PK.seed
+    #[spill_to_mmx] reg ptr u32[8] adrs       // ADRS
 ) -> reg ptr u8[SPX_N], reg ptr u32[8] // -> out, adrs
 {
     // register variables
-    reg u32 t; // hash iteration target
+    #[spill_to_mmx] reg u32 t; // hash iteration target
 
     // target = i + steps
     t = i;
@@ -198,12 +198,14 @@ fn wots_pkgen(
         chains[chain_addr : SPX_N] = __PRF(chains[chain_addr : SPX_N], pkseed, skseed, adrs_key);
 
         () = #unspill(skseed, pkseed, idx_chain, chain_addr);
+        _ = #init_msf(); // the unspilled values are public after the fence
 
         idx_chain  += 1;     // advance to the next chain
         chain_addr += SPX_N; // one n-byte chain value has been written
     }
 
     () = #unspill(adrs);
+    _ = #init_msf(); // the unspilled values are public after the fence
 
     // compute all public key values
     chain_addr = 0; // start at the first chain
@@ -222,6 +224,7 @@ fn wots_pkgen(
         chains[chain_addr : SPX_N], adrs = __chain(chains[chain_addr : SPX_N], start, steps, pkseed, adrs);
 
         () = #unspill(pkseed, idx_chain, chain_addr);
+        _ = #init_msf(); // the unspilled values are public after the fence
 
         idx_chain  += 1;     // advance to the next chain
         chain_addr += SPX_N; // one n-byte chain value has been written
@@ -232,14 +235,17 @@ fn wots_pkgen(
 
     // kpa value hasn't changed since before the chain computations
     () = #unspill(kpa);
+    _ = #init_msf(); // the unspilled values are public after the fence
     adrs_key = __adrs_set_key_pair_addr(adrs_key, kpa);
 
     () = #unspill(pk);
+    _ = #init_msf(); // the unspilled values are public after the fence
 
     // compute the WOTS+ overall public key by hashing all public key chain values together
     () = #spill(adrs);
     pk = __T_len(pk, pkseed, adrs_key, chains);
     () = #unspill(adrs);
+    _ = #init_msf(); // the unspilled values are public after the fence
 
     return pk, adrs;
 }
@@ -318,15 +324,18 @@ fn wots_sign(
         () = #spill(sig_wots);
         sk_wots = __PRF(sk_wots, pkseed, skseed, skadrs);
         () = #unspill(sig_wots);
+        _ = #init_msf(); // the unspilled values are public after the fence
         sig_wots[chain_addr : SPX_N] = sk_wots; // redesignate the pointer so the region of the full array is not partial
 
         () = #unspill(skseed, pkseed, idx_chain, chain_addr);
+        _ = #init_msf(); // the unspilled values are public after the fence
 
         idx_chain  += 1;     // advance to the next chain
         chain_addr += SPX_N; // one n-byte chain value has been written
     }
 
     () = #unspill(adrs);
+    _ = #init_msf(); // the unspilled values are public after the fence
 
     // compute all signature values
     chain_addr = 0; // start at the first chain
@@ -341,15 +350,18 @@ fn wots_sign(
         start = 0;                      // start index is the first chain value (the secret key value)
         idx_chain_64 = (64u) idx_chain; // convert between u32 and u64
         steps = lengths[idx_chain_64];  // evaluate the hash chain to the signature value
+        _ = #init_msf(); // the chain index, loaded from memory, is public after the fence
 
         // compute the WOTS+ signature value
         pk_wots = sig_wots[chain_addr : SPX_N]; // get the pointer to the subarray so the full array can be spilled
         () = #spill(sig_wots);
         pk_wots, adrs = __chain(pk_wots, start, steps, pkseed, adrs);
         () = #unspill(sig_wots);
+        _ = #init_msf(); // the unspilled values are public after the fence
         sig_wots[chain_addr : SPX_N] = pk_wots; // redesignate the pointer so the region of the full array is not partial
 
         () = #unspill(pkseed, idx_chain, chain_addr);
+        _ = #init_msf(); // the unspilled values are public after the fence
 
         idx_chain  += 1;     // advance to the next chain
         chain_addr += SPX_N; // one n-byte chain value has been written
@@ -427,6 +439,7 @@ fn wots_pkfromsig(
 
         idx_chain_64 = (64u) idx_chain; // convert between u32 and u64
         start = lengths[idx_chain_64];  // start index is that of the signature value
+        _ = #init_msf(); // the chain index, loaded from memory, is public after the fence
         // to hash the chain to completion, we need to get to index SPX_W-1, and we are already at index 'start'
         steps = SPX_W-1;
         steps -= start;
@@ -435,6 +448,7 @@ fn wots_pkfromsig(
         sigvals[chain_addr : SPX_N], adrs = __chain(sigvals[chain_addr : SPX_N], start, steps, pkseed, adrs);
 
         () = #unspill(pkseed, idx_chain, chain_addr);
+        _ = #init_msf(); // the unspilled values are public after the fence
 
         idx_chain  += 1;     // advance to the next chain
         chain_addr += SPX_N; // one n-byte chain value has been written
@@ -449,11 +463,13 @@ fn wots_pkfromsig(
     wotspkADRS = __adrs_set_key_pair_addr(wotspkADRS, kpa);
 
     () = #unspill(pk_wots);
+    _ = #init_msf(); // the unspilled values are public after the fence
 
     // compute the WOTS+ overall public key by hashing all public key chain values together
     () = #spill(adrs);
     pk_wots = __T_len(pk_wots, pkseed, wotspkADRS, sigvals);
     () = #unspill(adrs);
+    _ = #init_msf(); // the unspilled values are public after the fence
 
     return pk_wots, adrs;
 }

@@ -33,6 +33,7 @@ fn _SHA512_blocks_0_ref_array(
       H = sha512_avx2::sha512_compress_avx2(H, W2);
 
       () = #unspill(in, offset, inlen);
+      _ = #init_msf(); // the unspilled values are public after the fence
       offset += 256;
       inlen -= 256;
     }
@@ -49,6 +50,7 @@ fn _SHA512_blocks_0_ref_array(
     H = sha512_avx::sha512_compress_avx(H, W1);
 
     () = #unspill(in, offset, inlen);
+    _ = #init_msf(); // the unspilled values are public after the fence
     offset += 128;
   }
 
@@ -132,12 +134,14 @@ fn sha512(reg ptr u8[64] out, reg ptr u8[INLEN] in) -> reg ptr u8[64]
   offset = (INLEN/128)*128;
 
   () = #unspill(in, bits);
+  _ = #init_msf(); // the unspilled values are public after the fence
   inlen = INLEN % 128;
   sblocks, nblocks = __SHA512_lastblocks_ref_array(in, inlen, offset, bits);
   sblocksp = sblocks;
   Hp, _ = _SHA512_blocks_1_ref(Hp, sblocksp, nblocks);
 
   () = #unspill(out);
+  _ = #init_msf(); // the unspilled values are public after the fence
   H = Hp;
   out = __SHA512_store_ref_array(out, H);
   return out;

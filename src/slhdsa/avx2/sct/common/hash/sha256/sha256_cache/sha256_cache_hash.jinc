@@ -1,6 +1,6 @@
 // OBS: This function does not have the INLEN parameter defined
 // It needs to be instantiated w/ namespaces 
-fn sha256_cached(reg ptr u8[32] out, reg ptr u8[INLEN] in, reg ptr u8[96] Hc) -> reg ptr u8[32]
+fn sha256_cached(#[spill_to_mmx] reg ptr u8[32] out, #[spill_to_mmx] reg ptr u8[INLEN] in, reg ptr u8[96] Hc) -> reg ptr u8[32]
 {
     reg u64 bits nblocks inlen offset;
     stack u32[8] H;
@@ -12,11 +12,6 @@ fn sha256_cached(reg ptr u8[32] out, reg ptr u8[INLEN] in, reg ptr u8[96] Hc) ->
 
     () = #spill(out);
 
-    bits = INLEN;
-    bits += SHA256_IN; // add the number of bytes that were processed to get the cached state Hc
-    bits <<= 3;
-    () = #spill(bits);
-    
     Hp = H;
 
     // set the state pointer to the cached state
@@ -27,7 +22,10 @@ fn sha256_cached(reg ptr u8[32] out, reg ptr u8[INLEN] in, reg ptr u8[96] Hc) ->
     () = #spill(in);
     Hp, offset = _blocks_0_ref_array(Hp, in);
 
-    () = #unspill(in, bits);
+    () = #unspill(in);
+    bits = INLEN; // a compile-time constant, computed here rather than spilled
+    bits += SHA256_IN; // add the number of bytes that were processed to get the cached state Hc
+    bits <<= 3;
     inlen = INLEN % 64;
     sblocks, nblocks = __lastblocks_ref_array(in, inlen, offset, bits);
     sblocksp = sblocks;

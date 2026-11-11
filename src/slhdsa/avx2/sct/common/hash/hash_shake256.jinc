@@ -69,7 +69,7 @@ fn __shake256_consider_permute(reg ptr u64[25] state, reg u64 offset) -> reg ptr
 
 // H_msg(R, PK.seed, PK.root, M) = SHAKE256(R || PK.seed || PK.root || M, 8*SPX_M)
 fn H_msg(
-    reg ptr u8[SPX_M] out,    // output: buffer the result gets written to
+    #[spill_to_mmx] reg ptr u8[SPX_M] out,    // output: buffer the result gets written to
     reg ptr u8[SPX_N] r,      // message randomiser
     reg ptr u8[SPX_N] pkseed, // PK.seed
     reg ptr u8[SPX_N] pkroot, // PK.root
@@ -140,11 +140,13 @@ fn H_msg(
     // absorb context string
     ctx_offset = 0;
     () = #unspill(ctx_ptr, ctx_len);
+    _ = #init_msf(); // makes the unspilled pointer, offset and length public
     while(ctx_offset < ctx_len) {
         if (state_offset >= SHAKE256_RATE) {
             () = #spill(ctx_ptr, ctx_offset, ctx_len);
             state = _keccakf1600(state);
             () = #unspill(ctx_ptr, ctx_offset, ctx_len);
+            _ = #init_msf(); // makes the unspilled pointer, offset and length public
 
             state_offset = 0;
         }
@@ -159,11 +161,13 @@ fn H_msg(
     // absorb message string
     msg_offset = 0;
     () = #unspill(msg_ptr, msg_len);
+    _ = #init_msf(); // makes the unspilled pointer, offset and length public
     while(msg_offset < msg_len) {
         if (state_offset >= SHAKE256_RATE) {
             () = #spill(msg_ptr, msg_offset, msg_len);
             state = _keccakf1600(state);
             () = #unspill(msg_ptr, msg_offset, msg_len);
+            _ = #init_msf(); // makes the unspilled pointer, offset and length public
 
             state_offset = 0;
         }
@@ -219,7 +223,7 @@ fn __H_msg(
 
 // PRF_msg(SK.prf, optrand, M) = SHAKE256(SK.prf || optrand || M, 8*SPX_N)
 fn PRF_msg(
-    reg ptr u8[SPX_N] out,     // output: buffer the result gets written to
+    #[spill_to_mmx] reg ptr u8[SPX_N] out,     // output: buffer the result gets written to
     reg ptr u8[SPX_N] skprf,   // SK.prf
     reg ptr u8[SPX_N] optrand, // (optional) additional randomness
     reg u64 ctx_ptr,           // context pointer
@@ -284,11 +288,13 @@ fn PRF_msg(
     // absorb context string
     ctx_offset = 0;
     () = #unspill(ctx_ptr, ctx_len);
+    _ = #init_msf(); // makes the unspilled pointer, offset and length public
     while(ctx_offset < ctx_len) {
         if (state_offset >= SHAKE256_RATE) {
             () = #spill(ctx_ptr, ctx_offset, ctx_len);
             state = _keccakf1600(state);
             () = #unspill(ctx_ptr, ctx_offset, ctx_len);
+            _ = #init_msf(); // makes the unspilled pointer, offset and length public
 
             state_offset = 0;
         }
@@ -303,11 +309,13 @@ fn PRF_msg(
     // absorb message string
     msg_offset = 0;
     () = #unspill(msg_ptr, msg_len);
+    _ = #init_msf(); // makes the unspilled pointer, offset and length public
     while(msg_offset < msg_len) {
         if (state_offset >= SHAKE256_RATE) {
             () = #spill(msg_ptr, msg_offset, msg_len);
             state = _keccakf1600(state);
             () = #unspill(msg_ptr, msg_offset, msg_len);
+            _ = #init_msf(); // makes the unspilled pointer, offset and length public
 
             state_offset = 0;
         }
@@ -367,7 +375,7 @@ fn __PRF_msg(
 
 // PRF(PK.seed, SK.seed, ADRS) = SHAKE256(PK.seed || ADRS || SK.seed, 8*SPX_N)
 fn PRF(
-    reg ptr u8[SPX_N] out,    // output: buffer the result gets written to
+    #[spill_to_mmx] reg ptr u8[SPX_N] out,    // output: buffer the result gets written to
     reg ptr u8[SPX_N] pkseed, // PK.seed
     reg ptr u8[SPX_N] skseed, // SK.seed
     reg ptr u32[8] adrs       // ADRS
@@ -418,7 +426,7 @@ fn __PRF(
 
 // F(PK.seed, ADRS, M_1) = SHAKE256(PK.seed || ADRS || M_1, 8*SPX_N)
 fn F(
-    reg ptr u8[SPX_N] out,    // both input and output (F is in-place)
+    #[spill_to_mmx] reg ptr u8[SPX_N] out,    // both input and output (F is in-place)
     reg ptr u8[SPX_N] pkseed, // PK.seed
     reg ptr u32[8] adrs       // ADRS
 ) -> reg ptr u8[SPX_N] // -> out
@@ -467,7 +475,7 @@ fn __F(
 
 // H(PK.seed, ADRS, M_2) = SHAKE256(PK.seed || ADRS || M_2, 8*SPX_N)
 fn H(
-    reg ptr u8[SPX_N] out,    // output: buffer the result gets written to
+    #[spill_to_mmx] reg ptr u8[SPX_N] out,    // output: buffer the result gets written to
     reg ptr u8[SPX_N] pkseed, // PK.seed
     reg ptr u32[8] adrs,      // ADRS
     reg ptr u8[SPX_N] in1,    // first part of the concatenation
@@ -521,7 +529,7 @@ fn __H(
 
 // T_len(PK.seed, ADRS, M_len) = SHAKE256(PK.seed || ADRS || M_len, 8*SPX_N)
 fn T_len(
-    reg ptr u8[SPX_N] out,           // output: buffer the result gets written to
+    #[spill_to_mmx] reg ptr u8[SPX_N] out,           // output: buffer the result gets written to
     reg ptr u8[SPX_N] pkseed,        // PK.seed
     reg ptr u32[8] adrs,             // ADRS
     reg ptr u8[SPX_LEN*SPX_N] chains // concatenation of all chain end values in a WOTS instance
@@ -572,7 +580,7 @@ fn __T_len(
 
 // T_k(PK.seed, ADRS, M_k) = SHAKE256(PK.seed || ADRS || M_k, 8*SPX_N)
 fn T_k(
-    reg ptr u8[SPX_N] out,        // output: buffer the result gets written to
+    #[spill_to_mmx] reg ptr u8[SPX_N] out,        // output: buffer the result gets written to
     reg ptr u8[SPX_N] pkseed,     // PK.seed
     reg ptr u32[8] adrs,          // ADRS
     reg ptr u8[SPX_K*SPX_N] roots // concatenation of all roots in a FORS forest

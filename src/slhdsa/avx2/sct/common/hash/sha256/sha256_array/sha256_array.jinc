@@ -33,6 +33,7 @@ fn _blocks_0_ref_array(
       H = sha256_avx2::sha256_compress_avx2(H, W2);
 
       () = #unspill(in, offset, inlen);
+      _ = #init_msf(); // the unspilled values are public after the fence
       offset += 128;
       inlen -= 128;
     }
@@ -49,6 +50,7 @@ fn _blocks_0_ref_array(
     H = sha256_avx::sha256_compress_avx(H, W1);
 
     () = #unspill(in, offset, inlen);
+    _ = #init_msf(); // the unspilled values are public after the fence
     offset += 64;
   }
 
@@ -132,12 +134,14 @@ fn sha256(reg ptr u8[32] out, reg ptr u8[INLEN] in) -> reg ptr u8[32]
   offset = (INLEN/64)*64;
 
   () = #unspill(in, bits);
+  _ = #init_msf(); // the unspilled values are public after the fence
   inlen = INLEN % 64;
   sblocks, nblocks = __lastblocks_ref_array(in, inlen, offset, bits);
   sblocksp = sblocks;
   Hp, _ = _blocks_1_ref(Hp, sblocksp, nblocks);
 
   () = #unspill(out);
+  _ = #init_msf(); // the unspilled values are public after the fence
   H = Hp;
   out = __store_ref_array(out, H);
   return out;

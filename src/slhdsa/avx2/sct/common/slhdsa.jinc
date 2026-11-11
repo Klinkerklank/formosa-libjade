@@ -25,6 +25,7 @@ fn __slh_dsa_keygen(
     reg ptr u8[3*SPX_N] randomness            // SK.seed || SK.prf || PK.seed
 ) -> reg ptr u8[SPX_PKBYTES], reg ptr u8[SPX_SKBYTES] // -> verification_key, signing_key
 {
+    _ = #init_msf();
     signing_key, verification_key, _ = __slh_keygen_internal(signing_key, verification_key, randomness);
 
     return verification_key, signing_key;
@@ -51,10 +52,14 @@ fn __slh_dsa_sign(
     reg u64 result;
     reg u64 ctx_ptr ctx_len msg_ptr msg_len;
 
+    // the fence makes the pointers and the lengths, which are loaded from
+    // memory or come from the caller, public (cf. ML-DSA)
+    _ = #init_msf();
     ctx_ptr = context[0];
     ctx_len = context[1];
     msg_ptr = (64u) message_pointer;
     msg_len = (64u) message_size;
+    _ = #init_msf();
 
     // ensure that the context length is valid
     if (ctx_len <= 255) {
@@ -85,10 +90,14 @@ fn __slh_dsa_verify(
     reg u64 result;
     reg u64 ctx_ptr ctx_len msg_ptr msg_len;
 
+    // the fence makes the pointers and the lengths, which are loaded from
+    // memory or come from the caller, public (cf. ML-DSA)
+    _ = #init_msf();
     ctx_ptr = context[0];
     ctx_len = context[1];
     msg_ptr = (64u) message_pointer;
     msg_len = (64u) message_size;
+    _ = #init_msf();
 
     // ensure that the context length is valid
     if (ctx_len <= 255) {

@@ -11,7 +11,7 @@ require "../stdlib/memcpy/memcpy.jinc" // for copying SPX_N-byte strings
 
 // H_msg(R, PK.seed, PK.root, M) = MGF1-SHA-256(R || PK.seed || SHA-256(R || PK.seed || PK.root || M), m)
 fn H_msg(
-    reg ptr u8[SPX_M] out,    // output: buffer the result gets written to
+    #[spill_to_mmx] reg ptr u8[SPX_M] out,    // output: buffer the result gets written to
     reg ptr u8[SPX_N] r,      // message randomiser
     reg ptr u8[SPX_N] pkseed, // PK.seed
     reg ptr u8[SPX_N] pkroot, // PK.root
@@ -90,7 +90,7 @@ fn __H_msg(
 
 // PRF_msg(SK.prf, optrand, M) = Trunc_n(HMAC-SHA-256(SK.prf, optrand || M))
 fn PRF_msg(
-    reg ptr u8[SPX_N] out,     // output: buffer the result gets written to
+    #[spill_to_mmx] reg ptr u8[SPX_N] out,     // output: buffer the result gets written to
     reg ptr u8[SPX_N] skprf,   // SK.prf
     reg ptr u8[SPX_N] optrand, // (optional) additional randomness
     reg u64 ctx_ptr,           // context pointer
@@ -174,7 +174,7 @@ fn __PRF_msg(
 
 // PRF(PK.seed, SK.seed, ADRS) = Trunc_n(SHA-256(PK.seed || toByte(0,64-n) || ADRS^c || SK.seed))
 fn PRF(
-    reg ptr u8[SPX_N] out,    // output: buffer the result gets written to
+    #[spill_to_mmx] reg ptr u8[SPX_N] out,    // output: buffer the result gets written to
     reg ptr u8[SPX_N] skseed, // SK.seed
     reg ptr u32[8] adrs,      // ADRS
     reg ptr u8[96] h_cache    // cached SHA2 state
@@ -226,7 +226,7 @@ fn __PRF(
 
 // F(PK.seed, ADRS, M_1) = Trunc_n(SHA-256(PK.seed || toByte(0,64-n) || ADRS^c || M_1))
 fn F(
-    reg ptr u8[SPX_N] out,    // both input and output (F is in-place)
+    #[spill_to_mmx] reg ptr u8[SPX_N] out,    // both input and output (F is in-place)
     reg ptr u32[8] adrs,      // ADRS
     reg ptr u8[96] h_cache    // cached SHA2 state
 ) -> reg ptr u8[SPX_N] // -> out
@@ -275,7 +275,7 @@ fn __F(
 
 // H(PK.seed, ADRS, M_2) = Trunc_n(SHA-256(PK.seed || toByte(0,64-n) || ADRS^c || M_2))
 fn H(
-    reg ptr u8[SPX_N] out,    // output: buffer the result gets written to
+    #[spill_to_mmx] reg ptr u8[SPX_N] out,    // output: buffer the result gets written to
     reg ptr u32[8] adrs,      // ADRS
     reg ptr u8[SPX_N] in1,    // first part of the concatenation
     reg ptr u8[SPX_N] in2,    // second part of the concatenation
@@ -330,7 +330,7 @@ fn __H(
 
 // T_len(PK.seed, ADRS, M_len) = Trunc_n(SHA-256(PK.seed || toByte(0,64-n) || ADRS^c || M_len))
 fn T_len(
-    reg ptr u8[SPX_N] out,            // output: buffer the result gets written to
+    #[spill_to_mmx] reg ptr u8[SPX_N] out,            // output: buffer the result gets written to
     reg ptr u32[8] adrs,              // ADRS
     reg ptr u8[SPX_LEN*SPX_N] chains, // concatenation of all chain end values in a WOTS instance
     reg ptr u8[96] h_cache            // cached SHA2 state
@@ -386,7 +386,7 @@ fn __T_len(
 
 // T_k(PK.seed, ADRS, M_k) = Trunc_n(SHA-256(PK.seed || toByte(0,64-n) || ADRS^c || M_k))
 fn T_k(
-    reg ptr u8[SPX_N] out,         // output: buffer the result gets written to
+    #[spill_to_mmx] reg ptr u8[SPX_N] out,         // output: buffer the result gets written to
     reg ptr u32[8] adrs,           // ADRS
     reg ptr u8[SPX_K*SPX_N] roots, // concatenation of all roots in a FORS forest
     reg ptr u8[96] h_cache         // cached SHA2 state
@@ -535,7 +535,7 @@ fn H_children(
     reg ptr u256[SHA2_ROUNDS_NUM] schedule,          // message schedule
     reg u64 sch_idx,                                 // byte index of the current position in message schedule
     reg u64 bits,                                    // number of bits processed
-    reg ptr u8[2 * SHA2_H_PARA_DEG * SPX_N] children // array pointer containing all children (interleaved left/right/left/.../right)
+    #[spill_to_mmx] reg ptr u8[2 * SHA2_H_PARA_DEG * SPX_N] children // array pointer containing all children (interleaved left/right/left/.../right)
 ) -> reg ptr u256[SHA2_STATE_WORD_SIZE], reg ptr u256[SHA2_ROUNDS_NUM], reg u64, reg u64 // -> state, schedule, sch_idx, bits
 {
     // register variables
@@ -599,7 +599,7 @@ fn H_digests(
     reg ptr u256[SHA2_ROUNDS_NUM] schedule,   // message schedule
     reg u64 sch_idx,                          // byte index of the current position in message schedule
     reg u64 bits,                             // number of bits processed
-    reg ptr u8[SHA2_H_PARA_DEG * SPX_N] nodes // out: array pointer with space for all output nodes
+    #[spill_to_mmx] reg ptr u8[SHA2_H_PARA_DEG * SPX_N] nodes // out: array pointer with space for all output nodes
 ) -> reg ptr u8[SHA2_H_PARA_DEG * SPX_N], reg ptr u256[SHA2_ROUNDS_NUM] // -> nodes, schedule // schedule is only returned because it needs to be writable
 {
     // stack variables

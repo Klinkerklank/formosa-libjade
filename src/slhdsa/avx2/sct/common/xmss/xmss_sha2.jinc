@@ -96,6 +96,7 @@ fn xmss_node(
     reg u64 bits;        // number of bits consumed
     reg u32 avail_nodes; // temporary variable for computing whether there are enough nodes on the current layer to parallel hash
              
+    node_addr = 0; // assigned in the loops below; initialised for the SCT checker
     layer = 0; // iterate over the layers
     while (layer <= z) {
 
@@ -133,9 +134,11 @@ fn xmss_node(
                 () = #spill(node_addr);
                 wots_pk, adrs = __wots_pkgen(wots_pk, skseed, adrs, sha2_state_caches);
                 () = #unspill(node_addr);
+                _ = #init_msf(); // the unspilled values are public after the fence
                 flat_tree[node_addr : SPX_N] = wots_pk; // redesignate the pointer so the region of the full array is not partial
 
                 () = #unspill(node);
+                _ = #init_msf(); // the unspilled values are public after the fence
                 // advance to the next uncomputed node in the layer
                 node += 1;
             } else { // layer > 0
@@ -183,20 +186,24 @@ fn xmss_node(
 
                     // absorb all children
                     () = #unspill(lnode);
+                    _ = #init_msf(); // the unspilled values are public after the fence
                     children = flat_tree[lnode : 2*SHA2_H_PARA_DEG*SPX_N];
                     state, schedule, sch_idx, bits = __H_children(state, schedule, sch_idx, bits, children);
                     flat_tree[lnode : 2*SHA2_H_PARA_DEG*SPX_N] = children;
 
                     // finalise and write the digests
                     () = #unspill(node_addr);
+                    _ = #init_msf(); // the unspilled values are public after the fence
                     nodes = flat_tree[node_addr : SHA2_H_PARA_DEG*SPX_N];
                     nodes, schedule = __H_digests(state, schedule, sch_idx, bits, nodes);
                     flat_tree[node_addr : SHA2_H_PARA_DEG*SPX_N] = nodes;
                     
                     () = #unspill(adrs);
+                    _ = #init_msf(); // the unspilled values are public after the fence
                 
                     // advance to the next uncomputed node in the layer
                     () = #unspill(node);
+                    _ = #init_msf(); // the unspilled values are public after the fence
                     node += SHA2_H_PARA_DEG;
 
                 } else { // parallelisation not possible, so compute nodes individually instead
@@ -215,23 +222,28 @@ fn xmss_node(
                     () = #spill(adrs); // free up space in the registers
                     flat_tree[node_addr : SPX_N] = __H(flat_tree[node_addr : SPX_N], adrs, buf_l, buf_r, sha2_state_caches);
                     () = #unspill(adrs);
+                    _ = #init_msf(); // the unspilled values are public after the fence
                 
                     () = #unspill(node);
+                    _ = #init_msf(); // the unspilled values are public after the fence
                     // advance to the next uncomputed node in the layer
                     node += 1;
                 }
             }
 
             () = #unspill(skseed, i, z, layer, rightmost, sha2_state_caches);
+            _ = #init_msf(); // the unspilled values are public after the fence
         }
 
         () = #unspill(z);
+        _ = #init_msf(); // the unspilled values are public after the fence
 
         // advance to the next layer
         layer += 1;
     }
 
     () = #unspill(root);
+    _ = #init_msf(); // the unspilled values are public after the fence
 
     // write the target node value to the output,
     // and the target node was the last node written to flat_tree,
@@ -302,9 +314,11 @@ fn xmss_sign(
         () = #spill(sig_xmss, sha2_state_caches);
         auth_node, adrs = __xmss_node(auth_node, skseed, k, j, adrs, sha2_state_caches);
         () = #unspill(sig_xmss, sha2_state_caches);
+        _ = #init_msf(); // the unspilled values are public after the fence
         sig_xmss[offset : SPX_N] = auth_node; // redesignate the pointer so the region of the full array is not partial
 
         () = #unspill(skseed, idx, j, k, offset);
+        _ = #init_msf(); // the unspilled values are public after the fence
 
         // update the sibling node's horizontal index for the next iteration
         k >>= 1; // k = floor(idx / 2^j)
@@ -315,6 +329,7 @@ fn xmss_sign(
     }
 
     () = #unspill(m);
+    _ = #init_msf(); // the unspilled values are public after the fence
 
     // set the correct values in ADRS for WOTS+ hashing
     adrs = __adrs_set_type_and_clear(adrs, SPX_ADRS_TYPE_WOTS_HASH);
@@ -325,6 +340,7 @@ fn xmss_sign(
     () = #spill(sig_xmss);
     sig_wots, adrs = __wots_sign(sig_wots, m, skseed, adrs, sha2_state_caches);
     () = #unspill(sig_xmss);
+    _ = #init_msf(); // the unspilled values are public after the fence
     sig_xmss[0 : WOTS_SIG] = sig_wots; // redesignate the pointer so the region of the full array is not partial
 
     return sig_xmss, adrs;
@@ -392,6 +408,7 @@ fn xmss_pkfromsig(
     () = #spill(idx, sig_xmss, sha2_state_caches);
     node0, adrs = __wots_pkfromsig(node0, sig_wots, m, adrs, sha2_state_caches);
     () = #unspill(idx, sig_xmss, sha2_state_caches);
+    _ = #init_msf(); // the unspilled values are public after the fence
 
     // set the correct values in ADRS for Merkle tree hashing
     adrs = __adrs_set_type_and_clear(adrs, SPX_ADRS_TYPE_TREE);
@@ -447,11 +464,13 @@ fn xmss_pkfromsig(
         () = #spill(adrs, idx, sig_xmss, offset, sha2_state_caches);
         node1 = __H(node1, adrs, buf0, buf1, sha2_state_caches);
         () = #unspill(adrs, idx, sig_xmss, offset, sha2_state_caches);
+        _ = #init_msf(); // the unspilled values are public after the fence
 
         // save the parent node's value to become the next iteration's child node
         node0 = __copy_nbytes(node0, node1);
 
         () = #unspill(k, idx_auth);
+        _ = #init_msf(); // the unspilled values are public after the fence
 
         // update the authentication path node's horizontal index for the next iteration
         idx_auth >>= 1; // idx_auth = floor(idx / 2^k)
@@ -461,6 +480,7 @@ fn xmss_pkfromsig(
     }
 
     () = #unspill(pk_xmss);
+    _ = #init_msf(); // the unspilled values are public after the fence
 
     // the topmost node, now in node0, is the XMSS tree's root
     pk_xmss = __copy_nbytes(pk_xmss, node0);

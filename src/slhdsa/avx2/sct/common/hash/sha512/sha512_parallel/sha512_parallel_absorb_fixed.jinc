@@ -68,6 +68,7 @@ fn pack_byte(
     vector = #VINSERTI128(vector, upper128, 1);
 
     () = #unspill(vec_idx);
+    _ = #init_msf(); // the unspilled values are public after the fence
 
     // offset all bytes to the correct index within their words
     if (vec_idx == 0) {
@@ -158,6 +159,7 @@ fn absorb_fixed(
             }
 
             () = #unspill(schedule);
+            _ = #init_msf(); // the unspilled values are public after the fence
 
             schedule.[:u256 idx_offset] = vector; // overwrite the vector in the schedule
             idx_word += 1; // one word has been filled and stored
@@ -180,6 +182,7 @@ fn absorb_fixed(
         ihvs, schedule = sha512_parallel::compress(ihvs, schedule); // compress the message schedule into the state
 
         () = #unspill(in_byte_nr);
+        _ = #init_msf(); // the unspilled values are public after the fence
 
         in_byte_nr -= avail_byte_nr; // the number of bytes needed to top off the schedule have been consumed
 
@@ -202,6 +205,7 @@ fn absorb_fixed(
             ihvs, schedule = sha512_parallel::compress(ihvs, schedule); // compress the message schedule into the state
 
             () = #unspill(in_byte_nr);
+            _ = #init_msf(); // the unspilled values are public after the fence
             
             in_byte_nr -= sha512_parallel::MSG_BLOCK_BYTE_SIZE; // one entire block of input has been consumed
         }
@@ -234,6 +238,7 @@ fn absorb_fixed(
                     vector ^= mask; // combine the vector of existing data and the vector with the new bytes
 
                     () = #unspill(in_byte_nr);
+                    _ = #init_msf(); // the unspilled values are public after the fence
 
                     // consumed one byte
                     in_byte_nr  -= 1;
@@ -260,6 +265,7 @@ fn absorb_fixed(
                 schedule.[:u256 idx_offset] = vector;    // store the assembled vector in the schedule
 
                 () = #unspill(in_byte_nr);
+                _ = #init_msf(); // the unspilled values are public after the fence
 
                 // one word of input has been consumed
                 in_byte_nr  -= sha512_parallel::BYTES_PER_WORD;
@@ -294,16 +300,19 @@ fn absorb_fixed(
 
     // update how many bits of input have been processed after consuming the entire input
     () = #unspill(bits);
+    _ = #init_msf(); // the unspilled values are public after the fence
     in_bit_nr = INPUT_LENGTH << 3; // INPUT_LENGTH is in number of bytes, so multiply by eight to get number of bits
     bits += in_bit_nr;
 
     // update schedule byte index
     () = #unspill(sch_idx);
+    _ = #init_msf(); // the unspilled values are public after the fence
     sch_idx += INPUT_LENGTH;
     sch_idx &= sha512_parallel::MSG_BLOCK_BYTE_SIZE-1;
 
     // put the vector registers back in state
     () = #unspill(state);
+    _ = #init_msf(); // the unspilled values are public after the fence
     for i=0 to sha512_parallel::STATE_WORD_SIZE {
         state[i] = ihvs[i];
     }
