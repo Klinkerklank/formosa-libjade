@@ -1,0 +1,54 @@
+// SLH-DSA-SHAKE-256f (FIPS 205).
+
+require "parameters.jinc"
+from Common require "hash/hash_shake256.jinc" // SHAKE256 hash functions
+from Common require "spx/spx_shake.jinc"       // SLH-DSA algorithms 18-20, SHAKE variant
+from Common require "slhdsa.jinc"
+
+// See src/include/slhdsashake256f.h for the sizes of the buffers expected by these functions.
+
+// Algorithm 21 of FIPS 205 (slh_keygen), with randomness = SK.seed || SK.prf || PK.seed.
+export fn slh_dsa_shake256f_keygen(
+    reg ptr u8[SPX_PKBYTES] verification_key,
+    reg ptr u8[SPX_SKBYTES] signing_key,
+    reg ptr u8[3*SPX_N] randomness
+) -> reg ptr u8[SPX_PKBYTES],
+     reg ptr u8[SPX_SKBYTES]
+{
+    verification_key, signing_key = __slh_dsa_keygen(verification_key, signing_key, randomness);
+
+    return verification_key, signing_key;
+}
+
+// Algorithm 22 of FIPS 205 (slh_sign), with randomness = opt_rand (PK.seed for the deterministic variant).
+export fn slh_dsa_shake256f_sign(
+    reg ptr u8[SPX_SIG] signature,
+    reg ptr u8[SPX_SKBYTES] signing_key,
+    reg ptr u64[2] context,
+    reg ui64 message_pointer,
+    reg ui64 message_size,
+    reg ptr u8[SPX_N] randomness
+) -> reg ptr u8[SPX_SIG], reg u64
+{
+    reg u64 result;
+
+    signature, result = __slh_dsa_sign(signature, signing_key, context, message_pointer, message_size, randomness);
+
+    return signature, result;
+}
+
+// Algorithm 24 of FIPS 205 (slh_verify).
+export fn slh_dsa_shake256f_verify(
+    reg ptr u8[SPX_PKBYTES] verification_key,
+    reg ptr u64[2] context,
+    reg ui64 message_pointer,
+    reg ui64 message_size,
+    reg ptr u8[SPX_SIG] signature
+) -> reg u64
+{
+    reg u64 result;
+
+    result = __slh_dsa_verify(verification_key, context, message_pointer, message_size, signature);
+
+    return result;
+}

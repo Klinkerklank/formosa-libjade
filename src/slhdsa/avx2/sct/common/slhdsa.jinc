@@ -1,0 +1,101 @@
+// The SLH-DSA implementation, for the parameter set of the including
+// slhdsa.jazz (its parameters.jinc, hash functions and SPX variant
+// (spx/spx_sha2.jinc or spx/spx_shake.jinc) must be required first).
+//
+// The bodies of the exported functions of every parameter set: each
+// <set>/slhdsa.jazz declares slh_dsa_<set>_{keygen,sign,verify} and calls
+// these. They follow the API of Libjade (cf. ML-DSA): the randomness is an
+// argument, the context is passed as {pointer, length} and the message as a
+// pointer and a length.
+
+from Common require "stdlib/memcpy/memcpy.jinc" // for copying SPX_N-byte strings
+from Common require "stdlib/memcmp/memcmp.jinc" // for comparing SPX_N-byte strings
+
+from Common require "adrs/adrs.jinc" // ADRS data structure
+
+/*-------------------------------------------------------------+
+| ALGORITHM 21 FROM SLH-DSS (FIPS 205)                         |
+| Generates an SLH-DSA key pair from 3*SPX_N bytes of          |
+| randomness: SK.seed || SK.prf || PK.seed.                    |
++-------------------------------------------------------------*/
+inline
+fn __slh_dsa_keygen(
+    reg ptr u8[SPX_PKBYTES] verification_key, // out: (PK.seed, PK.root)
+    reg ptr u8[SPX_SKBYTES] signing_key,      // out: (SK.seed, SK.prf, PK.seed, PK.root)
+    reg ptr u8[3*SPX_N] randomness            // SK.seed || SK.prf || PK.seed
+) -> reg ptr u8[SPX_PKBYTES], reg ptr u8[SPX_SKBYTES] // -> verification_key, signing_key
+{
+    signing_key, verification_key, _ = __slh_keygen_internal(signing_key, verification_key, randomness);
+
+    return verification_key, signing_key;
+}
+
+/*-------------------------------------------------------------+
+| ALGORITHM 22 FROM SLH-DSS (FIPS 205)                         |
+| Generates a pure SLH-DSA signature, with SPX_N bytes of      |
+| randomness as opt_rand (pass PK.seed for the deterministic   |
+| variant).                                                    |
+| Returns 0, or -1 without writing the signature when the      |
+| context is longer than 255 bytes.                            |
++-------------------------------------------------------------*/
+inline
+fn __slh_dsa_sign(
+    reg ptr u8[SPX_SIG] signature,       // out: SLH-DSA signature
+    reg ptr u8[SPX_SKBYTES] signing_key, // secret key
+    reg ptr u64[2] context,              // context pointer and context length
+    reg ui64 message_pointer,            // message pointer
+    reg ui64 message_size,               // message length
+    reg ptr u8[SPX_N] randomness         // opt_rand
+) -> reg ptr u8[SPX_SIG], reg u64 // -> signature, result
+{
+    reg u64 result;
+    reg u64 ctx_ptr ctx_len msg_ptr msg_len;
+
+    ctx_ptr = context[0];
+    ctx_len = context[1];
+    msg_ptr = (64u) message_pointer;
+    msg_len = (64u) message_size;
+
+    // ensure that the context length is valid
+    if (ctx_len <= 255) {
+        signature, result = __slh_sign_internal(signature, ctx_ptr, ctx_len, msg_ptr, msg_len, signing_key, randomness);
+    } else {
+        result = -1;
+    }
+
+    return signature, result;
+}
+
+/*-------------------------------------------------------------+
+| ALGORITHM 24 FROM SLH-DSS (FIPS 205)                         |
+| Verifies a pure SLH-DSA signature.                           |
+| Returns 0 when the signature is accepted, -1 when the        |
+| context is longer than 255 bytes, and a nonzero value        |
+| otherwise.                                                   |
++-------------------------------------------------------------*/
+inline
+fn __slh_dsa_verify(
+    reg ptr u8[SPX_PKBYTES] verification_key, // public key
+    reg ptr u64[2] context,                   // context pointer and context length
+    reg ui64 message_pointer,                 // message pointer
+    reg ui64 message_size,                    // message length
+    reg ptr u8[SPX_SIG] signature             // SLH-DSA signature
+) -> reg u64 // -> result
+{
+    reg u64 result;
+    reg u64 ctx_ptr ctx_len msg_ptr msg_len;
+
+    ctx_ptr = context[0];
+    ctx_len = context[1];
+    msg_ptr = (64u) message_pointer;
+    msg_len = (64u) message_size;
+
+    // ensure that the context length is valid
+    if (ctx_len <= 255) {
+        result = __slh_verify_internal(ctx_ptr, ctx_len, msg_ptr, msg_len, signature, verification_key);
+    } else {
+        result = -1;
+    }
+
+    return result;
+}

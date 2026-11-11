@@ -1,12 +1,13 @@
-# Makefile -- assembly (.s) generation for the ML-KEM / ML-DSA entry points.
+# Makefile -- assembly (.s) generation for the ML-KEM / ML-DSA / SLH-DSA entry points.
 #
 # Sources are laid out as <prim>/<target>/<profile>/<set>/, with the code
 # shared by the sets in <prim>/<target>/<profile>/common/; Keccak (FIPS 202)
 # as fips202/<target>/common/.
 #
 # Jasmin namespaces are resolved through JASMINPATH:
-#   Common -> per-implementation shared code (ML-DSA only)
-#   Keccak -> in-tree src/fips202 (flattened from formosa-keccak)
+#   Common -> per-implementation shared code (ML-DSA, SLH-DSA)
+#   Keccak -> in-tree src/fips202 (flattened from formosa-keccak); for SLH-DSA,
+#             the formosa-keccak files vendored in slhdsa/<target>/<profile>/common/keccak
 
 JASMINC  ?= jasminc
 JASMINCT ?= jasmin-ct
@@ -21,6 +22,7 @@ TARGET  := avx2
 PROFILE := sct
 MLDSA   := mldsa/$(TARGET)/$(PROFILE)
 MLKEM   := mlkem/$(TARGET)/$(PROFILE)
+SLHDSA  := slhdsa/$(TARGET)/$(PROFILE)
 
 # Jasmin emits OS-specific assembly: the .s produced in $(BUILD) matches the
 # host (Mach-O on macOS, ELF on Linux). bench/ links it into the libraries
@@ -29,41 +31,54 @@ MLKEM   := mlkem/$(TARGET)/$(PROFILE)
 
 KECCAK       := fips202
 MLDSA_COMMON := $(MLDSA)/common
+SLHDSA_COMMON := $(SLHDSA)/common
+SLHDSA_KECCAK := $(SLHDSA_COMMON)/keccak
 
 # ---- entry points -> output assembly -------------------------------------
 # Discovered by wildcard, so a new parameter set is picked up as soon as its
 # source directory appears:
 #   ML-DSA: mldsa/avx2/sct/<set>/mldsa.jazz   -> _build/mldsa<set>_avx2.s
 #   ML-KEM: mlkem/avx2/sct/<param>/jmlkem.jazz -> _build/mlkem<param>_avx2.s
+#   SLH-DSA: slhdsa/avx2/sct/<set>/slhdsa.jazz -> _build/slhdsa<set>_avx2.s
 MLDSA_S := $(patsubst $(MLDSA)/%/mldsa.jazz,$(BUILD)/mldsa%_$(TARGET).s,\
              $(wildcard $(MLDSA)/*/mldsa.jazz))
 MLKEM_S := $(patsubst $(MLKEM)/%/jmlkem.jazz,$(BUILD)/mlkem%_$(TARGET).s,\
              $(wildcard $(MLKEM)/*/jmlkem.jazz))
+SLHDSA_S := $(patsubst $(SLHDSA)/%/slhdsa.jazz,$(BUILD)/slhdsa%_$(TARGET).s,\
+             $(wildcard $(SLHDSA)/*/slhdsa.jazz))
 
-TARGETS := $(MLDSA_S) $(MLKEM_S)
+TARGETS := $(MLDSA_S) $(MLKEM_S) $(SLHDSA_S)
 
 # Parameter sets, from the same wildcards.
 MLDSA_SETS   := $(patsubst $(MLDSA)/%/mldsa.jazz,%,$(wildcard $(MLDSA)/*/mldsa.jazz))
 MLKEM_PARAMS := $(patsubst $(MLKEM)/%/jmlkem.jazz,%,$(wildcard $(MLKEM)/*/jmlkem.jazz))
+SLHDSA_SETS  := $(patsubst $(SLHDSA)/%/slhdsa.jazz,%,$(wildcard $(SLHDSA)/*/slhdsa.jazz))
 
 # ---- dependency tracking (rebuild when any included source changes) ------
 KECCAK_DEPS := $(shell find -L $(KECCAK) -name '*.jinc' 2>/dev/null)
 MLDSA_DEPS  := $(shell find mldsa -name '*.jinc' 2>/dev/null) $(KECCAK_DEPS)
 MLKEM_DEPS  := $(shell find mlkem -name '*.jinc' 2>/dev/null) $(KECCAK_DEPS)
+SLHDSA_DEPS := $(shell find slhdsa -name '*.jinc' 2>/dev/null)
 
-.PHONY: all mldsa mlkem clean
+.PHONY: all mldsa mlkem slhdsa clean
 all:   $(TARGETS)
 mldsa: $(MLDSA_S)
 mlkem: $(MLKEM_S)
+slhdsa: $(SLHDSA_S)
 
 # ---- pattern rules: one per scheme, parametric in the set/param ----------
-# ML-DSA needs the shared Common namespace; ML-KEM only needs Keccak.
+# ML-DSA and SLH-DSA need the shared Common namespace; ML-KEM only needs Keccak.
 $(BUILD)/mldsa%_$(TARGET).s: $(MLDSA)/%/mldsa.jazz $(MLDSA_DEPS) | $(BUILD)
 	env JASMINPATH="Common=$(MLDSA_COMMON):Keccak=$(KECCAK)" \
 	    $(JASMINC) -arch=$(ARCH) $(JFLAGS) -o $@ $<
 
 $(BUILD)/mlkem%_$(TARGET).s: $(MLKEM)/%/jmlkem.jazz $(MLKEM_DEPS) | $(BUILD)
 	env JASMINPATH="Keccak=$(KECCAK)" \
+	    $(JASMINC) -arch=$(ARCH) $(JFLAGS) -o $@ $<
+
+# SLH-DSA brings its own Keccak (see the JASMINPATH note at the top).
+$(BUILD)/slhdsa%_$(TARGET).s: $(SLHDSA)/%/slhdsa.jazz $(SLHDSA_DEPS) | $(BUILD)
+	env JASMINPATH="Common=$(SLHDSA_COMMON):Keccak=$(SLHDSA_KECCAK)" \
 	    $(JASMINC) -arch=$(ARCH) $(JFLAGS) -o $@ $<
 
 $(BUILD):
@@ -86,7 +101,7 @@ ASM_FLAGS := -system linux -call-conv linux
 .PHONY: extract-asm asm-unchanged check-asm
 
 extract-asm:
-	mkdir -p $(ASM)/mldsa/$(TARGET) $(ASM)/mlkem/$(TARGET)
+	mkdir -p $(ASM)/mldsa/$(TARGET) $(ASM)/mlkem/$(TARGET) $(ASM)/slhdsa/$(TARGET)
 	for s in $(MLDSA_SETS); do \
 	  env JASMINPATH="Common=$(MLDSA_COMMON):Keccak=$(KECCAK)" \
 	    $(JASMINC) -arch=$(ARCH) $(ASM_FLAGS) \
@@ -98,6 +113,12 @@ extract-asm:
 	    $(JASMINC) -arch=$(ARCH) $(ASM_FLAGS) \
 	    -o $(ASM)/mlkem/$(TARGET)/mlkem$${p}_$(TARGET)_$(PROFILE).s \
 	    $(MLKEM)/$$p/jmlkem.jazz || exit 1; \
+	done
+	for s in $(SLHDSA_SETS); do \
+	  env JASMINPATH="Common=$(SLHDSA_COMMON):Keccak=$(SLHDSA_KECCAK)" \
+	    $(JASMINC) -arch=$(ARCH) $(ASM_FLAGS) \
+	    -o $(ASM)/slhdsa/$(TARGET)/slhdsa$${s}_$(TARGET)_$(PROFILE).s \
+	    $(SLHDSA)/$$s/slhdsa.jazz || exit 1; \
 	done
 
 asm-unchanged:
