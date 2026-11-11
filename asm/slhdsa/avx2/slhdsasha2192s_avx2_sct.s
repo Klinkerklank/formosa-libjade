@@ -60846,13 +60846,13 @@ slh_dsa_sha2192s_keygen:
 	addq	%rsi, %r9
 	movq	32(%rcx), %rsi
 	movq	40(%rcx), %r8
-	movq	48(%rcx), %r10
-	movq	%rsi, %r11
-	andq	%r8, %r11
+	movq	48(%rcx), %r11
+	movq	%rsi, %r10
+	andq	%r8, %r10
 	notq	%rsi
-	andq	%r10, %rsi
-	xorq	%rsi, %r11
-	addq	%r11, %r9
+	andq	%r11, %rsi
+	xorq	%rsi, %r10
+	addq	%r10, %r9
 	addq	%r9, 24(%rcx)
 	movq	(%rcx), %rsi
 	movq	8(%rcx), %r8
@@ -65085,14 +65085,14 @@ slh_dsa_sha2192s_keygen:
 	movq	(%rsi), %r8
 	movq	8(%rsi), %r10
 	movq	16(%rsi), %r11
-	movq	%r8, %r14
-	andq	%r10, %r14
+	movq	%r8, %r12
+	andq	%r10, %r12
 	movq	%r8, %rbx
 	andq	%r11, %rbx
-	xorq	%rbx, %r14
+	xorq	%rbx, %r12
 	andq	%r11, %r10
-	xorq	%r10, %r14
-	addq	%r14, %r9
+	xorq	%r10, %r12
+	addq	%r12, %r9
 	movq	%r8, %r10
 	rorq	$28, %r10
 	movq	%r8, %r11

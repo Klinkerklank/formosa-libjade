@@ -26217,8 +26217,8 @@ slh_dsa_sha2128f_keygen:
 	vpslld	$23, %ymm11, %ymm11
 	vpsrld	$9, %ymm10, %ymm10
 	vpor	%ymm11, %ymm10, %ymm7
-	vpxor	%ymm7, %ymm9, %ymm9
-	vpaddd	%ymm9, %ymm5, %ymm5
+	vpxor	%ymm7, %ymm9, %ymm7
+	vpaddd	%ymm7, %ymm5, %ymm5
 	vmovdqu	800(%rax), %ymm7
 	vpaddd	%ymm7, %ymm1, %ymm1
 	vmovdqu	glob_data + 1312(%rip), %ymm7
@@ -30880,8 +30880,8 @@ slh_dsa_sha2128f_keygen:
 	vmovdqu	%ymm10, %ymm11
 	vpslld	$23, %ymm11, %ymm11
 	vpsrld	$9, %ymm10, %ymm10
-	vpor	%ymm11, %ymm10, %ymm10
-	vpxor	%ymm10, %ymm9, %ymm7
+	vpor	%ymm11, %ymm10, %ymm7
+	vpxor	%ymm7, %ymm9, %ymm7
 	vpaddd	%ymm7, %ymm5, %ymm5
 	vmovdqu	416(%r13), %ymm7
 	vpaddd	%ymm7, %ymm1, %ymm1

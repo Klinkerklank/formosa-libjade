@@ -9703,9 +9703,9 @@ slh_dsa_shake256f_keygen:
 	movq	$0, %rdx
 	movq	$0, %rsi
 	vmovq	%rsi, %xmm0
-	vpxor	%ymm11, %ymm11, %ymm11
+	vpxor	%ymm9, %ymm9, %ymm9
 	vmovdqu	(%rcx,%rdx), %xmm2
-	vinserti128	$1, %xmm2, %ymm11, %ymm14
+	vinserti128	$1, %xmm2, %ymm9, %ymm14
 	movq	16(%rcx,%rdx), %rsi
 	vmovq	%rsi, %xmm10
 	vmovdqu	24(%rcx,%rdx), %ymm13
@@ -9788,11 +9788,11 @@ slh_dsa_shake256f_keygen:
 	vpxor	%ymm7, %ymm5, %ymm5
 	vmovdqu	8(%rcx,%rdx), %xmm7
 	movq	24(%rcx,%rdx), %rcx
-	vmovq	%rcx, %xmm11
+	vmovq	%rcx, %xmm9
 	movq	$0, %rcx
 	movq	$31, %rdx
 	orq 	%rdx, %rcx
-	vpinsrq	$1, %rcx, %xmm11, %xmm8
+	vpinsrq	$1, %rcx, %xmm9, %xmm8
 	vinserti128	$1, %xmm8, %ymm7, %ymm7
 	vpxor	%ymm7, %ymm4, %ymm4
 	movq	$1, %rcx
@@ -9932,9 +9932,9 @@ slh_dsa_shake256f_keygen:
 	movq	16(%rcx,%rdi), %rsi
 	vmovq	%rsi, %xmm6
 	movq	24(%rcx,%rdi), %rcx
-	vmovq	%rcx, %xmm11
+	vmovq	%rcx, %xmm9
 	movq	$0, %rcx
-	vpinsrq	$1, %rcx, %xmm11, %xmm9
+	vpinsrq	$1, %rcx, %xmm9, %xmm9
 	vpxor	%xmm10, %xmm10, %xmm10
 	vinserti128	$1, %xmm10, %ymm9, %ymm13
 	movq	$0, %rcx
@@ -10133,11 +10133,11 @@ slh_dsa_shake256f_keygen:
 	movq	16(%rdi,%rcx), %rdx
 	vmovq	%rdx, %xmm6
 	movq	24(%rdi,%rcx), %rcx
-	vmovq	%rcx, %xmm11
+	vmovq	%rcx, %xmm9
 	movq	$0, %rcx
 	movq	$31, %rdx
 	orq 	%rdx, %rcx
-	vpinsrq	$1, %rcx, %xmm11, %xmm9
+	vpinsrq	$1, %rcx, %xmm9, %xmm9
 	vpxor	%xmm10, %xmm10, %xmm10
 	vinserti128	$1, %xmm10, %ymm9, %ymm13
 	movq	$0, %rcx
@@ -10298,11 +10298,11 @@ slh_dsa_shake256f_keygen:
 	movq	16(%r11,%rcx), %rdx
 	vmovq	%rdx, %xmm6
 	movq	24(%r11,%rcx), %rcx
-	vmovq	%rcx, %xmm11
+	vmovq	%rcx, %xmm9
 	movq	$0, %rcx
 	movq	$31, %rdx
 	orq 	%rdx, %rcx
-	vpinsrq	$1, %rcx, %xmm11, %xmm9
+	vpinsrq	$1, %rcx, %xmm9, %xmm9
 	vpxor	%xmm10, %xmm10, %xmm10
 	vinserti128	$1, %xmm10, %ymm9, %ymm13
 	movq	$0, %rcx

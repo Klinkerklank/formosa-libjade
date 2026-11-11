@@ -16934,8 +16934,8 @@ slh_dsa_sha2256s_keygen:
 	vpsllq	$41, %ymm11, %ymm11
 	vpsrlq	$23, %ymm10, %ymm10
 	vpor	%ymm11, %ymm10, %ymm7
-	vpxor	%ymm7, %ymm9, %ymm9
-	vpaddq	%ymm9, %ymm5, %ymm7
+	vpxor	%ymm7, %ymm9, %ymm7
+	vpaddq	%ymm7, %ymm5, %ymm7
 	vpaddq	%ymm7, %ymm8, %ymm5
 	vmovdqu	%ymm6, %ymm10
 	vpand	%ymm4, %ymm10, %ymm10
@@ -63229,14 +63229,14 @@ slh_dsa_sha2256s_keygen:
 	movq	(%rsi), %r8
 	movq	8(%rsi), %r10
 	movq	16(%rsi), %r11
-	movq	%r8, %r12
-	andq	%r10, %r12
+	movq	%r8, %r14
+	andq	%r10, %r14
 	movq	%r8, %rbx
 	andq	%r11, %rbx
-	xorq	%rbx, %r12
+	xorq	%rbx, %r14
 	andq	%r11, %r10
-	xorq	%r10, %r12
-	addq	%r12, %r9
+	xorq	%r10, %r14
+	addq	%r14, %r9
 	movq	%r8, %r10
 	rorq	$28, %r10
 	movq	%r8, %r11

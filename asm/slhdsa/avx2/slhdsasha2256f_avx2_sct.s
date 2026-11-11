@@ -2706,16 +2706,16 @@ slh_dsa_sha2256f_keygen:
 	movq	%r8, 16(%r11)
 	movq	24(%rdx), %rdx
 	movq	%rdx, 24(%r11)
-	leaq	2896(%rsp), %r11
+	leaq	2896(%rsp), %r8
 	leaq	2960(%rsp,%rcx), %rcx
 	movq	(%rcx), %rdx
-	movq	%rdx, (%r11)
+	movq	%rdx, (%r8)
 	movq	8(%rcx), %rdx
-	movq	%rdx, 8(%r11)
+	movq	%rdx, 8(%r8)
 	movq	16(%rcx), %rdx
-	movq	%rdx, 16(%r11)
+	movq	%rdx, 16(%r8)
 	movq	24(%rcx), %rdx
-	movq	%rdx, 24(%r11)
+	movq	%rdx, 24(%r8)
 	movq	%rdi, 2872(%rsp)
 	leaq	2960(%rsp,%rax), %rcx
 	leaq	2928(%rsp), %rdx
@@ -11575,15 +11575,15 @@ slh_dsa_sha2256f_keygen:
 .LPRF_msg$1:
 	movq	%r11, 208(%rsp)
 	movq	%r9, 216(%rsp)
-	leaq	288(%rsp), %r11
-	movq	(%rax), %r8
-	movq	%r8, (%r11)
-	movq	8(%rax), %r8
-	movq	%r8, 8(%r11)
-	movq	16(%rax), %r8
-	movq	%r8, 16(%r11)
-	movq	24(%rax), %r8
-	movq	%r8, 24(%r11)
+	leaq	288(%rsp), %r8
+	movq	(%rax), %r10
+	movq	%r10, (%r8)
+	movq	8(%rax), %r10
+	movq	%r10, 8(%r8)
+	movq	16(%rax), %r10
+	movq	%r10, 16(%r8)
+	movq	24(%rax), %r10
+	movq	%r10, 24(%r8)
 	movb	$0, 320(%rsp)
 	movb	$0, 321(%rsp)
 	movb	$0, 322(%rsp)
@@ -63733,14 +63733,14 @@ slh_dsa_sha2256f_keygen:
 	movq	(%rsi), %r8
 	movq	8(%rsi), %r10
 	movq	16(%rsi), %r11
-	movq	%r8, %r12
-	andq	%r10, %r12
+	movq	%r8, %r14
+	andq	%r10, %r14
 	movq	%r8, %rbx
 	andq	%r11, %rbx
-	xorq	%rbx, %r12
+	xorq	%rbx, %r14
 	andq	%r11, %r10
-	xorq	%r10, %r12
-	addq	%r12, %r9
+	xorq	%r10, %r14
+	addq	%r14, %r9
 	movq	%r8, %r10
 	rorq	$28, %r10
 	movq	%r8, %r11
