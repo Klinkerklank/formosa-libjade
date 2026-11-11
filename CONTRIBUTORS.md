@@ -38,6 +38,7 @@
 - Vitor Pereira
 - Swarn Priya
 - Miguel Quaresma
+- Dennis op 't Roodt
 - Antoine Séré
 - Basavesh Ammanaghatta Shivakumar
 - Xingyu Xie

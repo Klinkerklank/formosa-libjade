@@ -51,6 +51,13 @@ for each set it covers:
   leakage ([MLDSA_Security.ec](proofs/mldsa/spec/properties/MLDSA_Security.ec)), for
   44, 65 and 87 (`Security<set>.ec` in the same directory).
 
+SLH-DSA (FIPS 205), parameter sets SHA2-128s, SHA2-128f, SHA2-192s, SHA2-192f,
+SHA2-256s, SHA2-256f, SHAKE-128s, SHAKE-128f, SHAKE-192s, SHAKE-192f, SHAKE-256s and
+SHAKE-256f (directories `sha2128s` to `shake256f`), is validated by
+[KAT](docs/assurance.md#kat) and [memcheck](docs/assurance.md#memcheck) only, for
+now: its EasyCrypt specification ([SLHDSA.ec](proofs/slhdsa/spec/SLHDSA.ec)) is a
+placeholder, without a security theorem.
+
 SHA-3 (FIPS 202) is available as building blocks under
 `src/fips202/<target>/common/`; the self-contained one-shot functions and incremental
 APIs are planned but not exported yet.
@@ -78,7 +85,8 @@ An implementation of an algorithm is fixed by two choices:
   [CT and SCT](docs/assurance.md#ct-and-sct) countermeasures.
 
 Every algorithm has one implementation, `avx2` / `sct`, with its sources in
-`src/<algorithm>/avx2/sct/`.
+`src/<algorithm>/avx2/sct/`. SLH-DSA does not claim CT and SCT yet (see its
+`meta.toml` files).
 
 ### Claims
 
@@ -148,6 +156,17 @@ The exported functions of each algorithm, with `<p>` the parameter set:
     iteration bound.
   - `verify`: verification of a signature on a message with a context
     (Algorithm 3 in FIPS 204). Returns 0 when the signature verifies, -1 when the
+    context is longer than 255 bytes, and a nonzero value otherwise.
+- SLH-DSA, `slh_dsa_<p>_<function>`, with n the security parameter of the set (16,
+  24 or 32 bytes):
+  - `keygen`: key generation from 3n bytes of randomness, SK.seed || SK.prf ||
+    PK.seed (Algorithm 21 in FIPS 205). No return value.
+  - `sign`: signature of a message with a context and n bytes of randomness as
+    opt_rand (Algorithm 22 in FIPS 205; PK.seed as the randomness gives the
+    deterministic variant). Returns 0; -1 when the context is longer than 255
+    bytes.
+  - `verify`: verification of a signature on a message with a context
+    (Algorithm 24 in FIPS 205). Returns 0 when the signature verifies, -1 when the
     context is longer than 255 bytes, and a nonzero value otherwise.
 
 The header of each implementation describes informally the contract of each function:

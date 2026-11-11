@@ -22,7 +22,9 @@ The known-answer tests of `bench/vectors/` run against the assembly of every
 parameter set (`bench/tools/import_kat.py` downloads them at a fixed version):
 
 - the NIST ACVP vectors, the ML-KEM encapsulation and decapsulation key checks
-  included;
+  included (for SLH-DSA: key generation, deterministic and randomised signing, and
+  verification, except the vectors with a signature of the wrong length, which the
+  fixed-size API cannot take);
 - the KAT files of
   [post-quantum-cryptography/KAT](https://github.com/post-quantum-cryptography/KAT):
   ML-DSA key generation and hedged signing; ML-KEM key generation, encapsulation and

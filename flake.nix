@@ -6,7 +6,7 @@
   #
   #     nix develop --impure -c make -C proofs JOBS=10
   #
-  description = "Jasmin implementations and EasyCrypt proofs of ML-KEM and ML-DSA";
+  description = "Jasmin implementations and EasyCrypt proofs of ML-KEM, ML-DSA and SLH-DSA";
 
   inputs = {
     opam-nix.url = "github:tweag/opam-nix";
