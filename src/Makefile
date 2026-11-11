@@ -6,8 +6,7 @@
 #
 # Jasmin namespaces are resolved through JASMINPATH:
 #   Common -> per-implementation shared code (ML-DSA, SLH-DSA)
-#   Keccak -> in-tree src/fips202 (flattened from formosa-keccak); for SLH-DSA,
-#             the formosa-keccak files vendored in slhdsa/<target>/<profile>/common/keccak
+#   Keccak -> in-tree src/fips202 (flattened from formosa-keccak)
 
 JASMINC  ?= jasminc
 JASMINCT ?= jasmin-ct
@@ -32,7 +31,6 @@ SLHDSA  := slhdsa/$(TARGET)/$(PROFILE)
 KECCAK       := fips202
 MLDSA_COMMON := $(MLDSA)/common
 SLHDSA_COMMON := $(SLHDSA)/common
-SLHDSA_KECCAK := $(SLHDSA_COMMON)/keccak
 
 # ---- entry points -> output assembly -------------------------------------
 # Discovered by wildcard, so a new parameter set is picked up as soon as its
@@ -58,7 +56,7 @@ SLHDSA_SETS  := $(patsubst $(SLHDSA)/%/slhdsa.jazz,%,$(wildcard $(SLHDSA)/*/slhd
 KECCAK_DEPS := $(shell find -L $(KECCAK) -name '*.jinc' 2>/dev/null)
 MLDSA_DEPS  := $(shell find mldsa -name '*.jinc' 2>/dev/null) $(KECCAK_DEPS)
 MLKEM_DEPS  := $(shell find mlkem -name '*.jinc' 2>/dev/null) $(KECCAK_DEPS)
-SLHDSA_DEPS := $(shell find slhdsa -name '*.jinc' 2>/dev/null)
+SLHDSA_DEPS := $(shell find slhdsa -name '*.jinc' 2>/dev/null) $(KECCAK_DEPS)
 
 .PHONY: all mldsa mlkem slhdsa clean
 all:   $(TARGETS)
@@ -76,9 +74,8 @@ $(BUILD)/mlkem%_$(TARGET).s: $(MLKEM)/%/jmlkem.jazz $(MLKEM_DEPS) | $(BUILD)
 	env JASMINPATH="Keccak=$(KECCAK)" \
 	    $(JASMINC) -arch=$(ARCH) $(JFLAGS) -o $@ $<
 
-# SLH-DSA brings its own Keccak (see the JASMINPATH note at the top).
 $(BUILD)/slhdsa%_$(TARGET).s: $(SLHDSA)/%/slhdsa.jazz $(SLHDSA_DEPS) | $(BUILD)
-	env JASMINPATH="Common=$(SLHDSA_COMMON):Keccak=$(SLHDSA_KECCAK)" \
+	env JASMINPATH="Common=$(SLHDSA_COMMON):Keccak=$(KECCAK)" \
 	    $(JASMINC) -arch=$(ARCH) $(JFLAGS) -o $@ $<
 
 $(BUILD):
@@ -115,7 +112,7 @@ extract-asm:
 	    $(MLKEM)/$$p/jmlkem.jazz || exit 1; \
 	done
 	for s in $(SLHDSA_SETS); do \
-	  env JASMINPATH="Common=$(SLHDSA_COMMON):Keccak=$(SLHDSA_KECCAK)" \
+	  env JASMINPATH="Common=$(SLHDSA_COMMON):Keccak=$(KECCAK)" \
 	    $(JASMINC) -arch=$(ARCH) $(ASM_FLAGS) \
 	    -o $(ASM)/slhdsa/$(TARGET)/slhdsa$${s}_$(TARGET)_$(PROFILE).s \
 	    $(SLHDSA)/$$s/slhdsa.jazz || exit 1; \

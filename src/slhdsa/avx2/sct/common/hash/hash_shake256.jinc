@@ -1,64 +1,67 @@
 require "../adrs/adrs.jinc" // ADRS data structure
 
-// import a SHAKE256 implementation in which it is possible to manually set the state,
-// so we can combine manually writing fixed-size ptr reg arguments and the variable-sized 
-// reg u64 message and context strings
-// (used in H_msg and PRF_msg)
-from Keccak require "common/keccak1600_generic.jinc"
-from Keccak require "ref/select_bmi1.jinc"
-from Keccak require "ref/keccak1600.jinc"
-require "shake256/keccak1600.jinc"
+// SHAKE256 from src/fips202 (namespace Keccak), configured as for ML-DSA
+from Keccak require "common/keccakf1600_generic.jinc"
 
-// import the AVX2 SHAKE256 implementation
-// (used in PRF, F, H, T_len, and T_k)
-from Keccak require "avx2/keccak1600.jinc"
+param int KECCAK_FEATURES
+ = KECCAK_FEATURE_BMI+KECCAK_FEATURE_BMI2+KECCAK_FEATURE_AVX2;
+
+param int KECCAK_PERMUTATION = KECCAK_F1600_OPT;
+
+// the state as 25 words, which H_msg and PRF_msg write byte by byte, so as to
+// combine the fixed-size reg ptr arguments with the variable-sized reg u64
+// message and context strings: __state_init and the permutation _keccakf1600
+from Keccak require "ref/common/keccak1600.jinc"
+
+// the AVX2 SHAKE256 (used in PRF, F, H, T_len, and T_k)
+from Keccak require "avx2/common/keccak1600.jinc"
 
 // for single bytes
 namespace A_1 {
     param int _ASIZE = 1;
-    from Keccak require "avx2/keccak1600_fixedsizes_ASIZE.jinc"
+    from Keccak require "avx2/common/keccak1600_fixedsizes_ASIZE.jinc"
 }
 
 // for separation byte and context length
 namespace A_2 {
     param int _ASIZE = 2;
-    from Keccak require "avx2/keccak1600_fixedsizes_ASIZE.jinc"
+    from Keccak require "avx2/common/keccak1600_fixedsizes_ASIZE.jinc"
 }
 
 // for ADRS
 namespace A_32 {
     param int _ASIZE = 32;
-    from Keccak require "avx2/keccak1600_fixedsizes_ASIZE.jinc"
+    from Keccak require "avx2/common/keccak1600_fixedsizes_ASIZE.jinc"
 }
 
 // for PK and SK elements, M_1, and output size of PRF, PRF_msg, F, H, T_len, and T_k
 namespace A_N {
     param int _ASIZE = SPX_N;
-    from Keccak require "avx2/keccak1600_fixedsizes_ASIZE.jinc"
+    from Keccak require "avx2/common/keccak1600_fixedsizes_ASIZE.jinc"
 }
 
 // for output size of H_msg
 namespace A_M {
     param int _ASIZE = SPX_M;
-    from Keccak require "avx2/keccak1600_fixedsizes_ASIZE.jinc"
+    from Keccak require "avx2/common/keccak1600_fixedsizes_ASIZE.jinc"
 }
 
 // for M_len
 namespace A_LENN {
     param int _ASIZE = SPX_LEN*SPX_N;
-    from Keccak require "avx2/keccak1600_fixedsizes_ASIZE.jinc"
+    from Keccak require "avx2/common/keccak1600_fixedsizes_ASIZE.jinc"
 }
 
 // for M_k
 namespace A_KN {
     param int _ASIZE = SPX_K*SPX_N;
-    from Keccak require "avx2/keccak1600_fixedsizes_ASIZE.jinc"
+    from Keccak require "avx2/common/keccak1600_fixedsizes_ASIZE.jinc"
 }
 
 inline
 fn __shake256_consider_permute(reg ptr u64[25] state, reg u64 offset) -> reg ptr u64[25], reg u64 {
     if (offset >= SHAKE256_RATE) {
-        state = _keccakf1600_ref1(state);
+        state = _keccakf1600(state);
         offset = 0;
     }
     return state, offset;
@@ -94,7 +97,7 @@ fn H_msg(
     inline int i;
 
     // initialise the SHAKE256 state
-    state = __keccak_init_ref1(state);
+    state = __state_init(state);
     
     if (SPX_N == 16) {
         // absorb R, PK.seed, and PK.root
@@ -140,7 +143,7 @@ fn H_msg(
     while(ctx_offset < ctx_len) {
         if (state_offset >= SHAKE256_RATE) {
             () = #spill(ctx_ptr, ctx_offset, ctx_len);
-            state = _keccakf1600_ref1(state);
+            state = _keccakf1600(state);
             () = #unspill(ctx_ptr, ctx_offset, ctx_len);
 
             state_offset = 0;
@@ -159,7 +162,7 @@ fn H_msg(
     while(msg_offset < msg_len) {
         if (state_offset >= SHAKE256_RATE) {
             () = #spill(msg_ptr, msg_offset, msg_len);
-            state = _keccakf1600_ref1(state);
+            state = _keccakf1600(state);
             () = #unspill(msg_ptr, msg_offset, msg_len);
 
             state_offset = 0;
@@ -180,7 +183,7 @@ fn H_msg(
     state, _ = __shake256_consider_permute(state, state_offset);
     state[:u8 SHAKE256_RATE-1] ^= 0x80;
 
-    state = _keccakf1600_ref1(state);
+    state = _keccakf1600(state);
 
     () = #unspill(out);
     for i=0 to SPX_M {
@@ -243,7 +246,7 @@ fn PRF_msg(
     inline int i;
 
     // initialise the SHAKE256 state
-    state = __keccak_init_ref1(state);
+    state = __state_init(state);
 
     if (SPX_N == 16) {
         // absorb SK.prf and opt_rand
@@ -284,7 +287,7 @@ fn PRF_msg(
     while(ctx_offset < ctx_len) {
         if (state_offset >= SHAKE256_RATE) {
             () = #spill(ctx_ptr, ctx_offset, ctx_len);
-            state = _keccakf1600_ref1(state);
+            state = _keccakf1600(state);
             () = #unspill(ctx_ptr, ctx_offset, ctx_len);
 
             state_offset = 0;
@@ -303,7 +306,7 @@ fn PRF_msg(
     while(msg_offset < msg_len) {
         if (state_offset >= SHAKE256_RATE) {
             () = #spill(msg_ptr, msg_offset, msg_len);
-            state = _keccakf1600_ref1(state);
+            state = _keccakf1600(state);
             () = #unspill(msg_ptr, msg_offset, msg_len);
 
             state_offset = 0;
@@ -324,7 +327,7 @@ fn PRF_msg(
     state, _ = __shake256_consider_permute(state, state_offset);
     state[:u8 SHAKE256_RATE-1] ^= 0x80;
 
-    state = _keccakf1600_ref1(state);
+    state = _keccakf1600(state);
 
     () = #unspill(out);
     if (SPX_N == 16) {
