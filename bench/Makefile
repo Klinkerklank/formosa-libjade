@@ -55,15 +55,26 @@ PQCR_KEM   := $(BUILD)/pqcrystals-ref_mlkem512.so \
 PQCR_SIG   := $(BUILD)/pqcrystals-ref_mldsa44.so \
               $(BUILD)/pqcrystals-ref_mldsa65.so \
               $(BUILD)/pqcrystals-ref_mldsa87.so
+# sphincsplus (SLH-DSA), all parameter sets: `sphincsplus` from the sha2-avx2
+# and shake-avx2 trees, `sphincsplus-ref` from the portable-C ref tree.
+SPX_SHA2_SETS  := sha2128s sha2128f sha2192s sha2192f sha2256s sha2256f
+SPX_SHAKE_SETS := shake128s shake128f shake192s shake192f shake256s shake256f
+SPX_SHA2_SIG   := $(SPX_SHA2_SETS:%=$(BUILD)/sphincsplus_slhdsa%.so)
+SPX_SHAKE_SIG  := $(SPX_SHAKE_SETS:%=$(BUILD)/sphincsplus_slhdsa%.so)
+SPXR_SHA2_SIG  := $(SPX_SHA2_SETS:%=$(BUILD)/sphincsplus-ref_slhdsa%.so)
+SPXR_SHAKE_SIG := $(SPX_SHAKE_SETS:%=$(BUILD)/sphincsplus-ref_slhdsa%.so)
 
 # the libraries of each backend (BACKENDS names them)
-LIBS_jasmin         := $(JASMIN_KEM) $(JASMIN_SIG) $(JASMIN_SLHDSA)
-LIBS_mlkem-native   := $(MLKN_KEM)
-LIBS_mldsa-native   := $(MLDN_SIG)
-LIBS_pqcrystals     := $(PQC_KEM) $(PQC_SIG)
-LIBS_pqcrystals-ref := $(PQCR_KEM) $(PQCR_SIG)
+LIBS_jasmin          := $(JASMIN_KEM) $(JASMIN_SIG) $(JASMIN_SLHDSA)
+LIBS_mlkem-native    := $(MLKN_KEM)
+LIBS_mldsa-native    := $(MLDN_SIG)
+LIBS_pqcrystals      := $(PQC_KEM) $(PQC_SIG)
+LIBS_pqcrystals-ref  := $(PQCR_KEM) $(PQCR_SIG)
+LIBS_sphincsplus     := $(SPX_SHA2_SIG) $(SPX_SHAKE_SIG)
+LIBS_sphincsplus-ref := $(SPXR_SHA2_SIG) $(SPXR_SHAKE_SIG)
 
-LIBS := $(foreach b,jasmin mlkem-native mldsa-native pqcrystals pqcrystals-ref,$(LIBS_$(b)))
+LIBS := $(foreach b,jasmin mlkem-native mldsa-native pqcrystals pqcrystals-ref \
+                    sphincsplus sphincsplus-ref,$(LIBS_$(b)))
 
 .PHONY: libs clean
 libs: $(LIBS)
@@ -169,6 +180,48 @@ $(PQCR_KEM): $(BUILD)/pqcrystals-ref_mlkem%.so: $(SHK) $(KREF_SRC) | $(BUILD)
 $(PQCR_SIG): $(BUILD)/pqcrystals-ref_mldsa%.so: $(SHS) $(DREF_SRC) | $(BUILD)
 	$(CC) $(XARCH) -O3 -fomit-frame-pointer -fPIC -shared \
 	    -DDILITHIUM_MODE=$(DILITHIUM_MODE) -I$(DREF) -Iadapters -o $@ $(SHS) $(DREF_SRC)
+
+# ---- sphincsplus backends (SLH-DSA) ---------------------------------------
+# The bas/fips205 branch of sphincs/sphincsplus (FIPS 205: the context string,
+# deterministic signing). One parameter set per build, -DPARAMS naming the
+# header ref/params/params-<PARAMS>.h; the shim includes "api.h", so the same
+# source builds against all three trees. Source lists as in the upstream
+# Makefiles, with our own flags (no -march=native, no -flto) as for the other
+# backends.
+SPX     := third_party/sphincsplus
+SPXS    := adapters/sphincsplus/sig_shim.c
+# sha2128s -> sphincs-sha2-128s, shake256f -> sphincs-shake-256f
+spx_params = sphincs-$(subst shake,shake-,$(subst sha2,sha2-,$(1)))
+
+SPXR_SRC       := $(addprefix $(SPX)/ref/,address.c randombytes.c merkle.c wots.c \
+                  wotsx1.c utils.c utilsx1.c fors.c sign.c)
+SPXR_SHA2_SRC  := $(SPXR_SRC) $(addprefix $(SPX)/ref/,sha2.c hash_sha2.c thash_sha2_simple.c)
+SPXR_SHAKE_SRC := $(SPXR_SRC) $(addprefix $(SPX)/ref/,fips202.c hash_shake.c \
+                  thash_shake_simple.c)
+SPX_SHA2_SRC   := $(addprefix $(SPX)/sha2-avx2/,hash_sha2.c hash_sha2x8.c \
+                  thash_sha2_simple.c thash_sha2_simplex8.c sha2.c sha256x8.c sha512x4.c \
+                  sha256avx.c address.c randombytes.c merkle.c wots.c utils.c utilsx8.c \
+                  fors.c sign.c)
+SPX_SHAKE_SRC  := $(addprefix $(SPX)/shake-avx2/,hash_shake.c hash_shakex4.c \
+                  thash_shake_simple.c thash_shake_simplex4.c address.c randombytes.c \
+                  merkle.c wots.c utils.c utilsx4.c fors.c sign.c fips202.c fips202x4.c \
+                  keccak4x/KeccakP-1600-times4-SIMD256.c)
+
+SPXFLAGS = -O3 -fomit-frame-pointer -std=c99 -fPIC -shared -DPARAMS=$(call spx_params,$*)
+
+# avx2 variant (the `sphincsplus` backend)
+$(SPX_SHA2_SIG): $(BUILD)/sphincsplus_slhdsa%.so: $(SPXS) $(SPX_SHA2_SRC) | $(BUILD)
+	$(CC) $(XARCH) $(SPXFLAGS) $(AVX2FLAGS) -I$(SPX)/sha2-avx2 -Iadapters \
+	    -o $@ $(SPXS) $(SPX_SHA2_SRC)
+$(SPX_SHAKE_SIG): $(BUILD)/sphincsplus_slhdsa%.so: $(SPXS) $(SPX_SHAKE_SRC) | $(BUILD)
+	$(CC) $(XARCH) $(SPXFLAGS) $(AVX2FLAGS) -I$(SPX)/shake-avx2 -Iadapters \
+	    -o $@ $(SPXS) $(SPX_SHAKE_SRC)
+
+# portable-C variant (the `sphincsplus-ref` backend)
+$(SPXR_SHA2_SIG): $(BUILD)/sphincsplus-ref_slhdsa%.so: $(SPXS) $(SPXR_SHA2_SRC) | $(BUILD)
+	$(CC) $(XARCH) $(SPXFLAGS) -I$(SPX)/ref -Iadapters -o $@ $(SPXS) $(SPXR_SHA2_SRC)
+$(SPXR_SHAKE_SIG): $(BUILD)/sphincsplus-ref_slhdsa%.so: $(SPXS) $(SPXR_SHAKE_SRC) | $(BUILD)
+	$(CC) $(XARCH) $(SPXFLAGS) -I$(SPX)/ref -Iadapters -o $@ $(SPXS) $(SPXR_SHAKE_SRC)
 
 # ---- drivers (x86-64 + AVX2 host only) -----------------------------------
 DLLIB := $(if $(filter Darwin,$(UNAME_S)),,-ldl)
@@ -278,6 +331,7 @@ report: libs $(BUILD)/bench
 	        --version "mldsa-native=$(call gitver,$(MLDN)/..)" \
 	        --version "pq-crystals/kyber=$(call gitver,$(KREF)/..)" \
 	        --version "pq-crystals/dilithium=$(call gitver,$(DREF)/..)" \
+	        --version "sphincsplus=$(call gitver,$(SPX))" \
 	        --meta "reps=$(REPS)" --meta "iters=$${BENCH_ITERS:-$(ITERS_DEFAULT)}" \
 	        $(addprefix --meta ,$(META)) \
 	        --json $(REPORT_JSON) -o $(REPORT) $(BUILD)/bench.csv

@@ -30,7 +30,7 @@ from datetime import datetime, timezone
 
 # display order; anything else falls after these, alphabetically
 BACKEND_ORDER = ["jasmin", "mlkem-native", "mldsa-native", "pqcrystals",
-                 "pqcrystals-ref"]
+                 "pqcrystals-ref", "sphincsplus", "sphincsplus-ref"]
 # operation order per kind, keyed by a signature operation present in the data
 OPS = {"keypair": ["keypair", "encaps", "decaps"],   # KEM
        "keygen": ["keygen", "sign", "verify"]}       # SIG

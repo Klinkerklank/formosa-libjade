@@ -10,3 +10,6 @@
 [submodule "bench/third_party/dilithium"]
 	path = bench/third_party/dilithium
 	url = https://github.com/pq-crystals/dilithium.git
+[submodule "bench/third_party/sphincsplus"]
+	path = bench/third_party/sphincsplus
+	url = https://github.com/sphincs/sphincsplus.git
