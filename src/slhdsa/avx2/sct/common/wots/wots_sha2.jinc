@@ -194,6 +194,27 @@ fn __adrsc_x8_set_hash_addr(
     return adrscs;
 }
 
+// set the tree indices of the eight lanes to first, ..., first + 7
+inline
+fn __adrsc_x8_set_tree_index(
+    reg ptr u8[8*22] adrscs, // eight ADRS^c
+    reg u32 first            // tree index of lane 0
+) -> reg ptr u8[8*22] // -> adrscs
+{
+    reg u32 swap;
+
+    inline int j;
+
+    for j=0 to 8 {
+        swap = first;
+        swap += j;
+        swap = #BSWAP_32(swap);
+        adrscs.[:u32 22*j + 18] = swap; // ADRS^c bytes 18..21: tree index
+    }
+
+    return adrscs;
+}
+
 // eight F (or PRF) evaluations in parallel:
 // out_j = Trunc_n(SHA-256(PK.seed || toByte(0,64-n) || ADRS^c_j || in_j)), j = 0..7
 fn F_x8(

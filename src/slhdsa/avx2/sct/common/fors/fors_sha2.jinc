@@ -115,6 +115,84 @@ fn __fors_skgen(
     return sk;
 }
 
+// eight consecutive FORS leaves idx, ..., idx+7 at once: the secret key values
+// PRF(PK.seed, SK.seed, skADRS) and their hashes F(PK.seed, ADRS, sk)
+// (F_x8 and the ADRS^c helpers are in ../wots/wots_sha2.jinc)
+fn fors_leaves_x8(
+    #[spill_to_mmx] reg ptr u8[8*SPX_N] leaves, // output: eight leaf values
+    reg ptr u8[SPX_N] skseed,                   // SK.seed
+    reg ptr u32[8] adrs,                        // ADRS (type FORS_TREE, key pair address set)
+    reg u32 idx,                                // horizontal index of the first leaf
+    reg ptr u8[96] sha2_state_caches            // combined SHA256 and SHA512 state caches
+) -> reg ptr u8[8*SPX_N] // -> leaves
+{
+    // stack variables
+    stack u8[8*SPX_N] seeds;                                  // SK.seed in every lane
+    stack u8[8*SPX_N] sks;                                    // the eight secret key values
+    stack u8[8*22] adrscs;                                    // ADRS^c of every lane
+    stack u256[sha256_parallel::STATE_WORD_SIZE] state_cache; // vectorised cached state
+    stack u32[8] skadrs;                                      // skADRS
+    stack u32[8] leafadrs;                                    // ADRS of the leaves (height 0)
+
+    // register variables
+    reg u32 kpa;    // ADRS key pair address
+    reg u32 height; // tree height 0
+
+    inline int j;
+
+    () = #spill(leaves);
+
+    for j=0 to 8 {
+        seeds[j*SPX_N : SPX_N] = __copy_nbytes(seeds[j*SPX_N : SPX_N], skseed);
+    }
+
+    state_cache = __sha256_x8_state_cache(state_cache, sha2_state_caches);
+
+    // skADRS: type FORS_PRF, the key pair address of ADRS, tree index idx + j in lane j
+    skadrs = __adrs_clone(skadrs, adrs);
+    skadrs = __adrs_set_type_and_clear(skadrs, SPX_ADRS_TYPE_FORS_PRF);
+    kpa = __adrs_get_key_pair_addr(adrs);
+    skadrs = __adrs_set_key_pair_addr(skadrs, kpa);
+
+    // the ADRS of the leaves: height 0, tree index idx + j in lane j
+    leafadrs = __adrs_clone(leafadrs, adrs);
+    height = 0;
+    leafadrs = __adrs_set_tree_height(leafadrs, height);
+
+    adrscs = __adrsc_x8(adrscs, skadrs);
+    adrscs = __adrsc_x8_set_tree_index(adrscs, idx);
+    () = #spill(idx);
+    sks = F_x8(sks, seeds, adrscs, state_cache);
+    () = #unspill(idx);
+    _ = #init_msf(); // the unspilled values are public after the fence
+
+    adrscs = __adrsc_x8(adrscs, leafadrs);
+    adrscs = __adrsc_x8_set_tree_index(adrscs, idx);
+    () = #unspill(leaves);
+    _ = #init_msf(); // the unspilled values are public after the fence
+    leaves = F_x8(leaves, sks, adrscs, state_cache);
+
+    return leaves;
+}
+
+inline // inline wrapper that splits parameter live-ranges, to aid the Jasmin compiler
+fn __fors_leaves_x8(
+    reg ptr u8[8*SPX_N] leaves,
+    reg ptr u8[SPX_N] skseed,
+    reg ptr u32[8] adrs,
+    reg u32 idx,
+    reg ptr u8[96] sha2_state_caches
+) -> reg ptr u8[8*SPX_N] // -> leaves
+{
+    leaves = leaves; skseed = skseed; adrs = adrs; idx = idx; sha2_state_caches = sha2_state_caches;
+
+    leaves = fors_leaves_x8(leaves, skseed, adrs, idx, sha2_state_caches);
+
+    leaves = leaves;
+
+    return leaves;
+}
+
 /*-------------------------------------------------------------+
 | ALGORITHM 15 FROM SLH-DSS (FIPS 205)                         |
 | Computes the root of a Merkle subtree of FORS public values. |
@@ -153,6 +231,7 @@ fn fors_node(
     reg u64 pow;       // temporary variable for computing powers
     reg u32 exp;       // temporary variable for computing exponents
     reg ptr u8[SPX_N] tree_node; // pointer to subarray with a FORS tree node
+    reg ptr u8[8*SPX_N] leaves;  // pointer to subarray with eight FORS leaves
 
     // parallelised SHA-2 register and stack variables
     stack u256[SHA2_STATE_WORD_SIZE] state;       // state
@@ -199,23 +278,41 @@ fn fors_node(
                 node_addr  = label; // node_addr = forest_label(node, layer)
                 node_addr *= SPX_N; // node_addr = forest_label(node, layer) * SPX_N
 
-                // compute the FORS secret key value
-                () = #spill(adrs, i, node, node_addr, sha2_state_caches);
-                flat_tree[node_addr : SPX_N] = __fors_skgen(flat_tree[node_addr : SPX_N], skseed, adrs, node, sha2_state_caches);
-                () = #unspill(adrs, i, node, node_addr, sha2_state_caches);
-                _ = #init_msf(); // the unspilled values are public after the fence
+                // compute how many leaves still need to be computed
+                avail_nodes  = rightmost;
+                avail_nodes -= node;
 
-                // compute the hash of the FORS secret key value
-                () = #spill(adrs, i, node, node_addr, sha2_state_caches);
-                flat_tree[node_addr : SPX_N] = __F(flat_tree[node_addr : SPX_N], adrs, sha2_state_caches);
-                () = #unspill(adrs, i, node, node_addr, sha2_state_caches);
-                _ = #init_msf(); // the unspilled values are public after the fence
-                
+                // eight leaves at a time when the subtree has at least eight
+                // (then it has a multiple of eight, adjacent in flat_tree)
+                if (avail_nodes >= 8) {
+                    () = #spill(adrs, i, node, node_addr, sha2_state_caches);
+                    leaves = flat_tree[node_addr : 8*SPX_N];
+                    leaves = __fors_leaves_x8(leaves, skseed, adrs, node, sha2_state_caches);
+                    flat_tree[node_addr : 8*SPX_N] = leaves;
+                    () = #unspill(adrs, i, node, node_addr, sha2_state_caches);
+                    _ = #init_msf(); // the unspilled values are public after the fence
+
+                    // advance to the next uncomputed leaf
+                    node += 8;
+                } else {
+                    // compute the FORS secret key value
+                    () = #spill(adrs, i, node, node_addr, sha2_state_caches);
+                    flat_tree[node_addr : SPX_N] = __fors_skgen(flat_tree[node_addr : SPX_N], skseed, adrs, node, sha2_state_caches);
+                    () = #unspill(adrs, i, node, node_addr, sha2_state_caches);
+                    _ = #init_msf(); // the unspilled values are public after the fence
+
+                    // compute the hash of the FORS secret key value
+                    () = #spill(adrs, i, node, node_addr, sha2_state_caches);
+                    flat_tree[node_addr : SPX_N] = __F(flat_tree[node_addr : SPX_N], adrs, sha2_state_caches);
+                    () = #unspill(adrs, i, node, node_addr, sha2_state_caches);
+                    _ = #init_msf(); // the unspilled values are public after the fence
+
+                    // advance to the next node in the layer
+                    node += 1;
+                }
+
                 () = #unspill(layer);
                 _ = #init_msf(); // the unspilled values are public after the fence
-
-                // advance to the next node in the layer
-                node += 1;
             } else { // layer > 0
                 // internal node: the node value is the hash of its two children lnode and rnode
                 () = #spill(layer);
