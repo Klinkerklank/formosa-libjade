@@ -6,7 +6,7 @@ from Keccak require "common/keccakf1600_generic.jinc"
 param int KECCAK_FEATURES
  = KECCAK_FEATURE_BMI+KECCAK_FEATURE_BMI2+KECCAK_FEATURE_AVX2;
 
-param int KECCAK_PERMUTATION = KECCAK_F1600_OPT;
+param int KECCAK_PERMUTATION = KECCAK_F1600_OPT+KECCAK_F1600x4_NAT; // as ML-DSA
 
 // the state as 25 words, which H_msg and PRF_msg write byte by byte, so as to
 // combine the fixed-size reg ptr arguments with the variable-sized reg u64
@@ -15,6 +15,21 @@ from Keccak require "ref/common/keccak1600.jinc"
 
 // the AVX2 SHAKE256 (used in PRF, F, H, T_len, and T_k)
 from Keccak require "avx2/common/keccak1600.jinc"
+
+// the four-way AVX2 Keccak-f[1600] (used in the parallelised F, PRF and H)
+from Keccak require "avx2/common/keccakf1600x4.jinc"
+
+// four F or PRF at once (M is n bytes)
+namespace thash_x4_n {
+    param int MLEN = SPX_N;
+    require "shake256_x4/thash_x4.jinc"
+}
+
+// four H at once (M is 2n bytes)
+namespace thash_x4_2n {
+    param int MLEN = 2*SPX_N;
+    require "shake256_x4/thash_x4.jinc"
+}
 
 // for single bytes
 namespace A_1 {

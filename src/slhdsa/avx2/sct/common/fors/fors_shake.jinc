@@ -108,6 +108,76 @@ fn __fors_skgen(
     return sk;
 }
 
+// four consecutive FORS leaves idx, ..., idx+3 at once: the secret key values
+// PRF(PK.seed, SK.seed, skADRS) and their hashes F(PK.seed, ADRS, sk)
+fn fors_leaves_x4(
+    #[spill_to_mmx] reg ptr u8[4*SPX_N] leaves, // output: four leaf values
+    reg ptr u8[SPX_N] skseed,                   // SK.seed
+    reg ptr u8[SPX_N] pkseed,                   // PK.seed
+    reg ptr u32[8] adrs,                        // ADRS (type FORS_TREE, key pair address set)
+    reg u32 idx                                 // horizontal index of the first leaf
+) -> reg ptr u8[4*SPX_N] // -> leaves
+{
+    // stack variables
+    stack u8[4*SPX_N] seeds; // SK.seed in every lane
+    stack u8[4*SPX_N] sks;   // the four secret key values
+    stack u32[8] w67;        // tree height (0) and tree index of every lane
+    stack u32[8] skadrs;     // skADRS
+
+    // register variables
+    reg u32 kpa;  // ADRS key pair address
+    reg u32 zero;
+
+    inline int j;
+
+    () = #spill(leaves);
+
+    for j=0 to 4 {
+        seeds[j*SPX_N : SPX_N] = __copy_nbytes(seeds[j*SPX_N : SPX_N], skseed);
+    }
+
+    // height 0 and tree index idx + j in lane j, for skADRS and ADRS alike
+    zero = 0;
+    for j=0 to 4 {
+        w67[2*j] = zero;
+        w67[2*j+1] = idx;
+        idx += 1;
+    }
+
+    // skADRS: type FORS_PRF, the key pair address of ADRS
+    skadrs = __adrs_clone(skadrs, adrs);
+    skadrs = __adrs_set_type_and_clear(skadrs, SPX_ADRS_TYPE_FORS_PRF);
+    kpa = __adrs_get_key_pair_addr(adrs);
+    skadrs = __adrs_set_key_pair_addr(skadrs, kpa);
+
+    () = #spill(pkseed, adrs);
+    sks = thash_x4_n::thash_x4(sks, seeds, pkseed, skadrs, w67);
+    () = #unspill(pkseed, adrs, leaves);
+    _ = #init_msf(); // the unspilled values are public after the fence
+
+    leaves = thash_x4_n::thash_x4(leaves, sks, pkseed, adrs, w67);
+
+    return leaves;
+}
+
+inline // inline wrapper that splits parameter live-ranges, to aid the Jasmin compiler
+fn __fors_leaves_x4(
+    reg ptr u8[4*SPX_N] leaves,
+    reg ptr u8[SPX_N] skseed,
+    reg ptr u8[SPX_N] pkseed,
+    reg ptr u32[8] adrs,
+    reg u32 idx
+) -> reg ptr u8[4*SPX_N] // -> leaves
+{
+    leaves = leaves; skseed = skseed; pkseed = pkseed; adrs = adrs; idx = idx;
+
+    leaves = fors_leaves_x4(leaves, skseed, pkseed, adrs, idx);
+
+    leaves = leaves;
+
+    return leaves;
+}
+
 /*-------------------------------------------------------------+
 | ALGORITHM 15 FROM SLH-DSS (FIPS 205)                         |
 | Computes the root of a Merkle subtree of FORS public values. |
@@ -146,6 +216,16 @@ fn fors_node(
     reg u64 pow;       // temporary variable for computing powers
     reg u32 exp;       // temporary variable for computing exponents
 
+    // four-way variables
+    stack u32[8] w67;              // tree height and tree index of every lane
+    stack u8[4*SPX_N] parents;     // the four parent nodes
+    reg ptr u8[8*SPX_N] children;  // pointer to subarray with the eight child nodes
+    reg ptr u8[4*SPX_N] leaves;    // pointer to subarray with four leaves
+    reg u32 avail_nodes;           // number of nodes left to compute on the current layer
+    reg u32 idx;                   // tree index of a lane
+
+    inline int j;
+
     node_addr = 0; // assigned in the loops below; initialised for the SCT checker
     layer = 0; // iterate over the layers
     while (layer <= z) {
@@ -180,17 +260,35 @@ fn fors_node(
                 node_addr = label;  // node_addr = forest_label(node, layer)
                 node_addr *= SPX_N; // node_addr = forest_label(node, layer) * SPX_N
 
-                // compute the FORS secret key value
-                () = #spill(pkseed, adrs, i, layer, node, node_addr);
-                flat_tree[node_addr : SPX_N] = __fors_skgen(flat_tree[node_addr : SPX_N], skseed, pkseed, adrs, node);
-                () = #unspill(pkseed, adrs, i, layer, node, node_addr);
-                _ = #init_msf(); // the unspilled values are public after the fence
+                // compute how many leaves still need to be computed
+                avail_nodes  = rightmost;
+                avail_nodes -= node;
 
-                // compute the hash of the FORS secret key value
-                () = #spill(pkseed, adrs, i, layer, node, node_addr);
-                flat_tree[node_addr : SPX_N] = __F(flat_tree[node_addr : SPX_N], pkseed, adrs);
-                () = #unspill(pkseed, adrs, i, layer, node, node_addr);
-                _ = #init_msf(); // the unspilled values are public after the fence
+                // four leaves at a time when the subtree has at least four
+                // (then it has a multiple of four, adjacent in flat_tree)
+                if (avail_nodes >= 4) {
+                    () = #spill(pkseed, adrs, i, layer, node, node_addr);
+                    leaves = flat_tree[node_addr : 4*SPX_N];
+                    leaves = __fors_leaves_x4(leaves, skseed, pkseed, adrs, node);
+                    flat_tree[node_addr : 4*SPX_N] = leaves;
+                    () = #unspill(pkseed, adrs, i, layer, node, node_addr);
+                    _ = #init_msf(); // the unspilled values are public after the fence
+
+                    // the loop advances one leaf, so skip the other three here
+                    node += 3;
+                } else {
+                    // compute the FORS secret key value
+                    () = #spill(pkseed, adrs, i, layer, node, node_addr);
+                    flat_tree[node_addr : SPX_N] = __fors_skgen(flat_tree[node_addr : SPX_N], skseed, pkseed, adrs, node);
+                    () = #unspill(pkseed, adrs, i, layer, node, node_addr);
+                    _ = #init_msf(); // the unspilled values are public after the fence
+
+                    // compute the hash of the FORS secret key value
+                    () = #spill(pkseed, adrs, i, layer, node, node_addr);
+                    flat_tree[node_addr : SPX_N] = __F(flat_tree[node_addr : SPX_N], pkseed, adrs);
+                    () = #unspill(pkseed, adrs, i, layer, node, node_addr);
+                    _ = #init_msf(); // the unspilled values are public after the fence
+                }
             } else { // layer > 0
                 // internal node: the node value is the hash of its two children lnode and rnode
 
@@ -207,16 +305,6 @@ fn fors_node(
                 lnode = label;  // lnode = forest_label(2*node, layer-1)
                 lnode *= SPX_N; // lnode = forest_label(2*node, layer-1) * SPX_N
 
-                // compute the byte address of the right child, which by definition is adjoining the left child
-                rnode = lnode;  // rnode = forest_label(2*node,   layer-1) * SPX_N
-                rnode += SPX_N; // rnode = forest_label(2*node+1, layer-1) * SPX_N
-
-                // copy the children to buffers
-                // note: trying to pass the children to H as two reg ptr (to avoid the needless copying),
-                // gives the error that some reg ptr are not disjoint?
-                buf_l = __copy_nbytes(buf_l, flat_tree[lnode : SPX_N]);
-                buf_r = __copy_nbytes(buf_r, flat_tree[rnode : SPX_N]);
-
                 // set the correct values in ADRS for tree node hashing
                 // (ADRS type is already SPX_ADRS_TYPE_TREE, which is set
                 // in spx.jinc, in slh_sign_internal and slh_verify_internal)
@@ -230,11 +318,52 @@ fn fors_node(
                 node_addr = label;  // node_addr = forest_label(node, layer)
                 node_addr *= SPX_N; // node_addr = forest_label(node, layer) * SPX_N
 
-                // compute node value = H(PK.seed, ADRS, lnode || rnode)
-                () = #spill(pkseed, adrs, i, layer, node);
-                flat_tree[node_addr : SPX_N] = __H(flat_tree[node_addr : SPX_N], pkseed, adrs, buf_l, buf_r);
-                () = #unspill(pkseed, adrs, i, layer, node);
-                _ = #init_msf(); // the unspilled values are public after the fence
+                // compute how many nodes still need to be computed on this layer
+                avail_nodes  = rightmost;
+                avail_nodes -= node;
+
+                if (avail_nodes >= 4) {
+                    // four parents node, ..., node+3 at once: their eight
+                    // children are adjacent in flat_tree, as are the parents
+
+                    // tree height and tree index of every lane
+                    for j=0 to 4 {
+                        w67[2*j] = layer;
+                        idx = node;
+                        idx += j;
+                        w67[2*j+1] = idx;
+                    }
+
+                    () = #spill(pkseed, adrs, i, layer, node, node_addr);
+                    children = flat_tree[lnode : 8*SPX_N];
+                    parents = thash_x4_2n::thash_x4(parents, children, pkseed, adrs, w67);
+                    flat_tree[lnode : 8*SPX_N] = children;
+                    () = #unspill(pkseed, adrs, i, layer, node, node_addr);
+                    _ = #init_msf(); // the unspilled values are public after the fence
+
+                    for j=0 to 4 {
+                        flat_tree[node_addr + j*SPX_N : SPX_N] = __copy_nbytes(flat_tree[node_addr + j*SPX_N : SPX_N], parents[j*SPX_N : SPX_N]);
+                    }
+
+                    // the loop advances one node, so skip the other three here
+                    node += 3;
+                } else {
+                    // compute the byte address of the right child, which by definition is adjoining the left child
+                    rnode = lnode;  // rnode = forest_label(2*node,   layer-1) * SPX_N
+                    rnode += SPX_N; // rnode = forest_label(2*node+1, layer-1) * SPX_N
+
+                    // copy the children to buffers
+                    // note: trying to pass the children to H as two reg ptr (to avoid the needless copying),
+                    // gives the error that some reg ptr are not disjoint?
+                    buf_l = __copy_nbytes(buf_l, flat_tree[lnode : SPX_N]);
+                    buf_r = __copy_nbytes(buf_r, flat_tree[rnode : SPX_N]);
+
+                    // compute node value = H(PK.seed, ADRS, lnode || rnode)
+                    () = #spill(pkseed, adrs, i, layer, node, node_addr);
+                    flat_tree[node_addr : SPX_N] = __H(flat_tree[node_addr : SPX_N], pkseed, adrs, buf_l, buf_r);
+                    () = #unspill(pkseed, adrs, i, layer, node, node_addr);
+                    _ = #init_msf(); // the unspilled values are public after the fence
+                }
             }
 
             () = #unspill(skseed, rightmost);

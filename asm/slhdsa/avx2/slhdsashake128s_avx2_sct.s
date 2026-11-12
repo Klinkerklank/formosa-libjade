@@ -85,25 +85,26 @@ slh_dsa_shake128s_sign:
 	.type	slh_dsa_shake128s_keygen, %function
 slh_dsa_shake128s_keygen:
 	movq	%rsp, %rax
-	leaq	-8(%rsp), %rsp
+	leaq	-16(%rsp), %rsp
 	andq	$-32, %rsp
-	movq	%rax, (%rsp)
-	movq	%rsi, %rax
-	movq	%rdx, %rcx
+	movq	%rbx, (%rsp)
+	movq	%rax, 8(%rsp)
+	movq	%rdx, %rax
 	lfence
-	movq	$0, %rdx
+	movq	$0, %rcx
 	leaq	-56(%rsp), %rsp
 	call	.Lslh_keygen_internal_$1
 .Lslh_dsa_shake128s_keygen$1:
 	leaq	56(%rsp), %rsp
-	movq	(%rsp), %rsp
+	movq	(%rsp), %rbx
+	movq	8(%rsp), %rsp
 	ret
 .Lslh_verify_internal_$1:
-	leaq	72(%rsp), %r9
-	movq	$0, (%r9)
-	movq	$0, 8(%r9)
-	movq	$0, 16(%r9)
-	movq	$0, 24(%r9)
+	leaq	72(%rsp), %r11
+	movq	$0, (%r11)
+	movq	$0, 8(%r11)
+	movq	$0, 16(%r11)
+	movq	$0, 24(%r11)
 	movq	%rdi, %r9
 	leaq	16(%rdi), %r10
 	movq	%r8, %r11
@@ -118,14 +119,14 @@ slh_dsa_shake128s_keygen:
 .Lslh_verify_internal_$4:
 	leaq	280(%rsp), %rsp
 // declassify_mem 30 [RSP + 120]
-	movq	48(%rsp), %r8
+	movq	48(%rsp), %rsi
 	movq	56(%rsp), %rax
 	movq	64(%rsp), %rdi
 	lfence
-	movq	$0, %rdx
+	movq	$0, %rcx
 	leaq	120(%rsp), %rcx
 	leaq	141(%rsp), %rdx
-	leaq	148(%rsp), %rsi
+	leaq	148(%rsp), %r8
 	movl	$0, 108(%rsp)
 	movl	$0, 112(%rsp)
 	movl	$0, 116(%rsp)
@@ -210,39 +211,40 @@ slh_dsa_shake128s_keygen:
 	andl	$4194303, 112(%rsp)
 	movl	$0, %edx
 	shll	$8, %edx
-	movzbl	(%rsi), %r9d
+	movzbl	(%r8), %r9d
 	orl 	%r9d, %edx
 	shll	$8, %edx
-	movzbl	1(%rsi), %r9d
+	movzbl	1(%r8), %r9d
 	orl 	%r9d, %edx
 	andl	$511, %edx
-	leaq	72(%rsp), %r9
-	movl	108(%rsp), %esi
-	movl	%esi, 4(%r9)
-	movl	112(%rsp), %esi
-	movl	%esi, 8(%r9)
-	movl	116(%rsp), %esi
-	movl	%esi, 12(%r9)
-	leaq	72(%rsp), %r9
-	movq	$0, 16(%r9)
-	movq	$0, 24(%r9)
-	movl	$3, 16(%r9)
-	leaq	72(%rsp), %r9
-	movl	%edx, 20(%r9)
-	leaq	16(%rdi), %r10
-	movq	%r8, 64(%rsp)
+	leaq	72(%rsp), %r11
+	movl	108(%rsp), %r8d
+	movl	%r8d, 4(%r11)
+	movl	112(%rsp), %r8d
+	movl	%r8d, 8(%r11)
+	movl	116(%rsp), %r8d
+	movl	%r8d, 12(%r11)
+	leaq	72(%rsp), %r11
+	movq	$0, 16(%r11)
+	movq	$0, 24(%r11)
+	movl	$3, 16(%r11)
+	leaq	72(%rsp), %r11
+	movl	%edx, 20(%r11)
+	leaq	16(%rdi), %r8
+	movq	%rsi, 64(%rsp)
 	movq	%rax, 56(%rsp)
 	movq	%rdi, 48(%rsp)
 	movl	%edx, 104(%rsp)
 	leaq	32(%rsp), %rax
-	leaq	72(%rsp), %r9
+	leaq	72(%rsp), %r11
 	movq	%rax, %rdx
 	movq	%rcx, %rax
+	movq	%rsi, %r9
 	leaq	-504(%rsp), %rsp
 	call	.Lfors_pkfromsig$1
 .Lslh_verify_internal_$3:
 	leaq	504(%rsp), %rsp
-	movq	64(%rsp), %r8
+	movq	64(%rsp), %rsi
 	movq	56(%rsp), %r10
 	movq	48(%rsp), %rdi
 	movl	104(%rsp), %edx
@@ -250,7 +252,8 @@ slh_dsa_shake128s_keygen:
 	movq	$0, %rax
 	leaq	32(%rsp), %rax
 	leaq	2928(%rdi), %rcx
-	leaq	108(%rsp), %rsi
+	leaq	108(%rsp), %rdi
+	movq	%rdi, %r8
 	leaq	-120(%rsp), %rsp
 	call	.Lht_verify$1
 .Lslh_verify_internal_$2:
@@ -274,11 +277,11 @@ slh_dsa_shake128s_keygen:
 	call	.LPRF_msg$1
 .Lslh_sign_internal_$6:
 	leaq	280(%rsp), %rsp
-	movq	%rcx, %r8
+	movq	%rax, %r8
 	movq	80(%rsp), %rdi
 	movq	88(%rsp), %rax
 	lfence
-	movq	$0, %rdx
+	movq	$0, %rcx
 	movq	48(%rsp), %r11
 	movq	56(%rsp), %rcx
 	movq	64(%rsp), %rdx
@@ -297,14 +300,14 @@ slh_dsa_shake128s_keygen:
 .Lslh_sign_internal_$5:
 	leaq	280(%rsp), %rsp
 // declassify_mem 30 [RSP + 144]
-	movq	72(%rsp), %r8
+	movq	72(%rsp), %rsi
 	movq	64(%rsp), %rdi
 	movq	56(%rsp), %rax
 	lfence
 	movq	$0, %rcx
 	leaq	144(%rsp), %rcx
 	leaq	165(%rsp), %rdx
-	leaq	172(%rsp), %rsi
+	leaq	172(%rsp), %r8
 	movl	$0, 132(%rsp)
 	movl	$0, 136(%rsp)
 	movl	$0, 140(%rsp)
@@ -389,67 +392,70 @@ slh_dsa_shake128s_keygen:
 	andl	$4194303, 136(%rsp)
 	movl	$0, %edx
 	shll	$8, %edx
-	movzbl	(%rsi), %r9d
+	movzbl	(%r8), %r9d
 	orl 	%r9d, %edx
 	shll	$8, %edx
-	movzbl	1(%rsi), %r9d
+	movzbl	1(%r8), %r9d
 	orl 	%r9d, %edx
 	andl	$511, %edx
-	leaq	96(%rsp), %r9
-	movl	132(%rsp), %esi
-	movl	%esi, 4(%r9)
-	movl	136(%rsp), %esi
-	movl	%esi, 8(%r9)
-	movl	140(%rsp), %esi
-	movl	%esi, 12(%r9)
-	leaq	96(%rsp), %r9
-	movq	$0, 16(%r9)
-	movq	$0, 24(%r9)
-	movl	$3, 16(%r9)
-	leaq	96(%rsp), %r9
-	movl	%edx, 20(%r9)
-	movq	%rax, %r11
-	leaq	16(%rdi), %r10
-	movq	%r11, 56(%rsp)
-	movq	%r8, 64(%rsp)
+	leaq	96(%rsp), %r11
+	movl	132(%rsp), %r8d
+	movl	%r8d, 4(%r11)
+	movl	136(%rsp), %r8d
+	movl	%r8d, 8(%r11)
+	movl	140(%rsp), %r8d
+	movl	%r8d, 12(%r11)
+	leaq	96(%rsp), %r11
+	movq	$0, 16(%r11)
+	movq	$0, 24(%r11)
+	movl	$3, 16(%r11)
+	leaq	96(%rsp), %r11
+	movl	%edx, 20(%r11)
+	movq	%rax, %rbx
+	leaq	16(%rdi), %r9
+	movq	%rbx, 56(%rsp)
+	movq	%rsi, 64(%rsp)
 	movq	%rdi, 72(%rsp)
 	movq	%rcx, 48(%rsp)
 	movl	%edx, 128(%rsp)
-	leaq	96(%rsp), %r9
+	leaq	96(%rsp), %r11
 	movq	%rcx, %rax
 	leaq	-120(%rsp), %rsp
 	call	.Lfors_sign$1
 .Lslh_sign_internal_$4:
 	leaq	120(%rsp), %rsp
-// declassify_mem 2912 [R10]
-	movq	56(%rsp), %r11
-	movq	64(%rsp), %r8
+	movq	%r9, %r8
+// declassify_mem 2912 [R8]
+	movq	56(%rsp), %rax
+	movq	64(%rsp), %r9
 	movq	72(%rsp), %rdi
-	movq	48(%rsp), %rax
+	movq	48(%rsp), %rcx
 	movl	128(%rsp), %edx
 	lfence
-	movq	$0, %rcx
-	movq	%r11, 48(%rsp)
-	movq	%r8, 72(%rsp)
+	movq	$0, %rsi
+	movq	%rax, 48(%rsp)
+	movq	%r9, 72(%rsp)
 	movq	%rdi, 64(%rsp)
 	movl	%edx, 128(%rsp)
-	leaq	32(%rsp), %rcx
-	leaq	96(%rsp), %r9
-	movq	%rcx, %rdx
+	leaq	32(%rsp), %rax
+	leaq	96(%rsp), %r11
+	movq	%rax, %rdx
+	movq	%rcx, %rax
 	leaq	-504(%rsp), %rsp
 	call	.Lfors_pkfromsig$1
 .Lslh_sign_internal_$3:
 	leaq	504(%rsp), %rsp
-	movq	48(%rsp), %r11
-	movq	72(%rsp), %r8
+	movq	48(%rsp), %rdx
+	movq	72(%rsp), %rsi
 	movq	64(%rsp), %rdi
-	movl	128(%rsp), %edx
+	movl	128(%rsp), %r8d
 	lfence
 	movq	$0, %rax
 	leaq	2928(%rdi), %rcx
 	movq	%rdi, 64(%rsp)
 	leaq	32(%rsp), %rax
-	leaq	132(%rsp), %rsi
+	leaq	132(%rsp), %rdi
+	movq	%rdi, %r9
 	leaq	-120(%rsp), %rsp
 	call	.Lht_sign$1
 .Lslh_sign_internal_$2:
@@ -461,56 +467,56 @@ slh_dsa_shake128s_keygen:
 	movq	$0, %rax
 	ret
 .Lslh_keygen_internal_$1:
-	movq	%rax, %r11
-	movq	%rcx, %rsi
-	movq	(%rsi), %rdx
+	movq	%rsi, %r11
+	movq	%rax, %r9
+	movq	(%r9), %rdx
 	movq	%rdx, (%r11)
-	movq	8(%rsi), %rdx
+	movq	8(%r9), %rdx
 	movq	%rdx, 8(%r11)
-	leaq	16(%rax), %r11
-	leaq	16(%rcx), %rsi
-	movq	(%rsi), %rdx
+	leaq	16(%rsi), %r11
+	leaq	16(%rax), %r9
+	movq	(%r9), %rdx
 	movq	%rdx, (%r11)
-	movq	8(%rsi), %rdx
+	movq	8(%r9), %rdx
 	movq	%rdx, 8(%r11)
-	leaq	32(%rax), %r11
-	leaq	32(%rcx), %rsi
-	movq	(%rsi), %rdx
+	leaq	32(%rsi), %r11
+	leaq	32(%rax), %r9
+	movq	(%r9), %rdx
 	movq	%rdx, (%r11)
-	movq	8(%rsi), %rdx
+	movq	8(%r9), %rdx
 	movq	%rdx, 8(%r11)
 	movq	%rdi, %r11
-	leaq	32(%rcx), %rsi
-	movq	(%rsi), %rdx
+	leaq	32(%rax), %r9
+	movq	(%r9), %rdx
 	movq	%rdx, (%r11)
-	movq	8(%rsi), %rdx
+	movq	8(%r9), %rdx
 	movq	%rdx, 8(%r11)
-	movq	%rax, %r11
-	leaq	32(%rax), %r8
-	leaq	24(%rsp), %r9
-	movq	$0, (%r9)
-	movq	$0, 8(%r9)
-	movq	$0, 16(%r9)
-	movq	$0, 24(%r9)
-	movl	$6, %esi
-	leaq	24(%rsp), %r9
-	movl	%esi, (%r9)
-	movl	$0, %r10d
-	movl	$9, %ecx
-	leaq	48(%rax), %rdx
-	movq	%rax, 8(%rsp)
+	movq	%rsi, %rdx
+	leaq	32(%rsi), %rax
+	leaq	24(%rsp), %r11
+	movq	$0, (%r11)
+	movq	$0, 8(%r11)
+	movq	$0, 16(%r11)
+	movq	$0, 24(%r11)
+	movl	$6, %r10d
+	leaq	24(%rsp), %r11
+	movl	%r10d, (%r11)
+	movl	$0, %r9d
+	movl	$9, %r8d
+	leaq	48(%rsi), %rcx
+	movq	%rsi, 8(%rsp)
 	movq	%rdi, 16(%rsp)
-	leaq	24(%rsp), %r9
-	movq	%rdx, %rax
-	leaq	-16504(%rsp), %rsp
+	leaq	24(%rsp), %r11
+	movq	%rax, %rsi
+	leaq	-16600(%rsp), %rsp
 	call	.Lxmss_node$1
 .Lslh_keygen_internal_$2:
-	leaq	16504(%rsp), %rsp
-	movq	%rdx, %rax
+	leaq	16600(%rsp), %rsp
+	movq	%rcx, %rax
 	movq	8(%rsp), %rsi
 	movq	16(%rsp), %rdi
 	lfence
-	movq	$0, %rdx
+	movq	$0, %rcx
 	leaq	16(%rdi), %r11
 	movq	(%rax), %rdx
 	movq	%rdx, (%r11)
@@ -527,591 +533,592 @@ slh_dsa_shake128s_keygen:
 	jmp 	.Lfors_pkfromsig$37
 .Lfors_pkfromsig$38:
 	shll	$8, %edi
-	movzbl	(%rax,%rsi), %r11d
-	orl 	%r11d, %edi
+	movzbl	(%rax,%rsi), %r10d
+	orl 	%r10d, %edi
 	incq	%rsi
 	addl	$8, %ecx
 .Lfors_pkfromsig$37:
 	cmpl	$12, %ecx
 	jb  	.Lfors_pkfromsig$38
-	movl	%edi, %r11d
+	movl	%edi, %r10d
 	addl	$-12, %ecx
-	shrq	%cl, %r11
-	andq	$4095, %r11
-	movl	%r11d, (%rdx)
+	shrq	%cl, %r10
+	andq	$4095, %r10
+	movl	%r10d, (%rdx)
 	jmp 	.Lfors_pkfromsig$35
 .Lfors_pkfromsig$36:
 	shll	$8, %edi
-	movzbl	(%rax,%rsi), %r11d
-	orl 	%r11d, %edi
+	movzbl	(%rax,%rsi), %r10d
+	orl 	%r10d, %edi
 	incq	%rsi
 	addl	$8, %ecx
 .Lfors_pkfromsig$35:
 	cmpl	$12, %ecx
 	jb  	.Lfors_pkfromsig$36
-	movl	%edi, %r11d
+	movl	%edi, %r10d
 	addl	$-12, %ecx
-	shrq	%cl, %r11
-	andq	$4095, %r11
-	movl	%r11d, 4(%rdx)
+	shrq	%cl, %r10
+	andq	$4095, %r10
+	movl	%r10d, 4(%rdx)
 	jmp 	.Lfors_pkfromsig$33
 .Lfors_pkfromsig$34:
 	shll	$8, %edi
-	movzbl	(%rax,%rsi), %r11d
-	orl 	%r11d, %edi
+	movzbl	(%rax,%rsi), %r10d
+	orl 	%r10d, %edi
 	incq	%rsi
 	addl	$8, %ecx
 .Lfors_pkfromsig$33:
 	cmpl	$12, %ecx
 	jb  	.Lfors_pkfromsig$34
-	movl	%edi, %r11d
+	movl	%edi, %r10d
 	addl	$-12, %ecx
-	shrq	%cl, %r11
-	andq	$4095, %r11
-	movl	%r11d, 8(%rdx)
+	shrq	%cl, %r10
+	andq	$4095, %r10
+	movl	%r10d, 8(%rdx)
 	jmp 	.Lfors_pkfromsig$31
 .Lfors_pkfromsig$32:
 	shll	$8, %edi
-	movzbl	(%rax,%rsi), %r11d
-	orl 	%r11d, %edi
+	movzbl	(%rax,%rsi), %r10d
+	orl 	%r10d, %edi
 	incq	%rsi
 	addl	$8, %ecx
 .Lfors_pkfromsig$31:
 	cmpl	$12, %ecx
 	jb  	.Lfors_pkfromsig$32
-	movl	%edi, %r11d
+	movl	%edi, %r10d
 	addl	$-12, %ecx
-	shrq	%cl, %r11
-	andq	$4095, %r11
-	movl	%r11d, 12(%rdx)
+	shrq	%cl, %r10
+	andq	$4095, %r10
+	movl	%r10d, 12(%rdx)
 	jmp 	.Lfors_pkfromsig$29
 .Lfors_pkfromsig$30:
 	shll	$8, %edi
-	movzbl	(%rax,%rsi), %r11d
-	orl 	%r11d, %edi
+	movzbl	(%rax,%rsi), %r10d
+	orl 	%r10d, %edi
 	incq	%rsi
 	addl	$8, %ecx
 .Lfors_pkfromsig$29:
 	cmpl	$12, %ecx
 	jb  	.Lfors_pkfromsig$30
-	movl	%edi, %r11d
+	movl	%edi, %r10d
 	addl	$-12, %ecx
-	shrq	%cl, %r11
-	andq	$4095, %r11
-	movl	%r11d, 16(%rdx)
+	shrq	%cl, %r10
+	andq	$4095, %r10
+	movl	%r10d, 16(%rdx)
 	jmp 	.Lfors_pkfromsig$27
 .Lfors_pkfromsig$28:
 	shll	$8, %edi
-	movzbl	(%rax,%rsi), %r11d
-	orl 	%r11d, %edi
+	movzbl	(%rax,%rsi), %r10d
+	orl 	%r10d, %edi
 	incq	%rsi
 	addl	$8, %ecx
 .Lfors_pkfromsig$27:
 	cmpl	$12, %ecx
 	jb  	.Lfors_pkfromsig$28
-	movl	%edi, %r11d
+	movl	%edi, %r10d
 	addl	$-12, %ecx
-	shrq	%cl, %r11
-	andq	$4095, %r11
-	movl	%r11d, 20(%rdx)
+	shrq	%cl, %r10
+	andq	$4095, %r10
+	movl	%r10d, 20(%rdx)
 	jmp 	.Lfors_pkfromsig$25
 .Lfors_pkfromsig$26:
 	shll	$8, %edi
-	movzbl	(%rax,%rsi), %r11d
-	orl 	%r11d, %edi
+	movzbl	(%rax,%rsi), %r10d
+	orl 	%r10d, %edi
 	incq	%rsi
 	addl	$8, %ecx
 .Lfors_pkfromsig$25:
 	cmpl	$12, %ecx
 	jb  	.Lfors_pkfromsig$26
-	movl	%edi, %r11d
+	movl	%edi, %r10d
 	addl	$-12, %ecx
-	shrq	%cl, %r11
-	andq	$4095, %r11
-	movl	%r11d, 24(%rdx)
+	shrq	%cl, %r10
+	andq	$4095, %r10
+	movl	%r10d, 24(%rdx)
 	jmp 	.Lfors_pkfromsig$23
 .Lfors_pkfromsig$24:
 	shll	$8, %edi
-	movzbl	(%rax,%rsi), %r11d
-	orl 	%r11d, %edi
+	movzbl	(%rax,%rsi), %r10d
+	orl 	%r10d, %edi
 	incq	%rsi
 	addl	$8, %ecx
 .Lfors_pkfromsig$23:
 	cmpl	$12, %ecx
 	jb  	.Lfors_pkfromsig$24
-	movl	%edi, %r11d
+	movl	%edi, %r10d
 	addl	$-12, %ecx
-	shrq	%cl, %r11
-	andq	$4095, %r11
-	movl	%r11d, 28(%rdx)
+	shrq	%cl, %r10
+	andq	$4095, %r10
+	movl	%r10d, 28(%rdx)
 	jmp 	.Lfors_pkfromsig$21
 .Lfors_pkfromsig$22:
 	shll	$8, %edi
-	movzbl	(%rax,%rsi), %r11d
-	orl 	%r11d, %edi
+	movzbl	(%rax,%rsi), %r10d
+	orl 	%r10d, %edi
 	incq	%rsi
 	addl	$8, %ecx
 .Lfors_pkfromsig$21:
 	cmpl	$12, %ecx
 	jb  	.Lfors_pkfromsig$22
-	movl	%edi, %r11d
+	movl	%edi, %r10d
 	addl	$-12, %ecx
-	shrq	%cl, %r11
-	andq	$4095, %r11
-	movl	%r11d, 32(%rdx)
+	shrq	%cl, %r10
+	andq	$4095, %r10
+	movl	%r10d, 32(%rdx)
 	jmp 	.Lfors_pkfromsig$19
 .Lfors_pkfromsig$20:
 	shll	$8, %edi
-	movzbl	(%rax,%rsi), %r11d
-	orl 	%r11d, %edi
+	movzbl	(%rax,%rsi), %r10d
+	orl 	%r10d, %edi
 	incq	%rsi
 	addl	$8, %ecx
 .Lfors_pkfromsig$19:
 	cmpl	$12, %ecx
 	jb  	.Lfors_pkfromsig$20
-	movl	%edi, %r11d
+	movl	%edi, %r10d
 	addl	$-12, %ecx
-	shrq	%cl, %r11
-	andq	$4095, %r11
-	movl	%r11d, 36(%rdx)
+	shrq	%cl, %r10
+	andq	$4095, %r10
+	movl	%r10d, 36(%rdx)
 	jmp 	.Lfors_pkfromsig$17
 .Lfors_pkfromsig$18:
 	shll	$8, %edi
-	movzbl	(%rax,%rsi), %r11d
-	orl 	%r11d, %edi
+	movzbl	(%rax,%rsi), %r10d
+	orl 	%r10d, %edi
 	incq	%rsi
 	addl	$8, %ecx
 .Lfors_pkfromsig$17:
 	cmpl	$12, %ecx
 	jb  	.Lfors_pkfromsig$18
-	movl	%edi, %r11d
+	movl	%edi, %r10d
 	addl	$-12, %ecx
-	shrq	%cl, %r11
-	andq	$4095, %r11
-	movl	%r11d, 40(%rdx)
+	shrq	%cl, %r10
+	andq	$4095, %r10
+	movl	%r10d, 40(%rdx)
 	jmp 	.Lfors_pkfromsig$15
 .Lfors_pkfromsig$16:
 	shll	$8, %edi
-	movzbl	(%rax,%rsi), %r11d
-	orl 	%r11d, %edi
+	movzbl	(%rax,%rsi), %r10d
+	orl 	%r10d, %edi
 	incq	%rsi
 	addl	$8, %ecx
 .Lfors_pkfromsig$15:
 	cmpl	$12, %ecx
 	jb  	.Lfors_pkfromsig$16
-	movl	%edi, %r11d
+	movl	%edi, %r10d
 	addl	$-12, %ecx
-	shrq	%cl, %r11
-	andq	$4095, %r11
-	movl	%r11d, 44(%rdx)
+	shrq	%cl, %r10
+	andq	$4095, %r10
+	movl	%r10d, 44(%rdx)
 	jmp 	.Lfors_pkfromsig$13
 .Lfors_pkfromsig$14:
 	shll	$8, %edi
-	movzbl	(%rax,%rsi), %r11d
-	orl 	%r11d, %edi
+	movzbl	(%rax,%rsi), %r10d
+	orl 	%r10d, %edi
 	incq	%rsi
 	addl	$8, %ecx
 .Lfors_pkfromsig$13:
 	cmpl	$12, %ecx
 	jb  	.Lfors_pkfromsig$14
-	movl	%edi, %r11d
+	movl	%edi, %r10d
 	addl	$-12, %ecx
-	shrq	%cl, %r11
-	andq	$4095, %r11
-	movl	%r11d, 48(%rdx)
+	shrq	%cl, %r10
+	andq	$4095, %r10
+	movl	%r10d, 48(%rdx)
 	jmp 	.Lfors_pkfromsig$11
 .Lfors_pkfromsig$12:
 	shll	$8, %edi
-	movzbl	(%rax,%rsi), %r11d
-	orl 	%r11d, %edi
+	movzbl	(%rax,%rsi), %r10d
+	orl 	%r10d, %edi
 	incq	%rsi
 	addl	$8, %ecx
 .Lfors_pkfromsig$11:
 	cmpl	$12, %ecx
 	jb  	.Lfors_pkfromsig$12
-	movl	%edi, %r11d
+	movl	%edi, %r10d
 	addl	$-12, %ecx
-	shrq	%cl, %r11
-	andq	$4095, %r11
-	movl	%r11d, 52(%rdx)
-	movq	$0, %rax
+	shrq	%cl, %r10
+	andq	$4095, %r10
+	movl	%r10d, 52(%rdx)
 	movq	$0, %rcx
-	movq	$0, %rdi
+	movq	$0, %rdx
+	movq	$0, %rax
 	jmp 	.Lfors_pkfromsig$3
 .Lfors_pkfromsig$4:
-	movq	%rcx, 360(%rsp)
-	leaq	(%r10,%rax), %rsi
-	leaq	64(%rsp), %r11
-	movq	(%rsi), %rdx
-	movq	%rdx, (%r11)
-	movq	8(%rsi), %rdx
-	movq	%rdx, 8(%r11)
-	movl	$0, %ecx
-	movl	%ecx, 24(%r9)
-	movl	%edi, %edx
-	shll	$12, %edx
-	addl	448(%rsp,%rdi,4), %edx
-	lfence
-	movq	$0, %rcx
-	movl	%edx, 28(%r9)
-	movq	%r8, 368(%rsp)
-	movq	%r9, 376(%rsp)
-	movq	%r10, 384(%rsp)
-	movq	%rdi, 392(%rsp)
-	movq	%rax, 400(%rsp)
+	movq	%rdx, 360(%rsp)
+	leaq	(%r8,%rcx), %rsi
 	leaq	64(%rsp), %rdi
+	movq	(%rsi), %rdx
+	movq	%rdx, (%rdi)
+	movq	8(%rsi), %rdx
+	movq	%rdx, 8(%rdi)
+	movl	$0, %edx
+	movl	%edx, 24(%r11)
+	movl	%eax, %edx
+	shll	$12, %edx
+	addl	448(%rsp,%rax,4), %edx
+	lfence
+	movq	$0, %rsi
+	movl	%edx, 28(%r11)
+	movq	%r9, 368(%rsp)
+	movq	%r11, 376(%rsp)
+	movq	%r8, 384(%rsp)
+	movq	%rax, 392(%rsp)
+	movq	%rcx, 400(%rsp)
+	leaq	64(%rsp), %rdi
+	movq	%r9, %rax
 	leaq	-40(%rsp), %rsp
 	call	.LF$1
 .Lfors_pkfromsig$10:
 	leaq	40(%rsp), %rsp
-	movq	368(%rsp), %r8
-	movq	376(%rsp), %r9
-	movq	384(%rsp), %r10
-	movq	392(%rsp), %rdi
-	movq	400(%rsp), %rax
+	movq	368(%rsp), %r9
+	movq	376(%rsp), %r11
+	movq	384(%rsp), %r8
+	movq	392(%rsp), %rax
+	movq	400(%rsp), %rcx
 	lfence
-	movq	$0, %rcx
-	addq	$16, %rax
-	movl	448(%rsp,%rdi,4), %esi
+	movq	$0, %rdx
+	addq	$16, %rcx
+	movl	448(%rsp,%rax,4), %edi
 	lfence
-	movq	$0, %rcx
-	movl	$0, %edx
+	movq	$0, %rdx
+	movl	$0, %esi
 	jmp 	.Lfors_pkfromsig$5
 .Lfors_pkfromsig$6:
-	movl	%edx, %ecx
-	incl	%ecx
-	movl	%ecx, 24(%r9)
-	movl	%esi, %ecx
-	andl	$1, %ecx
-	movl	%edx, 440(%rsp)
-	movl	%esi, 444(%rsp)
-	cmpl	$0, %ecx
+	movl	%esi, %edx
+	incl	%edx
+	movl	%edx, 24(%r11)
+	movl	%edi, %edx
+	andl	$1, %edx
+	movl	%esi, 440(%rsp)
+	movl	%edi, 444(%rsp)
+	cmpl	$0, %edx
 	je  	.Lfors_pkfromsig$8
-	movl	28(%r9), %edx
+	movl	28(%r11), %edx
 	decl	%edx
 	shrl	$1, %edx
-	movl	%edx, 28(%r9)
-	leaq	336(%rsp), %r11
-	leaq	(%r10,%rax), %rsi
+	movl	%edx, 28(%r11)
+	leaq	336(%rsp), %rdi
+	leaq	(%r8,%rcx), %rsi
 	movq	(%rsi), %rdx
-	movq	%rdx, (%r11)
+	movq	%rdx, (%rdi)
 	movq	8(%rsi), %rdx
-	movq	%rdx, 8(%r11)
-	leaq	320(%rsp), %r11
+	movq	%rdx, 8(%rdi)
+	leaq	320(%rsp), %rdi
 	leaq	64(%rsp), %rsi
 	movq	(%rsi), %rdx
-	movq	%rdx, (%r11)
+	movq	%rdx, (%rdi)
 	movq	8(%rsi), %rdx
-	movq	%rdx, 8(%r11)
+	movq	%rdx, 8(%rdi)
 	jmp 	.Lfors_pkfromsig$9
 .Lfors_pkfromsig$8:
-	movl	28(%r9), %edx
+	movl	28(%r11), %edx
 	shrl	$1, %edx
-	movl	%edx, 28(%r9)
-	leaq	336(%rsp), %r11
+	movl	%edx, 28(%r11)
+	leaq	336(%rsp), %rdi
 	leaq	64(%rsp), %rsi
 	movq	(%rsi), %rdx
-	movq	%rdx, (%r11)
+	movq	%rdx, (%rdi)
 	movq	8(%rsi), %rdx
-	movq	%rdx, 8(%r11)
-	leaq	320(%rsp), %r11
-	leaq	(%r10,%rax), %rsi
+	movq	%rdx, 8(%rdi)
+	leaq	320(%rsp), %rdi
+	leaq	(%r8,%rcx), %rsi
 	movq	(%rsi), %rdx
-	movq	%rdx, (%r11)
+	movq	%rdx, (%rdi)
 	movq	8(%rsi), %rdx
-	movq	%rdx, 8(%r11)
+	movq	%rdx, 8(%rdi)
 .Lfors_pkfromsig$9:
-	movq	%r8, 400(%rsp)
-	movq	%r9, 392(%rsp)
-	movq	%r10, 384(%rsp)
-	movq	%rdi, 376(%rsp)
-	movq	%rax, 368(%rsp)
+	movq	%r9, 400(%rsp)
+	movq	%r11, 392(%rsp)
+	movq	%r8, 384(%rsp)
+	movq	%rax, 376(%rsp)
+	movq	%rcx, 368(%rsp)
 	leaq	32(%rsp), %rdi
-	leaq	336(%rsp), %rcx
-	leaq	320(%rsp), %rdx
+	leaq	336(%rsp), %rax
+	leaq	320(%rsp), %rcx
+	movq	%r9, %rsi
 	leaq	-40(%rsp), %rsp
 	call	.LH$1
 .Lfors_pkfromsig$7:
 	leaq	40(%rsp), %rsp
-	movq	400(%rsp), %r8
-	movq	392(%rsp), %r9
-	movq	384(%rsp), %r10
-	movq	376(%rsp), %rdi
-	movq	368(%rsp), %rax
-	lfence
-	movq	$0, %rcx
-	leaq	64(%rsp), %r11
-	leaq	32(%rsp), %rsi
-	movq	(%rsi), %rdx
-	movq	%rdx, (%r11)
-	movq	8(%rsi), %rdx
-	movq	%rdx, 8(%r11)
-	movl	440(%rsp), %edx
-	movl	444(%rsp), %esi
-	lfence
-	movq	$0, %rcx
-	shrl	$1, %esi
-	addq	$16, %rax
-	incl	%edx
-.Lfors_pkfromsig$5:
-	cmpl	$12, %edx
-	jb  	.Lfors_pkfromsig$6
-	movq	360(%rsp), %rcx
+	movq	400(%rsp), %r9
+	movq	392(%rsp), %r11
+	movq	384(%rsp), %r8
+	movq	376(%rsp), %rax
+	movq	368(%rsp), %rcx
 	lfence
 	movq	$0, %rdx
-	leaq	96(%rsp,%rcx), %r11
-	leaq	64(%rsp), %rsi
+	leaq	64(%rsp), %rdi
+	leaq	32(%rsp), %rsi
 	movq	(%rsi), %rdx
-	movq	%rdx, (%r11)
+	movq	%rdx, (%rdi)
 	movq	8(%rsi), %rdx
-	movq	%rdx, 8(%r11)
+	movq	%rdx, 8(%rdi)
+	movl	440(%rsp), %esi
+	movl	444(%rsp), %edi
+	lfence
+	movq	$0, %rdx
+	shrl	$1, %edi
 	addq	$16, %rcx
-	incq	%rdi
+	incl	%esi
+.Lfors_pkfromsig$5:
+	cmpl	$12, %esi
+	jb  	.Lfors_pkfromsig$6
+	movq	360(%rsp), %rdx
+	lfence
+	movq	$0, %rsi
+	leaq	96(%rsp,%rdx), %rdi
+	leaq	64(%rsp), %rsi
+	movq	(%rsi), %r10
+	movq	%r10, (%rdi)
+	movq	8(%rsi), %r10
+	movq	%r10, 8(%rdi)
+	addq	$16, %rdx
+	incq	%rax
 .Lfors_pkfromsig$3:
-	cmpq	$14, %rdi
+	cmpq	$14, %rax
 	jb  	.Lfors_pkfromsig$4
 	leaq	408(%rsp), %rax
-	movq	(%r9), %rdx
+	movq	(%r11), %rdx
 	movq	%rdx, (%rax)
-	movq	8(%r9), %rdx
+	movq	8(%r11), %rdx
 	movq	%rdx, 8(%rax)
-	movq	16(%r9), %rdx
+	movq	16(%r11), %rdx
 	movq	%rdx, 16(%rax)
-	movq	24(%r9), %rdx
+	movq	24(%r11), %rdx
 	movq	%rdx, 24(%rax)
-	leaq	408(%rsp), %r11
-	movq	$0, 16(%r11)
-	movq	$0, 24(%r11)
-	movl	$4, 16(%r11)
-	movl	20(%r9), %edx
-	leaq	408(%rsp), %r9
-	movl	%edx, 20(%r9)
+	leaq	408(%rsp), %rax
+	movq	$0, 16(%rax)
+	movq	$0, 24(%rax)
+	movl	$4, 16(%rax)
+	movl	20(%r11), %edx
+	leaq	408(%rsp), %rax
+	movl	%edx, 20(%rax)
 	movq	352(%rsp), %rdi
 	lfence
 	movq	$0, %rax
-	leaq	408(%rsp), %r9
+	leaq	408(%rsp), %r11
 	leaq	96(%rsp), %rax
 	leaq	-40(%rsp), %rsp
 	call	.LT_k$1
 .Lfors_pkfromsig$2:
 	leaq	40(%rsp), %rsp
-	movq	%rcx, %rax
 	ret
 .Lfors_sign$1:
 	leaq	64(%rsp), %rdx
-	movq	$0, %rsi
+	movq	$0, %rdi
 	movl	$0, %ecx
-	movl	$0, %edi
+	movl	$0, %r8d
 	jmp 	.Lfors_sign$34
 .Lfors_sign$35:
-	shll	$8, %edi
-	movzbl	(%rax,%rsi), %ebx
-	orl 	%ebx, %edi
-	incq	%rsi
+	shll	$8, %r8d
+	movzbl	(%rax,%rdi), %r10d
+	orl 	%r10d, %r8d
+	incq	%rdi
 	addl	$8, %ecx
 .Lfors_sign$34:
 	cmpl	$12, %ecx
 	jb  	.Lfors_sign$35
-	movl	%edi, %ebx
+	movl	%r8d, %r10d
 	addl	$-12, %ecx
-	shrq	%cl, %rbx
-	andq	$4095, %rbx
-	movl	%ebx, (%rdx)
+	shrq	%cl, %r10
+	andq	$4095, %r10
+	movl	%r10d, (%rdx)
 	jmp 	.Lfors_sign$32
 .Lfors_sign$33:
-	shll	$8, %edi
-	movzbl	(%rax,%rsi), %ebx
-	orl 	%ebx, %edi
-	incq	%rsi
+	shll	$8, %r8d
+	movzbl	(%rax,%rdi), %r10d
+	orl 	%r10d, %r8d
+	incq	%rdi
 	addl	$8, %ecx
 .Lfors_sign$32:
 	cmpl	$12, %ecx
 	jb  	.Lfors_sign$33
-	movl	%edi, %ebx
+	movl	%r8d, %r10d
 	addl	$-12, %ecx
-	shrq	%cl, %rbx
-	andq	$4095, %rbx
-	movl	%ebx, 4(%rdx)
+	shrq	%cl, %r10
+	andq	$4095, %r10
+	movl	%r10d, 4(%rdx)
 	jmp 	.Lfors_sign$30
 .Lfors_sign$31:
-	shll	$8, %edi
-	movzbl	(%rax,%rsi), %ebx
-	orl 	%ebx, %edi
-	incq	%rsi
+	shll	$8, %r8d
+	movzbl	(%rax,%rdi), %r10d
+	orl 	%r10d, %r8d
+	incq	%rdi
 	addl	$8, %ecx
 .Lfors_sign$30:
 	cmpl	$12, %ecx
 	jb  	.Lfors_sign$31
-	movl	%edi, %ebx
+	movl	%r8d, %r10d
 	addl	$-12, %ecx
-	shrq	%cl, %rbx
-	andq	$4095, %rbx
-	movl	%ebx, 8(%rdx)
+	shrq	%cl, %r10
+	andq	$4095, %r10
+	movl	%r10d, 8(%rdx)
 	jmp 	.Lfors_sign$28
 .Lfors_sign$29:
-	shll	$8, %edi
-	movzbl	(%rax,%rsi), %ebx
-	orl 	%ebx, %edi
-	incq	%rsi
+	shll	$8, %r8d
+	movzbl	(%rax,%rdi), %r10d
+	orl 	%r10d, %r8d
+	incq	%rdi
 	addl	$8, %ecx
 .Lfors_sign$28:
 	cmpl	$12, %ecx
 	jb  	.Lfors_sign$29
-	movl	%edi, %ebx
+	movl	%r8d, %r10d
 	addl	$-12, %ecx
-	shrq	%cl, %rbx
-	andq	$4095, %rbx
-	movl	%ebx, 12(%rdx)
+	shrq	%cl, %r10
+	andq	$4095, %r10
+	movl	%r10d, 12(%rdx)
 	jmp 	.Lfors_sign$26
 .Lfors_sign$27:
-	shll	$8, %edi
-	movzbl	(%rax,%rsi), %ebx
-	orl 	%ebx, %edi
-	incq	%rsi
+	shll	$8, %r8d
+	movzbl	(%rax,%rdi), %r10d
+	orl 	%r10d, %r8d
+	incq	%rdi
 	addl	$8, %ecx
 .Lfors_sign$26:
 	cmpl	$12, %ecx
 	jb  	.Lfors_sign$27
-	movl	%edi, %ebx
+	movl	%r8d, %r10d
 	addl	$-12, %ecx
-	shrq	%cl, %rbx
-	andq	$4095, %rbx
-	movl	%ebx, 16(%rdx)
+	shrq	%cl, %r10
+	andq	$4095, %r10
+	movl	%r10d, 16(%rdx)
 	jmp 	.Lfors_sign$24
 .Lfors_sign$25:
-	shll	$8, %edi
-	movzbl	(%rax,%rsi), %ebx
-	orl 	%ebx, %edi
-	incq	%rsi
+	shll	$8, %r8d
+	movzbl	(%rax,%rdi), %r10d
+	orl 	%r10d, %r8d
+	incq	%rdi
 	addl	$8, %ecx
 .Lfors_sign$24:
 	cmpl	$12, %ecx
 	jb  	.Lfors_sign$25
-	movl	%edi, %ebx
+	movl	%r8d, %r10d
 	addl	$-12, %ecx
-	shrq	%cl, %rbx
-	andq	$4095, %rbx
-	movl	%ebx, 20(%rdx)
+	shrq	%cl, %r10
+	andq	$4095, %r10
+	movl	%r10d, 20(%rdx)
 	jmp 	.Lfors_sign$22
 .Lfors_sign$23:
-	shll	$8, %edi
-	movzbl	(%rax,%rsi), %ebx
-	orl 	%ebx, %edi
-	incq	%rsi
+	shll	$8, %r8d
+	movzbl	(%rax,%rdi), %r10d
+	orl 	%r10d, %r8d
+	incq	%rdi
 	addl	$8, %ecx
 .Lfors_sign$22:
 	cmpl	$12, %ecx
 	jb  	.Lfors_sign$23
-	movl	%edi, %ebx
+	movl	%r8d, %r10d
 	addl	$-12, %ecx
-	shrq	%cl, %rbx
-	andq	$4095, %rbx
-	movl	%ebx, 24(%rdx)
+	shrq	%cl, %r10
+	andq	$4095, %r10
+	movl	%r10d, 24(%rdx)
 	jmp 	.Lfors_sign$20
 .Lfors_sign$21:
-	shll	$8, %edi
-	movzbl	(%rax,%rsi), %ebx
-	orl 	%ebx, %edi
-	incq	%rsi
+	shll	$8, %r8d
+	movzbl	(%rax,%rdi), %r10d
+	orl 	%r10d, %r8d
+	incq	%rdi
 	addl	$8, %ecx
 .Lfors_sign$20:
 	cmpl	$12, %ecx
 	jb  	.Lfors_sign$21
-	movl	%edi, %ebx
+	movl	%r8d, %r10d
 	addl	$-12, %ecx
-	shrq	%cl, %rbx
-	andq	$4095, %rbx
-	movl	%ebx, 28(%rdx)
+	shrq	%cl, %r10
+	andq	$4095, %r10
+	movl	%r10d, 28(%rdx)
 	jmp 	.Lfors_sign$18
 .Lfors_sign$19:
-	shll	$8, %edi
-	movzbl	(%rax,%rsi), %ebx
-	orl 	%ebx, %edi
-	incq	%rsi
+	shll	$8, %r8d
+	movzbl	(%rax,%rdi), %r10d
+	orl 	%r10d, %r8d
+	incq	%rdi
 	addl	$8, %ecx
 .Lfors_sign$18:
 	cmpl	$12, %ecx
 	jb  	.Lfors_sign$19
-	movl	%edi, %ebx
+	movl	%r8d, %r10d
 	addl	$-12, %ecx
-	shrq	%cl, %rbx
-	andq	$4095, %rbx
-	movl	%ebx, 32(%rdx)
+	shrq	%cl, %r10
+	andq	$4095, %r10
+	movl	%r10d, 32(%rdx)
 	jmp 	.Lfors_sign$16
 .Lfors_sign$17:
-	shll	$8, %edi
-	movzbl	(%rax,%rsi), %ebx
-	orl 	%ebx, %edi
-	incq	%rsi
+	shll	$8, %r8d
+	movzbl	(%rax,%rdi), %r10d
+	orl 	%r10d, %r8d
+	incq	%rdi
 	addl	$8, %ecx
 .Lfors_sign$16:
 	cmpl	$12, %ecx
 	jb  	.Lfors_sign$17
-	movl	%edi, %ebx
+	movl	%r8d, %r10d
 	addl	$-12, %ecx
-	shrq	%cl, %rbx
-	andq	$4095, %rbx
-	movl	%ebx, 36(%rdx)
+	shrq	%cl, %r10
+	andq	$4095, %r10
+	movl	%r10d, 36(%rdx)
 	jmp 	.Lfors_sign$14
 .Lfors_sign$15:
-	shll	$8, %edi
-	movzbl	(%rax,%rsi), %ebx
-	orl 	%ebx, %edi
-	incq	%rsi
+	shll	$8, %r8d
+	movzbl	(%rax,%rdi), %r10d
+	orl 	%r10d, %r8d
+	incq	%rdi
 	addl	$8, %ecx
 .Lfors_sign$14:
 	cmpl	$12, %ecx
 	jb  	.Lfors_sign$15
-	movl	%edi, %ebx
+	movl	%r8d, %r10d
 	addl	$-12, %ecx
-	shrq	%cl, %rbx
-	andq	$4095, %rbx
-	movl	%ebx, 40(%rdx)
+	shrq	%cl, %r10
+	andq	$4095, %r10
+	movl	%r10d, 40(%rdx)
 	jmp 	.Lfors_sign$12
 .Lfors_sign$13:
-	shll	$8, %edi
-	movzbl	(%rax,%rsi), %ebx
-	orl 	%ebx, %edi
-	incq	%rsi
+	shll	$8, %r8d
+	movzbl	(%rax,%rdi), %r10d
+	orl 	%r10d, %r8d
+	incq	%rdi
 	addl	$8, %ecx
 .Lfors_sign$12:
 	cmpl	$12, %ecx
 	jb  	.Lfors_sign$13
-	movl	%edi, %ebx
+	movl	%r8d, %r10d
 	addl	$-12, %ecx
-	shrq	%cl, %rbx
-	andq	$4095, %rbx
-	movl	%ebx, 44(%rdx)
+	shrq	%cl, %r10
+	andq	$4095, %r10
+	movl	%r10d, 44(%rdx)
 	jmp 	.Lfors_sign$10
 .Lfors_sign$11:
-	shll	$8, %edi
-	movzbl	(%rax,%rsi), %ebx
-	orl 	%ebx, %edi
-	incq	%rsi
+	shll	$8, %r8d
+	movzbl	(%rax,%rdi), %r10d
+	orl 	%r10d, %r8d
+	incq	%rdi
 	addl	$8, %ecx
 .Lfors_sign$10:
 	cmpl	$12, %ecx
 	jb  	.Lfors_sign$11
-	movl	%edi, %ebx
+	movl	%r8d, %r10d
 	addl	$-12, %ecx
-	shrq	%cl, %rbx
-	andq	$4095, %rbx
-	movl	%ebx, 48(%rdx)
+	shrq	%cl, %r10
+	andq	$4095, %r10
+	movl	%r10d, 48(%rdx)
 	jmp 	.Lfors_sign$8
 .Lfors_sign$9:
-	shll	$8, %edi
-	movzbl	(%rax,%rsi), %ebx
-	orl 	%ebx, %edi
-	incq	%rsi
+	shll	$8, %r8d
+	movzbl	(%rax,%rdi), %r10d
+	orl 	%r10d, %r8d
+	incq	%rdi
 	addl	$8, %ecx
 .Lfors_sign$8:
 	cmpl	$12, %ecx
 	jb  	.Lfors_sign$9
-	movl	%edi, %eax
+	movl	%r8d, %r10d
 	addl	$-12, %ecx
-	shrq	%cl, %rax
-	andq	$4095, %rax
-	movl	%eax, 52(%rdx)
+	shrq	%cl, %r10
+	andq	$4095, %r10
+	movl	%r10d, 52(%rdx)
 	movq	$0, %rax
 	movq	$0, %rdi
 	jmp 	.Lfors_sign$2
@@ -1121,66 +1128,66 @@ slh_dsa_shake128s_keygen:
 	addl	64(%rsp,%rdi,4), %edx
 	lfence
 	movq	$0, %rcx
-	leaq	(%r10,%rax), %rsi
-	movq	%r11, 8(%rsp)
-	movq	%r8, 16(%rsp)
-	movq	%r9, 24(%rsp)
-	movq	%r10, 32(%rsp)
+	leaq	(%r9,%rax), %rcx
+	movq	%rbx, 8(%rsp)
+	movq	%rsi, 16(%rsp)
+	movq	%r11, 24(%rsp)
+	movq	%r9, 32(%rsp)
 	movq	%rdi, 40(%rsp)
 	movq	%rax, 48(%rsp)
-	movq	%rsi, %rax
+	movq	%rcx, %rax
 	movl	%edx, %edi
 	leaq	-40(%rsp), %rsp
 	call	.Lfors_skgen$1
 .Lfors_sign$7:
 	leaq	40(%rsp), %rsp
-	movq	8(%rsp), %r11
-	movq	16(%rsp), %r8
-	movq	24(%rsp), %r9
-	movq	32(%rsp), %r10
+	movq	8(%rsp), %rbx
+	movq	16(%rsp), %rsi
+	movq	24(%rsp), %r11
+	movq	32(%rsp), %r9
 	movq	40(%rsp), %rdi
 	movq	48(%rsp), %rax
 	lfence
-	movq	$0, %rcx
+	movq	$0, %rdx
 	addq	$16, %rax
-	movl	64(%rsp,%rdi,4), %esi
+	movl	64(%rsp,%rdi,4), %r8d
 	lfence
-	movq	$0, %rcx
-	xorl	$1, %esi
+	movq	$0, %rdx
+	xorl	$1, %r8d
 	movl	$0, %edx
 	jmp 	.Lfors_sign$4
 .Lfors_sign$5:
-	movq	%r11, 48(%rsp)
-	movq	%r8, 40(%rsp)
+	movq	%rbx, 48(%rsp)
+	movq	%rsi, 40(%rsp)
 	movq	%rdi, 32(%rsp)
 	movl	%edx, 56(%rsp)
 	movq	%rax, 24(%rsp)
-	movl	%esi, 60(%rsp)
+	movl	%r8d, 60(%rsp)
 	movl	$12, %ecx
 	subl	%edx, %ecx
 	shlq	%cl, %rdi
-	addl	%esi, %edi
-	leaq	(%r10,%rax), %rax
-	movq	%r10, 16(%rsp)
-	movl	%edi, %r10d
-	movl	%edx, %ecx
-	leaq	-131192(%rsp), %rsp
+	addl	%r8d, %edi
+	leaq	(%r9,%rax), %rcx
+	movq	%r9, 16(%rsp)
+	movl	%edi, %r9d
+	movl	%edx, %r8d
+	leaq	-131288(%rsp), %rsp
 	call	.Lfors_node$1
 .Lfors_sign$6:
-	leaq	131192(%rsp), %rsp
-	movq	16(%rsp), %r10
+	leaq	131288(%rsp), %rsp
+	movq	16(%rsp), %r9
 	lfence
 	movq	$0, %rax
-	movq	48(%rsp), %r11
-	movq	40(%rsp), %r8
+	movq	48(%rsp), %rbx
+	movq	40(%rsp), %rsi
 	movq	32(%rsp), %rdi
 	movl	56(%rsp), %edx
 	movq	24(%rsp), %rax
-	movl	60(%rsp), %esi
+	movl	60(%rsp), %r8d
 	lfence
 	movq	$0, %rcx
-	shrl	$1, %esi
-	xorl	$1, %esi
+	shrl	$1, %r8d
+	xorl	$1, %r8d
 	addq	$16, %rax
 	incl	%edx
 .Lfors_sign$4:
@@ -1192,286 +1199,457 @@ slh_dsa_shake128s_keygen:
 	jb  	.Lfors_sign$3
 	ret
 .Lfors_node$1:
-	movq	%rax, 131120(%rsp)
+	movq	%rcx, 131120(%rsp)
 	movq	$0, %rax
-	movl	$0, %esi
+	movl	$0, %r10d
 	jmp 	.Lfors_node$2
 .Lfors_node$3:
-	movl	%ecx, 131160(%rsp)
-	subl	%esi, %ecx
+	movl	%r8d, 131224(%rsp)
+	movl	%r8d, %ecx
+	subl	%r10d, %ecx
 	movq	$1, %rdx
 	shlq	%cl, %rdx
 	movl	%edx, %edi
-	imull	%r10d, %edi
-	addl	%edi, %edx
+	movl	%edx, %r8d
+	imull	%r9d, %edi
+	addl	%edi, %r8d
 	jmp 	.Lfors_node$4
 .Lfors_node$5:
-	movq	%r11, 131128(%rsp)
-	movl	%edx, 131164(%rsp)
-	cmpl	$0, %esi
+	movq	%rbx, 131128(%rsp)
+	movl	%r8d, 131228(%rsp)
+	cmpl	$0, %r10d
 	je  	.Lfors_node$6
 	movl	%edi, %eax
 	imull	$2, %eax, %eax
-	movl	%esi, %edx
+	movl	%r10d, %edx
 	decl	%edx
 	movl	$13, %ecx
-	movq	$1, %r11
-	shlq	%cl, %r11
+	movq	$1, %r12
+	shlq	%cl, %r12
 	subl	%edx, %ecx
-	movq	$1, %rbp
-	shlq	%cl, %rbp
-	subq	%rbp, %r11
-	shrq	$1, %rbp
+	movq	$1, %rbx
+	shlq	%cl, %rbx
+	subq	%rbx, %r12
+	shrq	$1, %rbx
 	movl	%eax, %eax
 	xorl	%edx, %edx
-	divq	%rbp
-	addq	%rdx, %r11
-	imulq	$16, %r11, %r11
-	movq	%r11, %rax
-	addq	$16, %rax
-	leaq	131104(%rsp), %rcx
-	leaq	32(%rsp,%r11), %rdx
-	movq	(%rdx), %r11
-	movq	%r11, (%rcx)
+	divq	%rbx
+	addq	%rdx, %r12
+	imulq	$16, %r12, %rbx
+	movl	%r10d, 24(%r11)
+	movl	%edi, 28(%r11)
+	movl	$13, %ecx
+	movq	$1, %rdx
+	shlq	%cl, %rdx
+	movq	%rdx, %rbp
+	subl	%r10d, %ecx
+	movq	$1, %r12
+	shlq	%cl, %r12
+	subq	%r12, %rbp
+	shrq	$1, %r12
+	movl	%edi, %eax
+	xorl	%edx, %edx
+	divq	%r12
+	addq	%rdx, %rbp
+	imulq	$16, %rbp, %rax
+	subl	%edi, %r8d
+	cmpl	$4, %r8d
+	jnb 	.Lfors_node$13
+	movq	%rbx, %rcx
+	addq	$16, %rcx
+	leaq	131104(%rsp), %rdx
+	leaq	32(%rsp,%rbx), %r8
+	movq	(%r8), %rbx
+	movq	%rbx, (%rdx)
+	movq	8(%r8), %r8
+	movq	%r8, 8(%rdx)
+	leaq	131088(%rsp), %rdx
+	leaq	32(%rsp,%rcx), %r8
+	movq	(%r8), %rcx
+	movq	%rcx, (%rdx)
+	movq	8(%r8), %rcx
+	movq	%rcx, 8(%rdx)
+	movq	%rsi, 131136(%rsp)
+	movq	%r11, 131144(%rsp)
+	movl	%r9d, 131232(%rsp)
+	movl	%r10d, 131236(%rsp)
+	movl	%edi, 131240(%rsp)
+	movq	%rax, 131152(%rsp)
+	leaq	32(%rsp,%rax), %rdi
+	leaq	131104(%rsp), %rax
+	leaq	131088(%rsp), %rcx
+	leaq	-40(%rsp), %rsp
+	call	.LH$1
+.Lfors_node$16:
+	leaq	40(%rsp), %rsp
+	movq	131136(%rsp), %rsi
+	movq	131144(%rsp), %r11
+	movl	131232(%rsp), %r9d
+	movl	131236(%rsp), %r10d
+	movl	131240(%rsp), %edi
+	movq	131152(%rsp), %rax
+	lfence
+	movq	$0, %rcx
+	jmp 	.Lfors_node$7
+.Lfors_node$13:
+	movl	%r10d, 131244(%rsp)
+	movl	%edi, %edx
+	movl	%edx, 131248(%rsp)
+	movl	%r10d, 131252(%rsp)
+	movl	%edi, %edx
+	incl	%edx
+	movl	%edx, 131256(%rsp)
+	movl	%r10d, 131260(%rsp)
+	movl	%edi, %edx
+	addl	$2, %edx
+	movl	%edx, 131264(%rsp)
+	movl	%r10d, 131268(%rsp)
+	movl	%edi, %edx
+	addl	$3, %edx
+	movl	%edx, 131272(%rsp)
+	movq	%rsi, 131152(%rsp)
+	movq	%r11, 131144(%rsp)
+	movl	%r9d, 131240(%rsp)
+	movl	%r10d, 131236(%rsp)
+	movl	%edi, 131232(%rsp)
+	movq	%rax, 131136(%rsp)
+	leaq	32(%rsp,%rbx), %rdi
+	leaq	131160(%rsp), %rcx
+	leaq	131244(%rsp), %rax
+	leaq	-824(%rsp), %rsp
+	call	.Lthash_x4_2n__thash_x4$1
+.Lfors_node$15:
+	leaq	824(%rsp), %rsp
+	movq	131152(%rsp), %rsi
+	movq	131144(%rsp), %r11
+	movl	131240(%rsp), %r9d
+	movl	131236(%rsp), %r10d
+	movl	131232(%rsp), %edi
+	movq	131136(%rsp), %rax
+	lfence
+	movq	$0, %rcx
+	leaq	32(%rsp,%rax), %rcx
+	leaq	131160(%rsp), %rdx
+	movq	(%rdx), %r8
+	movq	%r8, (%rcx)
 	movq	8(%rdx), %rdx
 	movq	%rdx, 8(%rcx)
-	leaq	131088(%rsp), %rcx
+	leaq	48(%rsp,%rax), %rcx
+	leaq	131176(%rsp), %rdx
+	movq	(%rdx), %r8
+	movq	%r8, (%rcx)
+	movq	8(%rdx), %rdx
+	movq	%rdx, 8(%rcx)
+	leaq	64(%rsp,%rax), %rcx
+	leaq	131192(%rsp), %rdx
+	movq	(%rdx), %r8
+	movq	%r8, (%rcx)
+	movq	8(%rdx), %rdx
+	movq	%rdx, 8(%rcx)
+	leaq	80(%rsp,%rax), %rcx
+	leaq	131208(%rsp), %rdx
+	movq	(%rdx), %r8
+	movq	%r8, (%rcx)
+	movq	8(%rdx), %rdx
+	movq	%rdx, 8(%rcx)
+	addl	$3, %edi
+.Lfors_node$14:
+	jmp 	.Lfors_node$7
+.Lfors_node$6:
+	movl	%r10d, 24(%r11)
+	movl	%edi, 28(%r11)
+	movl	$13, %ecx
+	movq	$1, %rdx
+	shlq	%cl, %rdx
+	movq	%rdx, %rbp
+	subl	%r10d, %ecx
+	movq	$1, %r12
+	shlq	%cl, %r12
+	subq	%r12, %rbp
+	shrq	$1, %r12
+	movl	%edi, %eax
+	xorl	%edx, %edx
+	divq	%r12
+	addq	%rdx, %rbp
+	imulq	$16, %rbp, %rax
+	subl	%edi, %r8d
+	cmpl	$4, %r8d
+	jnb 	.Lfors_node$8
+	movq	%rsi, 131152(%rsp)
+	movq	%r11, 131144(%rsp)
+	movl	%r9d, 131240(%rsp)
+	movl	%r10d, 131236(%rsp)
+	movl	%edi, 131232(%rsp)
+	movq	%rax, 131136(%rsp)
+	leaq	32(%rsp,%rax), %rax
+	leaq	-40(%rsp), %rsp
+	call	.Lfors_skgen$1
+.Lfors_node$12:
+	leaq	40(%rsp), %rsp
+	movq	131152(%rsp), %rax
+	movq	131144(%rsp), %r11
+	movl	131240(%rsp), %edi
+	movl	131236(%rsp), %r10d
+	movl	131232(%rsp), %ecx
+	movq	131136(%rsp), %rdx
+	lfence
+	movq	$0, %rsi
+	movq	%rax, 131136(%rsp)
+	movq	%r11, 131144(%rsp)
+	movl	%edi, 131232(%rsp)
+	movl	%r10d, 131236(%rsp)
+	movl	%ecx, 131240(%rsp)
+	movq	%rdx, 131152(%rsp)
+	leaq	32(%rsp,%rdx), %rdi
+	leaq	-40(%rsp), %rsp
+	call	.LF$1
+.Lfors_node$11:
+	leaq	40(%rsp), %rsp
+	movq	131136(%rsp), %rsi
+	movq	131144(%rsp), %r11
+	movl	131232(%rsp), %r9d
+	movl	131236(%rsp), %r10d
+	movl	131240(%rsp), %edi
+	movq	131152(%rsp), %rax
+	lfence
+	movq	$0, %rcx
+	jmp 	.Lfors_node$7
+.Lfors_node$8:
+	movq	%rsi, 131136(%rsp)
+	movq	%r11, 131144(%rsp)
+	movl	%r9d, 131232(%rsp)
+	movl	%r10d, 131236(%rsp)
+	movl	%edi, 131240(%rsp)
+	movq	%rax, 131152(%rsp)
+	leaq	32(%rsp,%rax), %rax
+	movq	%rsi, %r9
+	leaq	-216(%rsp), %rsp
+	call	.Lfors_leaves_x4$1
+.Lfors_node$10:
+	leaq	216(%rsp), %rsp
+	movq	131136(%rsp), %rsi
+	movq	131144(%rsp), %r11
+	movl	131232(%rsp), %r9d
+	movl	131236(%rsp), %r10d
+	movl	131240(%rsp), %edi
+	movq	131152(%rsp), %rax
+	lfence
+	movq	$0, %rcx
+	addl	$3, %edi
+.Lfors_node$9:
+.Lfors_node$7:
+	movq	131128(%rsp), %rbx
+	movl	131228(%rsp), %r8d
+	lfence
+	movq	$0, %rcx
+	incl	%edi
+.Lfors_node$4:
+	cmpl	%r8d, %edi
+	jb  	.Lfors_node$5
+	movl	131224(%rsp), %r8d
+	lfence
+	movq	$0, %rcx
+	incl	%r10d
+.Lfors_node$2:
+	cmpl	%r8d, %r10d
+	jbe 	.Lfors_node$3
+	movq	131120(%rsp), %rcx
+	lfence
+	movq	$0, %rdx
 	leaq	32(%rsp,%rax), %rax
 	movq	(%rax), %rdx
 	movq	%rdx, (%rcx)
 	movq	8(%rax), %rdx
 	movq	%rdx, 8(%rcx)
-	movl	%esi, 24(%r9)
-	movl	%edi, 28(%r9)
-	movl	$13, %ecx
-	movq	$1, %rdx
-	shlq	%cl, %rdx
-	movq	%rdx, %r11
-	subl	%esi, %ecx
-	movq	$1, %rbp
-	shlq	%cl, %rbp
-	subq	%rbp, %r11
-	shrq	$1, %rbp
-	movl	%edi, %eax
-	xorl	%edx, %edx
-	divq	%rbp
-	addq	%rdx, %r11
-	imulq	$16, %r11, %rax
-	movq	%r8, 131136(%rsp)
-	movq	%r9, 131144(%rsp)
-	movl	%r10d, 131168(%rsp)
-	movl	%esi, 131172(%rsp)
-	movl	%edi, 131176(%rsp)
-	leaq	32(%rsp,%rax), %rdi
-	leaq	131104(%rsp), %rcx
-	leaq	131088(%rsp), %rdx
-	leaq	-40(%rsp), %rsp
-	call	.LH$1
-.Lfors_node$10:
-	leaq	40(%rsp), %rsp
-	movq	131136(%rsp), %r8
-	movq	131144(%rsp), %r9
-	movl	131168(%rsp), %r10d
-	movl	131172(%rsp), %esi
-	movl	131176(%rsp), %edi
-	lfence
-	movq	$0, %rcx
-	jmp 	.Lfors_node$7
-.Lfors_node$6:
-	movl	%esi, 24(%r9)
-	movl	%edi, 28(%r9)
-	movl	$13, %ecx
-	movq	$1, %rdx
-	shlq	%cl, %rdx
-	movq	%rdx, %rbx
-	subl	%esi, %ecx
-	movq	$1, %rbp
-	shlq	%cl, %rbp
-	subq	%rbp, %rbx
-	shrq	$1, %rbp
-	movl	%edi, %eax
-	xorl	%edx, %edx
-	divq	%rbp
-	addq	%rdx, %rbx
-	imulq	$16, %rbx, %rax
-	movq	%r8, 131136(%rsp)
-	movq	%r9, 131144(%rsp)
-	movl	%r10d, 131168(%rsp)
-	movl	%esi, 131172(%rsp)
-	movl	%edi, 131176(%rsp)
-	movq	%rax, 131152(%rsp)
-	leaq	32(%rsp,%rax), %rax
-	leaq	-40(%rsp), %rsp
-	call	.Lfors_skgen$1
-.Lfors_node$9:
-	leaq	40(%rsp), %rsp
-	movq	131136(%rsp), %r8
-	movq	131144(%rsp), %r9
-	movl	131168(%rsp), %ecx
-	movl	131172(%rsp), %esi
-	movl	131176(%rsp), %edi
-	movq	131152(%rsp), %rax
-	lfence
-	movq	$0, %rdx
-	movq	%r8, 131152(%rsp)
-	movq	%r9, 131144(%rsp)
-	movl	%ecx, 131176(%rsp)
-	movl	%esi, 131172(%rsp)
-	movl	%edi, 131168(%rsp)
-	movq	%rax, 131136(%rsp)
-	leaq	32(%rsp,%rax), %rdi
-	leaq	-40(%rsp), %rsp
-	call	.LF$1
-.Lfors_node$8:
-	leaq	40(%rsp), %rsp
-	movq	131152(%rsp), %r8
-	movq	131144(%rsp), %r9
-	movl	131176(%rsp), %r10d
-	movl	131172(%rsp), %esi
-	movl	131168(%rsp), %edi
-	movq	131136(%rsp), %rax
-	lfence
-	movq	$0, %rcx
-.Lfors_node$7:
-	movq	131128(%rsp), %r11
-	movl	131164(%rsp), %edx
-	lfence
-	movq	$0, %rcx
+	ret
+.Lfors_leaves_x4$1:
+	movq	%rax, %mm0
+	leaq	56(%rsp), %rcx
+	movq	(%rbx), %rdx
+	movq	%rdx, (%rcx)
+	movq	8(%rbx), %rdx
+	movq	%rdx, 8(%rcx)
+	leaq	72(%rsp), %rcx
+	movq	(%rbx), %rdx
+	movq	%rdx, (%rcx)
+	movq	8(%rbx), %rdx
+	movq	%rdx, 8(%rcx)
+	leaq	88(%rsp), %rcx
+	movq	(%rbx), %rdx
+	movq	%rdx, (%rcx)
+	movq	8(%rbx), %rdx
+	movq	%rdx, 8(%rcx)
+	leaq	104(%rsp), %rcx
+	movq	(%rbx), %rdx
+	movq	%rdx, (%rcx)
+	movq	8(%rbx), %rdx
+	movq	%rdx, 8(%rcx)
+	movl	$0, %ecx
+	movl	%ecx, 184(%rsp)
+	movl	%edi, 188(%rsp)
 	incl	%edi
-.Lfors_node$4:
-	cmpl	%edx, %edi
-	jb  	.Lfors_node$5
-	movl	131160(%rsp), %ecx
+	movl	%ecx, 192(%rsp)
+	movl	%edi, 196(%rsp)
+	incl	%edi
+	movl	%ecx, 200(%rsp)
+	movl	%edi, 204(%rsp)
+	incl	%edi
+	movl	%ecx, 208(%rsp)
+	movl	%edi, 212(%rsp)
+	leaq	24(%rsp), %rax
+	movq	(%r11), %rcx
+	movq	%rcx, (%rax)
+	movq	8(%r11), %rcx
+	movq	%rcx, 8(%rax)
+	movq	16(%r11), %rcx
+	movq	%rcx, 16(%rax)
+	movq	24(%r11), %rcx
+	movq	%rcx, 24(%rax)
+	leaq	24(%rsp), %rax
+	movq	$0, 16(%rax)
+	movq	$0, 24(%rax)
+	movl	$6, 16(%rax)
+	movl	20(%r11), %edx
+	leaq	24(%rsp), %rax
+	movl	%edx, 20(%rax)
+	movq	%r9, 8(%rsp)
+	movq	%r11, 16(%rsp)
+	leaq	120(%rsp), %rdx
+	leaq	56(%rsp), %rsi
+	leaq	24(%rsp), %rdi
+	leaq	184(%rsp), %rcx
+	leaq	-824(%rsp), %rsp
+	call	.Lthash_x4_n__thash_x4$1
+.Lfors_leaves_x4$3:
+	leaq	824(%rsp), %rsp
+	movq	8(%rsp), %r9
+	movq	16(%rsp), %rdi
+	movq	%mm0, %rdx
 	lfence
-	movq	$0, %rdx
-	incl	%esi
-.Lfors_node$2:
-	cmpl	%ecx, %esi
-	jbe 	.Lfors_node$3
-	movq	131120(%rsp), %rdx
-	lfence
-	movq	$0, %rcx
-	leaq	32(%rsp,%rax), %rax
-	movq	(%rax), %rsi
-	movq	%rsi, (%rdx)
-	movq	8(%rax), %rsi
-	movq	%rsi, 8(%rdx)
+	movq	$0, %rax
+	leaq	120(%rsp), %rsi
+	leaq	184(%rsp), %rcx
+	leaq	-824(%rsp), %rsp
+	call	.Lthash_x4_n__thash_x4$1
+.Lfors_leaves_x4$2:
+	leaq	824(%rsp), %rsp
 	ret
 .Lfors_skgen$1:
 	leaq	8(%rsp), %rcx
-	movq	(%r9), %rdx
+	movq	(%r11), %rdx
 	movq	%rdx, (%rcx)
-	movq	8(%r9), %rdx
+	movq	8(%r11), %rdx
 	movq	%rdx, 8(%rcx)
-	movq	16(%r9), %rdx
+	movq	16(%r11), %rdx
 	movq	%rdx, 16(%rcx)
-	movq	24(%r9), %rdx
+	movq	24(%r11), %rdx
 	movq	%rdx, 24(%rcx)
 	leaq	8(%rsp), %rcx
 	movq	$0, 16(%rcx)
 	movq	$0, 24(%rcx)
 	movl	$6, 16(%rcx)
-	movl	20(%r9), %edx
+	movl	20(%r11), %edx
 	leaq	8(%rsp), %rcx
 	movl	%edx, 20(%rcx)
 	leaq	8(%rsp), %rcx
 	movl	%edi, 28(%rcx)
-	leaq	8(%rsp), %r9
-	movq	%rax, %rcx
+	leaq	8(%rsp), %rcx
 	leaq	-40(%rsp), %rsp
 	call	.LPRF$1
 .Lfors_skgen$2:
 	leaq	40(%rsp), %rsp
-	movq	%rcx, %rax
 	ret
 .Lht_verify$1:
 	movq	%r10, 8(%rsp)
-	movl	(%rsi), %r11d
-	movl	%r11d, 108(%rsp)
-	movl	4(%rsi), %r11d
-	movl	%r11d, 112(%rsp)
-	movl	8(%rsi), %esi
-	movl	%esi, 116(%rsp)
-	leaq	72(%rsp), %r9
-	movq	$0, (%r9)
-	movq	$0, 8(%r9)
-	movq	$0, 16(%r9)
-	movq	$0, 24(%r9)
-	leaq	72(%rsp), %r9
-	movl	108(%rsp), %esi
-	movl	%esi, 4(%r9)
-	movl	112(%rsp), %esi
-	movl	%esi, 8(%r9)
-	movl	116(%rsp), %esi
-	movl	%esi, 12(%r9)
-	movq	%rcx, %rsi
-	movq	%r8, 16(%rsp)
+	movl	%edx, %edi
+	movl	(%r8), %edx
+	movl	%edx, 108(%rsp)
+	movl	4(%r8), %edx
+	movl	%edx, 112(%rsp)
+	movl	8(%r8), %edx
+	movl	%edx, 116(%rsp)
+	leaq	72(%rsp), %r11
+	movq	$0, (%r11)
+	movq	$0, 8(%r11)
+	movq	$0, 16(%r11)
+	movq	$0, 24(%r11)
+	leaq	72(%rsp), %r11
+	movl	108(%rsp), %edx
+	movl	%edx, 4(%r11)
+	movl	112(%rsp), %edx
+	movl	%edx, 8(%r11)
+	movl	116(%rsp), %edx
+	movl	%edx, 12(%r11)
+	movq	%rcx, %r8
+	movq	%rsi, 16(%rsp)
 	movq	%rcx, 24(%rsp)
 	leaq	40(%rsp), %rcx
-	leaq	72(%rsp), %r9
+	leaq	72(%rsp), %r11
+	movl	%edi, %edx
+	movq	%r8, %rdi
 	leaq	-152(%rsp), %rsp
 	call	.Lxmss_pkfromsig$1
 .Lht_verify$5:
 	leaq	152(%rsp), %rsp
-	movq	16(%rsp), %r8
+	movq	16(%rsp), %rsi
 	movq	24(%rsp), %rcx
 	lfence
 	movq	$0, %rax
 	movq	$704, %rax
-	movl	$1, %edi
+	movl	$1, %r8d
 	jmp 	.Lht_verify$2
 .Lht_verify$3:
-	movl	%edi, 104(%rsp)
+	movl	%r8d, 104(%rsp)
 	movq	%rax, 24(%rsp)
-	leaq	108(%rsp), %rsi
-	movl	8(%rsi), %edx
+	leaq	108(%rsp), %rdi
+	movl	8(%rdi), %edx
 	andl	$511, %edx
-	shrl	$9, 8(%rsi)
-	movl	4(%rsi), %r9d
+	shrl	$9, 8(%rdi)
+	movl	4(%rdi), %r9d
 	shll	$23, %r9d
-	orl 	%r9d, 8(%rsi)
-	shrl	$9, 4(%rsi)
-	movl	(%rsi), %r9d
+	orl 	%r9d, 8(%rdi)
+	shrl	$9, 4(%rdi)
+	movl	(%rdi), %r9d
 	shll	$23, %r9d
-	orl 	%r9d, 4(%rsi)
-	shrl	$9, (%rsi)
-	leaq	72(%rsp), %r9
-	movl	%edi, (%r9)
-	leaq	72(%rsp), %r9
-	movl	108(%rsp), %esi
-	movl	%esi, 4(%r9)
-	movl	112(%rsp), %esi
-	movl	%esi, 8(%r9)
-	movl	116(%rsp), %esi
-	movl	%esi, 12(%r9)
+	orl 	%r9d, 4(%rdi)
+	shrl	$9, (%rdi)
+	leaq	72(%rsp), %r11
+	movl	%r8d, (%r11)
+	leaq	72(%rsp), %r11
+	movl	108(%rsp), %r8d
+	movl	%r8d, 4(%r11)
+	movl	112(%rsp), %r8d
+	movl	%r8d, 8(%r11)
+	movl	116(%rsp), %r8d
+	movl	%r8d, 12(%r11)
 	leaq	56(%rsp), %rdi
-	leaq	40(%rsp), %rsi
-	movq	(%rsi), %r11
-	movq	%r11, (%rdi)
-	movq	8(%rsi), %rsi
-	movq	%rsi, 8(%rdi)
-	leaq	(%rcx,%rax), %rsi
-	movq	%r8, 16(%rsp)
+	leaq	40(%rsp), %r8
+	movq	(%r8), %r10
+	movq	%r10, (%rdi)
+	movq	8(%r8), %r8
+	movq	%r8, 8(%rdi)
+	leaq	(%rcx,%rax), %rdi
+	movq	%rsi, 16(%rsp)
 	movq	%rcx, 32(%rsp)
 	leaq	40(%rsp), %rcx
 	leaq	56(%rsp), %rax
-	leaq	72(%rsp), %r9
+	leaq	72(%rsp), %r11
 	leaq	-152(%rsp), %rsp
 	call	.Lxmss_pkfromsig$1
 .Lht_verify$4:
 	leaq	152(%rsp), %rsp
-	movq	16(%rsp), %r8
+	movq	16(%rsp), %rsi
 	movq	32(%rsp), %rcx
 	lfence
 	movq	$0, %rax
-	movl	104(%rsp), %edi
+	movl	104(%rsp), %r8d
 	movq	24(%rsp), %rax
 	lfence
 	movq	$0, %rdx
 	addq	$704, %rax
-	incl	%edi
+	incl	%r8d
 .Lht_verify$2:
-	cmpl	$7, %edi
+	cmpl	$7, %r8d
 	jb  	.Lht_verify$3
 	movq	8(%rsp), %rax
 	lfence
@@ -1529,250 +1707,256 @@ slh_dsa_shake128s_keygen:
 	movzbq	%dl, %rax
 	ret
 .Lht_sign$1:
-	movl	(%rsi), %edi
-	movl	%edi, 112(%rsp)
-	movl	4(%rsi), %edi
-	movl	%edi, 116(%rsp)
-	movl	8(%rsi), %esi
-	movl	%esi, 120(%rsp)
-	leaq	72(%rsp), %r9
-	movq	$0, (%r9)
-	movq	$0, 8(%r9)
-	movq	$0, 16(%r9)
-	movq	$0, 24(%r9)
-	leaq	72(%rsp), %r9
-	movl	112(%rsp), %esi
-	movl	%esi, 4(%r9)
-	movl	116(%rsp), %esi
-	movl	%esi, 8(%r9)
-	movl	120(%rsp), %esi
-	movl	%esi, 12(%r9)
-	movq	%rcx, %rsi
+	movl	%r8d, %edi
+	movl	(%r9), %r8d
+	movl	%r8d, 112(%rsp)
+	movl	4(%r9), %r8d
+	movl	%r8d, 116(%rsp)
+	movl	8(%r9), %r8d
+	movl	%r8d, 120(%rsp)
+	leaq	72(%rsp), %r11
+	movq	$0, (%r11)
+	movq	$0, 8(%r11)
+	movq	$0, 16(%r11)
+	movq	$0, 24(%r11)
+	leaq	72(%rsp), %r11
+	movl	112(%rsp), %r8d
+	movl	%r8d, 4(%r11)
+	movl	116(%rsp), %r8d
+	movl	%r8d, 8(%r11)
+	movl	120(%rsp), %r8d
+	movl	%r8d, 12(%r11)
+	movq	%rcx, %r8
 	movq	%rcx, 8(%rsp)
-	movq	%r11, 16(%rsp)
-	movq	%r8, 24(%rsp)
+	movq	%rdx, 16(%rsp)
+	movq	%rsi, 24(%rsp)
 	movq	%rax, 32(%rsp)
-	movl	%edx, 104(%rsp)
-	leaq	72(%rsp), %r9
+	movl	%edi, 104(%rsp)
+	leaq	72(%rsp), %r11
+	movq	%r8, %rcx
+	movq	%rax, %r8
+	movq	%rdx, %rax
+	movl	%edi, %edx
 	leaq	-56(%rsp), %rsp
 	call	.Lxmss_sign$1
 .Lht_sign$8:
 	leaq	56(%rsp), %rsp
-// declassify_mem 704 [RSI]
+	movq	%rcx, %rdi
+// declassify_mem 704 [RDI]
 	movq	8(%rsp), %rcx
-	movq	16(%rsp), %r11
-	movq	24(%rsp), %r8
-	movq	32(%rsp), %rax
+	movq	16(%rsp), %rax
+	movq	24(%rsp), %rsi
+	movq	32(%rsp), %r8
 	movl	104(%rsp), %edx
 	lfence
-	movq	$0, %rdi
-	movq	%r11, 32(%rsp)
-	movq	%r8, 24(%rsp)
+	movq	$0, %r9
+	movq	%rax, 32(%rsp)
+	movq	%rsi, 24(%rsp)
 	movq	%rcx, 16(%rsp)
 	leaq	40(%rsp), %rcx
-	leaq	72(%rsp), %r9
+	leaq	72(%rsp), %r11
+	movq	%r8, %rax
 	leaq	-152(%rsp), %rsp
 	call	.Lxmss_pkfromsig$1
 .Lht_sign$7:
 	leaq	152(%rsp), %rsp
-	movq	32(%rsp), %r11
-	movq	24(%rsp), %r8
+	movq	32(%rsp), %rdx
+	movq	24(%rsp), %rsi
 	movq	16(%rsp), %rcx
 	lfence
 	movq	$0, %r9
-	movq	$704, %rax
-	movl	$1, %esi
+	movq	$704, %r8
+	movl	$1, %eax
 	jmp 	.Lht_sign$2
 .Lht_sign$3:
-	movq	%r11, 16(%rsp)
-	leaq	112(%rsp), %rdi
-	movl	8(%rdi), %edx
-	andl	$511, %edx
-	shrl	$9, 8(%rdi)
-	movl	4(%rdi), %r9d
-	shll	$23, %r9d
-	orl 	%r9d, 8(%rdi)
-	shrl	$9, 4(%rdi)
-	movl	(%rdi), %r9d
-	shll	$23, %r9d
-	orl 	%r9d, 4(%rdi)
-	shrl	$9, (%rdi)
-	leaq	72(%rsp), %r9
-	movl	%esi, (%r9)
-	leaq	72(%rsp), %r9
-	movl	112(%rsp), %edi
-	movl	%edi, 4(%r9)
-	movl	116(%rsp), %edi
-	movl	%edi, 8(%r9)
-	movl	120(%rsp), %edi
-	movl	%edi, 12(%r9)
-	leaq	56(%rsp), %rdi
+	movq	%rdx, 16(%rsp)
+	leaq	112(%rsp), %r9
+	movl	8(%r9), %edi
+	andl	$511, %edi
+	shrl	$9, 8(%r9)
+	movl	4(%r9), %r10d
+	shll	$23, %r10d
+	orl 	%r10d, 8(%r9)
+	shrl	$9, 4(%r9)
+	movl	(%r9), %r10d
+	shll	$23, %r10d
+	orl 	%r10d, 4(%r9)
+	shrl	$9, (%r9)
+	leaq	72(%rsp), %r11
+	movl	%eax, (%r11)
+	leaq	72(%rsp), %r11
+	movl	112(%rsp), %r10d
+	movl	%r10d, 4(%r11)
+	movl	116(%rsp), %r10d
+	movl	%r10d, 8(%r11)
+	movl	120(%rsp), %r10d
+	movl	%r10d, 12(%r11)
+	leaq	56(%rsp), %r11
 	leaq	40(%rsp), %r9
 	movq	(%r9), %r10
-	movq	%r10, (%rdi)
+	movq	%r10, (%r11)
 	movq	8(%r9), %r10
-	movq	%r10, 8(%rdi)
-	leaq	(%rcx,%rax), %rdi
+	movq	%r10, 8(%r11)
+	leaq	(%rcx,%r8), %r9
 	movq	%rcx, 24(%rsp)
-	movq	%r8, 32(%rsp)
-	movl	%esi, 104(%rsp)
-	movq	%rax, 8(%rsp)
-	movl	%edx, 108(%rsp)
-	leaq	56(%rsp), %rax
-	leaq	72(%rsp), %r9
-	movq	%rdi, %rsi
+	movq	%rsi, 32(%rsp)
+	movl	%eax, 104(%rsp)
+	movq	%r8, 8(%rsp)
+	movl	%edi, 108(%rsp)
+	leaq	56(%rsp), %r8
+	leaq	72(%rsp), %r11
+	movq	%r9, %rcx
+	movq	%rdx, %rax
+	movl	%edi, %edx
 	leaq	-56(%rsp), %rsp
 	call	.Lxmss_sign$1
 .Lht_sign$6:
 	leaq	56(%rsp), %rsp
-	movq	%rsi, %rdi
+	movq	%rcx, %rdi
 // declassify_mem 704 [RDI]
 	movq	24(%rsp), %rcx
-	movq	32(%rsp), %r8
-	movl	104(%rsp), %esi
-	movq	8(%rsp), %rax
+	movq	32(%rsp), %rsi
+	movl	104(%rsp), %eax
+	movq	8(%rsp), %r8
 	movl	108(%rsp), %edx
 	lfence
 	movq	$0, %r9
-	cmpl	$6, %esi
+	cmpl	$6, %eax
 	jnb 	.Lht_sign$4
-	movq	%r8, 8(%rsp)
+	movq	%rsi, 8(%rsp)
 	movq	%rcx, 32(%rsp)
-	movl	%esi, 108(%rsp)
-	movq	%rax, 24(%rsp)
+	movl	%eax, 108(%rsp)
+	movq	%r8, 24(%rsp)
 	leaq	40(%rsp), %rcx
 	leaq	56(%rsp), %rax
-	leaq	72(%rsp), %r9
-	movq	%rdi, %rsi
+	leaq	72(%rsp), %r11
 	leaq	-152(%rsp), %rsp
 	call	.Lxmss_pkfromsig$1
 .Lht_sign$5:
 	leaq	152(%rsp), %rsp
-	movq	8(%rsp), %r8
+	movq	8(%rsp), %rsi
 	movq	32(%rsp), %rcx
-	movl	108(%rsp), %esi
-	movq	24(%rsp), %rax
+	movl	108(%rsp), %eax
+	movq	24(%rsp), %r8
 	lfence
 	movq	$0, %rdx
 .Lht_sign$4:
-	movq	16(%rsp), %r11
+	movq	16(%rsp), %rdx
 	lfence
-	movq	$0, %rdx
-	addq	$704, %rax
-	incl	%esi
+	movq	$0, %rdi
+	addq	$704, %r8
+	incl	%eax
 .Lht_sign$2:
-	cmpl	$7, %esi
+	cmpl	$7, %eax
 	jb  	.Lht_sign$3
 	ret
 .Lxmss_pkfromsig$1:
 	movq	%rcx, 112(%rsp)
-	movq	$0, 16(%r9)
-	movq	$0, 24(%r9)
-	movl	$0, 16(%r9)
-	movl	%edx, 20(%r9)
-	movq	%rsi, %rcx
-	movq	%r8, 120(%rsp)
+	movq	$0, 16(%r11)
+	movq	$0, 24(%r11)
+	movl	$0, 16(%r11)
+	movl	%edx, 20(%r11)
+	movq	%rdi, %rcx
+	movq	%rsi, 120(%rsp)
 	movl	%edx, 152(%rsp)
-	movq	%rsi, 128(%rsp)
+	movq	%rdi, 128(%rsp)
 	leaq	32(%rsp), %rdx
-	movq	%rdx, %rsi
+	movq	%rdx, %rdi
 	movq	%rcx, %rdx
-	movq	%r8, %r10
-	movq	%r9, %r11
-	leaq	-792(%rsp), %rsp
+	leaq	-952(%rsp), %rsp
 	call	.Lwots_pkfromsig$1
 .Lxmss_pkfromsig$7:
-	leaq	792(%rsp), %rsp
-	movq	%rcx, %r9
-	movq	120(%rsp), %r8
+	leaq	952(%rsp), %rsp
+	movq	%rax, %r11
+	movq	120(%rsp), %rsi
 	movl	152(%rsp), %edx
-	movq	128(%rsp), %rsi
+	movq	128(%rsp), %rdi
 	lfence
 	movq	$0, %rax
-	movq	$0, 16(%r9)
-	movq	$0, 24(%r9)
-	movl	$2, 16(%r9)
-	movl	%edx, 28(%r9)
+	movq	$0, 16(%r11)
+	movq	$0, 24(%r11)
+	movl	$2, 16(%r11)
+	movl	%edx, 28(%r11)
 	movq	$560, %rax
-	movl	%edx, %edi
-	movl	$0, %edx
+	movl	%edx, %r8d
+	movl	$0, %ecx
 	jmp 	.Lxmss_pkfromsig$2
 .Lxmss_pkfromsig$3:
-	movl	%edx, %ecx
-	incl	%ecx
-	movl	%ecx, 24(%r9)
-	movl	%edi, %ecx
-	andl	$1, %ecx
-	movl	%edx, 152(%rsp)
-	movl	%edi, 156(%rsp)
-	cmpl	$0, %ecx
+	movl	%ecx, %edx
+	incl	%edx
+	movl	%edx, 24(%r11)
+	movl	%r8d, %edx
+	andl	$1, %edx
+	movl	%ecx, 152(%rsp)
+	movl	%r8d, 156(%rsp)
+	cmpl	$0, %edx
 	je  	.Lxmss_pkfromsig$5
-	movl	28(%r9), %edx
+	movl	28(%r11), %edx
 	decl	%edx
 	shrl	$1, %edx
-	movl	%edx, 28(%r9)
+	movl	%edx, 28(%r11)
 	leaq	96(%rsp), %rcx
-	leaq	(%rsi,%rax), %rdx
-	movq	(%rdx), %rdi
-	movq	%rdi, (%rcx)
+	leaq	(%rdi,%rax), %rdx
+	movq	(%rdx), %r8
+	movq	%r8, (%rcx)
 	movq	8(%rdx), %rdx
 	movq	%rdx, 8(%rcx)
 	leaq	80(%rsp), %rcx
 	leaq	32(%rsp), %rdx
-	movq	(%rdx), %rdi
-	movq	%rdi, (%rcx)
+	movq	(%rdx), %r8
+	movq	%r8, (%rcx)
 	movq	8(%rdx), %rdx
 	movq	%rdx, 8(%rcx)
 	jmp 	.Lxmss_pkfromsig$6
 .Lxmss_pkfromsig$5:
-	movl	28(%r9), %edx
+	movl	28(%r11), %edx
 	shrl	$1, %edx
-	movl	%edx, 28(%r9)
+	movl	%edx, 28(%r11)
 	leaq	96(%rsp), %rcx
 	leaq	32(%rsp), %rdx
-	movq	(%rdx), %rdi
-	movq	%rdi, (%rcx)
+	movq	(%rdx), %r8
+	movq	%r8, (%rcx)
 	movq	8(%rdx), %rdx
 	movq	%rdx, 8(%rcx)
 	leaq	80(%rsp), %rcx
-	leaq	(%rsi,%rax), %rdx
-	movq	(%rdx), %rdi
-	movq	%rdi, (%rcx)
+	leaq	(%rdi,%rax), %rdx
+	movq	(%rdx), %r8
+	movq	%r8, (%rcx)
 	movq	8(%rdx), %rdx
 	movq	%rdx, 8(%rcx)
 .Lxmss_pkfromsig$6:
-	movq	%r8, 128(%rsp)
-	movq	%r9, 120(%rsp)
-	movq	%rsi, 136(%rsp)
+	movq	%rsi, 128(%rsp)
+	movq	%r11, 120(%rsp)
+	movq	%rdi, 136(%rsp)
 	movq	%rax, 144(%rsp)
 	leaq	64(%rsp), %rdi
-	leaq	96(%rsp), %rcx
-	leaq	80(%rsp), %rdx
+	leaq	96(%rsp), %rax
+	leaq	80(%rsp), %rcx
 	leaq	-40(%rsp), %rsp
 	call	.LH$1
 .Lxmss_pkfromsig$4:
 	leaq	40(%rsp), %rsp
-	movq	128(%rsp), %r8
-	movq	120(%rsp), %r9
-	movq	136(%rsp), %rsi
+	movq	128(%rsp), %rsi
+	movq	120(%rsp), %r11
+	movq	136(%rsp), %rdi
 	movq	144(%rsp), %rax
 	lfence
 	movq	$0, %rcx
 	leaq	32(%rsp), %rcx
 	leaq	64(%rsp), %rdx
-	movq	(%rdx), %rdi
-	movq	%rdi, (%rcx)
+	movq	(%rdx), %r8
+	movq	%r8, (%rcx)
 	movq	8(%rdx), %rdx
 	movq	%rdx, 8(%rcx)
-	movl	152(%rsp), %edx
-	movl	156(%rsp), %edi
+	movl	152(%rsp), %ecx
+	movl	156(%rsp), %r8d
 	lfence
-	movq	$0, %rcx
-	shrl	$1, %edi
+	movq	$0, %rdx
+	shrl	$1, %r8d
 	addq	$16, %rax
-	incl	%edx
+	incl	%ecx
 .Lxmss_pkfromsig$2:
-	cmpl	$9, %edx
+	cmpl	$9, %ecx
 	jb  	.Lxmss_pkfromsig$3
 	movq	112(%rsp), %rcx
 	lfence
@@ -1784,671 +1968,734 @@ slh_dsa_shake128s_keygen:
 	movq	%rdx, 8(%rcx)
 	ret
 .Lxmss_sign$1:
-	movq	%rax, 8(%rsp)
-	movq	$560, %rax
-	movl	%edx, %ecx
-	xorl	$1, %ecx
-	movl	$0, %edi
+	movq	%r8, 8(%rsp)
+	movq	$560, %r9
+	movl	%edx, %edi
+	xorl	$1, %edi
+	movl	$0, %r8d
 	jmp 	.Lxmss_sign$3
 .Lxmss_sign$4:
-	movq	%r11, 16(%rsp)
-	movq	%r8, 24(%rsp)
+	movq	%rax, 16(%rsp)
+	movq	%rsi, 24(%rsp)
 	movl	%edx, 48(%rsp)
-	movl	%edi, 52(%rsp)
-	movl	%ecx, 56(%rsp)
-	movq	%rax, 32(%rsp)
-	leaq	(%rsi,%rax), %rax
-	movq	%rsi, 40(%rsp)
-	movl	%ecx, %r10d
-	movl	%edi, %ecx
-	leaq	-16504(%rsp), %rsp
+	movl	%r8d, 52(%rsp)
+	movl	%edi, 56(%rsp)
+	movq	%r9, 32(%rsp)
+	leaq	(%rcx,%r9), %rdx
+	movq	%rcx, 40(%rsp)
+	movq	%rdx, %rcx
+	movq	%rax, %rdx
+	movl	%edi, %r9d
+	leaq	-16600(%rsp), %rsp
 	call	.Lxmss_node$1
 .Lxmss_sign$5:
-	leaq	16504(%rsp), %rsp
-	movq	40(%rsp), %rsi
+	leaq	16600(%rsp), %rsp
+	movq	40(%rsp), %rcx
 	lfence
 	movq	$0, %rax
-	movq	16(%rsp), %r11
-	movq	24(%rsp), %r8
+	movq	16(%rsp), %rax
+	movq	24(%rsp), %rsi
 	movl	48(%rsp), %edx
-	movl	52(%rsp), %edi
-	movl	56(%rsp), %ecx
-	movq	32(%rsp), %rax
+	movl	52(%rsp), %r8d
+	movl	56(%rsp), %edi
+	movq	32(%rsp), %r9
 	lfence
 	movq	$0, %r10
-	shrl	$1, %ecx
-	xorl	$1, %ecx
-	addq	$16, %rax
-	incl	%edi
+	shrl	$1, %edi
+	xorl	$1, %edi
+	addq	$16, %r9
+	incl	%r8d
 .Lxmss_sign$3:
-	cmpl	$9, %edi
+	cmpl	$9, %r8d
 	jb  	.Lxmss_sign$4
-	movq	8(%rsp), %rax
+	movq	8(%rsp), %rdi
 	lfence
-	movq	$0, %rcx
-	movq	$0, 16(%r9)
-	movq	$0, 24(%r9)
-	movl	$0, 16(%r9)
-	movl	%edx, 20(%r9)
-	movq	%rsi, %rbx
-	movq	%rsi, 8(%rsp)
-	movq	%r8, %r10
-	leaq	-232(%rsp), %rsp
+	movq	$0, %r8
+	movq	$0, 16(%r11)
+	movq	$0, 24(%r11)
+	movl	$0, 16(%r11)
+	movl	%edx, 20(%r11)
+	movq	%rcx, %rdx
+	movq	%rcx, 8(%rsp)
+	leaq	-344(%rsp), %rsp
 	call	.Lwots_sign$1
 .Lxmss_sign$2:
-	leaq	232(%rsp), %rsp
-	movq	8(%rsp), %rsi
+	leaq	344(%rsp), %rsp
+	movq	8(%rsp), %rcx
 	lfence
-	movq	$0, %rax
+	movq	$0, %rdx
 	ret
 .Lxmss_node$1:
-	movq	%rax, 16432(%rsp)
+	movq	%rcx, 16432(%rsp)
 	movq	$0, %rax
-	movl	$0, %esi
+	movl	$0, %r10d
 	jmp 	.Lxmss_node$2
 .Lxmss_node$3:
-	movl	%ecx, 16464(%rsp)
-	subl	%esi, %ecx
-	movq	$1, %rdx
-	shlq	%cl, %rdx
-	movl	%edx, %edi
-	imull	%r10d, %edi
-	addl	%edi, %edx
+	movl	%r8d, 16536(%rsp)
+	movl	%r8d, %ecx
+	subl	%r10d, %ecx
+	movq	$1, %r8
+	shlq	%cl, %r8
+	movl	%r8d, %edi
+	imull	%r9d, %edi
+	addl	%edi, %r8d
 	jmp 	.Lxmss_node$4
 .Lxmss_node$5:
-	movq	%r11, 16440(%rsp)
-	movq	%r8, 16448(%rsp)
-	movl	%r10d, 16468(%rsp)
-	movl	%esi, 16472(%rsp)
-	movl	%edi, 16476(%rsp)
-	movl	%edx, 16480(%rsp)
-	cmpl	$0, %esi
+	movq	%rdx, 16440(%rsp)
+	movq	%rsi, 16448(%rsp)
+	movl	%r9d, 16540(%rsp)
+	movl	%r10d, 16544(%rsp)
+	movl	%edi, 16548(%rsp)
+	movl	%r8d, 16552(%rsp)
+	cmpl	$0, %r10d
 	je  	.Lxmss_node$6
 	movl	%edi, %eax
 	imull	$2, %eax, %eax
-	movl	%esi, %edx
+	movl	%r10d, %edx
 	decl	%edx
 	movl	$10, %ecx
-	movq	$1, %r11
-	shlq	%cl, %r11
+	movq	$1, %r9
+	shlq	%cl, %r9
 	subl	%edx, %ecx
 	movq	$1, %rdx
 	shlq	%cl, %rdx
-	subq	%rdx, %r11
+	subq	%rdx, %r9
 	movl	%eax, %eax
-	addq	%rax, %r11
-	imulq	$16, %r11, %r11
-	movq	%r11, %rax
-	addq	$16, %rax
-	leaq	16416(%rsp), %rcx
-	leaq	32(%rsp,%r11), %rdx
-	movq	(%rdx), %r10
-	movq	%r10, (%rcx)
+	addq	%rax, %r9
+	imulq	$16, %r9, %rax
+	movq	$0, 16(%r11)
+	movq	$0, 24(%r11)
+	movl	$2, 16(%r11)
+	movl	%r10d, 24(%r11)
+	movl	%edi, 28(%r11)
+	movl	$10, %ecx
+	movq	$1, %rdx
+	shlq	%cl, %rdx
+	subl	%r10d, %ecx
+	movq	$1, %r9
+	shlq	%cl, %r9
+	subq	%r9, %rdx
+	movl	%edi, %ecx
+	addq	%rcx, %rdx
+	imulq	$16, %rdx, %rcx
+	subl	%edi, %r8d
+	cmpl	$4, %r8d
+	jnb 	.Lxmss_node$9
+	movq	%rax, %rdx
+	addq	$16, %rdx
+	leaq	16416(%rsp), %rdi
+	leaq	32(%rsp,%rax), %rax
+	movq	(%rax), %r8
+	movq	%r8, (%rdi)
+	movq	8(%rax), %r8
+	movq	%r8, 8(%rdi)
+	leaq	16400(%rsp), %rax
+	leaq	32(%rsp,%rdx), %rdx
+	movq	(%rdx), %r8
+	movq	%r8, (%rax)
+	movq	8(%rdx), %rdx
+	movq	%rdx, 8(%rax)
+	movq	%r11, 16464(%rsp)
+	movq	%rcx, 16456(%rsp)
+	leaq	32(%rsp,%rcx), %rdi
+	leaq	16416(%rsp), %rax
+	leaq	16400(%rsp), %rcx
+	leaq	-40(%rsp), %rsp
+	call	.LH$1
+.Lxmss_node$12:
+	leaq	40(%rsp), %rsp
+	movq	16464(%rsp), %r11
+	movq	16456(%rsp), %rax
+	lfence
+	movq	$0, %rcx
+	jmp 	.Lxmss_node$7
+.Lxmss_node$9:
+	movl	%r10d, 16556(%rsp)
+	movl	%edi, %edx
+	movl	%edx, 16560(%rsp)
+	movl	%r10d, 16564(%rsp)
+	movl	%edi, %edx
+	incl	%edx
+	movl	%edx, 16568(%rsp)
+	movl	%r10d, 16572(%rsp)
+	movl	%edi, %edx
+	addl	$2, %edx
+	movl	%edx, 16576(%rsp)
+	movl	%r10d, 16580(%rsp)
+	addl	$3, %edi
+	movl	%edi, 16584(%rsp)
+	movq	%r11, 16456(%rsp)
+	movq	%rcx, 16464(%rsp)
+	leaq	32(%rsp,%rax), %rdi
+	leaq	16472(%rsp), %rcx
+	leaq	16556(%rsp), %rax
+	leaq	-824(%rsp), %rsp
+	call	.Lthash_x4_2n__thash_x4$1
+.Lxmss_node$11:
+	leaq	824(%rsp), %rsp
+	movq	16456(%rsp), %r11
+	movq	16464(%rsp), %rax
+	lfence
+	movq	$0, %rcx
+	leaq	32(%rsp,%rax), %rcx
+	leaq	16472(%rsp), %rdx
+	movq	(%rdx), %r8
+	movq	%r8, (%rcx)
 	movq	8(%rdx), %rdx
 	movq	%rdx, 8(%rcx)
-	leaq	16400(%rsp), %rcx
+	leaq	48(%rsp,%rax), %rcx
+	leaq	16488(%rsp), %rdx
+	movq	(%rdx), %r8
+	movq	%r8, (%rcx)
+	movq	8(%rdx), %rdx
+	movq	%rdx, 8(%rcx)
+	leaq	64(%rsp,%rax), %rcx
+	leaq	16504(%rsp), %rdx
+	movq	(%rdx), %r8
+	movq	%r8, (%rcx)
+	movq	8(%rdx), %rdx
+	movq	%rdx, 8(%rcx)
+	leaq	80(%rsp,%rax), %rcx
+	leaq	16520(%rsp), %rdx
+	movq	(%rdx), %r8
+	movq	%r8, (%rcx)
+	movq	8(%rdx), %rdx
+	movq	%rdx, 8(%rcx)
+	movl	16548(%rsp), %ecx
+	addl	$3, %ecx
+	movl	%ecx, 16548(%rsp)
+.Lxmss_node$10:
+	jmp 	.Lxmss_node$7
+.Lxmss_node$6:
+	movq	$0, 16(%r11)
+	movq	$0, 24(%r11)
+	movl	$0, 16(%r11)
+	movl	%edi, 20(%r11)
+	movl	%edi, %eax
+	imulq	$16, %rax, %rax
+	leaq	32(%rsp,%rax), %rdi
+	leaq	-920(%rsp), %rsp
+	call	.Lwots_pkgen$1
+.Lxmss_node$8:
+	leaq	920(%rsp), %rsp
+	movq	%rcx, %r11
+.Lxmss_node$7:
+	movq	16440(%rsp), %rdx
+	movq	16448(%rsp), %rsi
+	movl	16540(%rsp), %r9d
+	movl	16544(%rsp), %r10d
+	movl	16548(%rsp), %edi
+	movl	16552(%rsp), %r8d
+	lfence
+	movq	$0, %rcx
+	incl	%edi
+.Lxmss_node$4:
+	cmpl	%r8d, %edi
+	jb  	.Lxmss_node$5
+	movl	16536(%rsp), %r8d
+	lfence
+	movq	$0, %rcx
+	incl	%r10d
+.Lxmss_node$2:
+	cmpl	%r8d, %r10d
+	jbe 	.Lxmss_node$3
+	movq	16432(%rsp), %rcx
+	lfence
+	movq	$0, %rdx
 	leaq	32(%rsp,%rax), %rax
 	movq	(%rax), %rdx
 	movq	%rdx, (%rcx)
 	movq	8(%rax), %rdx
 	movq	%rdx, 8(%rcx)
-	movq	$0, 16(%r9)
-	movq	$0, 24(%r9)
-	movl	$2, 16(%r9)
-	movl	%esi, 24(%r9)
-	movl	%edi, 28(%r9)
-	movl	$10, %ecx
-	movq	$1, %rdx
-	shlq	%cl, %rdx
-	subl	%esi, %ecx
-	movq	$1, %r11
-	shlq	%cl, %r11
-	subq	%r11, %rdx
-	movl	%edi, %eax
-	addq	%rax, %rdx
-	imulq	$16, %rdx, %rax
-	movq	%r9, 16456(%rsp)
-	leaq	32(%rsp,%rax), %rdi
-	leaq	16416(%rsp), %rcx
-	leaq	16400(%rsp), %rdx
-	leaq	-40(%rsp), %rsp
-	call	.LH$1
-.Lxmss_node$9:
-	leaq	40(%rsp), %rsp
-	movq	16456(%rsp), %r9
-	lfence
-	movq	$0, %rcx
-	jmp 	.Lxmss_node$7
-.Lxmss_node$6:
-	movq	$0, 16(%r9)
-	movq	$0, 24(%r9)
-	movl	$0, 16(%r9)
-	movl	%edi, 20(%r9)
-	movl	%edi, %eax
-	imulq	$16, %rax, %rax
-	leaq	32(%rsp,%rax), %rdi
-	leaq	-664(%rsp), %rsp
-	call	.Lwots_pkgen$1
-.Lxmss_node$8:
-	leaq	664(%rsp), %rsp
-	movq	%rcx, %r9
-.Lxmss_node$7:
-	movq	16440(%rsp), %r11
-	movq	16448(%rsp), %r8
-	movl	16468(%rsp), %r10d
-	movl	16472(%rsp), %esi
-	movl	16476(%rsp), %edi
-	movl	16480(%rsp), %edx
-	lfence
-	movq	$0, %rcx
-	incl	%edi
-.Lxmss_node$4:
-	cmpl	%edx, %edi
-	jb  	.Lxmss_node$5
-	movl	16464(%rsp), %ecx
-	lfence
-	movq	$0, %rdx
-	incl	%esi
-.Lxmss_node$2:
-	cmpl	%ecx, %esi
-	jbe 	.Lxmss_node$3
-	movq	16432(%rsp), %rdx
-	lfence
-	movq	$0, %rcx
-	leaq	32(%rsp,%rax), %rax
-	movq	(%rax), %rsi
-	movq	%rsi, (%rdx)
-	movq	8(%rax), %rsi
-	movq	%rsi, 8(%rdx)
 	ret
 .Lwots_pkfromsig$1:
-	movq	%rsi, 592(%rsp)
-	leaq	652(%rsp), %rsi
-	movq	%rsi, %rdi
-	movq	$0, %r8
+	movq	%rdi, 592(%rsp)
+	leaq	648(%rsp), %rdi
+	movq	%rdi, %r8
+	movq	$0, %r9
 	movl	$0, %ecx
-	movl	$0, %r9d
-	jmp 	.Lwots_pkfromsig$74
-.Lwots_pkfromsig$75:
-	shll	$8, %r9d
-	movzbl	(%rax,%r8), %ebx
-	orl 	%ebx, %r9d
-	incq	%r8
-	addl	$8, %ecx
-.Lwots_pkfromsig$74:
-	cmpl	$4, %ecx
-	jb  	.Lwots_pkfromsig$75
-	movl	%r9d, %ebx
-	addl	$-4, %ecx
-	shrq	%cl, %rbx
-	andq	$15, %rbx
-	movl	%ebx, (%rdi)
+	movl	$0, %r10d
 	jmp 	.Lwots_pkfromsig$72
 .Lwots_pkfromsig$73:
-	shll	$8, %r9d
-	movzbl	(%rax,%r8), %ebx
-	orl 	%ebx, %r9d
-	incq	%r8
+	shll	$8, %r10d
+	movzbl	(%rax,%r9), %ebx
+	orl 	%ebx, %r10d
+	incq	%r9
 	addl	$8, %ecx
 .Lwots_pkfromsig$72:
 	cmpl	$4, %ecx
 	jb  	.Lwots_pkfromsig$73
-	movl	%r9d, %ebx
+	movl	%r10d, %ebx
 	addl	$-4, %ecx
 	shrq	%cl, %rbx
 	andq	$15, %rbx
-	movl	%ebx, 4(%rdi)
+	movl	%ebx, (%r8)
 	jmp 	.Lwots_pkfromsig$70
 .Lwots_pkfromsig$71:
-	shll	$8, %r9d
-	movzbl	(%rax,%r8), %ebx
-	orl 	%ebx, %r9d
-	incq	%r8
+	shll	$8, %r10d
+	movzbl	(%rax,%r9), %ebx
+	orl 	%ebx, %r10d
+	incq	%r9
 	addl	$8, %ecx
 .Lwots_pkfromsig$70:
 	cmpl	$4, %ecx
 	jb  	.Lwots_pkfromsig$71
-	movl	%r9d, %ebx
+	movl	%r10d, %ebx
 	addl	$-4, %ecx
 	shrq	%cl, %rbx
 	andq	$15, %rbx
-	movl	%ebx, 8(%rdi)
+	movl	%ebx, 4(%r8)
 	jmp 	.Lwots_pkfromsig$68
 .Lwots_pkfromsig$69:
-	shll	$8, %r9d
-	movzbl	(%rax,%r8), %ebx
-	orl 	%ebx, %r9d
-	incq	%r8
+	shll	$8, %r10d
+	movzbl	(%rax,%r9), %ebx
+	orl 	%ebx, %r10d
+	incq	%r9
 	addl	$8, %ecx
 .Lwots_pkfromsig$68:
 	cmpl	$4, %ecx
 	jb  	.Lwots_pkfromsig$69
-	movl	%r9d, %ebx
+	movl	%r10d, %ebx
 	addl	$-4, %ecx
 	shrq	%cl, %rbx
 	andq	$15, %rbx
-	movl	%ebx, 12(%rdi)
+	movl	%ebx, 8(%r8)
 	jmp 	.Lwots_pkfromsig$66
 .Lwots_pkfromsig$67:
-	shll	$8, %r9d
-	movzbl	(%rax,%r8), %ebx
-	orl 	%ebx, %r9d
-	incq	%r8
+	shll	$8, %r10d
+	movzbl	(%rax,%r9), %ebx
+	orl 	%ebx, %r10d
+	incq	%r9
 	addl	$8, %ecx
 .Lwots_pkfromsig$66:
 	cmpl	$4, %ecx
 	jb  	.Lwots_pkfromsig$67
-	movl	%r9d, %ebx
+	movl	%r10d, %ebx
 	addl	$-4, %ecx
 	shrq	%cl, %rbx
 	andq	$15, %rbx
-	movl	%ebx, 16(%rdi)
+	movl	%ebx, 12(%r8)
 	jmp 	.Lwots_pkfromsig$64
 .Lwots_pkfromsig$65:
-	shll	$8, %r9d
-	movzbl	(%rax,%r8), %ebx
-	orl 	%ebx, %r9d
-	incq	%r8
+	shll	$8, %r10d
+	movzbl	(%rax,%r9), %ebx
+	orl 	%ebx, %r10d
+	incq	%r9
 	addl	$8, %ecx
 .Lwots_pkfromsig$64:
 	cmpl	$4, %ecx
 	jb  	.Lwots_pkfromsig$65
-	movl	%r9d, %ebx
+	movl	%r10d, %ebx
 	addl	$-4, %ecx
 	shrq	%cl, %rbx
 	andq	$15, %rbx
-	movl	%ebx, 20(%rdi)
+	movl	%ebx, 16(%r8)
 	jmp 	.Lwots_pkfromsig$62
 .Lwots_pkfromsig$63:
-	shll	$8, %r9d
-	movzbl	(%rax,%r8), %ebx
-	orl 	%ebx, %r9d
-	incq	%r8
+	shll	$8, %r10d
+	movzbl	(%rax,%r9), %ebx
+	orl 	%ebx, %r10d
+	incq	%r9
 	addl	$8, %ecx
 .Lwots_pkfromsig$62:
 	cmpl	$4, %ecx
 	jb  	.Lwots_pkfromsig$63
-	movl	%r9d, %ebx
+	movl	%r10d, %ebx
 	addl	$-4, %ecx
 	shrq	%cl, %rbx
 	andq	$15, %rbx
-	movl	%ebx, 24(%rdi)
+	movl	%ebx, 20(%r8)
 	jmp 	.Lwots_pkfromsig$60
 .Lwots_pkfromsig$61:
-	shll	$8, %r9d
-	movzbl	(%rax,%r8), %ebx
-	orl 	%ebx, %r9d
-	incq	%r8
+	shll	$8, %r10d
+	movzbl	(%rax,%r9), %ebx
+	orl 	%ebx, %r10d
+	incq	%r9
 	addl	$8, %ecx
 .Lwots_pkfromsig$60:
 	cmpl	$4, %ecx
 	jb  	.Lwots_pkfromsig$61
-	movl	%r9d, %ebx
+	movl	%r10d, %ebx
 	addl	$-4, %ecx
 	shrq	%cl, %rbx
 	andq	$15, %rbx
-	movl	%ebx, 28(%rdi)
+	movl	%ebx, 24(%r8)
 	jmp 	.Lwots_pkfromsig$58
 .Lwots_pkfromsig$59:
-	shll	$8, %r9d
-	movzbl	(%rax,%r8), %ebx
-	orl 	%ebx, %r9d
-	incq	%r8
+	shll	$8, %r10d
+	movzbl	(%rax,%r9), %ebx
+	orl 	%ebx, %r10d
+	incq	%r9
 	addl	$8, %ecx
 .Lwots_pkfromsig$58:
 	cmpl	$4, %ecx
 	jb  	.Lwots_pkfromsig$59
-	movl	%r9d, %ebx
+	movl	%r10d, %ebx
 	addl	$-4, %ecx
 	shrq	%cl, %rbx
 	andq	$15, %rbx
-	movl	%ebx, 32(%rdi)
+	movl	%ebx, 28(%r8)
 	jmp 	.Lwots_pkfromsig$56
 .Lwots_pkfromsig$57:
-	shll	$8, %r9d
-	movzbl	(%rax,%r8), %ebx
-	orl 	%ebx, %r9d
-	incq	%r8
+	shll	$8, %r10d
+	movzbl	(%rax,%r9), %ebx
+	orl 	%ebx, %r10d
+	incq	%r9
 	addl	$8, %ecx
 .Lwots_pkfromsig$56:
 	cmpl	$4, %ecx
 	jb  	.Lwots_pkfromsig$57
-	movl	%r9d, %ebx
+	movl	%r10d, %ebx
 	addl	$-4, %ecx
 	shrq	%cl, %rbx
 	andq	$15, %rbx
-	movl	%ebx, 36(%rdi)
+	movl	%ebx, 32(%r8)
 	jmp 	.Lwots_pkfromsig$54
 .Lwots_pkfromsig$55:
-	shll	$8, %r9d
-	movzbl	(%rax,%r8), %ebx
-	orl 	%ebx, %r9d
-	incq	%r8
+	shll	$8, %r10d
+	movzbl	(%rax,%r9), %ebx
+	orl 	%ebx, %r10d
+	incq	%r9
 	addl	$8, %ecx
 .Lwots_pkfromsig$54:
 	cmpl	$4, %ecx
 	jb  	.Lwots_pkfromsig$55
-	movl	%r9d, %ebx
+	movl	%r10d, %ebx
 	addl	$-4, %ecx
 	shrq	%cl, %rbx
 	andq	$15, %rbx
-	movl	%ebx, 40(%rdi)
+	movl	%ebx, 36(%r8)
 	jmp 	.Lwots_pkfromsig$52
 .Lwots_pkfromsig$53:
-	shll	$8, %r9d
-	movzbl	(%rax,%r8), %ebx
-	orl 	%ebx, %r9d
-	incq	%r8
+	shll	$8, %r10d
+	movzbl	(%rax,%r9), %ebx
+	orl 	%ebx, %r10d
+	incq	%r9
 	addl	$8, %ecx
 .Lwots_pkfromsig$52:
 	cmpl	$4, %ecx
 	jb  	.Lwots_pkfromsig$53
-	movl	%r9d, %ebx
+	movl	%r10d, %ebx
 	addl	$-4, %ecx
 	shrq	%cl, %rbx
 	andq	$15, %rbx
-	movl	%ebx, 44(%rdi)
+	movl	%ebx, 40(%r8)
 	jmp 	.Lwots_pkfromsig$50
 .Lwots_pkfromsig$51:
-	shll	$8, %r9d
-	movzbl	(%rax,%r8), %ebx
-	orl 	%ebx, %r9d
-	incq	%r8
+	shll	$8, %r10d
+	movzbl	(%rax,%r9), %ebx
+	orl 	%ebx, %r10d
+	incq	%r9
 	addl	$8, %ecx
 .Lwots_pkfromsig$50:
 	cmpl	$4, %ecx
 	jb  	.Lwots_pkfromsig$51
-	movl	%r9d, %ebx
+	movl	%r10d, %ebx
 	addl	$-4, %ecx
 	shrq	%cl, %rbx
 	andq	$15, %rbx
-	movl	%ebx, 48(%rdi)
+	movl	%ebx, 44(%r8)
 	jmp 	.Lwots_pkfromsig$48
 .Lwots_pkfromsig$49:
-	shll	$8, %r9d
-	movzbl	(%rax,%r8), %ebx
-	orl 	%ebx, %r9d
-	incq	%r8
+	shll	$8, %r10d
+	movzbl	(%rax,%r9), %ebx
+	orl 	%ebx, %r10d
+	incq	%r9
 	addl	$8, %ecx
 .Lwots_pkfromsig$48:
 	cmpl	$4, %ecx
 	jb  	.Lwots_pkfromsig$49
-	movl	%r9d, %ebx
+	movl	%r10d, %ebx
 	addl	$-4, %ecx
 	shrq	%cl, %rbx
 	andq	$15, %rbx
-	movl	%ebx, 52(%rdi)
+	movl	%ebx, 48(%r8)
 	jmp 	.Lwots_pkfromsig$46
 .Lwots_pkfromsig$47:
-	shll	$8, %r9d
-	movzbl	(%rax,%r8), %ebx
-	orl 	%ebx, %r9d
-	incq	%r8
+	shll	$8, %r10d
+	movzbl	(%rax,%r9), %ebx
+	orl 	%ebx, %r10d
+	incq	%r9
 	addl	$8, %ecx
 .Lwots_pkfromsig$46:
 	cmpl	$4, %ecx
 	jb  	.Lwots_pkfromsig$47
-	movl	%r9d, %ebx
+	movl	%r10d, %ebx
 	addl	$-4, %ecx
 	shrq	%cl, %rbx
 	andq	$15, %rbx
-	movl	%ebx, 56(%rdi)
+	movl	%ebx, 52(%r8)
 	jmp 	.Lwots_pkfromsig$44
 .Lwots_pkfromsig$45:
-	shll	$8, %r9d
-	movzbl	(%rax,%r8), %ebx
-	orl 	%ebx, %r9d
-	incq	%r8
+	shll	$8, %r10d
+	movzbl	(%rax,%r9), %ebx
+	orl 	%ebx, %r10d
+	incq	%r9
 	addl	$8, %ecx
 .Lwots_pkfromsig$44:
 	cmpl	$4, %ecx
 	jb  	.Lwots_pkfromsig$45
-	movl	%r9d, %ebx
+	movl	%r10d, %ebx
 	addl	$-4, %ecx
 	shrq	%cl, %rbx
 	andq	$15, %rbx
-	movl	%ebx, 60(%rdi)
+	movl	%ebx, 56(%r8)
 	jmp 	.Lwots_pkfromsig$42
 .Lwots_pkfromsig$43:
-	shll	$8, %r9d
-	movzbl	(%rax,%r8), %ebx
-	orl 	%ebx, %r9d
-	incq	%r8
+	shll	$8, %r10d
+	movzbl	(%rax,%r9), %ebx
+	orl 	%ebx, %r10d
+	incq	%r9
 	addl	$8, %ecx
 .Lwots_pkfromsig$42:
 	cmpl	$4, %ecx
 	jb  	.Lwots_pkfromsig$43
-	movl	%r9d, %ebx
+	movl	%r10d, %ebx
 	addl	$-4, %ecx
 	shrq	%cl, %rbx
 	andq	$15, %rbx
-	movl	%ebx, 64(%rdi)
+	movl	%ebx, 60(%r8)
 	jmp 	.Lwots_pkfromsig$40
 .Lwots_pkfromsig$41:
-	shll	$8, %r9d
-	movzbl	(%rax,%r8), %ebx
-	orl 	%ebx, %r9d
-	incq	%r8
+	shll	$8, %r10d
+	movzbl	(%rax,%r9), %ebx
+	orl 	%ebx, %r10d
+	incq	%r9
 	addl	$8, %ecx
 .Lwots_pkfromsig$40:
 	cmpl	$4, %ecx
 	jb  	.Lwots_pkfromsig$41
-	movl	%r9d, %ebx
+	movl	%r10d, %ebx
 	addl	$-4, %ecx
 	shrq	%cl, %rbx
 	andq	$15, %rbx
-	movl	%ebx, 68(%rdi)
+	movl	%ebx, 64(%r8)
 	jmp 	.Lwots_pkfromsig$38
 .Lwots_pkfromsig$39:
-	shll	$8, %r9d
-	movzbl	(%rax,%r8), %ebx
-	orl 	%ebx, %r9d
-	incq	%r8
+	shll	$8, %r10d
+	movzbl	(%rax,%r9), %ebx
+	orl 	%ebx, %r10d
+	incq	%r9
 	addl	$8, %ecx
 .Lwots_pkfromsig$38:
 	cmpl	$4, %ecx
 	jb  	.Lwots_pkfromsig$39
-	movl	%r9d, %ebx
+	movl	%r10d, %ebx
 	addl	$-4, %ecx
 	shrq	%cl, %rbx
 	andq	$15, %rbx
-	movl	%ebx, 72(%rdi)
+	movl	%ebx, 68(%r8)
 	jmp 	.Lwots_pkfromsig$36
 .Lwots_pkfromsig$37:
-	shll	$8, %r9d
-	movzbl	(%rax,%r8), %ebx
-	orl 	%ebx, %r9d
-	incq	%r8
+	shll	$8, %r10d
+	movzbl	(%rax,%r9), %ebx
+	orl 	%ebx, %r10d
+	incq	%r9
 	addl	$8, %ecx
 .Lwots_pkfromsig$36:
 	cmpl	$4, %ecx
 	jb  	.Lwots_pkfromsig$37
-	movl	%r9d, %ebx
+	movl	%r10d, %ebx
 	addl	$-4, %ecx
 	shrq	%cl, %rbx
 	andq	$15, %rbx
-	movl	%ebx, 76(%rdi)
+	movl	%ebx, 72(%r8)
 	jmp 	.Lwots_pkfromsig$34
 .Lwots_pkfromsig$35:
-	shll	$8, %r9d
-	movzbl	(%rax,%r8), %ebx
-	orl 	%ebx, %r9d
-	incq	%r8
+	shll	$8, %r10d
+	movzbl	(%rax,%r9), %ebx
+	orl 	%ebx, %r10d
+	incq	%r9
 	addl	$8, %ecx
 .Lwots_pkfromsig$34:
 	cmpl	$4, %ecx
 	jb  	.Lwots_pkfromsig$35
-	movl	%r9d, %ebx
+	movl	%r10d, %ebx
 	addl	$-4, %ecx
 	shrq	%cl, %rbx
 	andq	$15, %rbx
-	movl	%ebx, 80(%rdi)
+	movl	%ebx, 76(%r8)
 	jmp 	.Lwots_pkfromsig$32
 .Lwots_pkfromsig$33:
-	shll	$8, %r9d
-	movzbl	(%rax,%r8), %ebx
-	orl 	%ebx, %r9d
-	incq	%r8
+	shll	$8, %r10d
+	movzbl	(%rax,%r9), %ebx
+	orl 	%ebx, %r10d
+	incq	%r9
 	addl	$8, %ecx
 .Lwots_pkfromsig$32:
 	cmpl	$4, %ecx
 	jb  	.Lwots_pkfromsig$33
-	movl	%r9d, %ebx
+	movl	%r10d, %ebx
 	addl	$-4, %ecx
 	shrq	%cl, %rbx
 	andq	$15, %rbx
-	movl	%ebx, 84(%rdi)
+	movl	%ebx, 80(%r8)
 	jmp 	.Lwots_pkfromsig$30
 .Lwots_pkfromsig$31:
-	shll	$8, %r9d
-	movzbl	(%rax,%r8), %ebx
-	orl 	%ebx, %r9d
-	incq	%r8
+	shll	$8, %r10d
+	movzbl	(%rax,%r9), %ebx
+	orl 	%ebx, %r10d
+	incq	%r9
 	addl	$8, %ecx
 .Lwots_pkfromsig$30:
 	cmpl	$4, %ecx
 	jb  	.Lwots_pkfromsig$31
-	movl	%r9d, %ebx
+	movl	%r10d, %ebx
 	addl	$-4, %ecx
 	shrq	%cl, %rbx
 	andq	$15, %rbx
-	movl	%ebx, 88(%rdi)
+	movl	%ebx, 84(%r8)
 	jmp 	.Lwots_pkfromsig$28
 .Lwots_pkfromsig$29:
-	shll	$8, %r9d
-	movzbl	(%rax,%r8), %ebx
-	orl 	%ebx, %r9d
-	incq	%r8
+	shll	$8, %r10d
+	movzbl	(%rax,%r9), %ebx
+	orl 	%ebx, %r10d
+	incq	%r9
 	addl	$8, %ecx
 .Lwots_pkfromsig$28:
 	cmpl	$4, %ecx
 	jb  	.Lwots_pkfromsig$29
-	movl	%r9d, %ebx
+	movl	%r10d, %ebx
 	addl	$-4, %ecx
 	shrq	%cl, %rbx
 	andq	$15, %rbx
-	movl	%ebx, 92(%rdi)
+	movl	%ebx, 88(%r8)
 	jmp 	.Lwots_pkfromsig$26
 .Lwots_pkfromsig$27:
-	shll	$8, %r9d
-	movzbl	(%rax,%r8), %ebx
-	orl 	%ebx, %r9d
-	incq	%r8
+	shll	$8, %r10d
+	movzbl	(%rax,%r9), %ebx
+	orl 	%ebx, %r10d
+	incq	%r9
 	addl	$8, %ecx
 .Lwots_pkfromsig$26:
 	cmpl	$4, %ecx
 	jb  	.Lwots_pkfromsig$27
-	movl	%r9d, %ebx
+	movl	%r10d, %ebx
 	addl	$-4, %ecx
 	shrq	%cl, %rbx
 	andq	$15, %rbx
-	movl	%ebx, 96(%rdi)
+	movl	%ebx, 92(%r8)
 	jmp 	.Lwots_pkfromsig$24
 .Lwots_pkfromsig$25:
-	shll	$8, %r9d
-	movzbl	(%rax,%r8), %ebx
-	orl 	%ebx, %r9d
-	incq	%r8
+	shll	$8, %r10d
+	movzbl	(%rax,%r9), %ebx
+	orl 	%ebx, %r10d
+	incq	%r9
 	addl	$8, %ecx
 .Lwots_pkfromsig$24:
 	cmpl	$4, %ecx
 	jb  	.Lwots_pkfromsig$25
-	movl	%r9d, %ebx
+	movl	%r10d, %ebx
 	addl	$-4, %ecx
 	shrq	%cl, %rbx
 	andq	$15, %rbx
-	movl	%ebx, 100(%rdi)
+	movl	%ebx, 96(%r8)
 	jmp 	.Lwots_pkfromsig$22
 .Lwots_pkfromsig$23:
-	shll	$8, %r9d
-	movzbl	(%rax,%r8), %ebx
-	orl 	%ebx, %r9d
-	incq	%r8
+	shll	$8, %r10d
+	movzbl	(%rax,%r9), %ebx
+	orl 	%ebx, %r10d
+	incq	%r9
 	addl	$8, %ecx
 .Lwots_pkfromsig$22:
 	cmpl	$4, %ecx
 	jb  	.Lwots_pkfromsig$23
-	movl	%r9d, %ebx
+	movl	%r10d, %ebx
 	addl	$-4, %ecx
 	shrq	%cl, %rbx
 	andq	$15, %rbx
-	movl	%ebx, 104(%rdi)
+	movl	%ebx, 100(%r8)
 	jmp 	.Lwots_pkfromsig$20
 .Lwots_pkfromsig$21:
-	shll	$8, %r9d
-	movzbl	(%rax,%r8), %ebx
-	orl 	%ebx, %r9d
-	incq	%r8
+	shll	$8, %r10d
+	movzbl	(%rax,%r9), %ebx
+	orl 	%ebx, %r10d
+	incq	%r9
 	addl	$8, %ecx
 .Lwots_pkfromsig$20:
 	cmpl	$4, %ecx
 	jb  	.Lwots_pkfromsig$21
-	movl	%r9d, %ebx
+	movl	%r10d, %ebx
 	addl	$-4, %ecx
 	shrq	%cl, %rbx
 	andq	$15, %rbx
-	movl	%ebx, 108(%rdi)
+	movl	%ebx, 104(%r8)
 	jmp 	.Lwots_pkfromsig$18
 .Lwots_pkfromsig$19:
-	shll	$8, %r9d
-	movzbl	(%rax,%r8), %ebx
-	orl 	%ebx, %r9d
-	incq	%r8
+	shll	$8, %r10d
+	movzbl	(%rax,%r9), %ebx
+	orl 	%ebx, %r10d
+	incq	%r9
 	addl	$8, %ecx
 .Lwots_pkfromsig$18:
 	cmpl	$4, %ecx
 	jb  	.Lwots_pkfromsig$19
-	movl	%r9d, %ebx
+	movl	%r10d, %ebx
 	addl	$-4, %ecx
 	shrq	%cl, %rbx
 	andq	$15, %rbx
-	movl	%ebx, 112(%rdi)
+	movl	%ebx, 108(%r8)
 	jmp 	.Lwots_pkfromsig$16
 .Lwots_pkfromsig$17:
-	shll	$8, %r9d
-	movzbl	(%rax,%r8), %ebx
-	orl 	%ebx, %r9d
-	incq	%r8
+	shll	$8, %r10d
+	movzbl	(%rax,%r9), %ebx
+	orl 	%ebx, %r10d
+	incq	%r9
 	addl	$8, %ecx
 .Lwots_pkfromsig$16:
 	cmpl	$4, %ecx
 	jb  	.Lwots_pkfromsig$17
-	movl	%r9d, %ebx
+	movl	%r10d, %ebx
 	addl	$-4, %ecx
 	shrq	%cl, %rbx
 	andq	$15, %rbx
-	movl	%ebx, 116(%rdi)
+	movl	%ebx, 112(%r8)
 	jmp 	.Lwots_pkfromsig$14
 .Lwots_pkfromsig$15:
-	shll	$8, %r9d
-	movzbl	(%rax,%r8), %ebx
-	orl 	%ebx, %r9d
-	incq	%r8
+	shll	$8, %r10d
+	movzbl	(%rax,%r9), %ebx
+	orl 	%ebx, %r10d
+	incq	%r9
 	addl	$8, %ecx
 .Lwots_pkfromsig$14:
 	cmpl	$4, %ecx
 	jb  	.Lwots_pkfromsig$15
-	movl	%r9d, %ebx
+	movl	%r10d, %ebx
 	addl	$-4, %ecx
 	shrq	%cl, %rbx
 	andq	$15, %rbx
-	movl	%ebx, 120(%rdi)
+	movl	%ebx, 116(%r8)
 	jmp 	.Lwots_pkfromsig$12
 .Lwots_pkfromsig$13:
-	shll	$8, %r9d
-	movzbl	(%rax,%r8), %ebx
-	orl 	%ebx, %r9d
-	incq	%r8
+	shll	$8, %r10d
+	movzbl	(%rax,%r9), %ebx
+	orl 	%ebx, %r10d
+	incq	%r9
 	addl	$8, %ecx
 .Lwots_pkfromsig$12:
 	cmpl	$4, %ecx
 	jb  	.Lwots_pkfromsig$13
-	movl	%r9d, %eax
+	movl	%r10d, %ebx
 	addl	$-4, %ecx
-	shrq	%cl, %rax
-	andq	$15, %rax
-	movl	%eax, 124(%rdi)
-	movq	%rsi, %rax
+	shrq	%cl, %rbx
+	andq	$15, %rbx
+	movl	%ebx, 120(%r8)
+	jmp 	.Lwots_pkfromsig$10
+.Lwots_pkfromsig$11:
+	shll	$8, %r10d
+	movzbl	(%rax,%r9), %ebx
+	orl 	%ebx, %r10d
+	incq	%r9
+	addl	$8, %ecx
+.Lwots_pkfromsig$10:
+	cmpl	$4, %ecx
+	jb  	.Lwots_pkfromsig$11
+	movl	%r10d, %r10d
+	addl	$-4, %ecx
+	shrq	%cl, %r10
+	andq	$15, %r10
+	movl	%r10d, 124(%r8)
+	movq	%rdi, %rax
 	movl	$480, %ecx
 	subl	(%rax), %ecx
 	subl	4(%rax), %ecx
@@ -2486,2007 +2733,2047 @@ slh_dsa_shake128s_keygen:
 	movl	%ecx, %eax
 	shrl	$0, %eax
 	andl	$255, %eax
-	movb	%al, 793(%rsp)
+	movb	%al, 929(%rsp)
 	shrl	$8, %ecx
 	andl	$255, %ecx
-	movb	%cl, 792(%rsp)
-	leaq	128(%rsi), %rdi
-	leaq	792(%rsp), %rax
-	movq	$0, %rsi
+	movb	%cl, 928(%rsp)
+	leaq	128(%rdi), %r8
+	leaq	928(%rsp), %rax
+	movq	$0, %rdi
 	movl	$0, %ecx
-	movl	$0, %r9d
-	jmp 	.Lwots_pkfromsig$10
-.Lwots_pkfromsig$11:
-	shll	$8, %r9d
-	movzbl	(%rax,%rsi), %r8d
-	orl 	%r8d, %r9d
-	incq	%rsi
-	addl	$8, %ecx
-.Lwots_pkfromsig$10:
-	cmpl	$4, %ecx
-	jb  	.Lwots_pkfromsig$11
-	movl	%r9d, %r8d
-	addl	$-4, %ecx
-	shrq	%cl, %r8
-	andq	$15, %r8
-	movl	%r8d, (%rdi)
+	movl	$0, %r10d
 	jmp 	.Lwots_pkfromsig$8
 .Lwots_pkfromsig$9:
-	shll	$8, %r9d
-	movzbl	(%rax,%rsi), %r8d
-	orl 	%r8d, %r9d
-	incq	%rsi
+	shll	$8, %r10d
+	movzbl	(%rax,%rdi), %r9d
+	orl 	%r9d, %r10d
+	incq	%rdi
 	addl	$8, %ecx
 .Lwots_pkfromsig$8:
 	cmpl	$4, %ecx
 	jb  	.Lwots_pkfromsig$9
-	movl	%r9d, %r8d
+	movl	%r10d, %r9d
 	addl	$-4, %ecx
-	shrq	%cl, %r8
-	andq	$15, %r8
-	movl	%r8d, 4(%rdi)
+	shrq	%cl, %r9
+	andq	$15, %r9
+	movl	%r9d, (%r8)
 	jmp 	.Lwots_pkfromsig$6
 .Lwots_pkfromsig$7:
-	shll	$8, %r9d
-	movzbl	(%rax,%rsi), %r8d
-	orl 	%r8d, %r9d
-	incq	%rsi
+	shll	$8, %r10d
+	movzbl	(%rax,%rdi), %r9d
+	orl 	%r9d, %r10d
+	incq	%rdi
 	addl	$8, %ecx
 .Lwots_pkfromsig$6:
 	cmpl	$4, %ecx
 	jb  	.Lwots_pkfromsig$7
-	movl	%r9d, %eax
+	movl	%r10d, %r9d
 	addl	$-4, %ecx
-	shrq	%cl, %rax
-	andq	$15, %rax
-	movl	%eax, 8(%rdi)
-	movb	(%rdx), %sil
-	movb	%sil, 32(%rsp)
-	movb	1(%rdx), %sil
-	movb	%sil, 33(%rsp)
-	movb	2(%rdx), %sil
-	movb	%sil, 34(%rsp)
-	movb	3(%rdx), %sil
-	movb	%sil, 35(%rsp)
-	movb	4(%rdx), %sil
-	movb	%sil, 36(%rsp)
-	movb	5(%rdx), %sil
-	movb	%sil, 37(%rsp)
-	movb	6(%rdx), %sil
-	movb	%sil, 38(%rsp)
-	movb	7(%rdx), %sil
-	movb	%sil, 39(%rsp)
-	movb	8(%rdx), %sil
-	movb	%sil, 40(%rsp)
-	movb	9(%rdx), %sil
-	movb	%sil, 41(%rsp)
-	movb	10(%rdx), %sil
-	movb	%sil, 42(%rsp)
-	movb	11(%rdx), %sil
-	movb	%sil, 43(%rsp)
-	movb	12(%rdx), %sil
-	movb	%sil, 44(%rsp)
-	movb	13(%rdx), %sil
-	movb	%sil, 45(%rsp)
-	movb	14(%rdx), %sil
-	movb	%sil, 46(%rsp)
-	movb	15(%rdx), %sil
-	movb	%sil, 47(%rsp)
-	movb	16(%rdx), %sil
-	movb	%sil, 48(%rsp)
-	movb	17(%rdx), %sil
-	movb	%sil, 49(%rsp)
-	movb	18(%rdx), %sil
-	movb	%sil, 50(%rsp)
-	movb	19(%rdx), %sil
-	movb	%sil, 51(%rsp)
-	movb	20(%rdx), %sil
-	movb	%sil, 52(%rsp)
-	movb	21(%rdx), %sil
-	movb	%sil, 53(%rsp)
-	movb	22(%rdx), %sil
-	movb	%sil, 54(%rsp)
-	movb	23(%rdx), %sil
-	movb	%sil, 55(%rsp)
-	movb	24(%rdx), %sil
-	movb	%sil, 56(%rsp)
-	movb	25(%rdx), %sil
-	movb	%sil, 57(%rsp)
-	movb	26(%rdx), %sil
-	movb	%sil, 58(%rsp)
-	movb	27(%rdx), %sil
-	movb	%sil, 59(%rsp)
-	movb	28(%rdx), %sil
-	movb	%sil, 60(%rsp)
-	movb	29(%rdx), %sil
-	movb	%sil, 61(%rsp)
-	movb	30(%rdx), %sil
-	movb	%sil, 62(%rsp)
-	movb	31(%rdx), %sil
-	movb	%sil, 63(%rsp)
-	movb	32(%rdx), %sil
-	movb	%sil, 64(%rsp)
-	movb	33(%rdx), %sil
-	movb	%sil, 65(%rsp)
-	movb	34(%rdx), %sil
-	movb	%sil, 66(%rsp)
-	movb	35(%rdx), %sil
-	movb	%sil, 67(%rsp)
-	movb	36(%rdx), %sil
-	movb	%sil, 68(%rsp)
-	movb	37(%rdx), %sil
-	movb	%sil, 69(%rsp)
-	movb	38(%rdx), %sil
-	movb	%sil, 70(%rsp)
-	movb	39(%rdx), %sil
-	movb	%sil, 71(%rsp)
-	movb	40(%rdx), %sil
-	movb	%sil, 72(%rsp)
-	movb	41(%rdx), %sil
-	movb	%sil, 73(%rsp)
-	movb	42(%rdx), %sil
-	movb	%sil, 74(%rsp)
-	movb	43(%rdx), %sil
-	movb	%sil, 75(%rsp)
-	movb	44(%rdx), %sil
-	movb	%sil, 76(%rsp)
-	movb	45(%rdx), %sil
-	movb	%sil, 77(%rsp)
-	movb	46(%rdx), %sil
-	movb	%sil, 78(%rsp)
-	movb	47(%rdx), %sil
-	movb	%sil, 79(%rsp)
-	movb	48(%rdx), %sil
-	movb	%sil, 80(%rsp)
-	movb	49(%rdx), %sil
-	movb	%sil, 81(%rsp)
-	movb	50(%rdx), %sil
-	movb	%sil, 82(%rsp)
-	movb	51(%rdx), %sil
-	movb	%sil, 83(%rsp)
-	movb	52(%rdx), %sil
-	movb	%sil, 84(%rsp)
-	movb	53(%rdx), %sil
-	movb	%sil, 85(%rsp)
-	movb	54(%rdx), %sil
-	movb	%sil, 86(%rsp)
-	movb	55(%rdx), %sil
-	movb	%sil, 87(%rsp)
-	movb	56(%rdx), %sil
-	movb	%sil, 88(%rsp)
-	movb	57(%rdx), %sil
-	movb	%sil, 89(%rsp)
-	movb	58(%rdx), %sil
-	movb	%sil, 90(%rsp)
-	movb	59(%rdx), %sil
-	movb	%sil, 91(%rsp)
-	movb	60(%rdx), %sil
-	movb	%sil, 92(%rsp)
-	movb	61(%rdx), %sil
-	movb	%sil, 93(%rsp)
-	movb	62(%rdx), %sil
-	movb	%sil, 94(%rsp)
-	movb	63(%rdx), %sil
-	movb	%sil, 95(%rsp)
-	movb	64(%rdx), %sil
-	movb	%sil, 96(%rsp)
-	movb	65(%rdx), %sil
-	movb	%sil, 97(%rsp)
-	movb	66(%rdx), %sil
-	movb	%sil, 98(%rsp)
-	movb	67(%rdx), %sil
-	movb	%sil, 99(%rsp)
-	movb	68(%rdx), %sil
-	movb	%sil, 100(%rsp)
-	movb	69(%rdx), %sil
-	movb	%sil, 101(%rsp)
-	movb	70(%rdx), %sil
-	movb	%sil, 102(%rsp)
-	movb	71(%rdx), %sil
-	movb	%sil, 103(%rsp)
-	movb	72(%rdx), %sil
-	movb	%sil, 104(%rsp)
-	movb	73(%rdx), %sil
-	movb	%sil, 105(%rsp)
-	movb	74(%rdx), %sil
-	movb	%sil, 106(%rsp)
-	movb	75(%rdx), %sil
-	movb	%sil, 107(%rsp)
-	movb	76(%rdx), %sil
-	movb	%sil, 108(%rsp)
-	movb	77(%rdx), %sil
-	movb	%sil, 109(%rsp)
-	movb	78(%rdx), %sil
-	movb	%sil, 110(%rsp)
-	movb	79(%rdx), %sil
-	movb	%sil, 111(%rsp)
-	movb	80(%rdx), %sil
-	movb	%sil, 112(%rsp)
-	movb	81(%rdx), %sil
-	movb	%sil, 113(%rsp)
-	movb	82(%rdx), %sil
-	movb	%sil, 114(%rsp)
-	movb	83(%rdx), %sil
-	movb	%sil, 115(%rsp)
-	movb	84(%rdx), %sil
-	movb	%sil, 116(%rsp)
-	movb	85(%rdx), %sil
-	movb	%sil, 117(%rsp)
-	movb	86(%rdx), %sil
-	movb	%sil, 118(%rsp)
-	movb	87(%rdx), %sil
-	movb	%sil, 119(%rsp)
-	movb	88(%rdx), %sil
-	movb	%sil, 120(%rsp)
-	movb	89(%rdx), %sil
-	movb	%sil, 121(%rsp)
-	movb	90(%rdx), %sil
-	movb	%sil, 122(%rsp)
-	movb	91(%rdx), %sil
-	movb	%sil, 123(%rsp)
-	movb	92(%rdx), %sil
-	movb	%sil, 124(%rsp)
-	movb	93(%rdx), %sil
-	movb	%sil, 125(%rsp)
-	movb	94(%rdx), %sil
-	movb	%sil, 126(%rsp)
-	movb	95(%rdx), %sil
-	movb	%sil, 127(%rsp)
-	movb	96(%rdx), %sil
-	movb	%sil, 128(%rsp)
-	movb	97(%rdx), %sil
-	movb	%sil, 129(%rsp)
-	movb	98(%rdx), %sil
-	movb	%sil, 130(%rsp)
-	movb	99(%rdx), %sil
-	movb	%sil, 131(%rsp)
-	movb	100(%rdx), %sil
-	movb	%sil, 132(%rsp)
-	movb	101(%rdx), %sil
-	movb	%sil, 133(%rsp)
-	movb	102(%rdx), %sil
-	movb	%sil, 134(%rsp)
-	movb	103(%rdx), %sil
-	movb	%sil, 135(%rsp)
-	movb	104(%rdx), %sil
-	movb	%sil, 136(%rsp)
-	movb	105(%rdx), %sil
-	movb	%sil, 137(%rsp)
-	movb	106(%rdx), %sil
-	movb	%sil, 138(%rsp)
-	movb	107(%rdx), %sil
-	movb	%sil, 139(%rsp)
-	movb	108(%rdx), %sil
-	movb	%sil, 140(%rsp)
-	movb	109(%rdx), %sil
-	movb	%sil, 141(%rsp)
-	movb	110(%rdx), %sil
-	movb	%sil, 142(%rsp)
-	movb	111(%rdx), %sil
-	movb	%sil, 143(%rsp)
-	movb	112(%rdx), %sil
-	movb	%sil, 144(%rsp)
-	movb	113(%rdx), %sil
-	movb	%sil, 145(%rsp)
-	movb	114(%rdx), %sil
-	movb	%sil, 146(%rsp)
-	movb	115(%rdx), %sil
-	movb	%sil, 147(%rsp)
-	movb	116(%rdx), %sil
-	movb	%sil, 148(%rsp)
-	movb	117(%rdx), %sil
-	movb	%sil, 149(%rsp)
-	movb	118(%rdx), %sil
-	movb	%sil, 150(%rsp)
-	movb	119(%rdx), %sil
-	movb	%sil, 151(%rsp)
-	movb	120(%rdx), %sil
-	movb	%sil, 152(%rsp)
-	movb	121(%rdx), %sil
-	movb	%sil, 153(%rsp)
-	movb	122(%rdx), %sil
-	movb	%sil, 154(%rsp)
-	movb	123(%rdx), %sil
-	movb	%sil, 155(%rsp)
-	movb	124(%rdx), %sil
-	movb	%sil, 156(%rsp)
-	movb	125(%rdx), %sil
-	movb	%sil, 157(%rsp)
-	movb	126(%rdx), %sil
-	movb	%sil, 158(%rsp)
-	movb	127(%rdx), %sil
-	movb	%sil, 159(%rsp)
-	movb	128(%rdx), %sil
-	movb	%sil, 160(%rsp)
-	movb	129(%rdx), %sil
-	movb	%sil, 161(%rsp)
-	movb	130(%rdx), %sil
-	movb	%sil, 162(%rsp)
-	movb	131(%rdx), %sil
-	movb	%sil, 163(%rsp)
-	movb	132(%rdx), %sil
-	movb	%sil, 164(%rsp)
-	movb	133(%rdx), %sil
-	movb	%sil, 165(%rsp)
-	movb	134(%rdx), %sil
-	movb	%sil, 166(%rsp)
-	movb	135(%rdx), %sil
-	movb	%sil, 167(%rsp)
-	movb	136(%rdx), %sil
-	movb	%sil, 168(%rsp)
-	movb	137(%rdx), %sil
-	movb	%sil, 169(%rsp)
-	movb	138(%rdx), %sil
-	movb	%sil, 170(%rsp)
-	movb	139(%rdx), %sil
-	movb	%sil, 171(%rsp)
-	movb	140(%rdx), %sil
-	movb	%sil, 172(%rsp)
-	movb	141(%rdx), %sil
-	movb	%sil, 173(%rsp)
-	movb	142(%rdx), %sil
-	movb	%sil, 174(%rsp)
-	movb	143(%rdx), %sil
-	movb	%sil, 175(%rsp)
-	movb	144(%rdx), %sil
-	movb	%sil, 176(%rsp)
-	movb	145(%rdx), %sil
-	movb	%sil, 177(%rsp)
-	movb	146(%rdx), %sil
-	movb	%sil, 178(%rsp)
-	movb	147(%rdx), %sil
-	movb	%sil, 179(%rsp)
-	movb	148(%rdx), %sil
-	movb	%sil, 180(%rsp)
-	movb	149(%rdx), %sil
-	movb	%sil, 181(%rsp)
-	movb	150(%rdx), %sil
-	movb	%sil, 182(%rsp)
-	movb	151(%rdx), %sil
-	movb	%sil, 183(%rsp)
-	movb	152(%rdx), %sil
-	movb	%sil, 184(%rsp)
-	movb	153(%rdx), %sil
-	movb	%sil, 185(%rsp)
-	movb	154(%rdx), %sil
-	movb	%sil, 186(%rsp)
-	movb	155(%rdx), %sil
-	movb	%sil, 187(%rsp)
-	movb	156(%rdx), %sil
-	movb	%sil, 188(%rsp)
-	movb	157(%rdx), %sil
-	movb	%sil, 189(%rsp)
-	movb	158(%rdx), %sil
-	movb	%sil, 190(%rsp)
-	movb	159(%rdx), %sil
-	movb	%sil, 191(%rsp)
-	movb	160(%rdx), %sil
-	movb	%sil, 192(%rsp)
-	movb	161(%rdx), %sil
-	movb	%sil, 193(%rsp)
-	movb	162(%rdx), %sil
-	movb	%sil, 194(%rsp)
-	movb	163(%rdx), %sil
-	movb	%sil, 195(%rsp)
-	movb	164(%rdx), %sil
-	movb	%sil, 196(%rsp)
-	movb	165(%rdx), %sil
-	movb	%sil, 197(%rsp)
-	movb	166(%rdx), %sil
-	movb	%sil, 198(%rsp)
-	movb	167(%rdx), %sil
-	movb	%sil, 199(%rsp)
-	movb	168(%rdx), %sil
-	movb	%sil, 200(%rsp)
-	movb	169(%rdx), %sil
-	movb	%sil, 201(%rsp)
-	movb	170(%rdx), %sil
-	movb	%sil, 202(%rsp)
-	movb	171(%rdx), %sil
-	movb	%sil, 203(%rsp)
-	movb	172(%rdx), %sil
-	movb	%sil, 204(%rsp)
-	movb	173(%rdx), %sil
-	movb	%sil, 205(%rsp)
-	movb	174(%rdx), %sil
-	movb	%sil, 206(%rsp)
-	movb	175(%rdx), %sil
-	movb	%sil, 207(%rsp)
-	movb	176(%rdx), %sil
-	movb	%sil, 208(%rsp)
-	movb	177(%rdx), %sil
-	movb	%sil, 209(%rsp)
-	movb	178(%rdx), %sil
-	movb	%sil, 210(%rsp)
-	movb	179(%rdx), %sil
-	movb	%sil, 211(%rsp)
-	movb	180(%rdx), %sil
-	movb	%sil, 212(%rsp)
-	movb	181(%rdx), %sil
-	movb	%sil, 213(%rsp)
-	movb	182(%rdx), %sil
-	movb	%sil, 214(%rsp)
-	movb	183(%rdx), %sil
-	movb	%sil, 215(%rsp)
-	movb	184(%rdx), %sil
-	movb	%sil, 216(%rsp)
-	movb	185(%rdx), %sil
-	movb	%sil, 217(%rsp)
-	movb	186(%rdx), %sil
-	movb	%sil, 218(%rsp)
-	movb	187(%rdx), %sil
-	movb	%sil, 219(%rsp)
-	movb	188(%rdx), %sil
-	movb	%sil, 220(%rsp)
-	movb	189(%rdx), %sil
-	movb	%sil, 221(%rsp)
-	movb	190(%rdx), %sil
-	movb	%sil, 222(%rsp)
-	movb	191(%rdx), %sil
-	movb	%sil, 223(%rsp)
-	movb	192(%rdx), %sil
-	movb	%sil, 224(%rsp)
-	movb	193(%rdx), %sil
-	movb	%sil, 225(%rsp)
-	movb	194(%rdx), %sil
-	movb	%sil, 226(%rsp)
-	movb	195(%rdx), %sil
-	movb	%sil, 227(%rsp)
-	movb	196(%rdx), %sil
-	movb	%sil, 228(%rsp)
-	movb	197(%rdx), %sil
-	movb	%sil, 229(%rsp)
-	movb	198(%rdx), %sil
-	movb	%sil, 230(%rsp)
-	movb	199(%rdx), %sil
-	movb	%sil, 231(%rsp)
-	movb	200(%rdx), %sil
-	movb	%sil, 232(%rsp)
-	movb	201(%rdx), %sil
-	movb	%sil, 233(%rsp)
-	movb	202(%rdx), %sil
-	movb	%sil, 234(%rsp)
-	movb	203(%rdx), %sil
-	movb	%sil, 235(%rsp)
-	movb	204(%rdx), %sil
-	movb	%sil, 236(%rsp)
-	movb	205(%rdx), %sil
-	movb	%sil, 237(%rsp)
-	movb	206(%rdx), %sil
-	movb	%sil, 238(%rsp)
-	movb	207(%rdx), %sil
-	movb	%sil, 239(%rsp)
-	movb	208(%rdx), %sil
-	movb	%sil, 240(%rsp)
-	movb	209(%rdx), %sil
-	movb	%sil, 241(%rsp)
-	movb	210(%rdx), %sil
-	movb	%sil, 242(%rsp)
-	movb	211(%rdx), %sil
-	movb	%sil, 243(%rsp)
-	movb	212(%rdx), %sil
-	movb	%sil, 244(%rsp)
-	movb	213(%rdx), %sil
-	movb	%sil, 245(%rsp)
-	movb	214(%rdx), %sil
-	movb	%sil, 246(%rsp)
-	movb	215(%rdx), %sil
-	movb	%sil, 247(%rsp)
-	movb	216(%rdx), %sil
-	movb	%sil, 248(%rsp)
-	movb	217(%rdx), %sil
-	movb	%sil, 249(%rsp)
-	movb	218(%rdx), %sil
-	movb	%sil, 250(%rsp)
-	movb	219(%rdx), %sil
-	movb	%sil, 251(%rsp)
-	movb	220(%rdx), %sil
-	movb	%sil, 252(%rsp)
-	movb	221(%rdx), %sil
-	movb	%sil, 253(%rsp)
-	movb	222(%rdx), %sil
-	movb	%sil, 254(%rsp)
-	movb	223(%rdx), %sil
-	movb	%sil, 255(%rsp)
-	movb	224(%rdx), %sil
-	movb	%sil, 256(%rsp)
-	movb	225(%rdx), %sil
-	movb	%sil, 257(%rsp)
-	movb	226(%rdx), %sil
-	movb	%sil, 258(%rsp)
-	movb	227(%rdx), %sil
-	movb	%sil, 259(%rsp)
-	movb	228(%rdx), %sil
-	movb	%sil, 260(%rsp)
-	movb	229(%rdx), %sil
-	movb	%sil, 261(%rsp)
-	movb	230(%rdx), %sil
-	movb	%sil, 262(%rsp)
-	movb	231(%rdx), %sil
-	movb	%sil, 263(%rsp)
-	movb	232(%rdx), %sil
-	movb	%sil, 264(%rsp)
-	movb	233(%rdx), %sil
-	movb	%sil, 265(%rsp)
-	movb	234(%rdx), %sil
-	movb	%sil, 266(%rsp)
-	movb	235(%rdx), %sil
-	movb	%sil, 267(%rsp)
-	movb	236(%rdx), %sil
-	movb	%sil, 268(%rsp)
-	movb	237(%rdx), %sil
-	movb	%sil, 269(%rsp)
-	movb	238(%rdx), %sil
-	movb	%sil, 270(%rsp)
-	movb	239(%rdx), %sil
-	movb	%sil, 271(%rsp)
-	movb	240(%rdx), %sil
-	movb	%sil, 272(%rsp)
-	movb	241(%rdx), %sil
-	movb	%sil, 273(%rsp)
-	movb	242(%rdx), %sil
-	movb	%sil, 274(%rsp)
-	movb	243(%rdx), %sil
-	movb	%sil, 275(%rsp)
-	movb	244(%rdx), %sil
-	movb	%sil, 276(%rsp)
-	movb	245(%rdx), %sil
-	movb	%sil, 277(%rsp)
-	movb	246(%rdx), %sil
-	movb	%sil, 278(%rsp)
-	movb	247(%rdx), %sil
-	movb	%sil, 279(%rsp)
-	movb	248(%rdx), %sil
-	movb	%sil, 280(%rsp)
-	movb	249(%rdx), %sil
-	movb	%sil, 281(%rsp)
-	movb	250(%rdx), %sil
-	movb	%sil, 282(%rsp)
-	movb	251(%rdx), %sil
-	movb	%sil, 283(%rsp)
-	movb	252(%rdx), %sil
-	movb	%sil, 284(%rsp)
-	movb	253(%rdx), %sil
-	movb	%sil, 285(%rsp)
-	movb	254(%rdx), %sil
-	movb	%sil, 286(%rsp)
-	movb	255(%rdx), %sil
-	movb	%sil, 287(%rsp)
-	movb	256(%rdx), %sil
-	movb	%sil, 288(%rsp)
-	movb	257(%rdx), %sil
-	movb	%sil, 289(%rsp)
-	movb	258(%rdx), %sil
-	movb	%sil, 290(%rsp)
-	movb	259(%rdx), %sil
-	movb	%sil, 291(%rsp)
-	movb	260(%rdx), %sil
-	movb	%sil, 292(%rsp)
-	movb	261(%rdx), %sil
-	movb	%sil, 293(%rsp)
-	movb	262(%rdx), %sil
-	movb	%sil, 294(%rsp)
-	movb	263(%rdx), %sil
-	movb	%sil, 295(%rsp)
-	movb	264(%rdx), %sil
-	movb	%sil, 296(%rsp)
-	movb	265(%rdx), %sil
-	movb	%sil, 297(%rsp)
-	movb	266(%rdx), %sil
-	movb	%sil, 298(%rsp)
-	movb	267(%rdx), %sil
-	movb	%sil, 299(%rsp)
-	movb	268(%rdx), %sil
-	movb	%sil, 300(%rsp)
-	movb	269(%rdx), %sil
-	movb	%sil, 301(%rsp)
-	movb	270(%rdx), %sil
-	movb	%sil, 302(%rsp)
-	movb	271(%rdx), %sil
-	movb	%sil, 303(%rsp)
-	movb	272(%rdx), %sil
-	movb	%sil, 304(%rsp)
-	movb	273(%rdx), %sil
-	movb	%sil, 305(%rsp)
-	movb	274(%rdx), %sil
-	movb	%sil, 306(%rsp)
-	movb	275(%rdx), %sil
-	movb	%sil, 307(%rsp)
-	movb	276(%rdx), %sil
-	movb	%sil, 308(%rsp)
-	movb	277(%rdx), %sil
-	movb	%sil, 309(%rsp)
-	movb	278(%rdx), %sil
-	movb	%sil, 310(%rsp)
-	movb	279(%rdx), %sil
-	movb	%sil, 311(%rsp)
-	movb	280(%rdx), %sil
-	movb	%sil, 312(%rsp)
-	movb	281(%rdx), %sil
-	movb	%sil, 313(%rsp)
-	movb	282(%rdx), %sil
-	movb	%sil, 314(%rsp)
-	movb	283(%rdx), %sil
-	movb	%sil, 315(%rsp)
-	movb	284(%rdx), %sil
-	movb	%sil, 316(%rsp)
-	movb	285(%rdx), %sil
-	movb	%sil, 317(%rsp)
-	movb	286(%rdx), %sil
-	movb	%sil, 318(%rsp)
-	movb	287(%rdx), %sil
-	movb	%sil, 319(%rsp)
-	movb	288(%rdx), %sil
-	movb	%sil, 320(%rsp)
-	movb	289(%rdx), %sil
-	movb	%sil, 321(%rsp)
-	movb	290(%rdx), %sil
-	movb	%sil, 322(%rsp)
-	movb	291(%rdx), %sil
-	movb	%sil, 323(%rsp)
-	movb	292(%rdx), %sil
-	movb	%sil, 324(%rsp)
-	movb	293(%rdx), %sil
-	movb	%sil, 325(%rsp)
-	movb	294(%rdx), %sil
-	movb	%sil, 326(%rsp)
-	movb	295(%rdx), %sil
-	movb	%sil, 327(%rsp)
-	movb	296(%rdx), %sil
-	movb	%sil, 328(%rsp)
-	movb	297(%rdx), %sil
-	movb	%sil, 329(%rsp)
-	movb	298(%rdx), %sil
-	movb	%sil, 330(%rsp)
-	movb	299(%rdx), %sil
-	movb	%sil, 331(%rsp)
-	movb	300(%rdx), %sil
-	movb	%sil, 332(%rsp)
-	movb	301(%rdx), %sil
-	movb	%sil, 333(%rsp)
-	movb	302(%rdx), %sil
-	movb	%sil, 334(%rsp)
-	movb	303(%rdx), %sil
-	movb	%sil, 335(%rsp)
-	movb	304(%rdx), %sil
-	movb	%sil, 336(%rsp)
-	movb	305(%rdx), %sil
-	movb	%sil, 337(%rsp)
-	movb	306(%rdx), %sil
-	movb	%sil, 338(%rsp)
-	movb	307(%rdx), %sil
-	movb	%sil, 339(%rsp)
-	movb	308(%rdx), %sil
-	movb	%sil, 340(%rsp)
-	movb	309(%rdx), %sil
-	movb	%sil, 341(%rsp)
-	movb	310(%rdx), %sil
-	movb	%sil, 342(%rsp)
-	movb	311(%rdx), %sil
-	movb	%sil, 343(%rsp)
-	movb	312(%rdx), %sil
-	movb	%sil, 344(%rsp)
-	movb	313(%rdx), %sil
-	movb	%sil, 345(%rsp)
-	movb	314(%rdx), %sil
-	movb	%sil, 346(%rsp)
-	movb	315(%rdx), %sil
-	movb	%sil, 347(%rsp)
-	movb	316(%rdx), %sil
-	movb	%sil, 348(%rsp)
-	movb	317(%rdx), %sil
-	movb	%sil, 349(%rsp)
-	movb	318(%rdx), %sil
-	movb	%sil, 350(%rsp)
-	movb	319(%rdx), %sil
-	movb	%sil, 351(%rsp)
-	movb	320(%rdx), %sil
-	movb	%sil, 352(%rsp)
-	movb	321(%rdx), %sil
-	movb	%sil, 353(%rsp)
-	movb	322(%rdx), %sil
-	movb	%sil, 354(%rsp)
-	movb	323(%rdx), %sil
-	movb	%sil, 355(%rsp)
-	movb	324(%rdx), %sil
-	movb	%sil, 356(%rsp)
-	movb	325(%rdx), %sil
-	movb	%sil, 357(%rsp)
-	movb	326(%rdx), %sil
-	movb	%sil, 358(%rsp)
-	movb	327(%rdx), %sil
-	movb	%sil, 359(%rsp)
-	movb	328(%rdx), %sil
-	movb	%sil, 360(%rsp)
-	movb	329(%rdx), %sil
-	movb	%sil, 361(%rsp)
-	movb	330(%rdx), %sil
-	movb	%sil, 362(%rsp)
-	movb	331(%rdx), %sil
-	movb	%sil, 363(%rsp)
-	movb	332(%rdx), %sil
-	movb	%sil, 364(%rsp)
-	movb	333(%rdx), %sil
-	movb	%sil, 365(%rsp)
-	movb	334(%rdx), %sil
-	movb	%sil, 366(%rsp)
-	movb	335(%rdx), %sil
-	movb	%sil, 367(%rsp)
-	movb	336(%rdx), %sil
-	movb	%sil, 368(%rsp)
-	movb	337(%rdx), %sil
-	movb	%sil, 369(%rsp)
-	movb	338(%rdx), %sil
-	movb	%sil, 370(%rsp)
-	movb	339(%rdx), %sil
-	movb	%sil, 371(%rsp)
-	movb	340(%rdx), %sil
-	movb	%sil, 372(%rsp)
-	movb	341(%rdx), %sil
-	movb	%sil, 373(%rsp)
-	movb	342(%rdx), %sil
-	movb	%sil, 374(%rsp)
-	movb	343(%rdx), %sil
-	movb	%sil, 375(%rsp)
-	movb	344(%rdx), %sil
-	movb	%sil, 376(%rsp)
-	movb	345(%rdx), %sil
-	movb	%sil, 377(%rsp)
-	movb	346(%rdx), %sil
-	movb	%sil, 378(%rsp)
-	movb	347(%rdx), %sil
-	movb	%sil, 379(%rsp)
-	movb	348(%rdx), %sil
-	movb	%sil, 380(%rsp)
-	movb	349(%rdx), %sil
-	movb	%sil, 381(%rsp)
-	movb	350(%rdx), %sil
-	movb	%sil, 382(%rsp)
-	movb	351(%rdx), %sil
-	movb	%sil, 383(%rsp)
-	movb	352(%rdx), %sil
-	movb	%sil, 384(%rsp)
-	movb	353(%rdx), %sil
-	movb	%sil, 385(%rsp)
-	movb	354(%rdx), %sil
-	movb	%sil, 386(%rsp)
-	movb	355(%rdx), %sil
-	movb	%sil, 387(%rsp)
-	movb	356(%rdx), %sil
-	movb	%sil, 388(%rsp)
-	movb	357(%rdx), %sil
-	movb	%sil, 389(%rsp)
-	movb	358(%rdx), %sil
-	movb	%sil, 390(%rsp)
-	movb	359(%rdx), %sil
-	movb	%sil, 391(%rsp)
-	movb	360(%rdx), %sil
-	movb	%sil, 392(%rsp)
-	movb	361(%rdx), %sil
-	movb	%sil, 393(%rsp)
-	movb	362(%rdx), %sil
-	movb	%sil, 394(%rsp)
-	movb	363(%rdx), %sil
-	movb	%sil, 395(%rsp)
-	movb	364(%rdx), %sil
-	movb	%sil, 396(%rsp)
-	movb	365(%rdx), %sil
-	movb	%sil, 397(%rsp)
-	movb	366(%rdx), %sil
-	movb	%sil, 398(%rsp)
-	movb	367(%rdx), %sil
-	movb	%sil, 399(%rsp)
-	movb	368(%rdx), %sil
-	movb	%sil, 400(%rsp)
-	movb	369(%rdx), %sil
-	movb	%sil, 401(%rsp)
-	movb	370(%rdx), %sil
-	movb	%sil, 402(%rsp)
-	movb	371(%rdx), %sil
-	movb	%sil, 403(%rsp)
-	movb	372(%rdx), %sil
-	movb	%sil, 404(%rsp)
-	movb	373(%rdx), %sil
-	movb	%sil, 405(%rsp)
-	movb	374(%rdx), %sil
-	movb	%sil, 406(%rsp)
-	movb	375(%rdx), %sil
-	movb	%sil, 407(%rsp)
-	movb	376(%rdx), %sil
-	movb	%sil, 408(%rsp)
-	movb	377(%rdx), %sil
-	movb	%sil, 409(%rsp)
-	movb	378(%rdx), %sil
-	movb	%sil, 410(%rsp)
-	movb	379(%rdx), %sil
-	movb	%sil, 411(%rsp)
-	movb	380(%rdx), %sil
-	movb	%sil, 412(%rsp)
-	movb	381(%rdx), %sil
-	movb	%sil, 413(%rsp)
-	movb	382(%rdx), %sil
-	movb	%sil, 414(%rsp)
-	movb	383(%rdx), %sil
-	movb	%sil, 415(%rsp)
-	movb	384(%rdx), %sil
-	movb	%sil, 416(%rsp)
-	movb	385(%rdx), %sil
-	movb	%sil, 417(%rsp)
-	movb	386(%rdx), %sil
-	movb	%sil, 418(%rsp)
-	movb	387(%rdx), %sil
-	movb	%sil, 419(%rsp)
-	movb	388(%rdx), %sil
-	movb	%sil, 420(%rsp)
-	movb	389(%rdx), %sil
-	movb	%sil, 421(%rsp)
-	movb	390(%rdx), %sil
-	movb	%sil, 422(%rsp)
-	movb	391(%rdx), %sil
-	movb	%sil, 423(%rsp)
-	movb	392(%rdx), %sil
-	movb	%sil, 424(%rsp)
-	movb	393(%rdx), %sil
-	movb	%sil, 425(%rsp)
-	movb	394(%rdx), %sil
-	movb	%sil, 426(%rsp)
-	movb	395(%rdx), %sil
-	movb	%sil, 427(%rsp)
-	movb	396(%rdx), %sil
-	movb	%sil, 428(%rsp)
-	movb	397(%rdx), %sil
-	movb	%sil, 429(%rsp)
-	movb	398(%rdx), %sil
-	movb	%sil, 430(%rsp)
-	movb	399(%rdx), %sil
-	movb	%sil, 431(%rsp)
-	movb	400(%rdx), %sil
-	movb	%sil, 432(%rsp)
-	movb	401(%rdx), %sil
-	movb	%sil, 433(%rsp)
-	movb	402(%rdx), %sil
-	movb	%sil, 434(%rsp)
-	movb	403(%rdx), %sil
-	movb	%sil, 435(%rsp)
-	movb	404(%rdx), %sil
-	movb	%sil, 436(%rsp)
-	movb	405(%rdx), %sil
-	movb	%sil, 437(%rsp)
-	movb	406(%rdx), %sil
-	movb	%sil, 438(%rsp)
-	movb	407(%rdx), %sil
-	movb	%sil, 439(%rsp)
-	movb	408(%rdx), %sil
-	movb	%sil, 440(%rsp)
-	movb	409(%rdx), %sil
-	movb	%sil, 441(%rsp)
-	movb	410(%rdx), %sil
-	movb	%sil, 442(%rsp)
-	movb	411(%rdx), %sil
-	movb	%sil, 443(%rsp)
-	movb	412(%rdx), %sil
-	movb	%sil, 444(%rsp)
-	movb	413(%rdx), %sil
-	movb	%sil, 445(%rsp)
-	movb	414(%rdx), %sil
-	movb	%sil, 446(%rsp)
-	movb	415(%rdx), %sil
-	movb	%sil, 447(%rsp)
-	movb	416(%rdx), %sil
-	movb	%sil, 448(%rsp)
-	movb	417(%rdx), %sil
-	movb	%sil, 449(%rsp)
-	movb	418(%rdx), %sil
-	movb	%sil, 450(%rsp)
-	movb	419(%rdx), %sil
-	movb	%sil, 451(%rsp)
-	movb	420(%rdx), %sil
-	movb	%sil, 452(%rsp)
-	movb	421(%rdx), %sil
-	movb	%sil, 453(%rsp)
-	movb	422(%rdx), %sil
-	movb	%sil, 454(%rsp)
-	movb	423(%rdx), %sil
-	movb	%sil, 455(%rsp)
-	movb	424(%rdx), %sil
-	movb	%sil, 456(%rsp)
-	movb	425(%rdx), %sil
-	movb	%sil, 457(%rsp)
-	movb	426(%rdx), %sil
-	movb	%sil, 458(%rsp)
-	movb	427(%rdx), %sil
-	movb	%sil, 459(%rsp)
-	movb	428(%rdx), %sil
-	movb	%sil, 460(%rsp)
-	movb	429(%rdx), %sil
-	movb	%sil, 461(%rsp)
-	movb	430(%rdx), %sil
-	movb	%sil, 462(%rsp)
-	movb	431(%rdx), %sil
-	movb	%sil, 463(%rsp)
-	movb	432(%rdx), %sil
-	movb	%sil, 464(%rsp)
-	movb	433(%rdx), %sil
-	movb	%sil, 465(%rsp)
-	movb	434(%rdx), %sil
-	movb	%sil, 466(%rsp)
-	movb	435(%rdx), %sil
-	movb	%sil, 467(%rsp)
-	movb	436(%rdx), %sil
-	movb	%sil, 468(%rsp)
-	movb	437(%rdx), %sil
-	movb	%sil, 469(%rsp)
-	movb	438(%rdx), %sil
-	movb	%sil, 470(%rsp)
-	movb	439(%rdx), %sil
-	movb	%sil, 471(%rsp)
-	movb	440(%rdx), %sil
-	movb	%sil, 472(%rsp)
-	movb	441(%rdx), %sil
-	movb	%sil, 473(%rsp)
-	movb	442(%rdx), %sil
-	movb	%sil, 474(%rsp)
-	movb	443(%rdx), %sil
-	movb	%sil, 475(%rsp)
-	movb	444(%rdx), %sil
-	movb	%sil, 476(%rsp)
-	movb	445(%rdx), %sil
-	movb	%sil, 477(%rsp)
-	movb	446(%rdx), %sil
-	movb	%sil, 478(%rsp)
-	movb	447(%rdx), %sil
-	movb	%sil, 479(%rsp)
-	movb	448(%rdx), %sil
-	movb	%sil, 480(%rsp)
-	movb	449(%rdx), %sil
-	movb	%sil, 481(%rsp)
-	movb	450(%rdx), %sil
-	movb	%sil, 482(%rsp)
-	movb	451(%rdx), %sil
-	movb	%sil, 483(%rsp)
-	movb	452(%rdx), %sil
-	movb	%sil, 484(%rsp)
-	movb	453(%rdx), %sil
-	movb	%sil, 485(%rsp)
-	movb	454(%rdx), %sil
-	movb	%sil, 486(%rsp)
-	movb	455(%rdx), %sil
-	movb	%sil, 487(%rsp)
-	movb	456(%rdx), %sil
-	movb	%sil, 488(%rsp)
-	movb	457(%rdx), %sil
-	movb	%sil, 489(%rsp)
-	movb	458(%rdx), %sil
-	movb	%sil, 490(%rsp)
-	movb	459(%rdx), %sil
-	movb	%sil, 491(%rsp)
-	movb	460(%rdx), %sil
-	movb	%sil, 492(%rsp)
-	movb	461(%rdx), %sil
-	movb	%sil, 493(%rsp)
-	movb	462(%rdx), %sil
-	movb	%sil, 494(%rsp)
-	movb	463(%rdx), %sil
-	movb	%sil, 495(%rsp)
-	movb	464(%rdx), %sil
-	movb	%sil, 496(%rsp)
-	movb	465(%rdx), %sil
-	movb	%sil, 497(%rsp)
-	movb	466(%rdx), %sil
-	movb	%sil, 498(%rsp)
-	movb	467(%rdx), %sil
-	movb	%sil, 499(%rsp)
-	movb	468(%rdx), %sil
-	movb	%sil, 500(%rsp)
-	movb	469(%rdx), %sil
-	movb	%sil, 501(%rsp)
-	movb	470(%rdx), %sil
-	movb	%sil, 502(%rsp)
-	movb	471(%rdx), %sil
-	movb	%sil, 503(%rsp)
-	movb	472(%rdx), %sil
-	movb	%sil, 504(%rsp)
-	movb	473(%rdx), %sil
-	movb	%sil, 505(%rsp)
-	movb	474(%rdx), %sil
-	movb	%sil, 506(%rsp)
-	movb	475(%rdx), %sil
-	movb	%sil, 507(%rsp)
-	movb	476(%rdx), %sil
-	movb	%sil, 508(%rsp)
-	movb	477(%rdx), %sil
-	movb	%sil, 509(%rsp)
-	movb	478(%rdx), %sil
-	movb	%sil, 510(%rsp)
-	movb	479(%rdx), %sil
-	movb	%sil, 511(%rsp)
-	movb	480(%rdx), %sil
-	movb	%sil, 512(%rsp)
-	movb	481(%rdx), %sil
-	movb	%sil, 513(%rsp)
-	movb	482(%rdx), %sil
-	movb	%sil, 514(%rsp)
-	movb	483(%rdx), %sil
-	movb	%sil, 515(%rsp)
-	movb	484(%rdx), %sil
-	movb	%sil, 516(%rsp)
-	movb	485(%rdx), %sil
-	movb	%sil, 517(%rsp)
-	movb	486(%rdx), %sil
-	movb	%sil, 518(%rsp)
-	movb	487(%rdx), %sil
-	movb	%sil, 519(%rsp)
-	movb	488(%rdx), %sil
-	movb	%sil, 520(%rsp)
-	movb	489(%rdx), %sil
-	movb	%sil, 521(%rsp)
-	movb	490(%rdx), %sil
-	movb	%sil, 522(%rsp)
-	movb	491(%rdx), %sil
-	movb	%sil, 523(%rsp)
-	movb	492(%rdx), %sil
-	movb	%sil, 524(%rsp)
-	movb	493(%rdx), %sil
-	movb	%sil, 525(%rsp)
-	movb	494(%rdx), %sil
-	movb	%sil, 526(%rsp)
-	movb	495(%rdx), %sil
-	movb	%sil, 527(%rsp)
-	movb	496(%rdx), %sil
-	movb	%sil, 528(%rsp)
-	movb	497(%rdx), %sil
-	movb	%sil, 529(%rsp)
-	movb	498(%rdx), %sil
-	movb	%sil, 530(%rsp)
-	movb	499(%rdx), %sil
-	movb	%sil, 531(%rsp)
-	movb	500(%rdx), %sil
-	movb	%sil, 532(%rsp)
-	movb	501(%rdx), %sil
-	movb	%sil, 533(%rsp)
-	movb	502(%rdx), %sil
-	movb	%sil, 534(%rsp)
-	movb	503(%rdx), %sil
-	movb	%sil, 535(%rsp)
-	movb	504(%rdx), %sil
-	movb	%sil, 536(%rsp)
-	movb	505(%rdx), %sil
-	movb	%sil, 537(%rsp)
-	movb	506(%rdx), %sil
-	movb	%sil, 538(%rsp)
-	movb	507(%rdx), %sil
-	movb	%sil, 539(%rsp)
-	movb	508(%rdx), %sil
-	movb	%sil, 540(%rsp)
-	movb	509(%rdx), %sil
-	movb	%sil, 541(%rsp)
-	movb	510(%rdx), %sil
-	movb	%sil, 542(%rsp)
-	movb	511(%rdx), %sil
-	movb	%sil, 543(%rsp)
-	movb	512(%rdx), %sil
-	movb	%sil, 544(%rsp)
-	movb	513(%rdx), %sil
-	movb	%sil, 545(%rsp)
-	movb	514(%rdx), %sil
-	movb	%sil, 546(%rsp)
-	movb	515(%rdx), %sil
-	movb	%sil, 547(%rsp)
-	movb	516(%rdx), %sil
-	movb	%sil, 548(%rsp)
-	movb	517(%rdx), %sil
-	movb	%sil, 549(%rsp)
-	movb	518(%rdx), %sil
-	movb	%sil, 550(%rsp)
-	movb	519(%rdx), %sil
-	movb	%sil, 551(%rsp)
-	movb	520(%rdx), %sil
-	movb	%sil, 552(%rsp)
-	movb	521(%rdx), %sil
-	movb	%sil, 553(%rsp)
-	movb	522(%rdx), %sil
-	movb	%sil, 554(%rsp)
-	movb	523(%rdx), %sil
-	movb	%sil, 555(%rsp)
-	movb	524(%rdx), %sil
-	movb	%sil, 556(%rsp)
-	movb	525(%rdx), %sil
-	movb	%sil, 557(%rsp)
-	movb	526(%rdx), %sil
-	movb	%sil, 558(%rsp)
-	movb	527(%rdx), %sil
-	movb	%sil, 559(%rsp)
-	movb	528(%rdx), %sil
-	movb	%sil, 560(%rsp)
-	movb	529(%rdx), %sil
-	movb	%sil, 561(%rsp)
-	movb	530(%rdx), %sil
-	movb	%sil, 562(%rsp)
-	movb	531(%rdx), %sil
-	movb	%sil, 563(%rsp)
-	movb	532(%rdx), %sil
-	movb	%sil, 564(%rsp)
-	movb	533(%rdx), %sil
-	movb	%sil, 565(%rsp)
-	movb	534(%rdx), %sil
-	movb	%sil, 566(%rsp)
-	movb	535(%rdx), %sil
-	movb	%sil, 567(%rsp)
-	movb	536(%rdx), %sil
-	movb	%sil, 568(%rsp)
-	movb	537(%rdx), %sil
-	movb	%sil, 569(%rsp)
-	movb	538(%rdx), %sil
-	movb	%sil, 570(%rsp)
-	movb	539(%rdx), %sil
-	movb	%sil, 571(%rsp)
-	movb	540(%rdx), %sil
-	movb	%sil, 572(%rsp)
-	movb	541(%rdx), %sil
-	movb	%sil, 573(%rsp)
-	movb	542(%rdx), %sil
-	movb	%sil, 574(%rsp)
-	movb	543(%rdx), %sil
-	movb	%sil, 575(%rsp)
-	movb	544(%rdx), %sil
-	movb	%sil, 576(%rsp)
-	movb	545(%rdx), %sil
-	movb	%sil, 577(%rsp)
-	movb	546(%rdx), %sil
-	movb	%sil, 578(%rsp)
-	movb	547(%rdx), %sil
-	movb	%sil, 579(%rsp)
-	movb	548(%rdx), %sil
-	movb	%sil, 580(%rsp)
-	movb	549(%rdx), %sil
-	movb	%sil, 581(%rsp)
-	movb	550(%rdx), %sil
-	movb	%sil, 582(%rsp)
-	movb	551(%rdx), %sil
-	movb	%sil, 583(%rsp)
-	movb	552(%rdx), %sil
-	movb	%sil, 584(%rsp)
-	movb	553(%rdx), %sil
-	movb	%sil, 585(%rsp)
-	movb	554(%rdx), %sil
-	movb	%sil, 586(%rsp)
-	movb	555(%rdx), %sil
-	movb	%sil, 587(%rsp)
-	movb	556(%rdx), %sil
-	movb	%sil, 588(%rsp)
-	movb	557(%rdx), %sil
-	movb	%sil, 589(%rsp)
-	movb	558(%rdx), %sil
-	movb	%sil, 590(%rsp)
-	movb	559(%rdx), %dl
-	movb	%dl, 591(%rsp)
-	movq	$0, %rdx
-	movl	$0, %ecx
-	jmp 	.Lwots_pkfromsig$3
-.Lwots_pkfromsig$4:
-	movq	%r10, 600(%rsp)
-	movl	%ecx, 648(%rsp)
-	movq	%rdx, 608(%rsp)
-	movl	%ecx, %eax
-	movl	%eax, 24(%r11)
-	movl	%ecx, %eax
-	movl	652(%rsp,%rax,4), %ecx
-	lfence
-	movq	$0, %rax
-	movl	$15, %eax
-	subl	%ecx, %eax
-	leaq	32(%rsp,%rdx), %rdi
-	movl	%eax, %edx
-	movq	%r10, %r8
-	movq	%r11, %r9
-	leaq	-8(%rsp), %rsp
-	call	.Lchain$1
+	shrq	%cl, %r9
+	andq	$15, %r9
+	movl	%r9d, 4(%r8)
+	jmp 	.Lwots_pkfromsig$4
 .Lwots_pkfromsig$5:
-	leaq	8(%rsp), %rsp
-	movq	%r9, %r11
-	movq	600(%rsp), %r10
-	movl	648(%rsp), %ecx
-	movq	608(%rsp), %rdx
-	lfence
-	movq	$0, %rax
-	incl	%ecx
-	addq	$16, %rdx
+	shll	$8, %r10d
+	movzbl	(%rax,%rdi), %r9d
+	orl 	%r9d, %r10d
+	incq	%rdi
+	addl	$8, %ecx
+.Lwots_pkfromsig$4:
+	cmpl	$4, %ecx
+	jb  	.Lwots_pkfromsig$5
+	movl	%r10d, %r9d
+	addl	$-4, %ecx
+	shrq	%cl, %r9
+	andq	$15, %r9
+	movl	%r9d, 8(%r8)
+	movb	(%rdx), %cl
+	movb	%cl, 32(%rsp)
+	movb	1(%rdx), %cl
+	movb	%cl, 33(%rsp)
+	movb	2(%rdx), %cl
+	movb	%cl, 34(%rsp)
+	movb	3(%rdx), %cl
+	movb	%cl, 35(%rsp)
+	movb	4(%rdx), %cl
+	movb	%cl, 36(%rsp)
+	movb	5(%rdx), %cl
+	movb	%cl, 37(%rsp)
+	movb	6(%rdx), %cl
+	movb	%cl, 38(%rsp)
+	movb	7(%rdx), %cl
+	movb	%cl, 39(%rsp)
+	movb	8(%rdx), %cl
+	movb	%cl, 40(%rsp)
+	movb	9(%rdx), %cl
+	movb	%cl, 41(%rsp)
+	movb	10(%rdx), %cl
+	movb	%cl, 42(%rsp)
+	movb	11(%rdx), %cl
+	movb	%cl, 43(%rsp)
+	movb	12(%rdx), %cl
+	movb	%cl, 44(%rsp)
+	movb	13(%rdx), %cl
+	movb	%cl, 45(%rsp)
+	movb	14(%rdx), %cl
+	movb	%cl, 46(%rsp)
+	movb	15(%rdx), %cl
+	movb	%cl, 47(%rsp)
+	movb	16(%rdx), %cl
+	movb	%cl, 48(%rsp)
+	movb	17(%rdx), %cl
+	movb	%cl, 49(%rsp)
+	movb	18(%rdx), %cl
+	movb	%cl, 50(%rsp)
+	movb	19(%rdx), %cl
+	movb	%cl, 51(%rsp)
+	movb	20(%rdx), %cl
+	movb	%cl, 52(%rsp)
+	movb	21(%rdx), %cl
+	movb	%cl, 53(%rsp)
+	movb	22(%rdx), %cl
+	movb	%cl, 54(%rsp)
+	movb	23(%rdx), %cl
+	movb	%cl, 55(%rsp)
+	movb	24(%rdx), %cl
+	movb	%cl, 56(%rsp)
+	movb	25(%rdx), %cl
+	movb	%cl, 57(%rsp)
+	movb	26(%rdx), %cl
+	movb	%cl, 58(%rsp)
+	movb	27(%rdx), %cl
+	movb	%cl, 59(%rsp)
+	movb	28(%rdx), %cl
+	movb	%cl, 60(%rsp)
+	movb	29(%rdx), %cl
+	movb	%cl, 61(%rsp)
+	movb	30(%rdx), %cl
+	movb	%cl, 62(%rsp)
+	movb	31(%rdx), %cl
+	movb	%cl, 63(%rsp)
+	movb	32(%rdx), %cl
+	movb	%cl, 64(%rsp)
+	movb	33(%rdx), %cl
+	movb	%cl, 65(%rsp)
+	movb	34(%rdx), %cl
+	movb	%cl, 66(%rsp)
+	movb	35(%rdx), %cl
+	movb	%cl, 67(%rsp)
+	movb	36(%rdx), %cl
+	movb	%cl, 68(%rsp)
+	movb	37(%rdx), %cl
+	movb	%cl, 69(%rsp)
+	movb	38(%rdx), %cl
+	movb	%cl, 70(%rsp)
+	movb	39(%rdx), %cl
+	movb	%cl, 71(%rsp)
+	movb	40(%rdx), %cl
+	movb	%cl, 72(%rsp)
+	movb	41(%rdx), %cl
+	movb	%cl, 73(%rsp)
+	movb	42(%rdx), %cl
+	movb	%cl, 74(%rsp)
+	movb	43(%rdx), %cl
+	movb	%cl, 75(%rsp)
+	movb	44(%rdx), %cl
+	movb	%cl, 76(%rsp)
+	movb	45(%rdx), %cl
+	movb	%cl, 77(%rsp)
+	movb	46(%rdx), %cl
+	movb	%cl, 78(%rsp)
+	movb	47(%rdx), %cl
+	movb	%cl, 79(%rsp)
+	movb	48(%rdx), %cl
+	movb	%cl, 80(%rsp)
+	movb	49(%rdx), %cl
+	movb	%cl, 81(%rsp)
+	movb	50(%rdx), %cl
+	movb	%cl, 82(%rsp)
+	movb	51(%rdx), %cl
+	movb	%cl, 83(%rsp)
+	movb	52(%rdx), %cl
+	movb	%cl, 84(%rsp)
+	movb	53(%rdx), %cl
+	movb	%cl, 85(%rsp)
+	movb	54(%rdx), %cl
+	movb	%cl, 86(%rsp)
+	movb	55(%rdx), %cl
+	movb	%cl, 87(%rsp)
+	movb	56(%rdx), %cl
+	movb	%cl, 88(%rsp)
+	movb	57(%rdx), %cl
+	movb	%cl, 89(%rsp)
+	movb	58(%rdx), %cl
+	movb	%cl, 90(%rsp)
+	movb	59(%rdx), %cl
+	movb	%cl, 91(%rsp)
+	movb	60(%rdx), %cl
+	movb	%cl, 92(%rsp)
+	movb	61(%rdx), %cl
+	movb	%cl, 93(%rsp)
+	movb	62(%rdx), %cl
+	movb	%cl, 94(%rsp)
+	movb	63(%rdx), %cl
+	movb	%cl, 95(%rsp)
+	movb	64(%rdx), %cl
+	movb	%cl, 96(%rsp)
+	movb	65(%rdx), %cl
+	movb	%cl, 97(%rsp)
+	movb	66(%rdx), %cl
+	movb	%cl, 98(%rsp)
+	movb	67(%rdx), %cl
+	movb	%cl, 99(%rsp)
+	movb	68(%rdx), %cl
+	movb	%cl, 100(%rsp)
+	movb	69(%rdx), %cl
+	movb	%cl, 101(%rsp)
+	movb	70(%rdx), %cl
+	movb	%cl, 102(%rsp)
+	movb	71(%rdx), %cl
+	movb	%cl, 103(%rsp)
+	movb	72(%rdx), %cl
+	movb	%cl, 104(%rsp)
+	movb	73(%rdx), %cl
+	movb	%cl, 105(%rsp)
+	movb	74(%rdx), %cl
+	movb	%cl, 106(%rsp)
+	movb	75(%rdx), %cl
+	movb	%cl, 107(%rsp)
+	movb	76(%rdx), %cl
+	movb	%cl, 108(%rsp)
+	movb	77(%rdx), %cl
+	movb	%cl, 109(%rsp)
+	movb	78(%rdx), %cl
+	movb	%cl, 110(%rsp)
+	movb	79(%rdx), %cl
+	movb	%cl, 111(%rsp)
+	movb	80(%rdx), %cl
+	movb	%cl, 112(%rsp)
+	movb	81(%rdx), %cl
+	movb	%cl, 113(%rsp)
+	movb	82(%rdx), %cl
+	movb	%cl, 114(%rsp)
+	movb	83(%rdx), %cl
+	movb	%cl, 115(%rsp)
+	movb	84(%rdx), %cl
+	movb	%cl, 116(%rsp)
+	movb	85(%rdx), %cl
+	movb	%cl, 117(%rsp)
+	movb	86(%rdx), %cl
+	movb	%cl, 118(%rsp)
+	movb	87(%rdx), %cl
+	movb	%cl, 119(%rsp)
+	movb	88(%rdx), %cl
+	movb	%cl, 120(%rsp)
+	movb	89(%rdx), %cl
+	movb	%cl, 121(%rsp)
+	movb	90(%rdx), %cl
+	movb	%cl, 122(%rsp)
+	movb	91(%rdx), %cl
+	movb	%cl, 123(%rsp)
+	movb	92(%rdx), %cl
+	movb	%cl, 124(%rsp)
+	movb	93(%rdx), %cl
+	movb	%cl, 125(%rsp)
+	movb	94(%rdx), %cl
+	movb	%cl, 126(%rsp)
+	movb	95(%rdx), %cl
+	movb	%cl, 127(%rsp)
+	movb	96(%rdx), %cl
+	movb	%cl, 128(%rsp)
+	movb	97(%rdx), %cl
+	movb	%cl, 129(%rsp)
+	movb	98(%rdx), %cl
+	movb	%cl, 130(%rsp)
+	movb	99(%rdx), %cl
+	movb	%cl, 131(%rsp)
+	movb	100(%rdx), %cl
+	movb	%cl, 132(%rsp)
+	movb	101(%rdx), %cl
+	movb	%cl, 133(%rsp)
+	movb	102(%rdx), %cl
+	movb	%cl, 134(%rsp)
+	movb	103(%rdx), %cl
+	movb	%cl, 135(%rsp)
+	movb	104(%rdx), %cl
+	movb	%cl, 136(%rsp)
+	movb	105(%rdx), %cl
+	movb	%cl, 137(%rsp)
+	movb	106(%rdx), %cl
+	movb	%cl, 138(%rsp)
+	movb	107(%rdx), %cl
+	movb	%cl, 139(%rsp)
+	movb	108(%rdx), %cl
+	movb	%cl, 140(%rsp)
+	movb	109(%rdx), %cl
+	movb	%cl, 141(%rsp)
+	movb	110(%rdx), %cl
+	movb	%cl, 142(%rsp)
+	movb	111(%rdx), %cl
+	movb	%cl, 143(%rsp)
+	movb	112(%rdx), %cl
+	movb	%cl, 144(%rsp)
+	movb	113(%rdx), %cl
+	movb	%cl, 145(%rsp)
+	movb	114(%rdx), %cl
+	movb	%cl, 146(%rsp)
+	movb	115(%rdx), %cl
+	movb	%cl, 147(%rsp)
+	movb	116(%rdx), %cl
+	movb	%cl, 148(%rsp)
+	movb	117(%rdx), %cl
+	movb	%cl, 149(%rsp)
+	movb	118(%rdx), %cl
+	movb	%cl, 150(%rsp)
+	movb	119(%rdx), %cl
+	movb	%cl, 151(%rsp)
+	movb	120(%rdx), %cl
+	movb	%cl, 152(%rsp)
+	movb	121(%rdx), %cl
+	movb	%cl, 153(%rsp)
+	movb	122(%rdx), %cl
+	movb	%cl, 154(%rsp)
+	movb	123(%rdx), %cl
+	movb	%cl, 155(%rsp)
+	movb	124(%rdx), %cl
+	movb	%cl, 156(%rsp)
+	movb	125(%rdx), %cl
+	movb	%cl, 157(%rsp)
+	movb	126(%rdx), %cl
+	movb	%cl, 158(%rsp)
+	movb	127(%rdx), %cl
+	movb	%cl, 159(%rsp)
+	movb	128(%rdx), %cl
+	movb	%cl, 160(%rsp)
+	movb	129(%rdx), %cl
+	movb	%cl, 161(%rsp)
+	movb	130(%rdx), %cl
+	movb	%cl, 162(%rsp)
+	movb	131(%rdx), %cl
+	movb	%cl, 163(%rsp)
+	movb	132(%rdx), %cl
+	movb	%cl, 164(%rsp)
+	movb	133(%rdx), %cl
+	movb	%cl, 165(%rsp)
+	movb	134(%rdx), %cl
+	movb	%cl, 166(%rsp)
+	movb	135(%rdx), %cl
+	movb	%cl, 167(%rsp)
+	movb	136(%rdx), %cl
+	movb	%cl, 168(%rsp)
+	movb	137(%rdx), %cl
+	movb	%cl, 169(%rsp)
+	movb	138(%rdx), %cl
+	movb	%cl, 170(%rsp)
+	movb	139(%rdx), %cl
+	movb	%cl, 171(%rsp)
+	movb	140(%rdx), %cl
+	movb	%cl, 172(%rsp)
+	movb	141(%rdx), %cl
+	movb	%cl, 173(%rsp)
+	movb	142(%rdx), %cl
+	movb	%cl, 174(%rsp)
+	movb	143(%rdx), %cl
+	movb	%cl, 175(%rsp)
+	movb	144(%rdx), %cl
+	movb	%cl, 176(%rsp)
+	movb	145(%rdx), %cl
+	movb	%cl, 177(%rsp)
+	movb	146(%rdx), %cl
+	movb	%cl, 178(%rsp)
+	movb	147(%rdx), %cl
+	movb	%cl, 179(%rsp)
+	movb	148(%rdx), %cl
+	movb	%cl, 180(%rsp)
+	movb	149(%rdx), %cl
+	movb	%cl, 181(%rsp)
+	movb	150(%rdx), %cl
+	movb	%cl, 182(%rsp)
+	movb	151(%rdx), %cl
+	movb	%cl, 183(%rsp)
+	movb	152(%rdx), %cl
+	movb	%cl, 184(%rsp)
+	movb	153(%rdx), %cl
+	movb	%cl, 185(%rsp)
+	movb	154(%rdx), %cl
+	movb	%cl, 186(%rsp)
+	movb	155(%rdx), %cl
+	movb	%cl, 187(%rsp)
+	movb	156(%rdx), %cl
+	movb	%cl, 188(%rsp)
+	movb	157(%rdx), %cl
+	movb	%cl, 189(%rsp)
+	movb	158(%rdx), %cl
+	movb	%cl, 190(%rsp)
+	movb	159(%rdx), %cl
+	movb	%cl, 191(%rsp)
+	movb	160(%rdx), %cl
+	movb	%cl, 192(%rsp)
+	movb	161(%rdx), %cl
+	movb	%cl, 193(%rsp)
+	movb	162(%rdx), %cl
+	movb	%cl, 194(%rsp)
+	movb	163(%rdx), %cl
+	movb	%cl, 195(%rsp)
+	movb	164(%rdx), %cl
+	movb	%cl, 196(%rsp)
+	movb	165(%rdx), %cl
+	movb	%cl, 197(%rsp)
+	movb	166(%rdx), %cl
+	movb	%cl, 198(%rsp)
+	movb	167(%rdx), %cl
+	movb	%cl, 199(%rsp)
+	movb	168(%rdx), %cl
+	movb	%cl, 200(%rsp)
+	movb	169(%rdx), %cl
+	movb	%cl, 201(%rsp)
+	movb	170(%rdx), %cl
+	movb	%cl, 202(%rsp)
+	movb	171(%rdx), %cl
+	movb	%cl, 203(%rsp)
+	movb	172(%rdx), %cl
+	movb	%cl, 204(%rsp)
+	movb	173(%rdx), %cl
+	movb	%cl, 205(%rsp)
+	movb	174(%rdx), %cl
+	movb	%cl, 206(%rsp)
+	movb	175(%rdx), %cl
+	movb	%cl, 207(%rsp)
+	movb	176(%rdx), %cl
+	movb	%cl, 208(%rsp)
+	movb	177(%rdx), %cl
+	movb	%cl, 209(%rsp)
+	movb	178(%rdx), %cl
+	movb	%cl, 210(%rsp)
+	movb	179(%rdx), %cl
+	movb	%cl, 211(%rsp)
+	movb	180(%rdx), %cl
+	movb	%cl, 212(%rsp)
+	movb	181(%rdx), %cl
+	movb	%cl, 213(%rsp)
+	movb	182(%rdx), %cl
+	movb	%cl, 214(%rsp)
+	movb	183(%rdx), %cl
+	movb	%cl, 215(%rsp)
+	movb	184(%rdx), %cl
+	movb	%cl, 216(%rsp)
+	movb	185(%rdx), %cl
+	movb	%cl, 217(%rsp)
+	movb	186(%rdx), %cl
+	movb	%cl, 218(%rsp)
+	movb	187(%rdx), %cl
+	movb	%cl, 219(%rsp)
+	movb	188(%rdx), %cl
+	movb	%cl, 220(%rsp)
+	movb	189(%rdx), %cl
+	movb	%cl, 221(%rsp)
+	movb	190(%rdx), %cl
+	movb	%cl, 222(%rsp)
+	movb	191(%rdx), %cl
+	movb	%cl, 223(%rsp)
+	movb	192(%rdx), %cl
+	movb	%cl, 224(%rsp)
+	movb	193(%rdx), %cl
+	movb	%cl, 225(%rsp)
+	movb	194(%rdx), %cl
+	movb	%cl, 226(%rsp)
+	movb	195(%rdx), %cl
+	movb	%cl, 227(%rsp)
+	movb	196(%rdx), %cl
+	movb	%cl, 228(%rsp)
+	movb	197(%rdx), %cl
+	movb	%cl, 229(%rsp)
+	movb	198(%rdx), %cl
+	movb	%cl, 230(%rsp)
+	movb	199(%rdx), %cl
+	movb	%cl, 231(%rsp)
+	movb	200(%rdx), %cl
+	movb	%cl, 232(%rsp)
+	movb	201(%rdx), %cl
+	movb	%cl, 233(%rsp)
+	movb	202(%rdx), %cl
+	movb	%cl, 234(%rsp)
+	movb	203(%rdx), %cl
+	movb	%cl, 235(%rsp)
+	movb	204(%rdx), %cl
+	movb	%cl, 236(%rsp)
+	movb	205(%rdx), %cl
+	movb	%cl, 237(%rsp)
+	movb	206(%rdx), %cl
+	movb	%cl, 238(%rsp)
+	movb	207(%rdx), %cl
+	movb	%cl, 239(%rsp)
+	movb	208(%rdx), %cl
+	movb	%cl, 240(%rsp)
+	movb	209(%rdx), %cl
+	movb	%cl, 241(%rsp)
+	movb	210(%rdx), %cl
+	movb	%cl, 242(%rsp)
+	movb	211(%rdx), %cl
+	movb	%cl, 243(%rsp)
+	movb	212(%rdx), %cl
+	movb	%cl, 244(%rsp)
+	movb	213(%rdx), %cl
+	movb	%cl, 245(%rsp)
+	movb	214(%rdx), %cl
+	movb	%cl, 246(%rsp)
+	movb	215(%rdx), %cl
+	movb	%cl, 247(%rsp)
+	movb	216(%rdx), %cl
+	movb	%cl, 248(%rsp)
+	movb	217(%rdx), %cl
+	movb	%cl, 249(%rsp)
+	movb	218(%rdx), %cl
+	movb	%cl, 250(%rsp)
+	movb	219(%rdx), %cl
+	movb	%cl, 251(%rsp)
+	movb	220(%rdx), %cl
+	movb	%cl, 252(%rsp)
+	movb	221(%rdx), %cl
+	movb	%cl, 253(%rsp)
+	movb	222(%rdx), %cl
+	movb	%cl, 254(%rsp)
+	movb	223(%rdx), %cl
+	movb	%cl, 255(%rsp)
+	movb	224(%rdx), %cl
+	movb	%cl, 256(%rsp)
+	movb	225(%rdx), %cl
+	movb	%cl, 257(%rsp)
+	movb	226(%rdx), %cl
+	movb	%cl, 258(%rsp)
+	movb	227(%rdx), %cl
+	movb	%cl, 259(%rsp)
+	movb	228(%rdx), %cl
+	movb	%cl, 260(%rsp)
+	movb	229(%rdx), %cl
+	movb	%cl, 261(%rsp)
+	movb	230(%rdx), %cl
+	movb	%cl, 262(%rsp)
+	movb	231(%rdx), %cl
+	movb	%cl, 263(%rsp)
+	movb	232(%rdx), %cl
+	movb	%cl, 264(%rsp)
+	movb	233(%rdx), %cl
+	movb	%cl, 265(%rsp)
+	movb	234(%rdx), %cl
+	movb	%cl, 266(%rsp)
+	movb	235(%rdx), %cl
+	movb	%cl, 267(%rsp)
+	movb	236(%rdx), %cl
+	movb	%cl, 268(%rsp)
+	movb	237(%rdx), %cl
+	movb	%cl, 269(%rsp)
+	movb	238(%rdx), %cl
+	movb	%cl, 270(%rsp)
+	movb	239(%rdx), %cl
+	movb	%cl, 271(%rsp)
+	movb	240(%rdx), %cl
+	movb	%cl, 272(%rsp)
+	movb	241(%rdx), %cl
+	movb	%cl, 273(%rsp)
+	movb	242(%rdx), %cl
+	movb	%cl, 274(%rsp)
+	movb	243(%rdx), %cl
+	movb	%cl, 275(%rsp)
+	movb	244(%rdx), %cl
+	movb	%cl, 276(%rsp)
+	movb	245(%rdx), %cl
+	movb	%cl, 277(%rsp)
+	movb	246(%rdx), %cl
+	movb	%cl, 278(%rsp)
+	movb	247(%rdx), %cl
+	movb	%cl, 279(%rsp)
+	movb	248(%rdx), %cl
+	movb	%cl, 280(%rsp)
+	movb	249(%rdx), %cl
+	movb	%cl, 281(%rsp)
+	movb	250(%rdx), %cl
+	movb	%cl, 282(%rsp)
+	movb	251(%rdx), %cl
+	movb	%cl, 283(%rsp)
+	movb	252(%rdx), %cl
+	movb	%cl, 284(%rsp)
+	movb	253(%rdx), %cl
+	movb	%cl, 285(%rsp)
+	movb	254(%rdx), %cl
+	movb	%cl, 286(%rsp)
+	movb	255(%rdx), %cl
+	movb	%cl, 287(%rsp)
+	movb	256(%rdx), %cl
+	movb	%cl, 288(%rsp)
+	movb	257(%rdx), %cl
+	movb	%cl, 289(%rsp)
+	movb	258(%rdx), %cl
+	movb	%cl, 290(%rsp)
+	movb	259(%rdx), %cl
+	movb	%cl, 291(%rsp)
+	movb	260(%rdx), %cl
+	movb	%cl, 292(%rsp)
+	movb	261(%rdx), %cl
+	movb	%cl, 293(%rsp)
+	movb	262(%rdx), %cl
+	movb	%cl, 294(%rsp)
+	movb	263(%rdx), %cl
+	movb	%cl, 295(%rsp)
+	movb	264(%rdx), %cl
+	movb	%cl, 296(%rsp)
+	movb	265(%rdx), %cl
+	movb	%cl, 297(%rsp)
+	movb	266(%rdx), %cl
+	movb	%cl, 298(%rsp)
+	movb	267(%rdx), %cl
+	movb	%cl, 299(%rsp)
+	movb	268(%rdx), %cl
+	movb	%cl, 300(%rsp)
+	movb	269(%rdx), %cl
+	movb	%cl, 301(%rsp)
+	movb	270(%rdx), %cl
+	movb	%cl, 302(%rsp)
+	movb	271(%rdx), %cl
+	movb	%cl, 303(%rsp)
+	movb	272(%rdx), %cl
+	movb	%cl, 304(%rsp)
+	movb	273(%rdx), %cl
+	movb	%cl, 305(%rsp)
+	movb	274(%rdx), %cl
+	movb	%cl, 306(%rsp)
+	movb	275(%rdx), %cl
+	movb	%cl, 307(%rsp)
+	movb	276(%rdx), %cl
+	movb	%cl, 308(%rsp)
+	movb	277(%rdx), %cl
+	movb	%cl, 309(%rsp)
+	movb	278(%rdx), %cl
+	movb	%cl, 310(%rsp)
+	movb	279(%rdx), %cl
+	movb	%cl, 311(%rsp)
+	movb	280(%rdx), %cl
+	movb	%cl, 312(%rsp)
+	movb	281(%rdx), %cl
+	movb	%cl, 313(%rsp)
+	movb	282(%rdx), %cl
+	movb	%cl, 314(%rsp)
+	movb	283(%rdx), %cl
+	movb	%cl, 315(%rsp)
+	movb	284(%rdx), %cl
+	movb	%cl, 316(%rsp)
+	movb	285(%rdx), %cl
+	movb	%cl, 317(%rsp)
+	movb	286(%rdx), %cl
+	movb	%cl, 318(%rsp)
+	movb	287(%rdx), %cl
+	movb	%cl, 319(%rsp)
+	movb	288(%rdx), %cl
+	movb	%cl, 320(%rsp)
+	movb	289(%rdx), %cl
+	movb	%cl, 321(%rsp)
+	movb	290(%rdx), %cl
+	movb	%cl, 322(%rsp)
+	movb	291(%rdx), %cl
+	movb	%cl, 323(%rsp)
+	movb	292(%rdx), %cl
+	movb	%cl, 324(%rsp)
+	movb	293(%rdx), %cl
+	movb	%cl, 325(%rsp)
+	movb	294(%rdx), %cl
+	movb	%cl, 326(%rsp)
+	movb	295(%rdx), %cl
+	movb	%cl, 327(%rsp)
+	movb	296(%rdx), %cl
+	movb	%cl, 328(%rsp)
+	movb	297(%rdx), %cl
+	movb	%cl, 329(%rsp)
+	movb	298(%rdx), %cl
+	movb	%cl, 330(%rsp)
+	movb	299(%rdx), %cl
+	movb	%cl, 331(%rsp)
+	movb	300(%rdx), %cl
+	movb	%cl, 332(%rsp)
+	movb	301(%rdx), %cl
+	movb	%cl, 333(%rsp)
+	movb	302(%rdx), %cl
+	movb	%cl, 334(%rsp)
+	movb	303(%rdx), %cl
+	movb	%cl, 335(%rsp)
+	movb	304(%rdx), %cl
+	movb	%cl, 336(%rsp)
+	movb	305(%rdx), %cl
+	movb	%cl, 337(%rsp)
+	movb	306(%rdx), %cl
+	movb	%cl, 338(%rsp)
+	movb	307(%rdx), %cl
+	movb	%cl, 339(%rsp)
+	movb	308(%rdx), %cl
+	movb	%cl, 340(%rsp)
+	movb	309(%rdx), %cl
+	movb	%cl, 341(%rsp)
+	movb	310(%rdx), %cl
+	movb	%cl, 342(%rsp)
+	movb	311(%rdx), %cl
+	movb	%cl, 343(%rsp)
+	movb	312(%rdx), %cl
+	movb	%cl, 344(%rsp)
+	movb	313(%rdx), %cl
+	movb	%cl, 345(%rsp)
+	movb	314(%rdx), %cl
+	movb	%cl, 346(%rsp)
+	movb	315(%rdx), %cl
+	movb	%cl, 347(%rsp)
+	movb	316(%rdx), %cl
+	movb	%cl, 348(%rsp)
+	movb	317(%rdx), %cl
+	movb	%cl, 349(%rsp)
+	movb	318(%rdx), %cl
+	movb	%cl, 350(%rsp)
+	movb	319(%rdx), %cl
+	movb	%cl, 351(%rsp)
+	movb	320(%rdx), %cl
+	movb	%cl, 352(%rsp)
+	movb	321(%rdx), %cl
+	movb	%cl, 353(%rsp)
+	movb	322(%rdx), %cl
+	movb	%cl, 354(%rsp)
+	movb	323(%rdx), %cl
+	movb	%cl, 355(%rsp)
+	movb	324(%rdx), %cl
+	movb	%cl, 356(%rsp)
+	movb	325(%rdx), %cl
+	movb	%cl, 357(%rsp)
+	movb	326(%rdx), %cl
+	movb	%cl, 358(%rsp)
+	movb	327(%rdx), %cl
+	movb	%cl, 359(%rsp)
+	movb	328(%rdx), %cl
+	movb	%cl, 360(%rsp)
+	movb	329(%rdx), %cl
+	movb	%cl, 361(%rsp)
+	movb	330(%rdx), %cl
+	movb	%cl, 362(%rsp)
+	movb	331(%rdx), %cl
+	movb	%cl, 363(%rsp)
+	movb	332(%rdx), %cl
+	movb	%cl, 364(%rsp)
+	movb	333(%rdx), %cl
+	movb	%cl, 365(%rsp)
+	movb	334(%rdx), %cl
+	movb	%cl, 366(%rsp)
+	movb	335(%rdx), %cl
+	movb	%cl, 367(%rsp)
+	movb	336(%rdx), %cl
+	movb	%cl, 368(%rsp)
+	movb	337(%rdx), %cl
+	movb	%cl, 369(%rsp)
+	movb	338(%rdx), %cl
+	movb	%cl, 370(%rsp)
+	movb	339(%rdx), %cl
+	movb	%cl, 371(%rsp)
+	movb	340(%rdx), %cl
+	movb	%cl, 372(%rsp)
+	movb	341(%rdx), %cl
+	movb	%cl, 373(%rsp)
+	movb	342(%rdx), %cl
+	movb	%cl, 374(%rsp)
+	movb	343(%rdx), %cl
+	movb	%cl, 375(%rsp)
+	movb	344(%rdx), %cl
+	movb	%cl, 376(%rsp)
+	movb	345(%rdx), %cl
+	movb	%cl, 377(%rsp)
+	movb	346(%rdx), %cl
+	movb	%cl, 378(%rsp)
+	movb	347(%rdx), %cl
+	movb	%cl, 379(%rsp)
+	movb	348(%rdx), %cl
+	movb	%cl, 380(%rsp)
+	movb	349(%rdx), %cl
+	movb	%cl, 381(%rsp)
+	movb	350(%rdx), %cl
+	movb	%cl, 382(%rsp)
+	movb	351(%rdx), %cl
+	movb	%cl, 383(%rsp)
+	movb	352(%rdx), %cl
+	movb	%cl, 384(%rsp)
+	movb	353(%rdx), %cl
+	movb	%cl, 385(%rsp)
+	movb	354(%rdx), %cl
+	movb	%cl, 386(%rsp)
+	movb	355(%rdx), %cl
+	movb	%cl, 387(%rsp)
+	movb	356(%rdx), %cl
+	movb	%cl, 388(%rsp)
+	movb	357(%rdx), %cl
+	movb	%cl, 389(%rsp)
+	movb	358(%rdx), %cl
+	movb	%cl, 390(%rsp)
+	movb	359(%rdx), %cl
+	movb	%cl, 391(%rsp)
+	movb	360(%rdx), %cl
+	movb	%cl, 392(%rsp)
+	movb	361(%rdx), %cl
+	movb	%cl, 393(%rsp)
+	movb	362(%rdx), %cl
+	movb	%cl, 394(%rsp)
+	movb	363(%rdx), %cl
+	movb	%cl, 395(%rsp)
+	movb	364(%rdx), %cl
+	movb	%cl, 396(%rsp)
+	movb	365(%rdx), %cl
+	movb	%cl, 397(%rsp)
+	movb	366(%rdx), %cl
+	movb	%cl, 398(%rsp)
+	movb	367(%rdx), %cl
+	movb	%cl, 399(%rsp)
+	movb	368(%rdx), %cl
+	movb	%cl, 400(%rsp)
+	movb	369(%rdx), %cl
+	movb	%cl, 401(%rsp)
+	movb	370(%rdx), %cl
+	movb	%cl, 402(%rsp)
+	movb	371(%rdx), %cl
+	movb	%cl, 403(%rsp)
+	movb	372(%rdx), %cl
+	movb	%cl, 404(%rsp)
+	movb	373(%rdx), %cl
+	movb	%cl, 405(%rsp)
+	movb	374(%rdx), %cl
+	movb	%cl, 406(%rsp)
+	movb	375(%rdx), %cl
+	movb	%cl, 407(%rsp)
+	movb	376(%rdx), %cl
+	movb	%cl, 408(%rsp)
+	movb	377(%rdx), %cl
+	movb	%cl, 409(%rsp)
+	movb	378(%rdx), %cl
+	movb	%cl, 410(%rsp)
+	movb	379(%rdx), %cl
+	movb	%cl, 411(%rsp)
+	movb	380(%rdx), %cl
+	movb	%cl, 412(%rsp)
+	movb	381(%rdx), %cl
+	movb	%cl, 413(%rsp)
+	movb	382(%rdx), %cl
+	movb	%cl, 414(%rsp)
+	movb	383(%rdx), %cl
+	movb	%cl, 415(%rsp)
+	movb	384(%rdx), %cl
+	movb	%cl, 416(%rsp)
+	movb	385(%rdx), %cl
+	movb	%cl, 417(%rsp)
+	movb	386(%rdx), %cl
+	movb	%cl, 418(%rsp)
+	movb	387(%rdx), %cl
+	movb	%cl, 419(%rsp)
+	movb	388(%rdx), %cl
+	movb	%cl, 420(%rsp)
+	movb	389(%rdx), %cl
+	movb	%cl, 421(%rsp)
+	movb	390(%rdx), %cl
+	movb	%cl, 422(%rsp)
+	movb	391(%rdx), %cl
+	movb	%cl, 423(%rsp)
+	movb	392(%rdx), %cl
+	movb	%cl, 424(%rsp)
+	movb	393(%rdx), %cl
+	movb	%cl, 425(%rsp)
+	movb	394(%rdx), %cl
+	movb	%cl, 426(%rsp)
+	movb	395(%rdx), %cl
+	movb	%cl, 427(%rsp)
+	movb	396(%rdx), %cl
+	movb	%cl, 428(%rsp)
+	movb	397(%rdx), %cl
+	movb	%cl, 429(%rsp)
+	movb	398(%rdx), %cl
+	movb	%cl, 430(%rsp)
+	movb	399(%rdx), %cl
+	movb	%cl, 431(%rsp)
+	movb	400(%rdx), %cl
+	movb	%cl, 432(%rsp)
+	movb	401(%rdx), %cl
+	movb	%cl, 433(%rsp)
+	movb	402(%rdx), %cl
+	movb	%cl, 434(%rsp)
+	movb	403(%rdx), %cl
+	movb	%cl, 435(%rsp)
+	movb	404(%rdx), %cl
+	movb	%cl, 436(%rsp)
+	movb	405(%rdx), %cl
+	movb	%cl, 437(%rsp)
+	movb	406(%rdx), %cl
+	movb	%cl, 438(%rsp)
+	movb	407(%rdx), %cl
+	movb	%cl, 439(%rsp)
+	movb	408(%rdx), %cl
+	movb	%cl, 440(%rsp)
+	movb	409(%rdx), %cl
+	movb	%cl, 441(%rsp)
+	movb	410(%rdx), %cl
+	movb	%cl, 442(%rsp)
+	movb	411(%rdx), %cl
+	movb	%cl, 443(%rsp)
+	movb	412(%rdx), %cl
+	movb	%cl, 444(%rsp)
+	movb	413(%rdx), %cl
+	movb	%cl, 445(%rsp)
+	movb	414(%rdx), %cl
+	movb	%cl, 446(%rsp)
+	movb	415(%rdx), %cl
+	movb	%cl, 447(%rsp)
+	movb	416(%rdx), %cl
+	movb	%cl, 448(%rsp)
+	movb	417(%rdx), %cl
+	movb	%cl, 449(%rsp)
+	movb	418(%rdx), %cl
+	movb	%cl, 450(%rsp)
+	movb	419(%rdx), %cl
+	movb	%cl, 451(%rsp)
+	movb	420(%rdx), %cl
+	movb	%cl, 452(%rsp)
+	movb	421(%rdx), %cl
+	movb	%cl, 453(%rsp)
+	movb	422(%rdx), %cl
+	movb	%cl, 454(%rsp)
+	movb	423(%rdx), %cl
+	movb	%cl, 455(%rsp)
+	movb	424(%rdx), %cl
+	movb	%cl, 456(%rsp)
+	movb	425(%rdx), %cl
+	movb	%cl, 457(%rsp)
+	movb	426(%rdx), %cl
+	movb	%cl, 458(%rsp)
+	movb	427(%rdx), %cl
+	movb	%cl, 459(%rsp)
+	movb	428(%rdx), %cl
+	movb	%cl, 460(%rsp)
+	movb	429(%rdx), %cl
+	movb	%cl, 461(%rsp)
+	movb	430(%rdx), %cl
+	movb	%cl, 462(%rsp)
+	movb	431(%rdx), %cl
+	movb	%cl, 463(%rsp)
+	movb	432(%rdx), %cl
+	movb	%cl, 464(%rsp)
+	movb	433(%rdx), %cl
+	movb	%cl, 465(%rsp)
+	movb	434(%rdx), %cl
+	movb	%cl, 466(%rsp)
+	movb	435(%rdx), %cl
+	movb	%cl, 467(%rsp)
+	movb	436(%rdx), %cl
+	movb	%cl, 468(%rsp)
+	movb	437(%rdx), %cl
+	movb	%cl, 469(%rsp)
+	movb	438(%rdx), %cl
+	movb	%cl, 470(%rsp)
+	movb	439(%rdx), %cl
+	movb	%cl, 471(%rsp)
+	movb	440(%rdx), %cl
+	movb	%cl, 472(%rsp)
+	movb	441(%rdx), %cl
+	movb	%cl, 473(%rsp)
+	movb	442(%rdx), %cl
+	movb	%cl, 474(%rsp)
+	movb	443(%rdx), %cl
+	movb	%cl, 475(%rsp)
+	movb	444(%rdx), %cl
+	movb	%cl, 476(%rsp)
+	movb	445(%rdx), %cl
+	movb	%cl, 477(%rsp)
+	movb	446(%rdx), %cl
+	movb	%cl, 478(%rsp)
+	movb	447(%rdx), %cl
+	movb	%cl, 479(%rsp)
+	movb	448(%rdx), %cl
+	movb	%cl, 480(%rsp)
+	movb	449(%rdx), %cl
+	movb	%cl, 481(%rsp)
+	movb	450(%rdx), %cl
+	movb	%cl, 482(%rsp)
+	movb	451(%rdx), %cl
+	movb	%cl, 483(%rsp)
+	movb	452(%rdx), %cl
+	movb	%cl, 484(%rsp)
+	movb	453(%rdx), %cl
+	movb	%cl, 485(%rsp)
+	movb	454(%rdx), %cl
+	movb	%cl, 486(%rsp)
+	movb	455(%rdx), %cl
+	movb	%cl, 487(%rsp)
+	movb	456(%rdx), %cl
+	movb	%cl, 488(%rsp)
+	movb	457(%rdx), %cl
+	movb	%cl, 489(%rsp)
+	movb	458(%rdx), %cl
+	movb	%cl, 490(%rsp)
+	movb	459(%rdx), %cl
+	movb	%cl, 491(%rsp)
+	movb	460(%rdx), %cl
+	movb	%cl, 492(%rsp)
+	movb	461(%rdx), %cl
+	movb	%cl, 493(%rsp)
+	movb	462(%rdx), %cl
+	movb	%cl, 494(%rsp)
+	movb	463(%rdx), %cl
+	movb	%cl, 495(%rsp)
+	movb	464(%rdx), %cl
+	movb	%cl, 496(%rsp)
+	movb	465(%rdx), %cl
+	movb	%cl, 497(%rsp)
+	movb	466(%rdx), %cl
+	movb	%cl, 498(%rsp)
+	movb	467(%rdx), %cl
+	movb	%cl, 499(%rsp)
+	movb	468(%rdx), %cl
+	movb	%cl, 500(%rsp)
+	movb	469(%rdx), %cl
+	movb	%cl, 501(%rsp)
+	movb	470(%rdx), %cl
+	movb	%cl, 502(%rsp)
+	movb	471(%rdx), %cl
+	movb	%cl, 503(%rsp)
+	movb	472(%rdx), %cl
+	movb	%cl, 504(%rsp)
+	movb	473(%rdx), %cl
+	movb	%cl, 505(%rsp)
+	movb	474(%rdx), %cl
+	movb	%cl, 506(%rsp)
+	movb	475(%rdx), %cl
+	movb	%cl, 507(%rsp)
+	movb	476(%rdx), %cl
+	movb	%cl, 508(%rsp)
+	movb	477(%rdx), %cl
+	movb	%cl, 509(%rsp)
+	movb	478(%rdx), %cl
+	movb	%cl, 510(%rsp)
+	movb	479(%rdx), %cl
+	movb	%cl, 511(%rsp)
+	movb	480(%rdx), %cl
+	movb	%cl, 512(%rsp)
+	movb	481(%rdx), %cl
+	movb	%cl, 513(%rsp)
+	movb	482(%rdx), %cl
+	movb	%cl, 514(%rsp)
+	movb	483(%rdx), %cl
+	movb	%cl, 515(%rsp)
+	movb	484(%rdx), %cl
+	movb	%cl, 516(%rsp)
+	movb	485(%rdx), %cl
+	movb	%cl, 517(%rsp)
+	movb	486(%rdx), %cl
+	movb	%cl, 518(%rsp)
+	movb	487(%rdx), %cl
+	movb	%cl, 519(%rsp)
+	movb	488(%rdx), %cl
+	movb	%cl, 520(%rsp)
+	movb	489(%rdx), %cl
+	movb	%cl, 521(%rsp)
+	movb	490(%rdx), %cl
+	movb	%cl, 522(%rsp)
+	movb	491(%rdx), %cl
+	movb	%cl, 523(%rsp)
+	movb	492(%rdx), %cl
+	movb	%cl, 524(%rsp)
+	movb	493(%rdx), %cl
+	movb	%cl, 525(%rsp)
+	movb	494(%rdx), %cl
+	movb	%cl, 526(%rsp)
+	movb	495(%rdx), %cl
+	movb	%cl, 527(%rsp)
+	movb	496(%rdx), %cl
+	movb	%cl, 528(%rsp)
+	movb	497(%rdx), %cl
+	movb	%cl, 529(%rsp)
+	movb	498(%rdx), %cl
+	movb	%cl, 530(%rsp)
+	movb	499(%rdx), %cl
+	movb	%cl, 531(%rsp)
+	movb	500(%rdx), %cl
+	movb	%cl, 532(%rsp)
+	movb	501(%rdx), %cl
+	movb	%cl, 533(%rsp)
+	movb	502(%rdx), %cl
+	movb	%cl, 534(%rsp)
+	movb	503(%rdx), %cl
+	movb	%cl, 535(%rsp)
+	movb	504(%rdx), %cl
+	movb	%cl, 536(%rsp)
+	movb	505(%rdx), %cl
+	movb	%cl, 537(%rsp)
+	movb	506(%rdx), %cl
+	movb	%cl, 538(%rsp)
+	movb	507(%rdx), %cl
+	movb	%cl, 539(%rsp)
+	movb	508(%rdx), %cl
+	movb	%cl, 540(%rsp)
+	movb	509(%rdx), %cl
+	movb	%cl, 541(%rsp)
+	movb	510(%rdx), %cl
+	movb	%cl, 542(%rsp)
+	movb	511(%rdx), %cl
+	movb	%cl, 543(%rsp)
+	movb	512(%rdx), %cl
+	movb	%cl, 544(%rsp)
+	movb	513(%rdx), %cl
+	movb	%cl, 545(%rsp)
+	movb	514(%rdx), %cl
+	movb	%cl, 546(%rsp)
+	movb	515(%rdx), %cl
+	movb	%cl, 547(%rsp)
+	movb	516(%rdx), %cl
+	movb	%cl, 548(%rsp)
+	movb	517(%rdx), %cl
+	movb	%cl, 549(%rsp)
+	movb	518(%rdx), %cl
+	movb	%cl, 550(%rsp)
+	movb	519(%rdx), %cl
+	movb	%cl, 551(%rsp)
+	movb	520(%rdx), %cl
+	movb	%cl, 552(%rsp)
+	movb	521(%rdx), %cl
+	movb	%cl, 553(%rsp)
+	movb	522(%rdx), %cl
+	movb	%cl, 554(%rsp)
+	movb	523(%rdx), %cl
+	movb	%cl, 555(%rsp)
+	movb	524(%rdx), %cl
+	movb	%cl, 556(%rsp)
+	movb	525(%rdx), %cl
+	movb	%cl, 557(%rsp)
+	movb	526(%rdx), %cl
+	movb	%cl, 558(%rsp)
+	movb	527(%rdx), %cl
+	movb	%cl, 559(%rsp)
+	movb	528(%rdx), %cl
+	movb	%cl, 560(%rsp)
+	movb	529(%rdx), %cl
+	movb	%cl, 561(%rsp)
+	movb	530(%rdx), %cl
+	movb	%cl, 562(%rsp)
+	movb	531(%rdx), %cl
+	movb	%cl, 563(%rsp)
+	movb	532(%rdx), %cl
+	movb	%cl, 564(%rsp)
+	movb	533(%rdx), %cl
+	movb	%cl, 565(%rsp)
+	movb	534(%rdx), %cl
+	movb	%cl, 566(%rsp)
+	movb	535(%rdx), %cl
+	movb	%cl, 567(%rsp)
+	movb	536(%rdx), %cl
+	movb	%cl, 568(%rsp)
+	movb	537(%rdx), %cl
+	movb	%cl, 569(%rsp)
+	movb	538(%rdx), %cl
+	movb	%cl, 570(%rsp)
+	movb	539(%rdx), %cl
+	movb	%cl, 571(%rsp)
+	movb	540(%rdx), %cl
+	movb	%cl, 572(%rsp)
+	movb	541(%rdx), %cl
+	movb	%cl, 573(%rsp)
+	movb	542(%rdx), %cl
+	movb	%cl, 574(%rsp)
+	movb	543(%rdx), %cl
+	movb	%cl, 575(%rsp)
+	movb	544(%rdx), %cl
+	movb	%cl, 576(%rsp)
+	movb	545(%rdx), %cl
+	movb	%cl, 577(%rsp)
+	movb	546(%rdx), %cl
+	movb	%cl, 578(%rsp)
+	movb	547(%rdx), %cl
+	movb	%cl, 579(%rsp)
+	movb	548(%rdx), %cl
+	movb	%cl, 580(%rsp)
+	movb	549(%rdx), %cl
+	movb	%cl, 581(%rsp)
+	movb	550(%rdx), %cl
+	movb	%cl, 582(%rsp)
+	movb	551(%rdx), %cl
+	movb	%cl, 583(%rsp)
+	movb	552(%rdx), %cl
+	movb	%cl, 584(%rsp)
+	movb	553(%rdx), %cl
+	movb	%cl, 585(%rsp)
+	movb	554(%rdx), %cl
+	movb	%cl, 586(%rsp)
+	movb	555(%rdx), %cl
+	movb	%cl, 587(%rsp)
+	movb	556(%rdx), %cl
+	movb	%cl, 588(%rsp)
+	movb	557(%rdx), %cl
+	movb	%cl, 589(%rsp)
+	movb	558(%rdx), %cl
+	movb	%cl, 590(%rsp)
+	movb	559(%rdx), %cl
+	movb	%cl, 591(%rsp)
+	movl	$15, %edx
+	movl	%edx, 788(%rsp)
+	movl	%edx, 792(%rsp)
+	movl	%edx, 796(%rsp)
+	movl	%edx, 800(%rsp)
+	movl	%edx, 804(%rsp)
+	movl	%edx, 808(%rsp)
+	movl	%edx, 812(%rsp)
+	movl	%edx, 816(%rsp)
+	movl	%edx, 820(%rsp)
+	movl	%edx, 824(%rsp)
+	movl	%edx, 828(%rsp)
+	movl	%edx, 832(%rsp)
+	movl	%edx, 836(%rsp)
+	movl	%edx, 840(%rsp)
+	movl	%edx, 844(%rsp)
+	movl	%edx, 848(%rsp)
+	movl	%edx, 852(%rsp)
+	movl	%edx, 856(%rsp)
+	movl	%edx, 860(%rsp)
+	movl	%edx, 864(%rsp)
+	movl	%edx, 868(%rsp)
+	movl	%edx, 872(%rsp)
+	movl	%edx, 876(%rsp)
+	movl	%edx, 880(%rsp)
+	movl	%edx, 884(%rsp)
+	movl	%edx, 888(%rsp)
+	movl	%edx, 892(%rsp)
+	movl	%edx, 896(%rsp)
+	movl	%edx, 900(%rsp)
+	movl	%edx, 904(%rsp)
+	movl	%edx, 908(%rsp)
+	movl	%edx, 912(%rsp)
+	movl	%edx, 916(%rsp)
+	movl	%edx, 920(%rsp)
+	movl	%edx, 924(%rsp)
+	movq	%r11, 600(%rsp)
+	movq	%rsi, 608(%rsp)
+	leaq	32(%rsp), %rcx
+	leaq	648(%rsp), %rdx
+	leaq	788(%rsp), %rdi
+	leaq	-1048(%rsp), %rsp
+	call	.Lwots_chains_x4$1
 .Lwots_pkfromsig$3:
-	cmpl	$35, %ecx
-	jb  	.Lwots_pkfromsig$4
-	leaq	616(%rsp), %rax
-	movq	(%r11), %rdx
-	movq	%rdx, (%rax)
-	movq	8(%r11), %rdx
-	movq	%rdx, 8(%rax)
-	movq	16(%r11), %rdx
-	movq	%rdx, 16(%rax)
-	movq	24(%r11), %rdx
-	movq	%rdx, 24(%rax)
+	leaq	1048(%rsp), %rsp
+	movq	600(%rsp), %rax
+	movq	608(%rsp), %rsi
+	lfence
+	movq	$0, %rcx
+	leaq	616(%rsp), %rcx
+	movq	(%rax), %rdx
+	movq	%rdx, (%rcx)
+	movq	8(%rax), %rdx
+	movq	%rdx, 8(%rcx)
+	movq	16(%rax), %rdx
+	movq	%rdx, 16(%rcx)
+	movq	24(%rax), %rdx
+	movq	%rdx, 24(%rcx)
 	leaq	616(%rsp), %rcx
 	movq	$0, 16(%rcx)
 	movq	$0, 24(%rcx)
 	movl	$1, 16(%rcx)
-	movl	20(%r11), %edx
+	movl	20(%rax), %edx
 	leaq	616(%rsp), %rcx
 	movl	%edx, 20(%rcx)
 	movq	592(%rsp), %rcx
 	lfence
-	movq	$0, %rax
-	movq	%r11, 592(%rsp)
-	leaq	616(%rsp), %r9
+	movq	$0, %rdx
+	movq	%rax, 592(%rsp)
+	leaq	616(%rsp), %r11
 	leaq	32(%rsp), %rax
-	movq	%rcx, %rdi
-	movq	%r10, %r8
+	movq	%rcx, %rdx
 	movq	%rax, %rcx
 	leaq	-40(%rsp), %rsp
 	call	.LT_len$1
 .Lwots_pkfromsig$2:
 	leaq	40(%rsp), %rsp
 	movq	%rcx, %rdx
-	movq	592(%rsp), %rcx
+	movq	592(%rsp), %rax
 	lfence
-	movq	$0, %rax
+	movq	$0, %rcx
 	ret
 .Lwots_sign$1:
-	leaq	84(%rsp), %rsi
-	movq	%rsi, %rdx
-	movq	$0, %r8
+	leaq	56(%rsp), %r8
+	movq	%r8, %r9
+	movq	$0, %r10
 	movl	$0, %ecx
-	movl	$0, %edi
-	jmp 	.Lwots_sign$76
-.Lwots_sign$77:
-	shll	$8, %edi
-	movzbl	(%rax,%r8), %ebp
-	orl 	%ebp, %edi
-	incq	%r8
-	addl	$8, %ecx
-.Lwots_sign$76:
-	cmpl	$4, %ecx
-	jb  	.Lwots_sign$77
-	movl	%edi, %ebp
-	addl	$-4, %ecx
-	shrq	%cl, %rbp
-	andq	$15, %rbp
-	movl	%ebp, (%rdx)
-	jmp 	.Lwots_sign$74
-.Lwots_sign$75:
-	shll	$8, %edi
-	movzbl	(%rax,%r8), %ebp
-	orl 	%ebp, %edi
-	incq	%r8
-	addl	$8, %ecx
-.Lwots_sign$74:
-	cmpl	$4, %ecx
-	jb  	.Lwots_sign$75
-	movl	%edi, %ebp
-	addl	$-4, %ecx
-	shrq	%cl, %rbp
-	andq	$15, %rbp
-	movl	%ebp, 4(%rdx)
+	movl	$0, %ebx
 	jmp 	.Lwots_sign$72
 .Lwots_sign$73:
-	shll	$8, %edi
-	movzbl	(%rax,%r8), %ebp
-	orl 	%ebp, %edi
-	incq	%r8
+	shll	$8, %ebx
+	movzbl	(%rdi,%r10), %ebp
+	orl 	%ebp, %ebx
+	incq	%r10
 	addl	$8, %ecx
 .Lwots_sign$72:
 	cmpl	$4, %ecx
 	jb  	.Lwots_sign$73
-	movl	%edi, %ebp
+	movl	%ebx, %ebp
 	addl	$-4, %ecx
 	shrq	%cl, %rbp
 	andq	$15, %rbp
-	movl	%ebp, 8(%rdx)
+	movl	%ebp, (%r9)
 	jmp 	.Lwots_sign$70
 .Lwots_sign$71:
-	shll	$8, %edi
-	movzbl	(%rax,%r8), %ebp
-	orl 	%ebp, %edi
-	incq	%r8
+	shll	$8, %ebx
+	movzbl	(%rdi,%r10), %ebp
+	orl 	%ebp, %ebx
+	incq	%r10
 	addl	$8, %ecx
 .Lwots_sign$70:
 	cmpl	$4, %ecx
 	jb  	.Lwots_sign$71
-	movl	%edi, %ebp
+	movl	%ebx, %ebp
 	addl	$-4, %ecx
 	shrq	%cl, %rbp
 	andq	$15, %rbp
-	movl	%ebp, 12(%rdx)
+	movl	%ebp, 4(%r9)
 	jmp 	.Lwots_sign$68
 .Lwots_sign$69:
-	shll	$8, %edi
-	movzbl	(%rax,%r8), %ebp
-	orl 	%ebp, %edi
-	incq	%r8
+	shll	$8, %ebx
+	movzbl	(%rdi,%r10), %ebp
+	orl 	%ebp, %ebx
+	incq	%r10
 	addl	$8, %ecx
 .Lwots_sign$68:
 	cmpl	$4, %ecx
 	jb  	.Lwots_sign$69
-	movl	%edi, %ebp
+	movl	%ebx, %ebp
 	addl	$-4, %ecx
 	shrq	%cl, %rbp
 	andq	$15, %rbp
-	movl	%ebp, 16(%rdx)
+	movl	%ebp, 8(%r9)
 	jmp 	.Lwots_sign$66
 .Lwots_sign$67:
-	shll	$8, %edi
-	movzbl	(%rax,%r8), %ebp
-	orl 	%ebp, %edi
-	incq	%r8
+	shll	$8, %ebx
+	movzbl	(%rdi,%r10), %ebp
+	orl 	%ebp, %ebx
+	incq	%r10
 	addl	$8, %ecx
 .Lwots_sign$66:
 	cmpl	$4, %ecx
 	jb  	.Lwots_sign$67
-	movl	%edi, %ebp
+	movl	%ebx, %ebp
 	addl	$-4, %ecx
 	shrq	%cl, %rbp
 	andq	$15, %rbp
-	movl	%ebp, 20(%rdx)
+	movl	%ebp, 12(%r9)
 	jmp 	.Lwots_sign$64
 .Lwots_sign$65:
-	shll	$8, %edi
-	movzbl	(%rax,%r8), %ebp
-	orl 	%ebp, %edi
-	incq	%r8
+	shll	$8, %ebx
+	movzbl	(%rdi,%r10), %ebp
+	orl 	%ebp, %ebx
+	incq	%r10
 	addl	$8, %ecx
 .Lwots_sign$64:
 	cmpl	$4, %ecx
 	jb  	.Lwots_sign$65
-	movl	%edi, %ebp
+	movl	%ebx, %ebp
 	addl	$-4, %ecx
 	shrq	%cl, %rbp
 	andq	$15, %rbp
-	movl	%ebp, 24(%rdx)
+	movl	%ebp, 16(%r9)
 	jmp 	.Lwots_sign$62
 .Lwots_sign$63:
-	shll	$8, %edi
-	movzbl	(%rax,%r8), %ebp
-	orl 	%ebp, %edi
-	incq	%r8
+	shll	$8, %ebx
+	movzbl	(%rdi,%r10), %ebp
+	orl 	%ebp, %ebx
+	incq	%r10
 	addl	$8, %ecx
 .Lwots_sign$62:
 	cmpl	$4, %ecx
 	jb  	.Lwots_sign$63
-	movl	%edi, %ebp
+	movl	%ebx, %ebp
 	addl	$-4, %ecx
 	shrq	%cl, %rbp
 	andq	$15, %rbp
-	movl	%ebp, 28(%rdx)
+	movl	%ebp, 20(%r9)
 	jmp 	.Lwots_sign$60
 .Lwots_sign$61:
-	shll	$8, %edi
-	movzbl	(%rax,%r8), %ebp
-	orl 	%ebp, %edi
-	incq	%r8
+	shll	$8, %ebx
+	movzbl	(%rdi,%r10), %ebp
+	orl 	%ebp, %ebx
+	incq	%r10
 	addl	$8, %ecx
 .Lwots_sign$60:
 	cmpl	$4, %ecx
 	jb  	.Lwots_sign$61
-	movl	%edi, %ebp
+	movl	%ebx, %ebp
 	addl	$-4, %ecx
 	shrq	%cl, %rbp
 	andq	$15, %rbp
-	movl	%ebp, 32(%rdx)
+	movl	%ebp, 24(%r9)
 	jmp 	.Lwots_sign$58
 .Lwots_sign$59:
-	shll	$8, %edi
-	movzbl	(%rax,%r8), %ebp
-	orl 	%ebp, %edi
-	incq	%r8
+	shll	$8, %ebx
+	movzbl	(%rdi,%r10), %ebp
+	orl 	%ebp, %ebx
+	incq	%r10
 	addl	$8, %ecx
 .Lwots_sign$58:
 	cmpl	$4, %ecx
 	jb  	.Lwots_sign$59
-	movl	%edi, %ebp
+	movl	%ebx, %ebp
 	addl	$-4, %ecx
 	shrq	%cl, %rbp
 	andq	$15, %rbp
-	movl	%ebp, 36(%rdx)
+	movl	%ebp, 28(%r9)
 	jmp 	.Lwots_sign$56
 .Lwots_sign$57:
-	shll	$8, %edi
-	movzbl	(%rax,%r8), %ebp
-	orl 	%ebp, %edi
-	incq	%r8
+	shll	$8, %ebx
+	movzbl	(%rdi,%r10), %ebp
+	orl 	%ebp, %ebx
+	incq	%r10
 	addl	$8, %ecx
 .Lwots_sign$56:
 	cmpl	$4, %ecx
 	jb  	.Lwots_sign$57
-	movl	%edi, %ebp
+	movl	%ebx, %ebp
 	addl	$-4, %ecx
 	shrq	%cl, %rbp
 	andq	$15, %rbp
-	movl	%ebp, 40(%rdx)
+	movl	%ebp, 32(%r9)
 	jmp 	.Lwots_sign$54
 .Lwots_sign$55:
-	shll	$8, %edi
-	movzbl	(%rax,%r8), %ebp
-	orl 	%ebp, %edi
-	incq	%r8
+	shll	$8, %ebx
+	movzbl	(%rdi,%r10), %ebp
+	orl 	%ebp, %ebx
+	incq	%r10
 	addl	$8, %ecx
 .Lwots_sign$54:
 	cmpl	$4, %ecx
 	jb  	.Lwots_sign$55
-	movl	%edi, %ebp
+	movl	%ebx, %ebp
 	addl	$-4, %ecx
 	shrq	%cl, %rbp
 	andq	$15, %rbp
-	movl	%ebp, 44(%rdx)
+	movl	%ebp, 36(%r9)
 	jmp 	.Lwots_sign$52
 .Lwots_sign$53:
-	shll	$8, %edi
-	movzbl	(%rax,%r8), %ebp
-	orl 	%ebp, %edi
-	incq	%r8
+	shll	$8, %ebx
+	movzbl	(%rdi,%r10), %ebp
+	orl 	%ebp, %ebx
+	incq	%r10
 	addl	$8, %ecx
 .Lwots_sign$52:
 	cmpl	$4, %ecx
 	jb  	.Lwots_sign$53
-	movl	%edi, %ebp
+	movl	%ebx, %ebp
 	addl	$-4, %ecx
 	shrq	%cl, %rbp
 	andq	$15, %rbp
-	movl	%ebp, 48(%rdx)
+	movl	%ebp, 40(%r9)
 	jmp 	.Lwots_sign$50
 .Lwots_sign$51:
-	shll	$8, %edi
-	movzbl	(%rax,%r8), %ebp
-	orl 	%ebp, %edi
-	incq	%r8
+	shll	$8, %ebx
+	movzbl	(%rdi,%r10), %ebp
+	orl 	%ebp, %ebx
+	incq	%r10
 	addl	$8, %ecx
 .Lwots_sign$50:
 	cmpl	$4, %ecx
 	jb  	.Lwots_sign$51
-	movl	%edi, %ebp
+	movl	%ebx, %ebp
 	addl	$-4, %ecx
 	shrq	%cl, %rbp
 	andq	$15, %rbp
-	movl	%ebp, 52(%rdx)
+	movl	%ebp, 44(%r9)
 	jmp 	.Lwots_sign$48
 .Lwots_sign$49:
-	shll	$8, %edi
-	movzbl	(%rax,%r8), %ebp
-	orl 	%ebp, %edi
-	incq	%r8
+	shll	$8, %ebx
+	movzbl	(%rdi,%r10), %ebp
+	orl 	%ebp, %ebx
+	incq	%r10
 	addl	$8, %ecx
 .Lwots_sign$48:
 	cmpl	$4, %ecx
 	jb  	.Lwots_sign$49
-	movl	%edi, %ebp
+	movl	%ebx, %ebp
 	addl	$-4, %ecx
 	shrq	%cl, %rbp
 	andq	$15, %rbp
-	movl	%ebp, 56(%rdx)
+	movl	%ebp, 48(%r9)
 	jmp 	.Lwots_sign$46
 .Lwots_sign$47:
-	shll	$8, %edi
-	movzbl	(%rax,%r8), %ebp
-	orl 	%ebp, %edi
-	incq	%r8
+	shll	$8, %ebx
+	movzbl	(%rdi,%r10), %ebp
+	orl 	%ebp, %ebx
+	incq	%r10
 	addl	$8, %ecx
 .Lwots_sign$46:
 	cmpl	$4, %ecx
 	jb  	.Lwots_sign$47
-	movl	%edi, %ebp
+	movl	%ebx, %ebp
 	addl	$-4, %ecx
 	shrq	%cl, %rbp
 	andq	$15, %rbp
-	movl	%ebp, 60(%rdx)
+	movl	%ebp, 52(%r9)
 	jmp 	.Lwots_sign$44
 .Lwots_sign$45:
-	shll	$8, %edi
-	movzbl	(%rax,%r8), %ebp
-	orl 	%ebp, %edi
-	incq	%r8
+	shll	$8, %ebx
+	movzbl	(%rdi,%r10), %ebp
+	orl 	%ebp, %ebx
+	incq	%r10
 	addl	$8, %ecx
 .Lwots_sign$44:
 	cmpl	$4, %ecx
 	jb  	.Lwots_sign$45
-	movl	%edi, %ebp
+	movl	%ebx, %ebp
 	addl	$-4, %ecx
 	shrq	%cl, %rbp
 	andq	$15, %rbp
-	movl	%ebp, 64(%rdx)
+	movl	%ebp, 56(%r9)
 	jmp 	.Lwots_sign$42
 .Lwots_sign$43:
-	shll	$8, %edi
-	movzbl	(%rax,%r8), %ebp
-	orl 	%ebp, %edi
-	incq	%r8
+	shll	$8, %ebx
+	movzbl	(%rdi,%r10), %ebp
+	orl 	%ebp, %ebx
+	incq	%r10
 	addl	$8, %ecx
 .Lwots_sign$42:
 	cmpl	$4, %ecx
 	jb  	.Lwots_sign$43
-	movl	%edi, %ebp
+	movl	%ebx, %ebp
 	addl	$-4, %ecx
 	shrq	%cl, %rbp
 	andq	$15, %rbp
-	movl	%ebp, 68(%rdx)
+	movl	%ebp, 60(%r9)
 	jmp 	.Lwots_sign$40
 .Lwots_sign$41:
-	shll	$8, %edi
-	movzbl	(%rax,%r8), %ebp
-	orl 	%ebp, %edi
-	incq	%r8
+	shll	$8, %ebx
+	movzbl	(%rdi,%r10), %ebp
+	orl 	%ebp, %ebx
+	incq	%r10
 	addl	$8, %ecx
 .Lwots_sign$40:
 	cmpl	$4, %ecx
 	jb  	.Lwots_sign$41
-	movl	%edi, %ebp
+	movl	%ebx, %ebp
 	addl	$-4, %ecx
 	shrq	%cl, %rbp
 	andq	$15, %rbp
-	movl	%ebp, 72(%rdx)
+	movl	%ebp, 64(%r9)
 	jmp 	.Lwots_sign$38
 .Lwots_sign$39:
-	shll	$8, %edi
-	movzbl	(%rax,%r8), %ebp
-	orl 	%ebp, %edi
-	incq	%r8
+	shll	$8, %ebx
+	movzbl	(%rdi,%r10), %ebp
+	orl 	%ebp, %ebx
+	incq	%r10
 	addl	$8, %ecx
 .Lwots_sign$38:
 	cmpl	$4, %ecx
 	jb  	.Lwots_sign$39
-	movl	%edi, %ebp
+	movl	%ebx, %ebp
 	addl	$-4, %ecx
 	shrq	%cl, %rbp
 	andq	$15, %rbp
-	movl	%ebp, 76(%rdx)
+	movl	%ebp, 68(%r9)
 	jmp 	.Lwots_sign$36
 .Lwots_sign$37:
-	shll	$8, %edi
-	movzbl	(%rax,%r8), %ebp
-	orl 	%ebp, %edi
-	incq	%r8
+	shll	$8, %ebx
+	movzbl	(%rdi,%r10), %ebp
+	orl 	%ebp, %ebx
+	incq	%r10
 	addl	$8, %ecx
 .Lwots_sign$36:
 	cmpl	$4, %ecx
 	jb  	.Lwots_sign$37
-	movl	%edi, %ebp
+	movl	%ebx, %ebp
 	addl	$-4, %ecx
 	shrq	%cl, %rbp
 	andq	$15, %rbp
-	movl	%ebp, 80(%rdx)
+	movl	%ebp, 72(%r9)
 	jmp 	.Lwots_sign$34
 .Lwots_sign$35:
-	shll	$8, %edi
-	movzbl	(%rax,%r8), %ebp
-	orl 	%ebp, %edi
-	incq	%r8
+	shll	$8, %ebx
+	movzbl	(%rdi,%r10), %ebp
+	orl 	%ebp, %ebx
+	incq	%r10
 	addl	$8, %ecx
 .Lwots_sign$34:
 	cmpl	$4, %ecx
 	jb  	.Lwots_sign$35
-	movl	%edi, %ebp
+	movl	%ebx, %ebp
 	addl	$-4, %ecx
 	shrq	%cl, %rbp
 	andq	$15, %rbp
-	movl	%ebp, 84(%rdx)
+	movl	%ebp, 76(%r9)
 	jmp 	.Lwots_sign$32
 .Lwots_sign$33:
-	shll	$8, %edi
-	movzbl	(%rax,%r8), %ebp
-	orl 	%ebp, %edi
-	incq	%r8
+	shll	$8, %ebx
+	movzbl	(%rdi,%r10), %ebp
+	orl 	%ebp, %ebx
+	incq	%r10
 	addl	$8, %ecx
 .Lwots_sign$32:
 	cmpl	$4, %ecx
 	jb  	.Lwots_sign$33
-	movl	%edi, %ebp
+	movl	%ebx, %ebp
 	addl	$-4, %ecx
 	shrq	%cl, %rbp
 	andq	$15, %rbp
-	movl	%ebp, 88(%rdx)
+	movl	%ebp, 80(%r9)
 	jmp 	.Lwots_sign$30
 .Lwots_sign$31:
-	shll	$8, %edi
-	movzbl	(%rax,%r8), %ebp
-	orl 	%ebp, %edi
-	incq	%r8
+	shll	$8, %ebx
+	movzbl	(%rdi,%r10), %ebp
+	orl 	%ebp, %ebx
+	incq	%r10
 	addl	$8, %ecx
 .Lwots_sign$30:
 	cmpl	$4, %ecx
 	jb  	.Lwots_sign$31
-	movl	%edi, %ebp
+	movl	%ebx, %ebp
 	addl	$-4, %ecx
 	shrq	%cl, %rbp
 	andq	$15, %rbp
-	movl	%ebp, 92(%rdx)
+	movl	%ebp, 84(%r9)
 	jmp 	.Lwots_sign$28
 .Lwots_sign$29:
-	shll	$8, %edi
-	movzbl	(%rax,%r8), %ebp
-	orl 	%ebp, %edi
-	incq	%r8
+	shll	$8, %ebx
+	movzbl	(%rdi,%r10), %ebp
+	orl 	%ebp, %ebx
+	incq	%r10
 	addl	$8, %ecx
 .Lwots_sign$28:
 	cmpl	$4, %ecx
 	jb  	.Lwots_sign$29
-	movl	%edi, %ebp
+	movl	%ebx, %ebp
 	addl	$-4, %ecx
 	shrq	%cl, %rbp
 	andq	$15, %rbp
-	movl	%ebp, 96(%rdx)
+	movl	%ebp, 88(%r9)
 	jmp 	.Lwots_sign$26
 .Lwots_sign$27:
-	shll	$8, %edi
-	movzbl	(%rax,%r8), %ebp
-	orl 	%ebp, %edi
-	incq	%r8
+	shll	$8, %ebx
+	movzbl	(%rdi,%r10), %ebp
+	orl 	%ebp, %ebx
+	incq	%r10
 	addl	$8, %ecx
 .Lwots_sign$26:
 	cmpl	$4, %ecx
 	jb  	.Lwots_sign$27
-	movl	%edi, %ebp
+	movl	%ebx, %ebp
 	addl	$-4, %ecx
 	shrq	%cl, %rbp
 	andq	$15, %rbp
-	movl	%ebp, 100(%rdx)
+	movl	%ebp, 92(%r9)
 	jmp 	.Lwots_sign$24
 .Lwots_sign$25:
-	shll	$8, %edi
-	movzbl	(%rax,%r8), %ebp
-	orl 	%ebp, %edi
-	incq	%r8
+	shll	$8, %ebx
+	movzbl	(%rdi,%r10), %ebp
+	orl 	%ebp, %ebx
+	incq	%r10
 	addl	$8, %ecx
 .Lwots_sign$24:
 	cmpl	$4, %ecx
 	jb  	.Lwots_sign$25
-	movl	%edi, %ebp
+	movl	%ebx, %ebp
 	addl	$-4, %ecx
 	shrq	%cl, %rbp
 	andq	$15, %rbp
-	movl	%ebp, 104(%rdx)
+	movl	%ebp, 96(%r9)
 	jmp 	.Lwots_sign$22
 .Lwots_sign$23:
-	shll	$8, %edi
-	movzbl	(%rax,%r8), %ebp
-	orl 	%ebp, %edi
-	incq	%r8
+	shll	$8, %ebx
+	movzbl	(%rdi,%r10), %ebp
+	orl 	%ebp, %ebx
+	incq	%r10
 	addl	$8, %ecx
 .Lwots_sign$22:
 	cmpl	$4, %ecx
 	jb  	.Lwots_sign$23
-	movl	%edi, %ebp
+	movl	%ebx, %ebp
 	addl	$-4, %ecx
 	shrq	%cl, %rbp
 	andq	$15, %rbp
-	movl	%ebp, 108(%rdx)
+	movl	%ebp, 100(%r9)
 	jmp 	.Lwots_sign$20
 .Lwots_sign$21:
-	shll	$8, %edi
-	movzbl	(%rax,%r8), %ebp
-	orl 	%ebp, %edi
-	incq	%r8
+	shll	$8, %ebx
+	movzbl	(%rdi,%r10), %ebp
+	orl 	%ebp, %ebx
+	incq	%r10
 	addl	$8, %ecx
 .Lwots_sign$20:
 	cmpl	$4, %ecx
 	jb  	.Lwots_sign$21
-	movl	%edi, %ebp
+	movl	%ebx, %ebp
 	addl	$-4, %ecx
 	shrq	%cl, %rbp
 	andq	$15, %rbp
-	movl	%ebp, 112(%rdx)
+	movl	%ebp, 104(%r9)
 	jmp 	.Lwots_sign$18
 .Lwots_sign$19:
-	shll	$8, %edi
-	movzbl	(%rax,%r8), %ebp
-	orl 	%ebp, %edi
-	incq	%r8
+	shll	$8, %ebx
+	movzbl	(%rdi,%r10), %ebp
+	orl 	%ebp, %ebx
+	incq	%r10
 	addl	$8, %ecx
 .Lwots_sign$18:
 	cmpl	$4, %ecx
 	jb  	.Lwots_sign$19
-	movl	%edi, %ebp
+	movl	%ebx, %ebp
 	addl	$-4, %ecx
 	shrq	%cl, %rbp
 	andq	$15, %rbp
-	movl	%ebp, 116(%rdx)
+	movl	%ebp, 108(%r9)
 	jmp 	.Lwots_sign$16
 .Lwots_sign$17:
-	shll	$8, %edi
-	movzbl	(%rax,%r8), %ebp
-	orl 	%ebp, %edi
-	incq	%r8
+	shll	$8, %ebx
+	movzbl	(%rdi,%r10), %ebp
+	orl 	%ebp, %ebx
+	incq	%r10
 	addl	$8, %ecx
 .Lwots_sign$16:
 	cmpl	$4, %ecx
 	jb  	.Lwots_sign$17
-	movl	%edi, %ebp
+	movl	%ebx, %ebp
 	addl	$-4, %ecx
 	shrq	%cl, %rbp
 	andq	$15, %rbp
-	movl	%ebp, 120(%rdx)
+	movl	%ebp, 112(%r9)
 	jmp 	.Lwots_sign$14
 .Lwots_sign$15:
-	shll	$8, %edi
-	movzbl	(%rax,%r8), %ebp
-	orl 	%ebp, %edi
-	incq	%r8
+	shll	$8, %ebx
+	movzbl	(%rdi,%r10), %ebp
+	orl 	%ebp, %ebx
+	incq	%r10
 	addl	$8, %ecx
 .Lwots_sign$14:
 	cmpl	$4, %ecx
 	jb  	.Lwots_sign$15
-	movl	%edi, %eax
+	movl	%ebx, %ebp
 	addl	$-4, %ecx
-	shrq	%cl, %rax
-	andq	$15, %rax
-	movl	%eax, 124(%rdx)
-	movq	%rsi, %rax
-	movl	$480, %ecx
-	subl	(%rax), %ecx
-	subl	4(%rax), %ecx
-	subl	8(%rax), %ecx
-	subl	12(%rax), %ecx
-	subl	16(%rax), %ecx
-	subl	20(%rax), %ecx
-	subl	24(%rax), %ecx
-	subl	28(%rax), %ecx
-	subl	32(%rax), %ecx
-	subl	36(%rax), %ecx
-	subl	40(%rax), %ecx
-	subl	44(%rax), %ecx
-	subl	48(%rax), %ecx
-	subl	52(%rax), %ecx
-	subl	56(%rax), %ecx
-	subl	60(%rax), %ecx
-	subl	64(%rax), %ecx
-	subl	68(%rax), %ecx
-	subl	72(%rax), %ecx
-	subl	76(%rax), %ecx
-	subl	80(%rax), %ecx
-	subl	84(%rax), %ecx
-	subl	88(%rax), %ecx
-	subl	92(%rax), %ecx
-	subl	96(%rax), %ecx
-	subl	100(%rax), %ecx
-	subl	104(%rax), %ecx
-	subl	108(%rax), %ecx
-	subl	112(%rax), %ecx
-	subl	116(%rax), %ecx
-	subl	120(%rax), %ecx
-	subl	124(%rax), %ecx
-	shll	$4, %ecx
-	movl	%ecx, %eax
-	shrl	$0, %eax
-	andl	$255, %eax
-	movb	%al, 225(%rsp)
-	shrl	$8, %ecx
-	andl	$255, %ecx
-	movb	%cl, 224(%rsp)
-	leaq	128(%rsi), %rdx
-	leaq	224(%rsp), %rax
-	movq	$0, %rsi
-	movl	$0, %ecx
-	movl	$0, %edi
+	shrq	%cl, %rbp
+	andq	$15, %rbp
+	movl	%ebp, 116(%r9)
 	jmp 	.Lwots_sign$12
 .Lwots_sign$13:
-	shll	$8, %edi
-	movzbl	(%rax,%rsi), %r8d
-	orl 	%r8d, %edi
-	incq	%rsi
+	shll	$8, %ebx
+	movzbl	(%rdi,%r10), %ebp
+	orl 	%ebp, %ebx
+	incq	%r10
 	addl	$8, %ecx
 .Lwots_sign$12:
 	cmpl	$4, %ecx
 	jb  	.Lwots_sign$13
-	movl	%edi, %r8d
+	movl	%ebx, %ebp
 	addl	$-4, %ecx
-	shrq	%cl, %r8
-	andq	$15, %r8
-	movl	%r8d, (%rdx)
+	shrq	%cl, %rbp
+	andq	$15, %rbp
+	movl	%ebp, 120(%r9)
 	jmp 	.Lwots_sign$10
 .Lwots_sign$11:
-	shll	$8, %edi
-	movzbl	(%rax,%rsi), %r8d
-	orl 	%r8d, %edi
-	incq	%rsi
+	shll	$8, %ebx
+	movzbl	(%rdi,%r10), %ebp
+	orl 	%ebp, %ebx
+	incq	%r10
 	addl	$8, %ecx
 .Lwots_sign$10:
 	cmpl	$4, %ecx
 	jb  	.Lwots_sign$11
-	movl	%edi, %r8d
+	movl	%ebx, %r10d
 	addl	$-4, %ecx
-	shrq	%cl, %r8
-	andq	$15, %r8
-	movl	%r8d, 4(%rdx)
+	shrq	%cl, %r10
+	andq	$15, %r10
+	movl	%r10d, 124(%r9)
+	movq	%r8, %rcx
+	movl	$480, %edi
+	subl	(%rcx), %edi
+	subl	4(%rcx), %edi
+	subl	8(%rcx), %edi
+	subl	12(%rcx), %edi
+	subl	16(%rcx), %edi
+	subl	20(%rcx), %edi
+	subl	24(%rcx), %edi
+	subl	28(%rcx), %edi
+	subl	32(%rcx), %edi
+	subl	36(%rcx), %edi
+	subl	40(%rcx), %edi
+	subl	44(%rcx), %edi
+	subl	48(%rcx), %edi
+	subl	52(%rcx), %edi
+	subl	56(%rcx), %edi
+	subl	60(%rcx), %edi
+	subl	64(%rcx), %edi
+	subl	68(%rcx), %edi
+	subl	72(%rcx), %edi
+	subl	76(%rcx), %edi
+	subl	80(%rcx), %edi
+	subl	84(%rcx), %edi
+	subl	88(%rcx), %edi
+	subl	92(%rcx), %edi
+	subl	96(%rcx), %edi
+	subl	100(%rcx), %edi
+	subl	104(%rcx), %edi
+	subl	108(%rcx), %edi
+	subl	112(%rcx), %edi
+	subl	116(%rcx), %edi
+	subl	120(%rcx), %edi
+	subl	124(%rcx), %edi
+	shll	$4, %edi
+	movl	%edi, %ecx
+	shrl	$0, %ecx
+	andl	$255, %ecx
+	movb	%cl, 337(%rsp)
+	shrl	$8, %edi
+	andl	$255, %edi
+	movb	%dil, 336(%rsp)
+	leaq	128(%r8), %r8
+	leaq	336(%rsp), %rdi
+	movq	$0, %r9
+	movl	$0, %ecx
+	movl	$0, %r10d
 	jmp 	.Lwots_sign$8
 .Lwots_sign$9:
-	shll	$8, %edi
-	movzbl	(%rax,%rsi), %r8d
-	orl 	%r8d, %edi
-	incq	%rsi
+	shll	$8, %r10d
+	movzbl	(%rdi,%r9), %ebx
+	orl 	%ebx, %r10d
+	incq	%r9
 	addl	$8, %ecx
 .Lwots_sign$8:
 	cmpl	$4, %ecx
 	jb  	.Lwots_sign$9
-	movl	%edi, %eax
+	movl	%r10d, %ebx
 	addl	$-4, %ecx
-	shrq	%cl, %rax
-	andq	$15, %rax
-	movl	%eax, 8(%rdx)
-	leaq	48(%rsp), %rax
-	movq	(%r9), %rdx
-	movq	%rdx, (%rax)
-	movq	8(%r9), %rdx
-	movq	%rdx, 8(%rax)
-	movq	16(%r9), %rdx
-	movq	%rdx, 16(%rax)
-	movq	24(%r9), %rdx
-	movq	%rdx, 24(%rax)
-	leaq	48(%rsp), %rcx
+	shrq	%cl, %rbx
+	andq	$15, %rbx
+	movl	%ebx, (%r8)
+	jmp 	.Lwots_sign$6
+.Lwots_sign$7:
+	shll	$8, %r10d
+	movzbl	(%rdi,%r9), %ebx
+	orl 	%ebx, %r10d
+	incq	%r9
+	addl	$8, %ecx
+.Lwots_sign$6:
+	cmpl	$4, %ecx
+	jb  	.Lwots_sign$7
+	movl	%r10d, %ebx
+	addl	$-4, %ecx
+	shrq	%cl, %rbx
+	andq	$15, %rbx
+	movl	%ebx, 4(%r8)
+	jmp 	.Lwots_sign$4
+.Lwots_sign$5:
+	shll	$8, %r10d
+	movzbl	(%rdi,%r9), %ebx
+	orl 	%ebx, %r10d
+	incq	%r9
+	addl	$8, %ecx
+.Lwots_sign$4:
+	cmpl	$4, %ecx
+	jb  	.Lwots_sign$5
+	movl	%r10d, %r9d
+	addl	$-4, %ecx
+	shrq	%cl, %r9
+	andq	$15, %r9
+	movl	%r9d, 8(%r8)
+	leaq	24(%rsp), %rcx
+	movq	(%r11), %r8
+	movq	%r8, (%rcx)
+	movq	8(%r11), %r8
+	movq	%r8, 8(%rcx)
+	movq	16(%r11), %r8
+	movq	%r8, 16(%rcx)
+	movq	24(%r11), %r8
+	movq	%r8, 24(%rcx)
+	leaq	24(%rsp), %rcx
 	movq	$0, 16(%rcx)
 	movq	$0, 24(%rcx)
 	movl	$5, 16(%rcx)
-	movl	20(%r9), %edx
-	leaq	48(%rsp), %rcx
-	movl	%edx, 20(%rcx)
-	movq	%r9, 8(%rsp)
-	movq	$0, %rdx
-	movl	$0, %ecx
-	jmp 	.Lwots_sign$5
-.Lwots_sign$6:
-	movq	%r11, 16(%rsp)
-	movq	%r10, 24(%rsp)
-	movl	%ecx, 80(%rsp)
-	movq	%rdx, 32(%rsp)
-	movl	%ecx, %eax
-	leaq	48(%rsp), %rcx
-	movl	%eax, 24(%rcx)
-	leaq	(%rbx,%rdx), %rcx
-	movq	%rbx, 40(%rsp)
-	leaq	48(%rsp), %r9
-	movq	%r10, %r8
-	leaq	-40(%rsp), %rsp
-	call	.LPRF$1
-.Lwots_sign$7:
-	leaq	40(%rsp), %rsp
-	movq	40(%rsp), %rbx
-	lfence
-	movq	$0, %rax
-	movq	16(%rsp), %r11
-	movq	24(%rsp), %r10
-	movl	80(%rsp), %ecx
-	movq	32(%rsp), %rdx
-	lfence
-	movq	$0, %rax
-	incl	%ecx
-	addq	$16, %rdx
-.Lwots_sign$5:
-	cmpl	$35, %ecx
-	jb  	.Lwots_sign$6
-	movq	8(%rsp), %r9
-	lfence
-	movq	$0, %rax
-	movq	$0, %rsi
-	movl	$0, %edx
-	jmp 	.Lwots_sign$2
+	movl	20(%r11), %ecx
+	leaq	24(%rsp), %rdi
+	movl	%ecx, 20(%rdi)
+	movq	%r11, 8(%rsp)
+	movq	%rsi, 16(%rsp)
+	leaq	24(%rsp), %rcx
+	movq	%rdx, %r8
+	movq	%rax, %rdx
+	movq	%rcx, %rdi
+	leaq	-760(%rsp), %rsp
+	call	.Lwots_sk_x4$1
 .Lwots_sign$3:
-	movq	%r10, 8(%rsp)
-	movl	%edx, 80(%rsp)
-	movq	%rsi, 32(%rsp)
-	movl	%edx, %eax
-	movl	%eax, 24(%r9)
-	movl	$0, %ecx
-	movl	%edx, %eax
-	movl	84(%rsp,%rax,4), %eax
+	leaq	760(%rsp), %rsp
+	movq	8(%rsp), %rax
+	movq	16(%rsp), %rsi
 	lfence
 	movq	$0, %rdx
-	leaq	(%rbx,%rsi), %rdi
-	movq	%rbx, 24(%rsp)
-	movl	%eax, %edx
-	movq	%r10, %r8
-	leaq	-8(%rsp), %rsp
-	call	.Lchain$1
-.Lwots_sign$4:
-	leaq	8(%rsp), %rsp
-	movq	24(%rsp), %rbx
-	lfence
-	movq	$0, %rax
-	movq	8(%rsp), %r10
-	movl	80(%rsp), %edx
-	movq	32(%rsp), %rsi
-	lfence
-	movq	$0, %rax
-	incl	%edx
-	addq	$16, %rsi
+	movl	$0, %edx
+	movl	%edx, 196(%rsp)
+	movl	%edx, 200(%rsp)
+	movl	%edx, 204(%rsp)
+	movl	%edx, 208(%rsp)
+	movl	%edx, 212(%rsp)
+	movl	%edx, 216(%rsp)
+	movl	%edx, 220(%rsp)
+	movl	%edx, 224(%rsp)
+	movl	%edx, 228(%rsp)
+	movl	%edx, 232(%rsp)
+	movl	%edx, 236(%rsp)
+	movl	%edx, 240(%rsp)
+	movl	%edx, 244(%rsp)
+	movl	%edx, 248(%rsp)
+	movl	%edx, 252(%rsp)
+	movl	%edx, 256(%rsp)
+	movl	%edx, 260(%rsp)
+	movl	%edx, 264(%rsp)
+	movl	%edx, 268(%rsp)
+	movl	%edx, 272(%rsp)
+	movl	%edx, 276(%rsp)
+	movl	%edx, 280(%rsp)
+	movl	%edx, 284(%rsp)
+	movl	%edx, 288(%rsp)
+	movl	%edx, 292(%rsp)
+	movl	%edx, 296(%rsp)
+	movl	%edx, 300(%rsp)
+	movl	%edx, 304(%rsp)
+	movl	%edx, 308(%rsp)
+	movl	%edx, 312(%rsp)
+	movl	%edx, 316(%rsp)
+	movl	%edx, 320(%rsp)
+	movl	%edx, 324(%rsp)
+	movl	%edx, 328(%rsp)
+	movl	%edx, 332(%rsp)
+	movq	%rax, 16(%rsp)
+	leaq	196(%rsp), %rdx
+	leaq	56(%rsp), %rdi
+	movq	%rax, %r11
+	leaq	-1048(%rsp), %rsp
+	call	.Lwots_chains_x4$1
 .Lwots_sign$2:
-	cmpl	$35, %edx
-	jb  	.Lwots_sign$3
+	leaq	1048(%rsp), %rsp
+	movq	16(%rsp), %rax
+	lfence
+	movq	$0, %rdx
 	ret
 .Lwots_pkgen$1:
 	movq	%rdi, 592(%rsp)
-	leaq	632(%rsp), %rcx
-	movq	(%r9), %rdx
-	movq	%rdx, (%rcx)
-	movq	8(%r9), %rdx
-	movq	%rdx, 8(%rcx)
-	movq	16(%r9), %rdx
-	movq	%rdx, 16(%rcx)
-	movq	24(%r9), %rdx
-	movq	%rdx, 24(%rcx)
-	leaq	632(%rsp), %rcx
+	leaq	616(%rsp), %rcx
+	movq	(%r11), %r8
+	movq	%r8, (%rcx)
+	movq	8(%r11), %r8
+	movq	%r8, 8(%rcx)
+	movq	16(%r11), %r8
+	movq	%r8, 16(%rcx)
+	movq	24(%r11), %r8
+	movq	%r8, 24(%rcx)
+	leaq	616(%rsp), %rcx
 	movq	$0, 16(%rcx)
 	movq	$0, 24(%rcx)
 	movl	$5, 16(%rcx)
-	movl	20(%r9), %edx
-	leaq	632(%rsp), %rcx
-	movl	%edx, 20(%rcx)
+	movl	20(%r11), %ecx
+	leaq	616(%rsp), %rdi
+	movl	%ecx, 20(%rdi)
+	movq	%r11, 600(%rsp)
+	movq	%rsi, 608(%rsp)
+	leaq	32(%rsp), %rcx
+	leaq	616(%rsp), %rdi
+	movq	%rcx, %r8
+	leaq	-760(%rsp), %rsp
+	call	.Lwots_sk_x4$1
+.Lwots_pkgen$4:
+	leaq	760(%rsp), %rsp
+	movq	600(%rsp), %r11
+	movq	608(%rsp), %rsi
+	lfence
+	movq	$0, %rcx
+	movl	$0, %edx
+	movl	%edx, 648(%rsp)
+	movl	%edx, 652(%rsp)
+	movl	%edx, 656(%rsp)
+	movl	%edx, 660(%rsp)
 	movl	%edx, 664(%rsp)
-	movq	%r9, 600(%rsp)
-	movq	$0, %rdx
-	movl	$0, %ecx
-	jmp 	.Lwots_pkgen$6
-.Lwots_pkgen$7:
+	movl	%edx, 668(%rsp)
+	movl	%edx, 672(%rsp)
+	movl	%edx, 676(%rsp)
+	movl	%edx, 680(%rsp)
+	movl	%edx, 684(%rsp)
+	movl	%edx, 688(%rsp)
+	movl	%edx, 692(%rsp)
+	movl	%edx, 696(%rsp)
+	movl	%edx, 700(%rsp)
+	movl	%edx, 704(%rsp)
+	movl	%edx, 708(%rsp)
+	movl	%edx, 712(%rsp)
+	movl	%edx, 716(%rsp)
+	movl	%edx, 720(%rsp)
+	movl	%edx, 724(%rsp)
+	movl	%edx, 728(%rsp)
+	movl	%edx, 732(%rsp)
+	movl	%edx, 736(%rsp)
+	movl	%edx, 740(%rsp)
+	movl	%edx, 744(%rsp)
+	movl	%edx, 748(%rsp)
+	movl	%edx, 752(%rsp)
+	movl	%edx, 756(%rsp)
+	movl	%edx, 760(%rsp)
+	movl	%edx, 764(%rsp)
+	movl	%edx, 768(%rsp)
+	movl	%edx, 772(%rsp)
+	movl	%edx, 776(%rsp)
+	movl	%edx, 780(%rsp)
+	movl	%edx, 784(%rsp)
+	movl	$15, %edx
+	movl	%edx, 788(%rsp)
+	movl	%edx, 792(%rsp)
+	movl	%edx, 796(%rsp)
+	movl	%edx, 800(%rsp)
+	movl	%edx, 804(%rsp)
+	movl	%edx, 808(%rsp)
+	movl	%edx, 812(%rsp)
+	movl	%edx, 816(%rsp)
+	movl	%edx, 820(%rsp)
+	movl	%edx, 824(%rsp)
+	movl	%edx, 828(%rsp)
+	movl	%edx, 832(%rsp)
+	movl	%edx, 836(%rsp)
+	movl	%edx, 840(%rsp)
+	movl	%edx, 844(%rsp)
+	movl	%edx, 848(%rsp)
+	movl	%edx, 852(%rsp)
+	movl	%edx, 856(%rsp)
+	movl	%edx, 860(%rsp)
+	movl	%edx, 864(%rsp)
+	movl	%edx, 868(%rsp)
+	movl	%edx, 872(%rsp)
+	movl	%edx, 876(%rsp)
+	movl	%edx, 880(%rsp)
+	movl	%edx, 884(%rsp)
+	movl	%edx, 888(%rsp)
+	movl	%edx, 892(%rsp)
+	movl	%edx, 896(%rsp)
+	movl	%edx, 900(%rsp)
+	movl	%edx, 904(%rsp)
+	movl	%edx, 908(%rsp)
+	movl	%edx, 912(%rsp)
+	movl	%edx, 916(%rsp)
+	movl	%edx, 920(%rsp)
+	movl	%edx, 924(%rsp)
 	movq	%r11, 608(%rsp)
-	movq	%r8, 616(%rsp)
-	movl	%ecx, 668(%rsp)
-	movq	%rdx, 624(%rsp)
-	leaq	632(%rsp), %r9
-	movl	%ecx, 24(%r9)
-	leaq	32(%rsp,%rdx), %rcx
-	leaq	632(%rsp), %r9
-	leaq	-40(%rsp), %rsp
-	call	.LPRF$1
-.Lwots_pkgen$8:
-	leaq	40(%rsp), %rsp
-	movq	608(%rsp), %r11
-	movq	616(%rsp), %r8
-	movl	668(%rsp), %ecx
-	movq	624(%rsp), %rdx
+	movq	%rsi, 600(%rsp)
+	leaq	32(%rsp), %rcx
+	leaq	648(%rsp), %rdx
+	leaq	788(%rsp), %rdi
+	leaq	-1048(%rsp), %rsp
+	call	.Lwots_chains_x4$1
+.Lwots_pkgen$3:
+	leaq	1048(%rsp), %rsp
+	movq	608(%rsp), %rcx
+	movq	600(%rsp), %rsi
+	lfence
+	movq	$0, %r9
+	leaq	616(%rsp), %rdi
+	movq	$0, 16(%rdi)
+	movq	$0, 24(%rdi)
+	movl	$1, 16(%rdi)
+	movl	20(%rcx), %edx
+	leaq	616(%rsp), %rdi
+	movl	%edx, 20(%rdi)
+	movq	592(%rsp), %rdx
 	lfence
 	movq	$0, %rdi
-	incl	%ecx
-	addq	$16, %rdx
-.Lwots_pkgen$6:
-	cmpl	$35, %ecx
-	jb  	.Lwots_pkgen$7
-	movq	600(%rsp), %r9
-	lfence
-	movq	$0, %rcx
-	movq	$0, %rsi
-	movl	$0, %ecx
-	jmp 	.Lwots_pkgen$3
-.Lwots_pkgen$4:
-	movq	%r8, 600(%rsp)
-	movl	%ecx, 668(%rsp)
-	movq	%rsi, 624(%rsp)
-	movl	%ecx, 24(%r9)
-	movl	$0, %ecx
-	movl	$15, %edx
-	leaq	32(%rsp,%rsi), %rdi
-	leaq	-8(%rsp), %rsp
-	call	.Lchain$1
-.Lwots_pkgen$5:
-	leaq	8(%rsp), %rsp
-	movq	600(%rsp), %r8
-	movl	668(%rsp), %ecx
-	movq	624(%rsp), %rsi
-	lfence
-	movq	$0, %rdx
-	incl	%ecx
-	addq	$16, %rsi
-.Lwots_pkgen$3:
-	cmpl	$35, %ecx
-	jb  	.Lwots_pkgen$4
-	leaq	632(%rsp), %rcx
-	movq	$0, 16(%rcx)
-	movq	$0, 24(%rcx)
-	movl	$1, 16(%rcx)
-	movl	664(%rsp), %edx
-	lfence
-	movq	$0, %rcx
-	leaq	632(%rsp), %rcx
-	movl	%edx, 20(%rcx)
-	movq	592(%rsp), %rcx
-	lfence
-	movq	$0, %rdx
-	movq	%r9, 592(%rsp)
-	leaq	632(%rsp), %r9
-	leaq	32(%rsp), %rdx
-	movq	%rcx, %rdi
-	movq	%rdx, %rcx
+	movq	%rcx, 592(%rsp)
+	leaq	616(%rsp), %r11
+	leaq	32(%rsp), %rcx
 	leaq	-40(%rsp), %rsp
 	call	.LT_len$1
 .Lwots_pkgen$2:
@@ -4496,29 +4783,867 @@ slh_dsa_shake128s_keygen:
 	lfence
 	movq	$0, %rdx
 	ret
-.Lchain$1:
-	movl	%ecx, %esi
-	addl	%edx, %esi
-	jmp 	.Lchain$2
-.Lchain$3:
-	movl	%ecx, 28(%r9)
-	movq	%r8, %mm0
-	movq	%r9, %mm1
-	movd	%ecx, %mm2
-	movd	%esi, %mm3
-	leaq	-40(%rsp), %rsp
-	call	.LF$1
-.Lchain$4:
-	leaq	40(%rsp), %rsp
+.Lwots_sk_x4$1:
+	movq	%r8, 8(%rsp)
+	leaq	32(%rsp), %rcx
+	movq	(%rsi), %r8
+	movq	%r8, (%rcx)
+	movq	8(%rsi), %r8
+	movq	%r8, 8(%rcx)
+	leaq	48(%rsp), %rcx
+	movq	(%rdi), %r8
+	movq	%r8, (%rcx)
+	movq	8(%rdi), %r8
+	movq	%r8, 8(%rcx)
+	movq	16(%rdi), %r8
+	movq	%r8, 16(%rcx)
+	movq	24(%rdi), %r8
+	movq	%r8, 24(%rcx)
+	leaq	80(%rsp), %rcx
+	movq	(%rdx), %r8
+	movq	%r8, (%rcx)
+	movq	8(%rdx), %r8
+	movq	%r8, 8(%rcx)
+	leaq	96(%rsp), %rcx
+	movq	(%rdx), %r8
+	movq	%r8, (%rcx)
+	movq	8(%rdx), %r8
+	movq	%r8, 8(%rcx)
+	leaq	112(%rsp), %rcx
+	movq	(%rdx), %r8
+	movq	%r8, (%rcx)
+	movq	8(%rdx), %r8
+	movq	%r8, 8(%rcx)
+	leaq	128(%rsp), %rcx
+	movq	(%rdx), %r8
+	movq	%r8, (%rcx)
+	movq	8(%rdx), %rdx
+	movq	%rdx, 8(%rcx)
+	movq	$0, %rsi
+	jmp 	.Lwots_sk_x4$2
+.Lwots_sk_x4$3:
+	movl	$0, %ecx
+	movl	%esi, %edx
+	shll	$2, %edx
+	movl	%edx, 720(%rsp)
+	movl	%ecx, 724(%rsp)
+	incl	%edx
+	movl	%edx, 728(%rsp)
+	movl	%ecx, 732(%rsp)
+	incl	%edx
+	movl	%edx, 736(%rsp)
+	movl	%ecx, 740(%rsp)
+	incl	%edx
+	movl	%edx, 744(%rsp)
+	movl	%ecx, 748(%rsp)
+	movq	%rsi, %rdi
+	imulq	$64, %rdi, %rdi
+	movq	%rsi, 16(%rsp)
+	movq	%rdi, 24(%rsp)
+	leaq	144(%rsp,%rdi), %rdx
+	leaq	80(%rsp), %rsi
+	leaq	32(%rsp), %r9
+	leaq	48(%rsp), %rdi
+	leaq	720(%rsp), %rcx
+	leaq	-824(%rsp), %rsp
+	call	.Lthash_x4_n__thash_x4$1
+.Lwots_sk_x4$4:
+	leaq	824(%rsp), %rsp
+	movq	16(%rsp), %rsi
+	lfence
+	movq	$0, %rcx
+	incq	%rsi
+.Lwots_sk_x4$2:
+	cmpq	$9, %rsi
+	jb  	.Lwots_sk_x4$3
+	movq	8(%rsp), %rcx
+	lfence
+	movq	$0, %rdx
+	movq	144(%rsp), %rdx
+	movq	%rdx, (%rcx)
+	movq	152(%rsp), %rdx
+	movq	%rdx, 8(%rcx)
+	movq	160(%rsp), %rdx
+	movq	%rdx, 16(%rcx)
+	movq	168(%rsp), %rdx
+	movq	%rdx, 24(%rcx)
+	movq	176(%rsp), %rdx
+	movq	%rdx, 32(%rcx)
+	movq	184(%rsp), %rdx
+	movq	%rdx, 40(%rcx)
+	movq	192(%rsp), %rdx
+	movq	%rdx, 48(%rcx)
+	movq	200(%rsp), %rdx
+	movq	%rdx, 56(%rcx)
+	movq	208(%rsp), %rdx
+	movq	%rdx, 64(%rcx)
+	movq	216(%rsp), %rdx
+	movq	%rdx, 72(%rcx)
+	movq	224(%rsp), %rdx
+	movq	%rdx, 80(%rcx)
+	movq	232(%rsp), %rdx
+	movq	%rdx, 88(%rcx)
+	movq	240(%rsp), %rdx
+	movq	%rdx, 96(%rcx)
+	movq	248(%rsp), %rdx
+	movq	%rdx, 104(%rcx)
+	movq	256(%rsp), %rdx
+	movq	%rdx, 112(%rcx)
+	movq	264(%rsp), %rdx
+	movq	%rdx, 120(%rcx)
+	movq	272(%rsp), %rdx
+	movq	%rdx, 128(%rcx)
+	movq	280(%rsp), %rdx
+	movq	%rdx, 136(%rcx)
+	movq	288(%rsp), %rdx
+	movq	%rdx, 144(%rcx)
+	movq	296(%rsp), %rdx
+	movq	%rdx, 152(%rcx)
+	movq	304(%rsp), %rdx
+	movq	%rdx, 160(%rcx)
+	movq	312(%rsp), %rdx
+	movq	%rdx, 168(%rcx)
+	movq	320(%rsp), %rdx
+	movq	%rdx, 176(%rcx)
+	movq	328(%rsp), %rdx
+	movq	%rdx, 184(%rcx)
+	movq	336(%rsp), %rdx
+	movq	%rdx, 192(%rcx)
+	movq	344(%rsp), %rdx
+	movq	%rdx, 200(%rcx)
+	movq	352(%rsp), %rdx
+	movq	%rdx, 208(%rcx)
+	movq	360(%rsp), %rdx
+	movq	%rdx, 216(%rcx)
+	movq	368(%rsp), %rdx
+	movq	%rdx, 224(%rcx)
+	movq	376(%rsp), %rdx
+	movq	%rdx, 232(%rcx)
+	movq	384(%rsp), %rdx
+	movq	%rdx, 240(%rcx)
+	movq	392(%rsp), %rdx
+	movq	%rdx, 248(%rcx)
+	movq	400(%rsp), %rdx
+	movq	%rdx, 256(%rcx)
+	movq	408(%rsp), %rdx
+	movq	%rdx, 264(%rcx)
+	movq	416(%rsp), %rdx
+	movq	%rdx, 272(%rcx)
+	movq	424(%rsp), %rdx
+	movq	%rdx, 280(%rcx)
+	movq	432(%rsp), %rdx
+	movq	%rdx, 288(%rcx)
+	movq	440(%rsp), %rdx
+	movq	%rdx, 296(%rcx)
+	movq	448(%rsp), %rdx
+	movq	%rdx, 304(%rcx)
+	movq	456(%rsp), %rdx
+	movq	%rdx, 312(%rcx)
+	movq	464(%rsp), %rdx
+	movq	%rdx, 320(%rcx)
+	movq	472(%rsp), %rdx
+	movq	%rdx, 328(%rcx)
+	movq	480(%rsp), %rdx
+	movq	%rdx, 336(%rcx)
+	movq	488(%rsp), %rdx
+	movq	%rdx, 344(%rcx)
+	movq	496(%rsp), %rdx
+	movq	%rdx, 352(%rcx)
+	movq	504(%rsp), %rdx
+	movq	%rdx, 360(%rcx)
+	movq	512(%rsp), %rdx
+	movq	%rdx, 368(%rcx)
+	movq	520(%rsp), %rdx
+	movq	%rdx, 376(%rcx)
+	movq	528(%rsp), %rdx
+	movq	%rdx, 384(%rcx)
+	movq	536(%rsp), %rdx
+	movq	%rdx, 392(%rcx)
+	movq	544(%rsp), %rdx
+	movq	%rdx, 400(%rcx)
+	movq	552(%rsp), %rdx
+	movq	%rdx, 408(%rcx)
+	movq	560(%rsp), %rdx
+	movq	%rdx, 416(%rcx)
+	movq	568(%rsp), %rdx
+	movq	%rdx, 424(%rcx)
+	movq	576(%rsp), %rdx
+	movq	%rdx, 432(%rcx)
+	movq	584(%rsp), %rdx
+	movq	%rdx, 440(%rcx)
+	movq	592(%rsp), %rdx
+	movq	%rdx, 448(%rcx)
+	movq	600(%rsp), %rdx
+	movq	%rdx, 456(%rcx)
+	movq	608(%rsp), %rdx
+	movq	%rdx, 464(%rcx)
+	movq	616(%rsp), %rdx
+	movq	%rdx, 472(%rcx)
+	movq	624(%rsp), %rdx
+	movq	%rdx, 480(%rcx)
+	movq	632(%rsp), %rdx
+	movq	%rdx, 488(%rcx)
+	movq	640(%rsp), %rdx
+	movq	%rdx, 496(%rcx)
+	movq	648(%rsp), %rdx
+	movq	%rdx, 504(%rcx)
+	movq	656(%rsp), %rdx
+	movq	%rdx, 512(%rcx)
+	movq	664(%rsp), %rdx
+	movq	%rdx, 520(%rcx)
+	movq	672(%rsp), %rdx
+	movq	%rdx, 528(%rcx)
+	movq	680(%rsp), %rdx
+	movq	%rdx, 536(%rcx)
+	movq	688(%rsp), %rdx
+	movq	%rdx, 544(%rcx)
+	movq	696(%rsp), %rdx
+	movq	%rdx, 552(%rcx)
+	ret
+.Lwots_chains_x4$1:
+	movq	%rcx, 8(%rsp)
+	leaq	32(%rsp), %rcx
+	movq	(%rsi), %r8
+	movq	%r8, (%rcx)
+	movq	8(%rsi), %r8
+	movq	%r8, 8(%rcx)
+	leaq	48(%rsp), %rcx
+	movq	(%r11), %r8
+	movq	%r8, (%rcx)
+	movq	8(%r11), %r8
+	movq	%r8, 8(%rcx)
+	movq	16(%r11), %r8
+	movq	%r8, 16(%rcx)
+	movq	24(%r11), %r8
+	movq	%r8, 24(%rcx)
+	movl	$0, %ecx
+	movl	(%rdx), %r8d
+	movl	%r8d, 904(%rsp)
+	movl	(%rdi), %esi
+	subl	%r8d, %esi
+	movl	%esi, 760(%rsp)
+	movl	4(%rdx), %r8d
+	movl	%r8d, 908(%rsp)
+	movl	4(%rdi), %esi
+	subl	%r8d, %esi
+	movl	%esi, 764(%rsp)
+	movl	8(%rdx), %r8d
+	movl	%r8d, 912(%rsp)
+	movl	8(%rdi), %esi
+	subl	%r8d, %esi
+	movl	%esi, 768(%rsp)
+	movl	12(%rdx), %r8d
+	movl	%r8d, 916(%rsp)
+	movl	12(%rdi), %esi
+	subl	%r8d, %esi
+	movl	%esi, 772(%rsp)
+	movl	16(%rdx), %r8d
+	movl	%r8d, 920(%rsp)
+	movl	16(%rdi), %esi
+	subl	%r8d, %esi
+	movl	%esi, 776(%rsp)
+	movl	20(%rdx), %r8d
+	movl	%r8d, 924(%rsp)
+	movl	20(%rdi), %esi
+	subl	%r8d, %esi
+	movl	%esi, 780(%rsp)
+	movl	24(%rdx), %r8d
+	movl	%r8d, 928(%rsp)
+	movl	24(%rdi), %esi
+	subl	%r8d, %esi
+	movl	%esi, 784(%rsp)
+	movl	28(%rdx), %r8d
+	movl	%r8d, 932(%rsp)
+	movl	28(%rdi), %esi
+	subl	%r8d, %esi
+	movl	%esi, 788(%rsp)
+	movl	32(%rdx), %r8d
+	movl	%r8d, 936(%rsp)
+	movl	32(%rdi), %esi
+	subl	%r8d, %esi
+	movl	%esi, 792(%rsp)
+	movl	36(%rdx), %r8d
+	movl	%r8d, 940(%rsp)
+	movl	36(%rdi), %esi
+	subl	%r8d, %esi
+	movl	%esi, 796(%rsp)
+	movl	40(%rdx), %r8d
+	movl	%r8d, 944(%rsp)
+	movl	40(%rdi), %esi
+	subl	%r8d, %esi
+	movl	%esi, 800(%rsp)
+	movl	44(%rdx), %r8d
+	movl	%r8d, 948(%rsp)
+	movl	44(%rdi), %esi
+	subl	%r8d, %esi
+	movl	%esi, 804(%rsp)
+	movl	48(%rdx), %r8d
+	movl	%r8d, 952(%rsp)
+	movl	48(%rdi), %esi
+	subl	%r8d, %esi
+	movl	%esi, 808(%rsp)
+	movl	52(%rdx), %r8d
+	movl	%r8d, 956(%rsp)
+	movl	52(%rdi), %esi
+	subl	%r8d, %esi
+	movl	%esi, 812(%rsp)
+	movl	56(%rdx), %r8d
+	movl	%r8d, 960(%rsp)
+	movl	56(%rdi), %esi
+	subl	%r8d, %esi
+	movl	%esi, 816(%rsp)
+	movl	60(%rdx), %r8d
+	movl	%r8d, 964(%rsp)
+	movl	60(%rdi), %esi
+	subl	%r8d, %esi
+	movl	%esi, 820(%rsp)
+	movl	64(%rdx), %r8d
+	movl	%r8d, 968(%rsp)
+	movl	64(%rdi), %esi
+	subl	%r8d, %esi
+	movl	%esi, 824(%rsp)
+	movl	68(%rdx), %r8d
+	movl	%r8d, 972(%rsp)
+	movl	68(%rdi), %esi
+	subl	%r8d, %esi
+	movl	%esi, 828(%rsp)
+	movl	72(%rdx), %r8d
+	movl	%r8d, 976(%rsp)
+	movl	72(%rdi), %esi
+	subl	%r8d, %esi
+	movl	%esi, 832(%rsp)
+	movl	76(%rdx), %r8d
+	movl	%r8d, 980(%rsp)
+	movl	76(%rdi), %esi
+	subl	%r8d, %esi
+	movl	%esi, 836(%rsp)
+	movl	80(%rdx), %r8d
+	movl	%r8d, 984(%rsp)
+	movl	80(%rdi), %esi
+	subl	%r8d, %esi
+	movl	%esi, 840(%rsp)
+	movl	84(%rdx), %r8d
+	movl	%r8d, 988(%rsp)
+	movl	84(%rdi), %esi
+	subl	%r8d, %esi
+	movl	%esi, 844(%rsp)
+	movl	88(%rdx), %r8d
+	movl	%r8d, 992(%rsp)
+	movl	88(%rdi), %esi
+	subl	%r8d, %esi
+	movl	%esi, 848(%rsp)
+	movl	92(%rdx), %r8d
+	movl	%r8d, 996(%rsp)
+	movl	92(%rdi), %esi
+	subl	%r8d, %esi
+	movl	%esi, 852(%rsp)
+	movl	96(%rdx), %r8d
+	movl	%r8d, 1000(%rsp)
+	movl	96(%rdi), %esi
+	subl	%r8d, %esi
+	movl	%esi, 856(%rsp)
+	movl	100(%rdx), %r8d
+	movl	%r8d, 1004(%rsp)
+	movl	100(%rdi), %esi
+	subl	%r8d, %esi
+	movl	%esi, 860(%rsp)
+	movl	104(%rdx), %r8d
+	movl	%r8d, 1008(%rsp)
+	movl	104(%rdi), %esi
+	subl	%r8d, %esi
+	movl	%esi, 864(%rsp)
+	movl	108(%rdx), %r8d
+	movl	%r8d, 1012(%rsp)
+	movl	108(%rdi), %esi
+	subl	%r8d, %esi
+	movl	%esi, 868(%rsp)
+	movl	112(%rdx), %r8d
+	movl	%r8d, 1016(%rsp)
+	movl	112(%rdi), %esi
+	subl	%r8d, %esi
+	movl	%esi, 872(%rsp)
+	movl	116(%rdx), %r8d
+	movl	%r8d, 1020(%rsp)
+	movl	116(%rdi), %esi
+	subl	%r8d, %esi
+	movl	%esi, 876(%rsp)
+	movl	120(%rdx), %r8d
+	movl	%r8d, 1024(%rsp)
+	movl	120(%rdi), %esi
+	subl	%r8d, %esi
+	movl	%esi, 880(%rsp)
+	movl	124(%rdx), %r8d
+	movl	%r8d, 1028(%rsp)
+	movl	124(%rdi), %esi
+	subl	%r8d, %esi
+	movl	%esi, 884(%rsp)
+	movl	128(%rdx), %r8d
+	movl	%r8d, 1032(%rsp)
+	movl	128(%rdi), %esi
+	subl	%r8d, %esi
+	movl	%esi, 888(%rsp)
+	movl	132(%rdx), %r8d
+	movl	%r8d, 1036(%rsp)
+	movl	132(%rdi), %esi
+	subl	%r8d, %esi
+	movl	%esi, 892(%rsp)
+	movl	136(%rdx), %r8d
+	movl	%r8d, 1040(%rsp)
+	movl	136(%rdi), %esi
+	subl	%r8d, %esi
+	movl	%esi, 896(%rsp)
+	movl	%ecx, 1044(%rsp)
+	movl	%ecx, 900(%rsp)
+	movq	8(%rsp), %rcx
+	movq	(%rcx), %rdx
+	movq	%rdx, 144(%rsp)
+	movq	8(%rcx), %rdx
+	movq	%rdx, 152(%rsp)
+	movq	16(%rcx), %rdx
+	movq	%rdx, 160(%rsp)
+	movq	24(%rcx), %rdx
+	movq	%rdx, 168(%rsp)
+	movq	32(%rcx), %rdx
+	movq	%rdx, 176(%rsp)
+	movq	40(%rcx), %rdx
+	movq	%rdx, 184(%rsp)
+	movq	48(%rcx), %rdx
+	movq	%rdx, 192(%rsp)
+	movq	56(%rcx), %rdx
+	movq	%rdx, 200(%rsp)
+	movq	64(%rcx), %rdx
+	movq	%rdx, 208(%rsp)
+	movq	72(%rcx), %rdx
+	movq	%rdx, 216(%rsp)
+	movq	80(%rcx), %rdx
+	movq	%rdx, 224(%rsp)
+	movq	88(%rcx), %rdx
+	movq	%rdx, 232(%rsp)
+	movq	96(%rcx), %rdx
+	movq	%rdx, 240(%rsp)
+	movq	104(%rcx), %rdx
+	movq	%rdx, 248(%rsp)
+	movq	112(%rcx), %rdx
+	movq	%rdx, 256(%rsp)
+	movq	120(%rcx), %rdx
+	movq	%rdx, 264(%rsp)
+	movq	128(%rcx), %rdx
+	movq	%rdx, 272(%rsp)
+	movq	136(%rcx), %rdx
+	movq	%rdx, 280(%rsp)
+	movq	144(%rcx), %rdx
+	movq	%rdx, 288(%rsp)
+	movq	152(%rcx), %rdx
+	movq	%rdx, 296(%rsp)
+	movq	160(%rcx), %rdx
+	movq	%rdx, 304(%rsp)
+	movq	168(%rcx), %rdx
+	movq	%rdx, 312(%rsp)
+	movq	176(%rcx), %rdx
+	movq	%rdx, 320(%rsp)
+	movq	184(%rcx), %rdx
+	movq	%rdx, 328(%rsp)
+	movq	192(%rcx), %rdx
+	movq	%rdx, 336(%rsp)
+	movq	200(%rcx), %rdx
+	movq	%rdx, 344(%rsp)
+	movq	208(%rcx), %rdx
+	movq	%rdx, 352(%rsp)
+	movq	216(%rcx), %rdx
+	movq	%rdx, 360(%rsp)
+	movq	224(%rcx), %rdx
+	movq	%rdx, 368(%rsp)
+	movq	232(%rcx), %rdx
+	movq	%rdx, 376(%rsp)
+	movq	240(%rcx), %rdx
+	movq	%rdx, 384(%rsp)
+	movq	248(%rcx), %rdx
+	movq	%rdx, 392(%rsp)
+	movq	256(%rcx), %rdx
+	movq	%rdx, 400(%rsp)
+	movq	264(%rcx), %rdx
+	movq	%rdx, 408(%rsp)
+	movq	272(%rcx), %rdx
+	movq	%rdx, 416(%rsp)
+	movq	280(%rcx), %rdx
+	movq	%rdx, 424(%rsp)
+	movq	288(%rcx), %rdx
+	movq	%rdx, 432(%rsp)
+	movq	296(%rcx), %rdx
+	movq	%rdx, 440(%rsp)
+	movq	304(%rcx), %rdx
+	movq	%rdx, 448(%rsp)
+	movq	312(%rcx), %rdx
+	movq	%rdx, 456(%rsp)
+	movq	320(%rcx), %rdx
+	movq	%rdx, 464(%rsp)
+	movq	328(%rcx), %rdx
+	movq	%rdx, 472(%rsp)
+	movq	336(%rcx), %rdx
+	movq	%rdx, 480(%rsp)
+	movq	344(%rcx), %rdx
+	movq	%rdx, 488(%rsp)
+	movq	352(%rcx), %rdx
+	movq	%rdx, 496(%rsp)
+	movq	360(%rcx), %rdx
+	movq	%rdx, 504(%rsp)
+	movq	368(%rcx), %rdx
+	movq	%rdx, 512(%rsp)
+	movq	376(%rcx), %rdx
+	movq	%rdx, 520(%rsp)
+	movq	384(%rcx), %rdx
+	movq	%rdx, 528(%rsp)
+	movq	392(%rcx), %rdx
+	movq	%rdx, 536(%rsp)
+	movq	400(%rcx), %rdx
+	movq	%rdx, 544(%rsp)
+	movq	408(%rcx), %rdx
+	movq	%rdx, 552(%rsp)
+	movq	416(%rcx), %rdx
+	movq	%rdx, 560(%rsp)
+	movq	424(%rcx), %rdx
+	movq	%rdx, 568(%rsp)
+	movq	432(%rcx), %rdx
+	movq	%rdx, 576(%rsp)
+	movq	440(%rcx), %rdx
+	movq	%rdx, 584(%rsp)
+	movq	448(%rcx), %rdx
+	movq	%rdx, 592(%rsp)
+	movq	456(%rcx), %rdx
+	movq	%rdx, 600(%rsp)
+	movq	464(%rcx), %rdx
+	movq	%rdx, 608(%rsp)
+	movq	472(%rcx), %rdx
+	movq	%rdx, 616(%rsp)
+	movq	480(%rcx), %rdx
+	movq	%rdx, 624(%rsp)
+	movq	488(%rcx), %rdx
+	movq	%rdx, 632(%rsp)
+	movq	496(%rcx), %rdx
+	movq	%rdx, 640(%rsp)
+	movq	504(%rcx), %rdx
+	movq	%rdx, 648(%rsp)
+	movq	512(%rcx), %rdx
+	movq	%rdx, 656(%rsp)
+	movq	520(%rcx), %rdx
+	movq	%rdx, 664(%rsp)
+	movq	528(%rcx), %rdx
+	movq	%rdx, 672(%rsp)
+	movq	536(%rcx), %rdx
+	movq	%rdx, 680(%rsp)
+	movq	544(%rcx), %rdx
+	movq	%rdx, 688(%rsp)
+	movq	552(%rcx), %rdx
+	movq	%rdx, 696(%rsp)
+	movq	$0, 704(%rsp)
+	movq	$0, 712(%rsp)
+	movq	$0, %rcx
+	jmp 	.Lwots_chains_x4$2
+.Lwots_chains_x4$3:
+	movl	%ecx, %edx
+	shll	$2, %edx
+	movl	%edx, 728(%rsp)
+	incl	%edx
+	movl	%edx, 736(%rsp)
+	incl	%edx
+	movl	%edx, 744(%rsp)
+	incl	%edx
+	movl	%edx, 752(%rsp)
+	movl	$16, %edx
+	movl	$0, %esi
+	movl	$0, %edi
+	movq	%rcx, %r8
+	shlq	$2, %r8
+	movl	904(%rsp,%r8,4), %r9d
+	movl	760(%rsp,%r8,4), %r10d
+	movl	%r9d, %r11d
+	addl	%r10d, %r11d
+	movl	$16, %ebx
+	cmpl	$0, %r10d
+	cmove	%ebx, %r9d
+	cmpl	$0, %r10d
+	cmove	%edi, %r11d
+	cmpl	%edx, %r9d
+	cmovb	%r9d, %edx
+	cmpl	%r11d, %esi
+	cmovb	%r11d, %esi
+	movl	908(%rsp,%r8,4), %r9d
+	movl	764(%rsp,%r8,4), %r10d
+	movl	%r9d, %r11d
+	addl	%r10d, %r11d
+	movl	$16, %ebx
+	cmpl	$0, %r10d
+	cmove	%ebx, %r9d
+	cmpl	$0, %r10d
+	cmove	%edi, %r11d
+	cmpl	%edx, %r9d
+	cmovb	%r9d, %edx
+	cmpl	%r11d, %esi
+	cmovb	%r11d, %esi
+	movl	912(%rsp,%r8,4), %r9d
+	movl	768(%rsp,%r8,4), %r10d
+	movl	%r9d, %r11d
+	addl	%r10d, %r11d
+	movl	$16, %ebx
+	cmpl	$0, %r10d
+	cmove	%ebx, %r9d
+	cmpl	$0, %r10d
+	cmove	%edi, %r11d
+	cmpl	%edx, %r9d
+	cmovb	%r9d, %edx
+	cmpl	%r11d, %esi
+	cmovb	%r11d, %esi
+	movl	916(%rsp,%r8,4), %r9d
+	movl	772(%rsp,%r8,4), %r10d
+	movl	%r9d, %r11d
+	addl	%r10d, %r11d
+	movl	$16, %r8d
+	cmpl	$0, %r10d
+	cmove	%r8d, %r9d
+	cmpl	$0, %r10d
+	cmove	%edi, %r11d
+	cmpl	%edx, %r9d
+	cmovb	%r9d, %edx
+	cmpl	%r11d, %esi
+	cmovb	%r11d, %esi
+	lfence
+	movq	$0, %rdi
 	movq	%rcx, %rdi
-	movq	%mm0, %r8
-	movq	%mm1, %r9
-	movd	%mm2, %ecx
-	movd	%mm3, %esi
-	incl	%ecx
-.Lchain$2:
-	cmpl	%esi, %ecx
-	jb  	.Lchain$3
+	imulq	$64, %rdi, %rdi
+	jmp 	.Lwots_chains_x4$4
+.Lwots_chains_x4$5:
+	movl	%edx, 732(%rsp)
+	movl	%edx, 740(%rsp)
+	movl	%edx, 748(%rsp)
+	movl	%edx, 756(%rsp)
+	movq	%rcx, 16(%rsp)
+	movq	%rdi, 24(%rsp)
+	movl	%edx, 720(%rsp)
+	movl	%esi, 724(%rsp)
+	leaq	144(%rsp,%rdi), %rsi
+	leaq	80(%rsp), %rdx
+	leaq	32(%rsp), %r9
+	leaq	48(%rsp), %rdi
+	leaq	728(%rsp), %rcx
+	leaq	-824(%rsp), %rsp
+	call	.Lthash_x4_n__thash_x4$1
+.Lwots_chains_x4$6:
+	leaq	824(%rsp), %rsp
+	movq	16(%rsp), %rcx
+	movq	24(%rsp), %rdi
+	movl	720(%rsp), %edx
+	movl	724(%rsp), %esi
+	lfence
+	movq	$0, %r8
+	movq	%rcx, %r8
+	shlq	$2, %r8
+	movl	%edx, %r9d
+	movl	904(%rsp,%r8,4), %r10d
+	subl	%r10d, %r9d
+	movl	760(%rsp,%r8,4), %r10d
+	movq	144(%rsp,%rdi), %r11
+	movq	80(%rsp), %rbx
+	cmpl	%r10d, %r9d
+	cmovb	%rbx, %r11
+	movq	%r11, 144(%rsp,%rdi)
+	movq	152(%rsp,%rdi), %r11
+	movq	88(%rsp), %rbx
+	cmpl	%r10d, %r9d
+	cmovb	%rbx, %r11
+	movq	%r11, 152(%rsp,%rdi)
+	movl	%edx, %r9d
+	movl	908(%rsp,%r8,4), %r10d
+	subl	%r10d, %r9d
+	movl	764(%rsp,%r8,4), %r10d
+	movq	160(%rsp,%rdi), %r11
+	movq	96(%rsp), %rbx
+	cmpl	%r10d, %r9d
+	cmovb	%rbx, %r11
+	movq	%r11, 160(%rsp,%rdi)
+	movq	168(%rsp,%rdi), %r11
+	movq	104(%rsp), %rbx
+	cmpl	%r10d, %r9d
+	cmovb	%rbx, %r11
+	movq	%r11, 168(%rsp,%rdi)
+	movl	%edx, %r9d
+	movl	912(%rsp,%r8,4), %r10d
+	subl	%r10d, %r9d
+	movl	768(%rsp,%r8,4), %r10d
+	movq	176(%rsp,%rdi), %r11
+	movq	112(%rsp), %rbx
+	cmpl	%r10d, %r9d
+	cmovb	%rbx, %r11
+	movq	%r11, 176(%rsp,%rdi)
+	movq	184(%rsp,%rdi), %r11
+	movq	120(%rsp), %rbx
+	cmpl	%r10d, %r9d
+	cmovb	%rbx, %r11
+	movq	%r11, 184(%rsp,%rdi)
+	movl	%edx, %r9d
+	movl	916(%rsp,%r8,4), %r10d
+	subl	%r10d, %r9d
+	movl	772(%rsp,%r8,4), %r10d
+	movq	192(%rsp,%rdi), %r11
+	movq	128(%rsp), %r8
+	cmpl	%r10d, %r9d
+	cmovb	%r8, %r11
+	movq	%r11, 192(%rsp,%rdi)
+	movq	200(%rsp,%rdi), %r11
+	movq	136(%rsp), %r8
+	cmpl	%r10d, %r9d
+	cmovb	%r8, %r11
+	movq	%r11, 200(%rsp,%rdi)
+	incl	%edx
+.Lwots_chains_x4$4:
+	cmpl	%esi, %edx
+	jb  	.Lwots_chains_x4$5
+	incq	%rcx
+.Lwots_chains_x4$2:
+	cmpq	$9, %rcx
+	jb  	.Lwots_chains_x4$3
+	movq	8(%rsp), %rcx
+	lfence
+	movq	$0, %rdx
+	movq	144(%rsp), %rdx
+	movq	%rdx, (%rcx)
+	movq	152(%rsp), %rdx
+	movq	%rdx, 8(%rcx)
+	movq	160(%rsp), %rdx
+	movq	%rdx, 16(%rcx)
+	movq	168(%rsp), %rdx
+	movq	%rdx, 24(%rcx)
+	movq	176(%rsp), %rdx
+	movq	%rdx, 32(%rcx)
+	movq	184(%rsp), %rdx
+	movq	%rdx, 40(%rcx)
+	movq	192(%rsp), %rdx
+	movq	%rdx, 48(%rcx)
+	movq	200(%rsp), %rdx
+	movq	%rdx, 56(%rcx)
+	movq	208(%rsp), %rdx
+	movq	%rdx, 64(%rcx)
+	movq	216(%rsp), %rdx
+	movq	%rdx, 72(%rcx)
+	movq	224(%rsp), %rdx
+	movq	%rdx, 80(%rcx)
+	movq	232(%rsp), %rdx
+	movq	%rdx, 88(%rcx)
+	movq	240(%rsp), %rdx
+	movq	%rdx, 96(%rcx)
+	movq	248(%rsp), %rdx
+	movq	%rdx, 104(%rcx)
+	movq	256(%rsp), %rdx
+	movq	%rdx, 112(%rcx)
+	movq	264(%rsp), %rdx
+	movq	%rdx, 120(%rcx)
+	movq	272(%rsp), %rdx
+	movq	%rdx, 128(%rcx)
+	movq	280(%rsp), %rdx
+	movq	%rdx, 136(%rcx)
+	movq	288(%rsp), %rdx
+	movq	%rdx, 144(%rcx)
+	movq	296(%rsp), %rdx
+	movq	%rdx, 152(%rcx)
+	movq	304(%rsp), %rdx
+	movq	%rdx, 160(%rcx)
+	movq	312(%rsp), %rdx
+	movq	%rdx, 168(%rcx)
+	movq	320(%rsp), %rdx
+	movq	%rdx, 176(%rcx)
+	movq	328(%rsp), %rdx
+	movq	%rdx, 184(%rcx)
+	movq	336(%rsp), %rdx
+	movq	%rdx, 192(%rcx)
+	movq	344(%rsp), %rdx
+	movq	%rdx, 200(%rcx)
+	movq	352(%rsp), %rdx
+	movq	%rdx, 208(%rcx)
+	movq	360(%rsp), %rdx
+	movq	%rdx, 216(%rcx)
+	movq	368(%rsp), %rdx
+	movq	%rdx, 224(%rcx)
+	movq	376(%rsp), %rdx
+	movq	%rdx, 232(%rcx)
+	movq	384(%rsp), %rdx
+	movq	%rdx, 240(%rcx)
+	movq	392(%rsp), %rdx
+	movq	%rdx, 248(%rcx)
+	movq	400(%rsp), %rdx
+	movq	%rdx, 256(%rcx)
+	movq	408(%rsp), %rdx
+	movq	%rdx, 264(%rcx)
+	movq	416(%rsp), %rdx
+	movq	%rdx, 272(%rcx)
+	movq	424(%rsp), %rdx
+	movq	%rdx, 280(%rcx)
+	movq	432(%rsp), %rdx
+	movq	%rdx, 288(%rcx)
+	movq	440(%rsp), %rdx
+	movq	%rdx, 296(%rcx)
+	movq	448(%rsp), %rdx
+	movq	%rdx, 304(%rcx)
+	movq	456(%rsp), %rdx
+	movq	%rdx, 312(%rcx)
+	movq	464(%rsp), %rdx
+	movq	%rdx, 320(%rcx)
+	movq	472(%rsp), %rdx
+	movq	%rdx, 328(%rcx)
+	movq	480(%rsp), %rdx
+	movq	%rdx, 336(%rcx)
+	movq	488(%rsp), %rdx
+	movq	%rdx, 344(%rcx)
+	movq	496(%rsp), %rdx
+	movq	%rdx, 352(%rcx)
+	movq	504(%rsp), %rdx
+	movq	%rdx, 360(%rcx)
+	movq	512(%rsp), %rdx
+	movq	%rdx, 368(%rcx)
+	movq	520(%rsp), %rdx
+	movq	%rdx, 376(%rcx)
+	movq	528(%rsp), %rdx
+	movq	%rdx, 384(%rcx)
+	movq	536(%rsp), %rdx
+	movq	%rdx, 392(%rcx)
+	movq	544(%rsp), %rdx
+	movq	%rdx, 400(%rcx)
+	movq	552(%rsp), %rdx
+	movq	%rdx, 408(%rcx)
+	movq	560(%rsp), %rdx
+	movq	%rdx, 416(%rcx)
+	movq	568(%rsp), %rdx
+	movq	%rdx, 424(%rcx)
+	movq	576(%rsp), %rdx
+	movq	%rdx, 432(%rcx)
+	movq	584(%rsp), %rdx
+	movq	%rdx, 440(%rcx)
+	movq	592(%rsp), %rdx
+	movq	%rdx, 448(%rcx)
+	movq	600(%rsp), %rdx
+	movq	%rdx, 456(%rcx)
+	movq	608(%rsp), %rdx
+	movq	%rdx, 464(%rcx)
+	movq	616(%rsp), %rdx
+	movq	%rdx, 472(%rcx)
+	movq	624(%rsp), %rdx
+	movq	%rdx, 480(%rcx)
+	movq	632(%rsp), %rdx
+	movq	%rdx, 488(%rcx)
+	movq	640(%rsp), %rdx
+	movq	%rdx, 496(%rcx)
+	movq	648(%rsp), %rdx
+	movq	%rdx, 504(%rcx)
+	movq	656(%rsp), %rdx
+	movq	%rdx, 512(%rcx)
+	movq	664(%rsp), %rdx
+	movq	%rdx, 520(%rcx)
+	movq	672(%rsp), %rdx
+	movq	%rdx, 528(%rcx)
+	movq	680(%rsp), %rdx
+	movq	%rdx, 536(%rcx)
+	movq	688(%rsp), %rdx
+	movq	%rdx, 544(%rcx)
+	movq	696(%rsp), %rdx
+	movq	%rdx, 552(%rcx)
 	ret
 .LT_k$1:
 	movq	%rdi, %mm0
@@ -4530,9 +5655,9 @@ slh_dsa_shake128s_keygen:
 	vpxor	%ymm1, %ymm1, %ymm1
 	vpxor	%ymm3, %ymm3, %ymm3
 	movq	$0, %rcx
-	vpbroadcastq	(%r8,%rcx), %ymm7
+	vpbroadcastq	(%r9,%rcx), %ymm7
 	vpxor	%ymm7, %ymm5, %ymm5
-	movq	8(%r8,%rcx), %rcx
+	movq	8(%r9,%rcx), %rcx
 	vmovq	%rcx, %xmm7
 	movq	$0, %rcx
 	vpinsrq	$1, %rcx, %xmm7, %xmm7
@@ -4541,39 +5666,39 @@ slh_dsa_shake128s_keygen:
 	vinserti128	$1, %xmm8, %ymm7, %ymm7
 	vpxor	%ymm7, %ymm4, %ymm4
 	leaq	16(%rsp), %rcx
-	movl	(%r9), %edx
+	movl	(%r11), %edx
 	bswapl	%edx
 	movl	%edx, (%rcx)
-	movl	4(%r9), %edx
+	movl	4(%r11), %edx
 	bswapl	%edx
 	movl	%edx, 4(%rcx)
-	movl	8(%r9), %edx
+	movl	8(%r11), %edx
 	bswapl	%edx
 	movl	%edx, 8(%rcx)
-	movl	12(%r9), %edx
+	movl	12(%r11), %edx
 	bswapl	%edx
 	movl	%edx, 12(%rcx)
-	movl	16(%r9), %edx
+	movl	16(%r11), %edx
 	bswapl	%edx
 	movl	%edx, 16(%rcx)
-	movl	20(%r9), %edx
+	movl	20(%r11), %edx
 	bswapl	%edx
 	movl	%edx, 20(%rcx)
-	movl	24(%r9), %edx
+	movl	24(%r11), %edx
 	bswapl	%edx
 	movl	%edx, 24(%rcx)
-	movl	28(%r9), %edx
+	movl	28(%r11), %edx
 	bswapl	%edx
 	movl	%edx, 28(%rcx)
 	leaq	16(%rsp), %rcx
-	movq	$0, %rdx
-	vmovdqu	(%rcx,%rdx), %xmm7
+	movq	$0, %r8
+	vmovdqu	(%rcx,%r8), %xmm7
 	vpslldq	$8, %xmm7, %xmm7
 	vmovdqu	%xmm7, %xmm7
-	vmovdqu	8(%rcx,%rdx), %xmm8
+	vmovdqu	8(%rcx,%r8), %xmm8
 	vinserti128	$1, %xmm8, %ymm7, %ymm7
 	vpxor	%ymm7, %ymm4, %ymm4
-	movq	24(%rcx,%rdx), %rcx
+	movq	24(%rcx,%r8), %rcx
 	vmovq	%rcx, %xmm7
 	vpxor	%xmm8, %xmm8, %xmm8
 	vmovdqu	%xmm8, %xmm8
@@ -4663,26 +5788,422 @@ slh_dsa_shake128s_keygen:
 .LT_k$6:
 	cmpq	$1, %rdi
 	jb  	.LT_k$7
-	movq	$0, %rax
-	movq	$31, %rcx
-	shlq	$0, %rcx
-	orq 	%rcx, %rax
-	vmovq	%rax, %xmm7
+	movq	$0, %rdx
+	movq	$31, %rax
+	shlq	$0, %rax
+	orq 	%rax, %rdx
+	vmovq	%rdx, %xmm7
 	vpbroadcastq	%xmm7, %ymm7
 	vpxor	%ymm7, %ymm5, %ymm5
-	movq	$1, %rax
-	shlq	$63, %rax
-	vmovq	%rax, %xmm7
+	movq	$1, %rdx
+	shlq	$63, %rdx
+	vmovq	%rdx, %xmm7
+	vpxor	%ymm8, %ymm8, %ymm8
+	vinserti128	$0, %xmm7, %ymm8, %ymm8
+	vpxor	%ymm8, %ymm0, %ymm0
+	movq	%mm0, %rax
+	movq	$0, %rcx
+	movq	$0, %rdi
+	jmp 	.LT_k$3
+.LT_k$4:
+	call	.L_keccakf1600_avx2$1
+.LT_k$5:
+	vmovdqu	%xmm5, %xmm7
+	movq	%xmm7, (%rax,%rcx)
+	vmovdqu	%ymm4, 8(%rax,%rcx)
+	vextracti128	$1, %ymm6, %xmm7
+	vmovdqu	%xmm6, %xmm9
+	movq	%xmm7, %rdx
+	movq	%rdx, 40(%rax,%rcx)
+	vpunpckhqdq	%xmm7, %xmm7, %xmm7
+	vpblendd	$240, %ymm2, %ymm0, %ymm10
+	vpblendd	$240, %ymm0, %ymm2, %ymm12
+	vpblendd	$240, %ymm3, %ymm1, %ymm13
+	vpblendd	$240, %ymm1, %ymm3, %ymm8
+	vpblendd	$195, %ymm8, %ymm10, %ymm11
+	vmovdqu	%ymm11, 48(%rax,%rcx)
+	movq	%xmm9, %rdx
+	movq	%rdx, 80(%rax,%rcx)
+	vpblendd	$195, %ymm12, %ymm8, %ymm9
+	vmovdqu	%ymm9, 88(%rax,%rcx)
+	movq	%xmm7, %rdx
+	movq	%rdx, 120(%rax,%rcx)
+	vpblendd	$195, %ymm10, %ymm13, %ymm7
+	movq	%xmm7, 128(%rax,%rcx)
+	addq	$136, %rcx
+	incq	%rdi
+.LT_k$3:
+	cmpq	$0, %rdi
+	jb  	.LT_k$4
+	call	.L_keccakf1600_avx2$1
+.LT_k$2:
+	movq	%xmm5, (%rax,%rcx)
+	movq	%xmm4, 8(%rax,%rcx)
+	ret
+.LT_len$1:
+	movq	%rdx, %mm0
+	vpxor	%ymm5, %ymm5, %ymm5
+	vpxor	%ymm4, %ymm4, %ymm4
+	vpxor	%ymm6, %ymm6, %ymm6
+	vpxor	%ymm0, %ymm0, %ymm0
+	vpxor	%ymm2, %ymm2, %ymm2
+	vpxor	%ymm1, %ymm1, %ymm1
+	vpxor	%ymm3, %ymm3, %ymm3
+	movq	$0, %r8
+	vpbroadcastq	(%rsi,%r8), %ymm7
+	vpxor	%ymm7, %ymm5, %ymm5
+	movq	8(%rsi,%r8), %rdx
+	vmovq	%rdx, %xmm7
+	movq	$0, %rdx
+	vpinsrq	$1, %rdx, %xmm7, %xmm7
+	vmovdqu	%xmm7, %xmm7
+	vpxor	%xmm8, %xmm8, %xmm8
+	vinserti128	$1, %xmm8, %ymm7, %ymm7
+	vpxor	%ymm7, %ymm4, %ymm4
+	leaq	16(%rsp), %rdx
+	movl	(%r11), %esi
+	bswapl	%esi
+	movl	%esi, (%rdx)
+	movl	4(%r11), %esi
+	bswapl	%esi
+	movl	%esi, 4(%rdx)
+	movl	8(%r11), %esi
+	bswapl	%esi
+	movl	%esi, 8(%rdx)
+	movl	12(%r11), %esi
+	bswapl	%esi
+	movl	%esi, 12(%rdx)
+	movl	16(%r11), %esi
+	bswapl	%esi
+	movl	%esi, 16(%rdx)
+	movl	20(%r11), %esi
+	bswapl	%esi
+	movl	%esi, 20(%rdx)
+	movl	24(%r11), %esi
+	bswapl	%esi
+	movl	%esi, 24(%rdx)
+	movl	28(%r11), %esi
+	bswapl	%esi
+	movl	%esi, 28(%rdx)
+	leaq	16(%rsp), %rdx
+	movq	$0, %r8
+	vmovdqu	(%rdx,%r8), %xmm7
+	vpslldq	$8, %xmm7, %xmm7
+	vmovdqu	%xmm7, %xmm7
+	vmovdqu	8(%rdx,%r8), %xmm8
+	vinserti128	$1, %xmm8, %ymm7, %ymm7
+	vpxor	%ymm7, %ymm4, %ymm4
+	movq	24(%rdx,%r8), %rdx
+	vmovq	%rdx, %xmm7
+	vpxor	%xmm8, %xmm8, %xmm8
+	vmovdqu	%xmm8, %xmm8
+	vinserti128	$1, %xmm7, %ymm8, %ymm8
+	vpxor	%ymm8, %ymm6, %ymm6
+	movq	$0, %r8
+	movq	$0, %rdx
+	vmovq	%rdx, %xmm7
+	vmovdqu	(%rcx,%r8), %ymm14
+	movq	32(%rcx,%r8), %rdx
+	vmovq	%rdx, %xmm8
+	vmovdqu	40(%rcx,%r8), %ymm13
+	movq	72(%rcx,%r8), %rdx
+	vpinsrq	$1, %rdx, %xmm7, %xmm7
+	movq	80(%rcx,%r8), %rdx
+	vmovq	%rdx, %xmm9
+	movq	$0, %rdx
+	vpinsrq	$1, %rdx, %xmm9, %xmm9
+	vmovdqu	%xmm9, %xmm9
+	vpxor	%xmm10, %xmm10, %xmm10
+	vinserti128	$1, %xmm10, %ymm9, %ymm9
+	movq	$0, %rdx
+	vpinsrq	$1, %rdx, %xmm8, %xmm8
+	vpxor	%ymm10, %ymm10, %ymm10
+	vpblendd	$195, %ymm9, %ymm14, %ymm11
+	vpblendd	$195, %ymm13, %ymm10, %ymm12
+	vpblendd	$195, %ymm14, %ymm13, %ymm13
+	vpblendd	$240, %ymm12, %ymm11, %ymm14
+	vpblendd	$240, %ymm11, %ymm12, %ymm11
+	vpblendd	$195, %ymm10, %ymm9, %ymm10
+	vpblendd	$240, %ymm13, %ymm10, %ymm9
+	vpblendd	$240, %ymm10, %ymm13, %ymm10
+	vpxor	%ymm14, %ymm0, %ymm0
+	vpxor	%ymm11, %ymm2, %ymm2
+	vpxor	%ymm9, %ymm1, %ymm1
+	vpxor	%ymm10, %ymm3, %ymm3
+	vmovdqu	%xmm8, %xmm8
+	vinserti128	$1, %xmm7, %ymm8, %ymm8
+	vpxor	%ymm8, %ymm6, %ymm6
+	addq	$88, %r8
+	call	.L_keccakf1600_avx2$1
+.LT_len$9:
+	movq	$0, %rdi
+	jmp 	.LT_len$6
+.LT_len$7:
+	vpbroadcastq	(%rcx,%r8), %ymm7
+	vpxor	%ymm7, %ymm5, %ymm5
+	vmovdqu	8(%rcx,%r8), %ymm7
+	vpxor	%ymm7, %ymm4, %ymm4
+	movq	40(%rcx,%r8), %rdx
+	vmovq	%rdx, %xmm7
+	vmovdqu	48(%rcx,%r8), %ymm14
+	movq	80(%rcx,%r8), %rdx
+	vmovq	%rdx, %xmm8
+	vmovdqu	88(%rcx,%r8), %ymm13
+	movq	120(%rcx,%r8), %rdx
+	vpinsrq	$1, %rdx, %xmm7, %xmm7
+	movq	128(%rcx,%r8), %rdx
+	vmovq	%rdx, %xmm9
+	movq	$0, %rdx
+	vpinsrq	$1, %rdx, %xmm9, %xmm9
+	vmovdqu	%xmm9, %xmm9
+	vpxor	%xmm10, %xmm10, %xmm10
+	vinserti128	$1, %xmm10, %ymm9, %ymm9
+	movq	$0, %rdx
+	vpinsrq	$1, %rdx, %xmm8, %xmm8
+	vpxor	%ymm10, %ymm10, %ymm10
+	vpblendd	$195, %ymm9, %ymm14, %ymm11
+	vpblendd	$195, %ymm13, %ymm10, %ymm12
+	vpblendd	$195, %ymm14, %ymm13, %ymm13
+	vpblendd	$240, %ymm12, %ymm11, %ymm14
+	vpblendd	$240, %ymm11, %ymm12, %ymm11
+	vpblendd	$195, %ymm10, %ymm9, %ymm10
+	vpblendd	$240, %ymm13, %ymm10, %ymm9
+	vpblendd	$240, %ymm10, %ymm13, %ymm10
+	vpxor	%ymm14, %ymm0, %ymm0
+	vpxor	%ymm11, %ymm2, %ymm2
+	vpxor	%ymm9, %ymm1, %ymm1
+	vpxor	%ymm10, %ymm3, %ymm3
+	vmovdqu	%xmm8, %xmm8
+	vinserti128	$1, %xmm7, %ymm8, %ymm8
+	vpxor	%ymm8, %ymm6, %ymm6
+	addq	$136, %r8
+	call	.L_keccakf1600_avx2$1
+.LT_len$8:
+	incq	%rdi
+.LT_len$6:
+	cmpq	$3, %rdi
+	jb  	.LT_len$7
+	vpbroadcastq	(%rcx,%r8), %ymm7
+	vpxor	%ymm7, %ymm5, %ymm5
+	vmovdqu	8(%rcx,%r8), %ymm7
+	vpxor	%ymm7, %ymm4, %ymm4
+	movq	40(%rcx,%r8), %rdx
+	vmovq	%rdx, %xmm7
+	vmovdqu	48(%rcx,%r8), %xmm9
+	vmovdqu	%xmm9, %xmm9
+	movq	$0, %rdx
+	movq	$31, %rcx
+	shlq	$0, %rcx
+	orq 	%rcx, %rdx
+	vmovq	%rdx, %xmm11
+	movq	$0, %rcx
+	vpinsrq	$1, %rcx, %xmm11, %xmm8
+	vinserti128	$1, %xmm8, %ymm9, %ymm14
+	movq	$0, %rdx
+	vmovq	%rdx, %xmm8
+	vpxor	%ymm13, %ymm13, %ymm13
+	movq	$0, %rdx
+	vpinsrq	$1, %rdx, %xmm7, %xmm7
+	vpxor	%ymm9, %ymm9, %ymm9
+	movq	$0, %rdx
+	vpinsrq	$1, %rdx, %xmm8, %xmm8
+	vpxor	%ymm10, %ymm10, %ymm10
+	vpblendd	$195, %ymm9, %ymm14, %ymm11
+	vpblendd	$195, %ymm13, %ymm10, %ymm12
+	vpblendd	$195, %ymm14, %ymm13, %ymm13
+	vpblendd	$240, %ymm12, %ymm11, %ymm14
+	vpblendd	$240, %ymm11, %ymm12, %ymm11
+	vpblendd	$195, %ymm10, %ymm9, %ymm10
+	vpblendd	$240, %ymm13, %ymm10, %ymm9
+	vpblendd	$240, %ymm10, %ymm13, %ymm10
+	vpxor	%ymm14, %ymm0, %ymm0
+	vpxor	%ymm11, %ymm2, %ymm2
+	vpxor	%ymm9, %ymm1, %ymm1
+	vpxor	%ymm10, %ymm3, %ymm3
+	vmovdqu	%xmm8, %xmm8
+	vinserti128	$1, %xmm7, %ymm8, %ymm8
+	vpxor	%ymm8, %ymm6, %ymm6
+	movq	$1, %rdx
+	shlq	$63, %rdx
+	vmovq	%rdx, %xmm7
+	vpxor	%ymm8, %ymm8, %ymm8
+	vinserti128	$0, %xmm7, %ymm8, %ymm8
+	vpxor	%ymm8, %ymm0, %ymm0
+	movq	%mm0, %rcx
+	movq	$0, %r8
+	movq	$0, %rdi
+	jmp 	.LT_len$3
+.LT_len$4:
+	call	.L_keccakf1600_avx2$1
+.LT_len$5:
+	vmovdqu	%xmm5, %xmm7
+	movq	%xmm7, (%rcx,%r8)
+	vmovdqu	%ymm4, 8(%rcx,%r8)
+	vextracti128	$1, %ymm6, %xmm7
+	vmovdqu	%xmm6, %xmm9
+	movq	%xmm7, %rdx
+	movq	%rdx, 40(%rcx,%r8)
+	vpunpckhqdq	%xmm7, %xmm7, %xmm7
+	vpblendd	$240, %ymm2, %ymm0, %ymm10
+	vpblendd	$240, %ymm0, %ymm2, %ymm12
+	vpblendd	$240, %ymm3, %ymm1, %ymm13
+	vpblendd	$240, %ymm1, %ymm3, %ymm8
+	vpblendd	$195, %ymm8, %ymm10, %ymm11
+	vmovdqu	%ymm11, 48(%rcx,%r8)
+	movq	%xmm9, %rdx
+	movq	%rdx, 80(%rcx,%r8)
+	vpblendd	$195, %ymm12, %ymm8, %ymm9
+	vmovdqu	%ymm9, 88(%rcx,%r8)
+	movq	%xmm7, %rdx
+	movq	%rdx, 120(%rcx,%r8)
+	vpblendd	$195, %ymm10, %ymm13, %ymm7
+	movq	%xmm7, 128(%rcx,%r8)
+	addq	$136, %r8
+	incq	%rdi
+.LT_len$3:
+	cmpq	$0, %rdi
+	jb  	.LT_len$4
+	call	.L_keccakf1600_avx2$1
+.LT_len$2:
+	movq	%xmm5, (%rcx,%r8)
+	movq	%xmm4, 8(%rcx,%r8)
+	ret
+.LH$1:
+	movq	%rdi, %mm0
+	vpxor	%ymm5, %ymm5, %ymm5
+	vpxor	%ymm4, %ymm4, %ymm4
+	vpxor	%ymm6, %ymm6, %ymm6
+	vpxor	%ymm0, %ymm0, %ymm0
+	vpxor	%ymm2, %ymm2, %ymm2
+	vpxor	%ymm1, %ymm1, %ymm1
+	vpxor	%ymm3, %ymm3, %ymm3
+	movq	$0, %r8
+	vpbroadcastq	(%rsi,%r8), %ymm7
+	vpxor	%ymm7, %ymm5, %ymm5
+	movq	8(%rsi,%r8), %rdx
+	vmovq	%rdx, %xmm7
+	movq	$0, %rdx
+	vpinsrq	$1, %rdx, %xmm7, %xmm7
+	vmovdqu	%xmm7, %xmm7
+	vpxor	%xmm8, %xmm8, %xmm8
+	vinserti128	$1, %xmm8, %ymm7, %ymm7
+	vpxor	%ymm7, %ymm4, %ymm4
+	leaq	16(%rsp), %rdx
+	movl	(%r11), %esi
+	bswapl	%esi
+	movl	%esi, (%rdx)
+	movl	4(%r11), %esi
+	bswapl	%esi
+	movl	%esi, 4(%rdx)
+	movl	8(%r11), %esi
+	bswapl	%esi
+	movl	%esi, 8(%rdx)
+	movl	12(%r11), %esi
+	bswapl	%esi
+	movl	%esi, 12(%rdx)
+	movl	16(%r11), %esi
+	bswapl	%esi
+	movl	%esi, 16(%rdx)
+	movl	20(%r11), %esi
+	bswapl	%esi
+	movl	%esi, 20(%rdx)
+	movl	24(%r11), %esi
+	bswapl	%esi
+	movl	%esi, 24(%rdx)
+	movl	28(%r11), %esi
+	bswapl	%esi
+	movl	%esi, 28(%rdx)
+	leaq	16(%rsp), %rdx
+	movq	$0, %r8
+	vmovdqu	(%rdx,%r8), %xmm7
+	vpslldq	$8, %xmm7, %xmm7
+	vmovdqu	%xmm7, %xmm7
+	vmovdqu	8(%rdx,%r8), %xmm8
+	vinserti128	$1, %xmm8, %ymm7, %ymm7
+	vpxor	%ymm7, %ymm4, %ymm4
+	movq	24(%rdx,%r8), %rdx
+	vmovq	%rdx, %xmm7
+	vpxor	%xmm8, %xmm8, %xmm8
+	vmovdqu	%xmm8, %xmm8
+	vinserti128	$1, %xmm7, %ymm8, %ymm8
+	vpxor	%ymm8, %ymm6, %ymm6
+	movq	$0, %r8
+	movq	$0, %rdx
+	vmovq	%rdx, %xmm7
+	vmovdqu	(%rax,%r8), %xmm9
+	vmovdqu	%xmm9, %xmm9
+	vpxor	%xmm8, %xmm8, %xmm8
+	vinserti128	$1, %xmm8, %ymm9, %ymm14
+	movq	$0, %rdx
+	vmovq	%rdx, %xmm8
+	vpxor	%ymm13, %ymm13, %ymm13
+	movq	$0, %rdx
+	vpinsrq	$1, %rdx, %xmm7, %xmm7
+	vpxor	%ymm9, %ymm9, %ymm9
+	movq	$0, %rdx
+	vpinsrq	$1, %rdx, %xmm8, %xmm8
+	vpxor	%ymm10, %ymm10, %ymm10
+	vpblendd	$195, %ymm9, %ymm14, %ymm11
+	vpblendd	$195, %ymm13, %ymm10, %ymm12
+	vpblendd	$195, %ymm14, %ymm13, %ymm13
+	vpblendd	$240, %ymm12, %ymm11, %ymm14
+	vpblendd	$240, %ymm11, %ymm12, %ymm11
+	vpblendd	$195, %ymm10, %ymm9, %ymm10
+	vpblendd	$240, %ymm13, %ymm10, %ymm9
+	vpblendd	$240, %ymm10, %ymm13, %ymm10
+	vpxor	%ymm14, %ymm0, %ymm0
+	vpxor	%ymm11, %ymm2, %ymm2
+	vpxor	%ymm9, %ymm1, %ymm1
+	vpxor	%ymm10, %ymm3, %ymm3
+	vmovdqu	%xmm8, %xmm8
+	vinserti128	$1, %xmm7, %ymm8, %ymm8
+	vpxor	%ymm8, %ymm6, %ymm6
+	movq	$0, %rax
+	movq	$0, %rdx
+	vmovq	%rdx, %xmm7
+	vpxor	%ymm9, %ymm9, %ymm9
+	vmovdqu	(%rcx,%rax), %xmm8
+	vinserti128	$1, %xmm8, %ymm9, %ymm14
+	movq	$0, %rdx
+	movq	$31, %rax
+	shlq	$0, %rax
+	orq 	%rax, %rdx
+	vmovq	%rdx, %xmm8
+	vpxor	%ymm13, %ymm13, %ymm13
+	movq	$0, %rdx
+	vpinsrq	$1, %rdx, %xmm7, %xmm7
+	vpxor	%ymm9, %ymm9, %ymm9
+	movq	$0, %rdx
+	vpinsrq	$1, %rdx, %xmm8, %xmm8
+	vpxor	%ymm10, %ymm10, %ymm10
+	vpblendd	$195, %ymm9, %ymm14, %ymm11
+	vpblendd	$195, %ymm13, %ymm10, %ymm12
+	vpblendd	$195, %ymm14, %ymm13, %ymm13
+	vpblendd	$240, %ymm12, %ymm11, %ymm14
+	vpblendd	$240, %ymm11, %ymm12, %ymm11
+	vpblendd	$195, %ymm10, %ymm9, %ymm10
+	vpblendd	$240, %ymm13, %ymm10, %ymm9
+	vpblendd	$240, %ymm10, %ymm13, %ymm10
+	vpxor	%ymm14, %ymm0, %ymm0
+	vpxor	%ymm11, %ymm2, %ymm2
+	vpxor	%ymm9, %ymm1, %ymm1
+	vpxor	%ymm10, %ymm3, %ymm3
+	vmovdqu	%xmm8, %xmm8
+	vinserti128	$1, %xmm7, %ymm8, %ymm8
+	vpxor	%ymm8, %ymm6, %ymm6
+	movq	$1, %rdx
+	shlq	$63, %rdx
+	vmovq	%rdx, %xmm7
 	vpxor	%ymm8, %ymm8, %ymm8
 	vinserti128	$0, %xmm7, %ymm8, %ymm8
 	vpxor	%ymm8, %ymm0, %ymm0
 	movq	%mm0, %rcx
 	movq	$0, %rax
 	movq	$0, %rdi
-	jmp 	.LT_k$3
-.LT_k$4:
+	jmp 	.LH$3
+.LH$4:
 	call	.L_keccakf1600_avx2$1
-.LT_k$5:
+.LH$5:
 	vmovdqu	%xmm5, %xmm7
 	movq	%xmm7, (%rcx,%rax)
 	vmovdqu	%ymm4, 8(%rcx,%rax)
@@ -4707,412 +6228,16 @@ slh_dsa_shake128s_keygen:
 	movq	%xmm7, 128(%rcx,%rax)
 	addq	$136, %rax
 	incq	%rdi
-.LT_k$3:
-	cmpq	$0, %rdi
-	jb  	.LT_k$4
-	call	.L_keccakf1600_avx2$1
-.LT_k$2:
-	movq	%xmm5, (%rcx,%rax)
-	movq	%xmm4, 8(%rcx,%rax)
-	ret
-.LT_len$1:
-	movq	%rdi, %mm0
-	vpxor	%ymm5, %ymm5, %ymm5
-	vpxor	%ymm4, %ymm4, %ymm4
-	vpxor	%ymm6, %ymm6, %ymm6
-	vpxor	%ymm0, %ymm0, %ymm0
-	vpxor	%ymm2, %ymm2, %ymm2
-	vpxor	%ymm1, %ymm1, %ymm1
-	vpxor	%ymm3, %ymm3, %ymm3
-	movq	$0, %rdx
-	vpbroadcastq	(%r8,%rdx), %ymm7
-	vpxor	%ymm7, %ymm5, %ymm5
-	movq	8(%r8,%rdx), %rdx
-	vmovq	%rdx, %xmm7
-	movq	$0, %rdx
-	vpinsrq	$1, %rdx, %xmm7, %xmm7
-	vmovdqu	%xmm7, %xmm7
-	vpxor	%xmm8, %xmm8, %xmm8
-	vinserti128	$1, %xmm8, %ymm7, %ymm7
-	vpxor	%ymm7, %ymm4, %ymm4
-	leaq	16(%rsp), %rdx
-	movl	(%r9), %esi
-	bswapl	%esi
-	movl	%esi, (%rdx)
-	movl	4(%r9), %esi
-	bswapl	%esi
-	movl	%esi, 4(%rdx)
-	movl	8(%r9), %esi
-	bswapl	%esi
-	movl	%esi, 8(%rdx)
-	movl	12(%r9), %esi
-	bswapl	%esi
-	movl	%esi, 12(%rdx)
-	movl	16(%r9), %esi
-	bswapl	%esi
-	movl	%esi, 16(%rdx)
-	movl	20(%r9), %esi
-	bswapl	%esi
-	movl	%esi, 20(%rdx)
-	movl	24(%r9), %esi
-	bswapl	%esi
-	movl	%esi, 24(%rdx)
-	movl	28(%r9), %esi
-	bswapl	%esi
-	movl	%esi, 28(%rdx)
-	leaq	16(%rsp), %rdx
-	movq	$0, %rsi
-	vmovdqu	(%rdx,%rsi), %xmm7
-	vpslldq	$8, %xmm7, %xmm7
-	vmovdqu	%xmm7, %xmm7
-	vmovdqu	8(%rdx,%rsi), %xmm8
-	vinserti128	$1, %xmm8, %ymm7, %ymm7
-	vpxor	%ymm7, %ymm4, %ymm4
-	movq	24(%rdx,%rsi), %rdx
-	vmovq	%rdx, %xmm7
-	vpxor	%xmm8, %xmm8, %xmm8
-	vmovdqu	%xmm8, %xmm8
-	vinserti128	$1, %xmm7, %ymm8, %ymm8
-	vpxor	%ymm8, %ymm6, %ymm6
-	movq	$0, %rdx
-	movq	$0, %rsi
-	vmovq	%rsi, %xmm7
-	vmovdqu	(%rcx,%rdx), %ymm14
-	movq	32(%rcx,%rdx), %rsi
-	vmovq	%rsi, %xmm8
-	vmovdqu	40(%rcx,%rdx), %ymm13
-	movq	72(%rcx,%rdx), %rsi
-	vpinsrq	$1, %rsi, %xmm7, %xmm7
-	movq	80(%rcx,%rdx), %rsi
-	vmovq	%rsi, %xmm9
-	movq	$0, %rsi
-	vpinsrq	$1, %rsi, %xmm9, %xmm9
-	vmovdqu	%xmm9, %xmm9
-	vpxor	%xmm10, %xmm10, %xmm10
-	vinserti128	$1, %xmm10, %ymm9, %ymm9
-	movq	$0, %rsi
-	vpinsrq	$1, %rsi, %xmm8, %xmm8
-	vpxor	%ymm10, %ymm10, %ymm10
-	vpblendd	$195, %ymm9, %ymm14, %ymm11
-	vpblendd	$195, %ymm13, %ymm10, %ymm12
-	vpblendd	$195, %ymm14, %ymm13, %ymm13
-	vpblendd	$240, %ymm12, %ymm11, %ymm14
-	vpblendd	$240, %ymm11, %ymm12, %ymm11
-	vpblendd	$195, %ymm10, %ymm9, %ymm10
-	vpblendd	$240, %ymm13, %ymm10, %ymm9
-	vpblendd	$240, %ymm10, %ymm13, %ymm10
-	vpxor	%ymm14, %ymm0, %ymm0
-	vpxor	%ymm11, %ymm2, %ymm2
-	vpxor	%ymm9, %ymm1, %ymm1
-	vpxor	%ymm10, %ymm3, %ymm3
-	vmovdqu	%xmm8, %xmm8
-	vinserti128	$1, %xmm7, %ymm8, %ymm8
-	vpxor	%ymm8, %ymm6, %ymm6
-	addq	$88, %rdx
-	call	.L_keccakf1600_avx2$1
-.LT_len$9:
-	movq	$0, %rdi
-	jmp 	.LT_len$6
-.LT_len$7:
-	vpbroadcastq	(%rcx,%rdx), %ymm7
-	vpxor	%ymm7, %ymm5, %ymm5
-	vmovdqu	8(%rcx,%rdx), %ymm7
-	vpxor	%ymm7, %ymm4, %ymm4
-	movq	40(%rcx,%rdx), %rsi
-	vmovq	%rsi, %xmm7
-	vmovdqu	48(%rcx,%rdx), %ymm14
-	movq	80(%rcx,%rdx), %rsi
-	vmovq	%rsi, %xmm8
-	vmovdqu	88(%rcx,%rdx), %ymm13
-	movq	120(%rcx,%rdx), %rsi
-	vpinsrq	$1, %rsi, %xmm7, %xmm7
-	movq	128(%rcx,%rdx), %rsi
-	vmovq	%rsi, %xmm9
-	movq	$0, %rsi
-	vpinsrq	$1, %rsi, %xmm9, %xmm9
-	vmovdqu	%xmm9, %xmm9
-	vpxor	%xmm10, %xmm10, %xmm10
-	vinserti128	$1, %xmm10, %ymm9, %ymm9
-	movq	$0, %rsi
-	vpinsrq	$1, %rsi, %xmm8, %xmm8
-	vpxor	%ymm10, %ymm10, %ymm10
-	vpblendd	$195, %ymm9, %ymm14, %ymm11
-	vpblendd	$195, %ymm13, %ymm10, %ymm12
-	vpblendd	$195, %ymm14, %ymm13, %ymm13
-	vpblendd	$240, %ymm12, %ymm11, %ymm14
-	vpblendd	$240, %ymm11, %ymm12, %ymm11
-	vpblendd	$195, %ymm10, %ymm9, %ymm10
-	vpblendd	$240, %ymm13, %ymm10, %ymm9
-	vpblendd	$240, %ymm10, %ymm13, %ymm10
-	vpxor	%ymm14, %ymm0, %ymm0
-	vpxor	%ymm11, %ymm2, %ymm2
-	vpxor	%ymm9, %ymm1, %ymm1
-	vpxor	%ymm10, %ymm3, %ymm3
-	vmovdqu	%xmm8, %xmm8
-	vinserti128	$1, %xmm7, %ymm8, %ymm8
-	vpxor	%ymm8, %ymm6, %ymm6
-	addq	$136, %rdx
-	call	.L_keccakf1600_avx2$1
-.LT_len$8:
-	incq	%rdi
-.LT_len$6:
-	cmpq	$3, %rdi
-	jb  	.LT_len$7
-	vpbroadcastq	(%rcx,%rdx), %ymm7
-	vpxor	%ymm7, %ymm5, %ymm5
-	vmovdqu	8(%rcx,%rdx), %ymm7
-	vpxor	%ymm7, %ymm4, %ymm4
-	movq	40(%rcx,%rdx), %rsi
-	vmovq	%rsi, %xmm7
-	vmovdqu	48(%rcx,%rdx), %xmm9
-	vmovdqu	%xmm9, %xmm9
-	movq	$0, %rdx
-	movq	$31, %rcx
-	shlq	$0, %rcx
-	orq 	%rcx, %rdx
-	vmovq	%rdx, %xmm11
-	movq	$0, %rcx
-	vpinsrq	$1, %rcx, %xmm11, %xmm8
-	vinserti128	$1, %xmm8, %ymm9, %ymm14
-	movq	$0, %rdx
-	vmovq	%rdx, %xmm8
-	vpxor	%ymm13, %ymm13, %ymm13
-	movq	$0, %rdx
-	vpinsrq	$1, %rdx, %xmm7, %xmm7
-	vpxor	%ymm9, %ymm9, %ymm9
-	movq	$0, %rdx
-	vpinsrq	$1, %rdx, %xmm8, %xmm8
-	vpxor	%ymm10, %ymm10, %ymm10
-	vpblendd	$195, %ymm9, %ymm14, %ymm11
-	vpblendd	$195, %ymm13, %ymm10, %ymm12
-	vpblendd	$195, %ymm14, %ymm13, %ymm13
-	vpblendd	$240, %ymm12, %ymm11, %ymm14
-	vpblendd	$240, %ymm11, %ymm12, %ymm11
-	vpblendd	$195, %ymm10, %ymm9, %ymm10
-	vpblendd	$240, %ymm13, %ymm10, %ymm9
-	vpblendd	$240, %ymm10, %ymm13, %ymm10
-	vpxor	%ymm14, %ymm0, %ymm0
-	vpxor	%ymm11, %ymm2, %ymm2
-	vpxor	%ymm9, %ymm1, %ymm1
-	vpxor	%ymm10, %ymm3, %ymm3
-	vmovdqu	%xmm8, %xmm8
-	vinserti128	$1, %xmm7, %ymm8, %ymm8
-	vpxor	%ymm8, %ymm6, %ymm6
-	movq	$1, %rcx
-	shlq	$63, %rcx
-	vmovq	%rcx, %xmm7
-	vpxor	%ymm8, %ymm8, %ymm8
-	vinserti128	$0, %xmm7, %ymm8, %ymm8
-	vpxor	%ymm8, %ymm0, %ymm0
-	movq	%mm0, %rcx
-	movq	$0, %rdx
-	movq	$0, %rdi
-	jmp 	.LT_len$3
-.LT_len$4:
-	call	.L_keccakf1600_avx2$1
-.LT_len$5:
-	vmovdqu	%xmm5, %xmm7
-	movq	%xmm7, (%rcx,%rdx)
-	vmovdqu	%ymm4, 8(%rcx,%rdx)
-	vextracti128	$1, %ymm6, %xmm7
-	vmovdqu	%xmm6, %xmm9
-	movq	%xmm7, %rsi
-	movq	%rsi, 40(%rcx,%rdx)
-	vpunpckhqdq	%xmm7, %xmm7, %xmm7
-	vpblendd	$240, %ymm2, %ymm0, %ymm10
-	vpblendd	$240, %ymm0, %ymm2, %ymm12
-	vpblendd	$240, %ymm3, %ymm1, %ymm13
-	vpblendd	$240, %ymm1, %ymm3, %ymm8
-	vpblendd	$195, %ymm8, %ymm10, %ymm11
-	vmovdqu	%ymm11, 48(%rcx,%rdx)
-	movq	%xmm9, %rsi
-	movq	%rsi, 80(%rcx,%rdx)
-	vpblendd	$195, %ymm12, %ymm8, %ymm9
-	vmovdqu	%ymm9, 88(%rcx,%rdx)
-	movq	%xmm7, %rsi
-	movq	%rsi, 120(%rcx,%rdx)
-	vpblendd	$195, %ymm10, %ymm13, %ymm7
-	movq	%xmm7, 128(%rcx,%rdx)
-	addq	$136, %rdx
-	incq	%rdi
-.LT_len$3:
-	cmpq	$0, %rdi
-	jb  	.LT_len$4
-	call	.L_keccakf1600_avx2$1
-.LT_len$2:
-	movq	%xmm5, (%rcx,%rdx)
-	movq	%xmm4, 8(%rcx,%rdx)
-	ret
-.LH$1:
-	movq	%rdi, %mm0
-	vpxor	%ymm5, %ymm5, %ymm5
-	vpxor	%ymm4, %ymm4, %ymm4
-	vpxor	%ymm6, %ymm6, %ymm6
-	vpxor	%ymm0, %ymm0, %ymm0
-	vpxor	%ymm2, %ymm2, %ymm2
-	vpxor	%ymm1, %ymm1, %ymm1
-	vpxor	%ymm3, %ymm3, %ymm3
-	movq	$0, %rsi
-	vpbroadcastq	(%r8,%rsi), %ymm7
-	vpxor	%ymm7, %ymm5, %ymm5
-	movq	8(%r8,%rsi), %rsi
-	vmovq	%rsi, %xmm7
-	movq	$0, %rsi
-	vpinsrq	$1, %rsi, %xmm7, %xmm7
-	vmovdqu	%xmm7, %xmm7
-	vpxor	%xmm8, %xmm8, %xmm8
-	vinserti128	$1, %xmm8, %ymm7, %ymm7
-	vpxor	%ymm7, %ymm4, %ymm4
-	leaq	16(%rsp), %rsi
-	movl	(%r9), %edi
-	bswapl	%edi
-	movl	%edi, (%rsi)
-	movl	4(%r9), %edi
-	bswapl	%edi
-	movl	%edi, 4(%rsi)
-	movl	8(%r9), %edi
-	bswapl	%edi
-	movl	%edi, 8(%rsi)
-	movl	12(%r9), %edi
-	bswapl	%edi
-	movl	%edi, 12(%rsi)
-	movl	16(%r9), %edi
-	bswapl	%edi
-	movl	%edi, 16(%rsi)
-	movl	20(%r9), %edi
-	bswapl	%edi
-	movl	%edi, 20(%rsi)
-	movl	24(%r9), %edi
-	bswapl	%edi
-	movl	%edi, 24(%rsi)
-	movl	28(%r9), %edi
-	bswapl	%edi
-	movl	%edi, 28(%rsi)
-	leaq	16(%rsp), %rsi
-	movq	$0, %rdi
-	vmovdqu	(%rsi,%rdi), %xmm7
-	vpslldq	$8, %xmm7, %xmm7
-	vmovdqu	%xmm7, %xmm7
-	vmovdqu	8(%rsi,%rdi), %xmm8
-	vinserti128	$1, %xmm8, %ymm7, %ymm7
-	vpxor	%ymm7, %ymm4, %ymm4
-	movq	24(%rsi,%rdi), %rsi
-	vmovq	%rsi, %xmm7
-	vpxor	%xmm8, %xmm8, %xmm8
-	vmovdqu	%xmm8, %xmm8
-	vinserti128	$1, %xmm7, %ymm8, %ymm8
-	vpxor	%ymm8, %ymm6, %ymm6
-	movq	$0, %rsi
-	movq	$0, %rdi
-	vmovq	%rdi, %xmm7
-	vmovdqu	(%rcx,%rsi), %xmm9
-	vmovdqu	%xmm9, %xmm9
-	vpxor	%xmm8, %xmm8, %xmm8
-	vinserti128	$1, %xmm8, %ymm9, %ymm14
-	movq	$0, %rsi
-	vmovq	%rsi, %xmm8
-	vpxor	%ymm13, %ymm13, %ymm13
-	movq	$0, %rsi
-	vpinsrq	$1, %rsi, %xmm7, %xmm7
-	vpxor	%ymm9, %ymm9, %ymm9
-	movq	$0, %rsi
-	vpinsrq	$1, %rsi, %xmm8, %xmm8
-	vpxor	%ymm10, %ymm10, %ymm10
-	vpblendd	$195, %ymm9, %ymm14, %ymm11
-	vpblendd	$195, %ymm13, %ymm10, %ymm12
-	vpblendd	$195, %ymm14, %ymm13, %ymm13
-	vpblendd	$240, %ymm12, %ymm11, %ymm14
-	vpblendd	$240, %ymm11, %ymm12, %ymm11
-	vpblendd	$195, %ymm10, %ymm9, %ymm10
-	vpblendd	$240, %ymm13, %ymm10, %ymm9
-	vpblendd	$240, %ymm10, %ymm13, %ymm10
-	vpxor	%ymm14, %ymm0, %ymm0
-	vpxor	%ymm11, %ymm2, %ymm2
-	vpxor	%ymm9, %ymm1, %ymm1
-	vpxor	%ymm10, %ymm3, %ymm3
-	vmovdqu	%xmm8, %xmm8
-	vinserti128	$1, %xmm7, %ymm8, %ymm8
-	vpxor	%ymm8, %ymm6, %ymm6
-	movq	$0, %rcx
-	movq	$0, %rsi
-	vmovq	%rsi, %xmm7
-	vpxor	%ymm9, %ymm9, %ymm9
-	vmovdqu	(%rdx,%rcx), %xmm8
-	vinserti128	$1, %xmm8, %ymm9, %ymm14
-	movq	$0, %rdx
-	movq	$31, %rcx
-	shlq	$0, %rcx
-	orq 	%rcx, %rdx
-	vmovq	%rdx, %xmm8
-	vpxor	%ymm13, %ymm13, %ymm13
-	movq	$0, %rdx
-	vpinsrq	$1, %rdx, %xmm7, %xmm7
-	vpxor	%ymm9, %ymm9, %ymm9
-	movq	$0, %rdx
-	vpinsrq	$1, %rdx, %xmm8, %xmm8
-	vpxor	%ymm10, %ymm10, %ymm10
-	vpblendd	$195, %ymm9, %ymm14, %ymm11
-	vpblendd	$195, %ymm13, %ymm10, %ymm12
-	vpblendd	$195, %ymm14, %ymm13, %ymm13
-	vpblendd	$240, %ymm12, %ymm11, %ymm14
-	vpblendd	$240, %ymm11, %ymm12, %ymm11
-	vpblendd	$195, %ymm10, %ymm9, %ymm10
-	vpblendd	$240, %ymm13, %ymm10, %ymm9
-	vpblendd	$240, %ymm10, %ymm13, %ymm10
-	vpxor	%ymm14, %ymm0, %ymm0
-	vpxor	%ymm11, %ymm2, %ymm2
-	vpxor	%ymm9, %ymm1, %ymm1
-	vpxor	%ymm10, %ymm3, %ymm3
-	vmovdqu	%xmm8, %xmm8
-	vinserti128	$1, %xmm7, %ymm8, %ymm8
-	vpxor	%ymm8, %ymm6, %ymm6
-	movq	$1, %rcx
-	shlq	$63, %rcx
-	vmovq	%rcx, %xmm7
-	vpxor	%ymm8, %ymm8, %ymm8
-	vinserti128	$0, %xmm7, %ymm8, %ymm8
-	vpxor	%ymm8, %ymm0, %ymm0
-	movq	%mm0, %rcx
-	movq	$0, %rdx
-	movq	$0, %rdi
-	jmp 	.LH$3
-.LH$4:
-	call	.L_keccakf1600_avx2$1
-.LH$5:
-	vmovdqu	%xmm5, %xmm7
-	movq	%xmm7, (%rcx,%rdx)
-	vmovdqu	%ymm4, 8(%rcx,%rdx)
-	vextracti128	$1, %ymm6, %xmm7
-	vmovdqu	%xmm6, %xmm9
-	movq	%xmm7, %rsi
-	movq	%rsi, 40(%rcx,%rdx)
-	vpunpckhqdq	%xmm7, %xmm7, %xmm7
-	vpblendd	$240, %ymm2, %ymm0, %ymm10
-	vpblendd	$240, %ymm0, %ymm2, %ymm12
-	vpblendd	$240, %ymm3, %ymm1, %ymm13
-	vpblendd	$240, %ymm1, %ymm3, %ymm8
-	vpblendd	$195, %ymm8, %ymm10, %ymm11
-	vmovdqu	%ymm11, 48(%rcx,%rdx)
-	movq	%xmm9, %rsi
-	movq	%rsi, 80(%rcx,%rdx)
-	vpblendd	$195, %ymm12, %ymm8, %ymm8
-	vmovdqu	%ymm8, 88(%rcx,%rdx)
-	movq	%xmm7, %rsi
-	movq	%rsi, 120(%rcx,%rdx)
-	vpblendd	$195, %ymm10, %ymm13, %ymm7
-	movq	%xmm7, 128(%rcx,%rdx)
-	addq	$136, %rdx
-	incq	%rdi
 .LH$3:
 	cmpq	$0, %rdi
 	jb  	.LH$4
 	call	.L_keccakf1600_avx2$1
 .LH$2:
-	movq	%xmm5, (%rcx,%rdx)
-	movq	%xmm4, 8(%rcx,%rdx)
+	movq	%xmm5, (%rcx,%rax)
+	movq	%xmm4, 8(%rcx,%rax)
 	ret
 .LF$1:
-	movq	%rdi, %mm4
+	movq	%rdi, %mm0
 	vpxor	%ymm5, %ymm5, %ymm5
 	vpxor	%ymm4, %ymm4, %ymm4
 	vpxor	%ymm6, %ymm6, %ymm6
@@ -5121,9 +6246,9 @@ slh_dsa_shake128s_keygen:
 	vpxor	%ymm1, %ymm1, %ymm1
 	vpxor	%ymm3, %ymm3, %ymm3
 	movq	$0, %rcx
-	vpbroadcastq	(%r8,%rcx), %ymm7
+	vpbroadcastq	(%rax,%rcx), %ymm7
 	vpxor	%ymm7, %ymm5, %ymm5
-	movq	8(%r8,%rcx), %rcx
+	movq	8(%rax,%rcx), %rcx
 	vmovq	%rcx, %xmm7
 	movq	$0, %rcx
 	vpinsrq	$1, %rcx, %xmm7, %xmm7
@@ -5132,53 +6257,53 @@ slh_dsa_shake128s_keygen:
 	vinserti128	$1, %xmm8, %ymm7, %ymm7
 	vpxor	%ymm7, %ymm4, %ymm4
 	leaq	16(%rsp), %rcx
-	movl	(%r9), %edx
+	movl	(%r11), %edx
 	bswapl	%edx
 	movl	%edx, (%rcx)
-	movl	4(%r9), %edx
+	movl	4(%r11), %edx
 	bswapl	%edx
 	movl	%edx, 4(%rcx)
-	movl	8(%r9), %edx
+	movl	8(%r11), %edx
 	bswapl	%edx
 	movl	%edx, 8(%rcx)
-	movl	12(%r9), %edx
+	movl	12(%r11), %edx
 	bswapl	%edx
 	movl	%edx, 12(%rcx)
-	movl	16(%r9), %edx
+	movl	16(%r11), %edx
 	bswapl	%edx
 	movl	%edx, 16(%rcx)
-	movl	20(%r9), %edx
+	movl	20(%r11), %edx
 	bswapl	%edx
 	movl	%edx, 20(%rcx)
-	movl	24(%r9), %edx
+	movl	24(%r11), %edx
 	bswapl	%edx
 	movl	%edx, 24(%rcx)
-	movl	28(%r9), %edx
+	movl	28(%r11), %edx
 	bswapl	%edx
 	movl	%edx, 28(%rcx)
 	leaq	16(%rsp), %rcx
-	movq	$0, %rdx
-	vmovdqu	(%rcx,%rdx), %xmm7
+	movq	$0, %rax
+	vmovdqu	(%rcx,%rax), %xmm7
 	vpslldq	$8, %xmm7, %xmm7
 	vmovdqu	%xmm7, %xmm7
-	vmovdqu	8(%rcx,%rdx), %xmm8
+	vmovdqu	8(%rcx,%rax), %xmm8
 	vinserti128	$1, %xmm8, %ymm7, %ymm7
 	vpxor	%ymm7, %ymm4, %ymm4
-	movq	24(%rcx,%rdx), %rcx
+	movq	24(%rcx,%rax), %rcx
 	vmovq	%rcx, %xmm7
 	vpxor	%xmm8, %xmm8, %xmm8
 	vmovdqu	%xmm8, %xmm8
 	vinserti128	$1, %xmm7, %ymm8, %ymm8
 	vpxor	%ymm8, %ymm6, %ymm6
+	movq	$0, %rax
 	movq	$0, %rcx
-	movq	$0, %rdx
-	vmovq	%rdx, %xmm7
-	vmovdqu	(%rdi,%rcx), %xmm9
+	vmovq	%rcx, %xmm7
+	vmovdqu	(%rdi,%rax), %xmm9
 	vmovdqu	%xmm9, %xmm9
 	movq	$0, %rdx
-	movq	$31, %rcx
-	shlq	$0, %rcx
-	orq 	%rcx, %rdx
+	movq	$31, %rax
+	shlq	$0, %rax
+	orq 	%rax, %rdx
 	vmovq	%rdx, %xmm11
 	movq	$0, %rcx
 	vpinsrq	$1, %rcx, %xmm11, %xmm8
@@ -5207,53 +6332,53 @@ slh_dsa_shake128s_keygen:
 	vmovdqu	%xmm8, %xmm8
 	vinserti128	$1, %xmm7, %ymm8, %ymm8
 	vpxor	%ymm8, %ymm6, %ymm6
-	movq	$1, %rcx
-	shlq	$63, %rcx
-	vmovq	%rcx, %xmm7
+	movq	$1, %rdx
+	shlq	$63, %rdx
+	vmovq	%rdx, %xmm7
 	vpxor	%ymm8, %ymm8, %ymm8
 	vinserti128	$0, %xmm7, %ymm8, %ymm8
 	vpxor	%ymm8, %ymm0, %ymm0
-	movq	%mm4, %rcx
-	movq	$0, %rdx
+	movq	%mm0, %rax
+	movq	$0, %rcx
 	movq	$0, %rdi
 	jmp 	.LF$3
 .LF$4:
 	call	.L_keccakf1600_avx2$1
 .LF$5:
 	vmovdqu	%xmm5, %xmm7
-	movq	%xmm7, (%rcx,%rdx)
-	vmovdqu	%ymm4, 8(%rcx,%rdx)
+	movq	%xmm7, (%rax,%rcx)
+	vmovdqu	%ymm4, 8(%rax,%rcx)
 	vextracti128	$1, %ymm6, %xmm7
 	vmovdqu	%xmm6, %xmm9
-	movq	%xmm7, %rsi
-	movq	%rsi, 40(%rcx,%rdx)
+	movq	%xmm7, %rdx
+	movq	%rdx, 40(%rax,%rcx)
 	vpunpckhqdq	%xmm7, %xmm7, %xmm7
 	vpblendd	$240, %ymm2, %ymm0, %ymm10
 	vpblendd	$240, %ymm0, %ymm2, %ymm12
 	vpblendd	$240, %ymm3, %ymm1, %ymm13
 	vpblendd	$240, %ymm1, %ymm3, %ymm8
 	vpblendd	$195, %ymm8, %ymm10, %ymm11
-	vmovdqu	%ymm11, 48(%rcx,%rdx)
-	movq	%xmm9, %rsi
-	movq	%rsi, 80(%rcx,%rdx)
+	vmovdqu	%ymm11, 48(%rax,%rcx)
+	movq	%xmm9, %rdx
+	movq	%rdx, 80(%rax,%rcx)
 	vpblendd	$195, %ymm12, %ymm8, %ymm9
-	vmovdqu	%ymm9, 88(%rcx,%rdx)
-	movq	%xmm7, %rsi
-	movq	%rsi, 120(%rcx,%rdx)
+	vmovdqu	%ymm9, 88(%rax,%rcx)
+	movq	%xmm7, %rdx
+	movq	%rdx, 120(%rax,%rcx)
 	vpblendd	$195, %ymm10, %ymm13, %ymm7
-	movq	%xmm7, 128(%rcx,%rdx)
-	addq	$136, %rdx
+	movq	%xmm7, 128(%rax,%rcx)
+	addq	$136, %rcx
 	incq	%rdi
 .LF$3:
 	cmpq	$0, %rdi
 	jb  	.LF$4
 	call	.L_keccakf1600_avx2$1
 .LF$2:
-	movq	%xmm5, (%rcx,%rdx)
-	movq	%xmm4, 8(%rcx,%rdx)
+	movq	%xmm5, (%rax,%rcx)
+	movq	%xmm4, 8(%rax,%rcx)
 	ret
 .LPRF$1:
-	movq	%rcx, %mm0
+	movq	%rax, %mm0
 	vpxor	%ymm5, %ymm5, %ymm5
 	vpxor	%ymm4, %ymm4, %ymm4
 	vpxor	%ymm6, %ymm6, %ymm6
@@ -5261,65 +6386,65 @@ slh_dsa_shake128s_keygen:
 	vpxor	%ymm2, %ymm2, %ymm2
 	vpxor	%ymm1, %ymm1, %ymm1
 	vpxor	%ymm3, %ymm3, %ymm3
-	movq	$0, %rcx
-	vpbroadcastq	(%r8,%rcx), %ymm7
+	movq	$0, %rax
+	vpbroadcastq	(%rsi,%rax), %ymm7
 	vpxor	%ymm7, %ymm5, %ymm5
-	movq	8(%r8,%rcx), %rcx
-	vmovq	%rcx, %xmm7
-	movq	$0, %rcx
-	vpinsrq	$1, %rcx, %xmm7, %xmm7
+	movq	8(%rsi,%rax), %rdx
+	vmovq	%rdx, %xmm7
+	movq	$0, %rdx
+	vpinsrq	$1, %rdx, %xmm7, %xmm7
 	vmovdqu	%xmm7, %xmm7
 	vpxor	%xmm8, %xmm8, %xmm8
 	vinserti128	$1, %xmm8, %ymm7, %ymm7
 	vpxor	%ymm7, %ymm4, %ymm4
+	leaq	16(%rsp), %rdx
+	movl	(%rcx), %esi
+	bswapl	%esi
+	movl	%esi, (%rdx)
+	movl	4(%rcx), %esi
+	bswapl	%esi
+	movl	%esi, 4(%rdx)
+	movl	8(%rcx), %esi
+	bswapl	%esi
+	movl	%esi, 8(%rdx)
+	movl	12(%rcx), %esi
+	bswapl	%esi
+	movl	%esi, 12(%rdx)
+	movl	16(%rcx), %esi
+	bswapl	%esi
+	movl	%esi, 16(%rdx)
+	movl	20(%rcx), %esi
+	bswapl	%esi
+	movl	%esi, 20(%rdx)
+	movl	24(%rcx), %esi
+	bswapl	%esi
+	movl	%esi, 24(%rdx)
+	movl	28(%rcx), %esi
+	bswapl	%esi
+	movl	%esi, 28(%rdx)
 	leaq	16(%rsp), %rcx
-	movl	(%r9), %edx
-	bswapl	%edx
-	movl	%edx, (%rcx)
-	movl	4(%r9), %edx
-	bswapl	%edx
-	movl	%edx, 4(%rcx)
-	movl	8(%r9), %edx
-	bswapl	%edx
-	movl	%edx, 8(%rcx)
-	movl	12(%r9), %edx
-	bswapl	%edx
-	movl	%edx, 12(%rcx)
-	movl	16(%r9), %edx
-	bswapl	%edx
-	movl	%edx, 16(%rcx)
-	movl	20(%r9), %edx
-	bswapl	%edx
-	movl	%edx, 20(%rcx)
-	movl	24(%r9), %edx
-	bswapl	%edx
-	movl	%edx, 24(%rcx)
-	movl	28(%r9), %edx
-	bswapl	%edx
-	movl	%edx, 28(%rcx)
-	leaq	16(%rsp), %rcx
-	movq	$0, %rdx
-	vmovdqu	(%rcx,%rdx), %xmm7
+	movq	$0, %rax
+	vmovdqu	(%rcx,%rax), %xmm7
 	vpslldq	$8, %xmm7, %xmm7
 	vmovdqu	%xmm7, %xmm7
-	vmovdqu	8(%rcx,%rdx), %xmm8
+	vmovdqu	8(%rcx,%rax), %xmm8
 	vinserti128	$1, %xmm8, %ymm7, %ymm7
 	vpxor	%ymm7, %ymm4, %ymm4
-	movq	24(%rcx,%rdx), %rcx
+	movq	24(%rcx,%rax), %rcx
 	vmovq	%rcx, %xmm7
 	vpxor	%xmm8, %xmm8, %xmm8
 	vmovdqu	%xmm8, %xmm8
 	vinserti128	$1, %xmm7, %ymm8, %ymm8
 	vpxor	%ymm8, %ymm6, %ymm6
+	movq	$0, %rax
 	movq	$0, %rcx
-	movq	$0, %rdx
-	vmovq	%rdx, %xmm7
-	vmovdqu	(%r11,%rcx), %xmm9
+	vmovq	%rcx, %xmm7
+	vmovdqu	(%rbx,%rax), %xmm9
 	vmovdqu	%xmm9, %xmm9
 	movq	$0, %rdx
-	movq	$31, %rcx
-	shlq	$0, %rcx
-	orq 	%rcx, %rdx
+	movq	$31, %rax
+	shlq	$0, %rax
+	orq 	%rax, %rdx
 	vmovq	%rdx, %xmm11
 	movq	$0, %rcx
 	vpinsrq	$1, %rcx, %xmm11, %xmm8
@@ -5348,50 +6473,50 @@ slh_dsa_shake128s_keygen:
 	vmovdqu	%xmm8, %xmm8
 	vinserti128	$1, %xmm7, %ymm8, %ymm8
 	vpxor	%ymm8, %ymm6, %ymm6
-	movq	$1, %rcx
-	shlq	$63, %rcx
-	vmovq	%rcx, %xmm7
+	movq	$1, %rdx
+	shlq	$63, %rdx
+	vmovq	%rdx, %xmm7
 	vpxor	%ymm8, %ymm8, %ymm8
 	vinserti128	$0, %xmm7, %ymm8, %ymm8
 	vpxor	%ymm8, %ymm0, %ymm0
-	movq	%mm0, %rcx
-	movq	$0, %rdx
+	movq	%mm0, %rax
+	movq	$0, %rcx
 	movq	$0, %rdi
 	jmp 	.LPRF$3
 .LPRF$4:
 	call	.L_keccakf1600_avx2$1
 .LPRF$5:
 	vmovdqu	%xmm5, %xmm7
-	movq	%xmm7, (%rcx,%rdx)
-	vmovdqu	%ymm4, 8(%rcx,%rdx)
+	movq	%xmm7, (%rax,%rcx)
+	vmovdqu	%ymm4, 8(%rax,%rcx)
 	vextracti128	$1, %ymm6, %xmm7
 	vmovdqu	%xmm6, %xmm9
-	movq	%xmm7, %rsi
-	movq	%rsi, 40(%rcx,%rdx)
+	movq	%xmm7, %rdx
+	movq	%rdx, 40(%rax,%rcx)
 	vpunpckhqdq	%xmm7, %xmm7, %xmm7
 	vpblendd	$240, %ymm2, %ymm0, %ymm10
 	vpblendd	$240, %ymm0, %ymm2, %ymm12
 	vpblendd	$240, %ymm3, %ymm1, %ymm13
 	vpblendd	$240, %ymm1, %ymm3, %ymm8
 	vpblendd	$195, %ymm8, %ymm10, %ymm11
-	vmovdqu	%ymm11, 48(%rcx,%rdx)
-	movq	%xmm9, %rsi
-	movq	%rsi, 80(%rcx,%rdx)
+	vmovdqu	%ymm11, 48(%rax,%rcx)
+	movq	%xmm9, %rdx
+	movq	%rdx, 80(%rax,%rcx)
 	vpblendd	$195, %ymm12, %ymm8, %ymm9
-	vmovdqu	%ymm9, 88(%rcx,%rdx)
-	movq	%xmm7, %rsi
-	movq	%rsi, 120(%rcx,%rdx)
+	vmovdqu	%ymm9, 88(%rax,%rcx)
+	movq	%xmm7, %rdx
+	movq	%rdx, 120(%rax,%rcx)
 	vpblendd	$195, %ymm10, %ymm13, %ymm7
-	movq	%xmm7, 128(%rcx,%rdx)
-	addq	$136, %rdx
+	movq	%xmm7, 128(%rax,%rcx)
+	addq	$136, %rcx
 	incq	%rdi
 .LPRF$3:
 	cmpq	$0, %rdi
 	jb  	.LPRF$4
 	call	.L_keccakf1600_avx2$1
 .LPRF$2:
-	movq	%xmm5, (%rcx,%rdx)
-	movq	%xmm4, 8(%rcx,%rdx)
+	movq	%xmm5, (%rax,%rcx)
+	movq	%xmm4, 8(%rax,%rcx)
 	ret
 .LPRF_msg$1:
 	movq	%r11, %mm0
@@ -5414,37 +6539,37 @@ slh_dsa_shake128s_keygen:
 	vmovdqu	%xmm0, 48(%rsp)
 	movb	$0, 64(%rsp)
 	movb	%cl, 65(%rsp)
-	movq	$34, %rdi
-	movq	$0, %rdx
+	movq	$34, %r8
+	movq	$0, %rsi
 	movq	232(%rsp), %r11
-	movq	240(%rsp), %rsi
+	movq	240(%rsp), %rdx
 	lfence
 	movq	$0, %rax
 	jmp 	.LPRF_msg$11
 .LPRF_msg$12:
-	cmpq	$136, %rdi
+	cmpq	$136, %r8
 	jb  	.LPRF_msg$13
 	movq	%r11, 240(%rsp)
-	movq	%rdx, 232(%rsp)
-	movq	%rsi, 264(%rsp)
+	movq	%rsi, 232(%rsp)
+	movq	%rdx, 264(%rsp)
 	leaq	32(%rsp), %rax
 	leaq	-200(%rsp), %rsp
 	call	.L_keccakf1600_opt$1
 .LPRF_msg$14:
 	leaq	200(%rsp), %rsp
 	movq	240(%rsp), %r11
-	movq	232(%rsp), %rdx
-	movq	264(%rsp), %rsi
+	movq	232(%rsp), %rsi
+	movq	264(%rsp), %rdx
 	lfence
 	movq	$0, %rcx
-	movq	$0, %rdi
+	movq	$0, %r8
 .LPRF_msg$13:
-	movb	(%r11,%rdx), %r9b
-	incq	%rdx
-	xorb	%r9b, 32(%rsp,%rdi)
-	incq	%rdi
+	movb	(%r11,%rsi), %r9b
+	incq	%rsi
+	xorb	%r9b, 32(%rsp,%r8)
+	incq	%r8
 .LPRF_msg$11:
-	cmpq	%rsi, %rdx
+	cmpq	%rdx, %rsi
 	jb  	.LPRF_msg$12
 	movq	$0, %rcx
 	movq	248(%rsp), %rdx
@@ -5453,7 +6578,7 @@ slh_dsa_shake128s_keygen:
 	movq	$0, %rax
 	jmp 	.LPRF_msg$7
 .LPRF_msg$8:
-	cmpq	$136, %rdi
+	cmpq	$136, %r8
 	jb  	.LPRF_msg$9
 	movq	%rdx, 256(%rsp)
 	movq	%rcx, 248(%rsp)
@@ -5468,27 +6593,27 @@ slh_dsa_shake128s_keygen:
 	movq	264(%rsp), %rsi
 	lfence
 	movq	$0, %rax
-	movq	$0, %rdi
+	movq	$0, %r8
 .LPRF_msg$9:
 	movb	(%rdx,%rcx), %r9b
 	incq	%rcx
-	xorb	%r9b, 32(%rsp,%rdi)
-	incq	%rdi
+	xorb	%r9b, 32(%rsp,%r8)
+	incq	%r8
 .LPRF_msg$7:
 	cmpq	%rsi, %rcx
 	jb  	.LPRF_msg$8
 	leaq	32(%rsp), %rax
-	cmpq	$136, %rdi
+	cmpq	$136, %r8
 	jb  	.LPRF_msg$5
 	leaq	-200(%rsp), %rsp
 	call	.L_keccakf1600_opt$1
 .LPRF_msg$6:
 	leaq	200(%rsp), %rsp
-	movq	$0, %rdi
+	movq	$0, %r8
 .LPRF_msg$5:
-	xorb	$31, 32(%rsp,%rdi)
+	xorb	$31, 32(%rsp,%r8)
 	leaq	32(%rsp), %rax
-	cmpq	$136, %rdi
+	cmpq	$136, %r8
 	jb  	.LPRF_msg$3
 	leaq	-200(%rsp), %rsp
 	call	.L_keccakf1600_opt$1
@@ -5501,9 +6626,9 @@ slh_dsa_shake128s_keygen:
 	call	.L_keccakf1600_opt$1
 .LPRF_msg$2:
 	leaq	200(%rsp), %rsp
-	movq	%mm0, %rcx
+	movq	%mm0, %rax
 	vmovdqu	32(%rsp), %xmm0
-	vmovdqu	%xmm0, (%rcx)
+	vmovdqu	%xmm0, (%rax)
 	ret
 .LH_msg$1:
 	movq	%rdi, %mm0
@@ -5529,9 +6654,9 @@ slh_dsa_shake128s_keygen:
 	movb	$0, 80(%rsp)
 	movb	%cl, 81(%rsp)
 	movq	$50, %rcx
-	movq	$0, %rdx
+	movq	$0, %rsi
 	movq	232(%rsp), %r11
-	movq	240(%rsp), %rsi
+	movq	240(%rsp), %rdx
 	lfence
 	movq	$0, %rax
 	jmp 	.LH_msg$11
@@ -5539,26 +6664,26 @@ slh_dsa_shake128s_keygen:
 	cmpq	$136, %rcx
 	jb  	.LH_msg$13
 	movq	%r11, 240(%rsp)
-	movq	%rdx, 232(%rsp)
-	movq	%rsi, 264(%rsp)
+	movq	%rsi, 232(%rsp)
+	movq	%rdx, 264(%rsp)
 	leaq	32(%rsp), %rax
 	leaq	-200(%rsp), %rsp
 	call	.L_keccakf1600_opt$1
 .LH_msg$14:
 	leaq	200(%rsp), %rsp
 	movq	240(%rsp), %r11
-	movq	232(%rsp), %rdx
-	movq	264(%rsp), %rsi
+	movq	232(%rsp), %rsi
+	movq	264(%rsp), %rdx
 	lfence
 	movq	$0, %rcx
 	movq	$0, %rcx
 .LH_msg$13:
-	movb	(%r11,%rdx), %r9b
-	incq	%rdx
+	movb	(%r11,%rsi), %r9b
+	incq	%rsi
 	xorb	%r9b, 32(%rsp,%rcx)
 	incq	%rcx
 .LH_msg$11:
-	cmpq	%rsi, %rdx
+	cmpq	%rdx, %rsi
 	jb  	.LH_msg$12
 	movq	$0, %rdx
 	movq	248(%rsp), %r10
@@ -5677,13 +6802,596 @@ slh_dsa_shake128s_keygen:
 	movb	61(%rsp), %r9b
 	movb	%r9b, 29(%rdi)
 	ret
+.Lthash_x4_2n__thash_x4$1:
+	movq	%rcx, %mm0
+	vpxor	%ymm0, %ymm0, %ymm0
+	vmovdqu	%ymm0, 32(%rsp)
+	vmovdqu	%ymm0, 64(%rsp)
+	vmovdqu	%ymm0, 96(%rsp)
+	vmovdqu	%ymm0, 128(%rsp)
+	vmovdqu	%ymm0, 160(%rsp)
+	vmovdqu	%ymm0, 192(%rsp)
+	vmovdqu	%ymm0, 224(%rsp)
+	vmovdqu	%ymm0, 256(%rsp)
+	vmovdqu	%ymm0, 288(%rsp)
+	vmovdqu	%ymm0, 320(%rsp)
+	vmovdqu	%ymm0, 352(%rsp)
+	vmovdqu	%ymm0, 384(%rsp)
+	vmovdqu	%ymm0, 416(%rsp)
+	vmovdqu	%ymm0, 448(%rsp)
+	vmovdqu	%ymm0, 480(%rsp)
+	vmovdqu	%ymm0, 512(%rsp)
+	vmovdqu	%ymm0, 544(%rsp)
+	vmovdqu	%ymm0, 576(%rsp)
+	vmovdqu	%ymm0, 608(%rsp)
+	vmovdqu	%ymm0, 640(%rsp)
+	vmovdqu	%ymm0, 672(%rsp)
+	vmovdqu	%ymm0, 704(%rsp)
+	vmovdqu	%ymm0, 736(%rsp)
+	vmovdqu	%ymm0, 768(%rsp)
+	vmovdqu	%ymm0, 800(%rsp)
+	movq	(%rsi), %rcx
+	movq	%rcx, 32(%rsp)
+	movq	%rcx, 40(%rsp)
+	movq	%rcx, 48(%rsp)
+	movq	%rcx, 56(%rsp)
+	movq	8(%rsi), %rcx
+	movq	%rcx, 64(%rsp)
+	movq	%rcx, 72(%rsp)
+	movq	%rcx, 80(%rsp)
+	movq	%rcx, 88(%rsp)
+	movl	(%r11), %ecx
+	bswapl	%ecx
+	movl	4(%r11), %edx
+	bswapl	%edx
+	movl	%ecx, 96(%rsp)
+	movl	%edx, 100(%rsp)
+	movl	%ecx, 104(%rsp)
+	movl	%edx, 108(%rsp)
+	movl	%ecx, 112(%rsp)
+	movl	%edx, 116(%rsp)
+	movl	%ecx, 120(%rsp)
+	movl	%edx, 124(%rsp)
+	movl	8(%r11), %ecx
+	bswapl	%ecx
+	movl	12(%r11), %edx
+	bswapl	%edx
+	movl	%ecx, 128(%rsp)
+	movl	%edx, 132(%rsp)
+	movl	%ecx, 136(%rsp)
+	movl	%edx, 140(%rsp)
+	movl	%ecx, 144(%rsp)
+	movl	%edx, 148(%rsp)
+	movl	%ecx, 152(%rsp)
+	movl	%edx, 156(%rsp)
+	movl	16(%r11), %ecx
+	bswapl	%ecx
+	movl	20(%r11), %edx
+	bswapl	%edx
+	movl	%ecx, 160(%rsp)
+	movl	%edx, 164(%rsp)
+	movl	%ecx, 168(%rsp)
+	movl	%edx, 172(%rsp)
+	movl	%ecx, 176(%rsp)
+	movl	%edx, 180(%rsp)
+	movl	%ecx, 184(%rsp)
+	movl	%edx, 188(%rsp)
+	movl	(%rax), %ecx
+	bswapl	%ecx
+	movl	4(%rax), %edx
+	bswapl	%edx
+	movl	%ecx, 192(%rsp)
+	movl	%edx, 196(%rsp)
+	movl	8(%rax), %ecx
+	bswapl	%ecx
+	movl	12(%rax), %edx
+	bswapl	%edx
+	movl	%ecx, 200(%rsp)
+	movl	%edx, 204(%rsp)
+	movl	16(%rax), %ecx
+	bswapl	%ecx
+	movl	20(%rax), %edx
+	bswapl	%edx
+	movl	%ecx, 208(%rsp)
+	movl	%edx, 212(%rsp)
+	movl	24(%rax), %ecx
+	bswapl	%ecx
+	movl	28(%rax), %edx
+	bswapl	%edx
+	movl	%ecx, 216(%rsp)
+	movl	%edx, 220(%rsp)
+	movq	(%rdi), %rcx
+	movq	%rcx, 224(%rsp)
+	movq	32(%rdi), %rcx
+	movq	%rcx, 232(%rsp)
+	movq	64(%rdi), %rcx
+	movq	%rcx, 240(%rsp)
+	movq	96(%rdi), %rcx
+	movq	%rcx, 248(%rsp)
+	movq	8(%rdi), %rcx
+	movq	%rcx, 256(%rsp)
+	movq	40(%rdi), %rcx
+	movq	%rcx, 264(%rsp)
+	movq	72(%rdi), %rcx
+	movq	%rcx, 272(%rsp)
+	movq	104(%rdi), %rcx
+	movq	%rcx, 280(%rsp)
+	movq	16(%rdi), %rcx
+	movq	%rcx, 288(%rsp)
+	movq	48(%rdi), %rcx
+	movq	%rcx, 296(%rsp)
+	movq	80(%rdi), %rcx
+	movq	%rcx, 304(%rsp)
+	movq	112(%rdi), %rcx
+	movq	%rcx, 312(%rsp)
+	movq	24(%rdi), %rcx
+	movq	%rcx, 320(%rsp)
+	movq	56(%rdi), %rcx
+	movq	%rcx, 328(%rsp)
+	movq	88(%rdi), %rcx
+	movq	%rcx, 336(%rsp)
+	movq	120(%rdi), %rcx
+	movq	%rcx, 344(%rsp)
+	movq	$-9223372036854775808, %rcx
+	movq	352(%rsp), %rsi
+	xorq	$31, %rsi
+	movq	%rsi, 352(%rsp)
+	movq	544(%rsp), %rsi
+	xorq	%rcx, %rsi
+	movq	%rsi, 544(%rsp)
+	movq	360(%rsp), %rsi
+	xorq	$31, %rsi
+	movq	%rsi, 360(%rsp)
+	movq	552(%rsp), %rsi
+	xorq	%rcx, %rsi
+	movq	%rsi, 552(%rsp)
+	movq	368(%rsp), %rsi
+	xorq	$31, %rsi
+	movq	%rsi, 368(%rsp)
+	movq	560(%rsp), %rsi
+	xorq	%rcx, %rsi
+	movq	%rsi, 560(%rsp)
+	movq	376(%rsp), %rsi
+	xorq	$31, %rsi
+	movq	%rsi, 376(%rsp)
+	movq	568(%rsp), %rsi
+	xorq	%rcx, %rsi
+	movq	%rsi, 568(%rsp)
+	leaq	32(%rsp), %rcx
+	call	.L_keccakf1600_avx2x4_nat$1
+.Lthash_x4_2n__thash_x4$2:
+	movq	%mm0, %rax
+	movq	32(%rsp), %rcx
+	movq	%rcx, (%rax)
+	movq	64(%rsp), %rcx
+	movq	%rcx, 8(%rax)
+	movq	40(%rsp), %rcx
+	movq	%rcx, 16(%rax)
+	movq	72(%rsp), %rcx
+	movq	%rcx, 24(%rax)
+	movq	48(%rsp), %rcx
+	movq	%rcx, 32(%rax)
+	movq	80(%rsp), %rcx
+	movq	%rcx, 40(%rax)
+	movq	56(%rsp), %rcx
+	movq	%rcx, 48(%rax)
+	movq	88(%rsp), %rcx
+	movq	%rcx, 56(%rax)
+	ret
+.Lthash_x4_n__thash_x4$1:
+	movq	%rdx, %mm1
+	vpxor	%ymm0, %ymm0, %ymm0
+	vmovdqu	%ymm0, 32(%rsp)
+	vmovdqu	%ymm0, 64(%rsp)
+	vmovdqu	%ymm0, 96(%rsp)
+	vmovdqu	%ymm0, 128(%rsp)
+	vmovdqu	%ymm0, 160(%rsp)
+	vmovdqu	%ymm0, 192(%rsp)
+	vmovdqu	%ymm0, 224(%rsp)
+	vmovdqu	%ymm0, 256(%rsp)
+	vmovdqu	%ymm0, 288(%rsp)
+	vmovdqu	%ymm0, 320(%rsp)
+	vmovdqu	%ymm0, 352(%rsp)
+	vmovdqu	%ymm0, 384(%rsp)
+	vmovdqu	%ymm0, 416(%rsp)
+	vmovdqu	%ymm0, 448(%rsp)
+	vmovdqu	%ymm0, 480(%rsp)
+	vmovdqu	%ymm0, 512(%rsp)
+	vmovdqu	%ymm0, 544(%rsp)
+	vmovdqu	%ymm0, 576(%rsp)
+	vmovdqu	%ymm0, 608(%rsp)
+	vmovdqu	%ymm0, 640(%rsp)
+	vmovdqu	%ymm0, 672(%rsp)
+	vmovdqu	%ymm0, 704(%rsp)
+	vmovdqu	%ymm0, 736(%rsp)
+	vmovdqu	%ymm0, 768(%rsp)
+	vmovdqu	%ymm0, 800(%rsp)
+	movq	(%r9), %rdx
+	movq	%rdx, 32(%rsp)
+	movq	%rdx, 40(%rsp)
+	movq	%rdx, 48(%rsp)
+	movq	%rdx, 56(%rsp)
+	movq	8(%r9), %rdx
+	movq	%rdx, 64(%rsp)
+	movq	%rdx, 72(%rsp)
+	movq	%rdx, 80(%rsp)
+	movq	%rdx, 88(%rsp)
+	movl	(%rdi), %edx
+	bswapl	%edx
+	movl	4(%rdi), %r8d
+	bswapl	%r8d
+	movl	%edx, 96(%rsp)
+	movl	%r8d, 100(%rsp)
+	movl	%edx, 104(%rsp)
+	movl	%r8d, 108(%rsp)
+	movl	%edx, 112(%rsp)
+	movl	%r8d, 116(%rsp)
+	movl	%edx, 120(%rsp)
+	movl	%r8d, 124(%rsp)
+	movl	8(%rdi), %edx
+	bswapl	%edx
+	movl	12(%rdi), %r8d
+	bswapl	%r8d
+	movl	%edx, 128(%rsp)
+	movl	%r8d, 132(%rsp)
+	movl	%edx, 136(%rsp)
+	movl	%r8d, 140(%rsp)
+	movl	%edx, 144(%rsp)
+	movl	%r8d, 148(%rsp)
+	movl	%edx, 152(%rsp)
+	movl	%r8d, 156(%rsp)
+	movl	16(%rdi), %edx
+	bswapl	%edx
+	movl	20(%rdi), %r8d
+	bswapl	%r8d
+	movl	%edx, 160(%rsp)
+	movl	%r8d, 164(%rsp)
+	movl	%edx, 168(%rsp)
+	movl	%r8d, 172(%rsp)
+	movl	%edx, 176(%rsp)
+	movl	%r8d, 180(%rsp)
+	movl	%edx, 184(%rsp)
+	movl	%r8d, 188(%rsp)
+	movl	(%rcx), %edx
+	bswapl	%edx
+	movl	4(%rcx), %r8d
+	bswapl	%r8d
+	movl	%edx, 192(%rsp)
+	movl	%r8d, 196(%rsp)
+	movl	8(%rcx), %edx
+	bswapl	%edx
+	movl	12(%rcx), %r8d
+	bswapl	%r8d
+	movl	%edx, 200(%rsp)
+	movl	%r8d, 204(%rsp)
+	movl	16(%rcx), %edx
+	bswapl	%edx
+	movl	20(%rcx), %r8d
+	bswapl	%r8d
+	movl	%edx, 208(%rsp)
+	movl	%r8d, 212(%rsp)
+	movl	24(%rcx), %edx
+	bswapl	%edx
+	movl	28(%rcx), %ecx
+	bswapl	%ecx
+	movl	%edx, 216(%rsp)
+	movl	%ecx, 220(%rsp)
+	movq	(%rsi), %rcx
+	movq	%rcx, 224(%rsp)
+	movq	16(%rsi), %rcx
+	movq	%rcx, 232(%rsp)
+	movq	32(%rsi), %rcx
+	movq	%rcx, 240(%rsp)
+	movq	48(%rsi), %rcx
+	movq	%rcx, 248(%rsp)
+	movq	8(%rsi), %rcx
+	movq	%rcx, 256(%rsp)
+	movq	24(%rsi), %rcx
+	movq	%rcx, 264(%rsp)
+	movq	40(%rsi), %rcx
+	movq	%rcx, 272(%rsp)
+	movq	56(%rsi), %rcx
+	movq	%rcx, 280(%rsp)
+	movq	$-9223372036854775808, %rcx
+	movq	288(%rsp), %rdx
+	xorq	$31, %rdx
+	movq	%rdx, 288(%rsp)
+	movq	544(%rsp), %rdx
+	xorq	%rcx, %rdx
+	movq	%rdx, 544(%rsp)
+	movq	296(%rsp), %rdx
+	xorq	$31, %rdx
+	movq	%rdx, 296(%rsp)
+	movq	552(%rsp), %rdx
+	xorq	%rcx, %rdx
+	movq	%rdx, 552(%rsp)
+	movq	304(%rsp), %rdx
+	xorq	$31, %rdx
+	movq	%rdx, 304(%rsp)
+	movq	560(%rsp), %rdx
+	xorq	%rcx, %rdx
+	movq	%rdx, 560(%rsp)
+	movq	312(%rsp), %rdx
+	xorq	$31, %rdx
+	movq	%rdx, 312(%rsp)
+	movq	568(%rsp), %rdx
+	xorq	%rcx, %rdx
+	movq	%rdx, 568(%rsp)
+	leaq	32(%rsp), %rcx
+	call	.L_keccakf1600_avx2x4_nat$1
+.Lthash_x4_n__thash_x4$2:
+	movq	%mm1, %rdx
+	movq	32(%rsp), %rcx
+	movq	%rcx, (%rdx)
+	movq	64(%rsp), %rcx
+	movq	%rcx, 8(%rdx)
+	movq	40(%rsp), %rcx
+	movq	%rcx, 16(%rdx)
+	movq	72(%rsp), %rcx
+	movq	%rcx, 24(%rdx)
+	movq	48(%rsp), %rcx
+	movq	%rcx, 32(%rdx)
+	movq	80(%rsp), %rcx
+	movq	%rcx, 40(%rdx)
+	movq	56(%rsp), %rcx
+	movq	%rcx, 48(%rdx)
+	movq	88(%rsp), %rcx
+	movq	%rcx, 56(%rdx)
+	ret
+.L_keccakf1600_avx2x4_nat$1:
+	vmovdqu	224(%rcx), %ymm10
+	vmovdqu	256(%rcx), %ymm13
+	vmovdqu	352(%rcx), %ymm7
+	vmovdqu	384(%rcx), %ymm0
+	vmovdqu	480(%rcx), %ymm4
+	vmovdqu	576(%rcx), %ymm1
+	vmovdqu	672(%rcx), %ymm14
+	vmovdqu	704(%rcx), %ymm2
+	vmovdqu	768(%rcx), %ymm3
+	leaq	glob_data + 0(%rip), %rdx
+	leaq	glob_data + 32(%rip), %rsi
+	leaq	glob_data + 448(%rip), %rdi
+	movq	$0, %r9
+.L_keccakf1600_avx2x4_nat$2:
+	vmovdqu	160(%rcx), %ymm12
+	vpxor	640(%rcx), %ymm4, %ymm9
+	vmovdqu	%ymm4, 224(%rcx)
+	vmovdqu	%ymm10, %ymm4
+	vmovdqu	192(%rcx), %ymm8
+	vmovdqu	512(%rcx), %ymm6
+	vmovdqu	%ymm14, 352(%rcx)
+	vpxor	320(%rcx), %ymm12, %ymm11
+	vmovdqu	64(%rcx), %ymm10
+	vmovdqu	%ymm12, 256(%rcx)
+	vpxor	%ymm14, %ymm6, %ymm6
+	vmovdqu	32(%rcx), %ymm5
+	vmovdqu	448(%rcx), %ymm12
+	vmovdqu	%ymm13, 576(%rcx)
+	vpxor	%ymm11, %ymm9, %ymm9
+	vpxor	%ymm7, %ymm8, %ymm11
+	vpxor	544(%rcx), %ymm2, %ymm8
+	vmovdqu	%ymm10, 480(%rcx)
+	vpxor	%ymm11, %ymm6, %ymm6
+	vpxor	%ymm0, %ymm4, %ymm11
+	vmovdqu	288(%rcx), %ymm14
+	vmovdqu	%ymm7, 384(%rcx)
+	vpxor	%ymm11, %ymm8, %ymm8
+	vpxor	416(%rcx), %ymm13, %ymm11
+	vpxor	%ymm5, %ymm6, %ymm6
+	vmovdqu	96(%rcx), %ymm7
+	vpxor	%ymm10, %ymm8, %ymm8
+	vpxor	736(%rcx), %ymm1, %ymm10
+	vpxor	%ymm12, %ymm14, %ymm14
+	vmovdqu	%ymm12, 672(%rcx)
+	vpsrlq	$63, %ymm6, %ymm12
+	vpsrlq	$63, %ymm8, %ymm15
+	vpxor	(%rcx), %ymm9, %ymm9
+	vpxor	%ymm11, %ymm10, %ymm10
+	vmovdqu	128(%rcx), %ymm13
+	vpxor	%ymm7, %ymm10, %ymm10
+	vpxor	608(%rcx), %ymm3, %ymm11
+	vmovdqu	%ymm13, 704(%rcx)
+	vpxor	%ymm14, %ymm11, %ymm11
+	vpsllq	$1, %ymm6, %ymm14
+	vpor	%ymm12, %ymm14, %ymm14
+	vpsllq	$1, %ymm8, %ymm12
+	vpxor	%ymm13, %ymm11, %ymm11
+	vpor	%ymm15, %ymm12, %ymm12
+	vpsrlq	$63, %ymm10, %ymm13
+	vpxor	%ymm11, %ymm14, %ymm14
+	vpsllq	$1, %ymm10, %ymm15
+	vpxor	%ymm9, %ymm12, %ymm12
+	vpor	%ymm13, %ymm15, %ymm15
+	vpxor	%ymm5, %ymm12, %ymm5
+	vpxor	%ymm6, %ymm15, %ymm15
+	vpsrlq	$63, %ymm11, %ymm6
+	vpsllq	$1, %ymm11, %ymm11
+	vpxor	%ymm2, %ymm15, %ymm2
+	vpxor	%ymm4, %ymm15, %ymm4
+	vpor	%ymm6, %ymm11, %ymm11
+	vpxor	(%rcx), %ymm14, %ymm6
+	vpxor	%ymm8, %ymm11, %ymm11
+	vpsrlq	$63, %ymm9, %ymm8
+	vpsllq	$1, %ymm9, %ymm9
+	vpxor	%ymm1, %ymm11, %ymm1
+	vpxor	%ymm7, %ymm11, %ymm7
+	vpor	%ymm8, %ymm9, %ymm9
+	vpxor	%ymm10, %ymm9, %ymm9
+	vpxor	192(%rcx), %ymm12, %ymm10
+	vpxor	%ymm3, %ymm9, %ymm3
+	vpsrlq	$20, %ymm10, %ymm8
+	vpsllq	$44, %ymm10, %ymm10
+	vpor	%ymm8, %ymm10, %ymm10
+	vpxor	%ymm0, %ymm15, %ymm8
+	vpbroadcastq	(%rdi,%r9,8), %ymm0
+	vpsrlq	$21, %ymm8, %ymm13
+	vpsllq	$43, %ymm8, %ymm8
+	vpor	%ymm13, %ymm8, %ymm8
+	vpandn	%ymm8, %ymm10, %ymm13
+	vpxor	%ymm0, %ymm13, %ymm13
+	vpxor	%ymm6, %ymm13, %ymm0
+	vpsrlq	$43, %ymm1, %ymm13
+	vpsllq	$21, %ymm1, %ymm1
+	vmovdqu	%ymm0, (%rcx)
+	vpor	%ymm13, %ymm1, %ymm1
+	vpandn	%ymm1, %ymm8, %ymm13
+	vpxor	%ymm10, %ymm13, %ymm0
+	vpsrlq	$50, %ymm3, %ymm13
+	vpsllq	$14, %ymm3, %ymm3
+	vmovdqu	%ymm0, 32(%rcx)
+	vpor	%ymm13, %ymm3, %ymm3
+	vpandn	%ymm3, %ymm1, %ymm13
+	vpxor	%ymm8, %ymm13, %ymm8
+	vmovdqu	%ymm8, 64(%rcx)
+	vpandn	%ymm6, %ymm3, %ymm8
+	vpandn	%ymm10, %ymm6, %ymm6
+	vpxor	%ymm1, %ymm8, %ymm8
+	vmovdqu	%ymm8, 96(%rcx)
+	vpxor	%ymm3, %ymm6, %ymm8
+	vpsrlq	$36, %ymm7, %ymm3
+	vpsllq	$28, %ymm7, %ymm7
+	vmovdqu	%ymm8, 128(%rcx)
+	vpor	%ymm3, %ymm7, %ymm7
+	vpxor	288(%rcx), %ymm9, %ymm3
+	vpsrlq	$44, %ymm3, %ymm10
+	vpsllq	$20, %ymm3, %ymm3
+	vpor	%ymm10, %ymm3, %ymm3
+	vpxor	320(%rcx), %ymm14, %ymm10
+	vpsrlq	$61, %ymm10, %ymm8
+	vpsllq	$3, %ymm10, %ymm10
+	vpor	%ymm8, %ymm10, %ymm10
+	vpandn	%ymm10, %ymm3, %ymm8
+	vpxor	%ymm7, %ymm8, %ymm8
+	vmovdqu	%ymm8, 160(%rcx)
+	vpxor	512(%rcx), %ymm12, %ymm8
+	vpsrlq	$19, %ymm8, %ymm6
+	vpsllq	$45, %ymm8, %ymm8
+	vpor	%ymm6, %ymm8, %ymm8
+	vpandn	%ymm8, %ymm10, %ymm6
+	vpxor	%ymm3, %ymm6, %ymm6
+	vmovdqu	%ymm6, 192(%rcx)
+	vpsrlq	$3, %ymm2, %ymm6
+	vpsllq	$61, %ymm2, %ymm2
+	vpor	%ymm6, %ymm2, %ymm2
+	vpandn	%ymm2, %ymm8, %ymm6
+	vpxor	%ymm10, %ymm6, %ymm10
+	vpandn	%ymm7, %ymm2, %ymm6
+	vpandn	%ymm3, %ymm7, %ymm7
+	vpsrlq	$63, %ymm5, %ymm3
+	vpsllq	$1, %ymm5, %ymm5
+	vpxor	%ymm8, %ymm6, %ymm13
+	vpor	%ymm3, %ymm5, %ymm5
+	vpsrlq	$58, %ymm4, %ymm3
+	vpxor	%ymm2, %ymm7, %ymm6
+	vpsllq	$6, %ymm4, %ymm4
+	vmovdqu	%ymm6, 288(%rcx)
+	vpxor	608(%rcx), %ymm9, %ymm2
+	vpor	%ymm3, %ymm4, %ymm4
+	vpxor	416(%rcx), %ymm11, %ymm3
+	vpshufb	(%rdx), %ymm2, %ymm2
+	vpsrlq	$39, %ymm3, %ymm8
+	vpsllq	$25, %ymm3, %ymm3
+	vpor	%ymm3, %ymm8, %ymm8
+	vpandn	%ymm8, %ymm4, %ymm3
+	vpandn	%ymm2, %ymm8, %ymm7
+	vpxor	%ymm5, %ymm3, %ymm6
+	vpxor	640(%rcx), %ymm14, %ymm3
+	vpxor	%ymm4, %ymm7, %ymm7
+	vmovdqu	%ymm6, 320(%rcx)
+	vpsrlq	$46, %ymm3, %ymm6
+	vpsllq	$18, %ymm3, %ymm3
+	vpor	%ymm3, %ymm6, %ymm3
+	vpandn	%ymm3, %ymm2, %ymm6
+	vpxor	%ymm8, %ymm6, %ymm0
+	vpandn	%ymm5, %ymm3, %ymm8
+	vpandn	%ymm4, %ymm5, %ymm5
+	vpxor	%ymm2, %ymm8, %ymm6
+	vmovdqu	%ymm6, 416(%rcx)
+	vpxor	%ymm3, %ymm5, %ymm6
+	vpxor	704(%rcx), %ymm9, %ymm5
+	vpxor	672(%rcx), %ymm9, %ymm9
+	vmovdqu	%ymm6, 448(%rcx)
+	vpsrlq	$37, %ymm5, %ymm3
+	vpsllq	$27, %ymm5, %ymm5
+	vpor	%ymm5, %ymm3, %ymm3
+	vpxor	256(%rcx), %ymm14, %ymm5
+	vpxor	224(%rcx), %ymm14, %ymm14
+	vpsrlq	$28, %ymm5, %ymm2
+	vpsllq	$36, %ymm5, %ymm5
+	vpor	%ymm5, %ymm2, %ymm2
+	vpxor	384(%rcx), %ymm12, %ymm5
+	vpxor	352(%rcx), %ymm12, %ymm12
+	vpsrlq	$54, %ymm5, %ymm6
+	vpsllq	$10, %ymm5, %ymm5
+	vpor	%ymm5, %ymm6, %ymm6
+	vpxor	544(%rcx), %ymm15, %ymm5
+	vpxor	480(%rcx), %ymm15, %ymm15
+	vpandn	%ymm6, %ymm2, %ymm4
+	vpsrlq	$49, %ymm5, %ymm8
+	vpsllq	$15, %ymm5, %ymm5
+	vpxor	%ymm3, %ymm4, %ymm4
+	vpor	%ymm5, %ymm8, %ymm8
+	vpandn	%ymm8, %ymm6, %ymm5
+	vpxor	%ymm2, %ymm5, %ymm5
+	vmovdqu	%ymm5, 512(%rcx)
+	vpxor	736(%rcx), %ymm11, %ymm5
+	vpxor	576(%rcx), %ymm11, %ymm11
+	vpshufb	(%rsi), %ymm5, %ymm5
+	vpandn	%ymm5, %ymm8, %ymm1
+	vpxor	%ymm6, %ymm1, %ymm1
+	vmovdqu	%ymm1, 544(%rcx)
+	vpandn	%ymm3, %ymm5, %ymm1
+	vpandn	%ymm2, %ymm3, %ymm3
+	vpxor	%ymm5, %ymm3, %ymm3
+	vpsrlq	$62, %ymm12, %ymm5
+	vpxor	%ymm8, %ymm1, %ymm1
+	vmovdqu	%ymm3, 608(%rcx)
+	vpsrlq	$2, %ymm15, %ymm3
+	vpsllq	$62, %ymm15, %ymm15
+	vpor	%ymm15, %ymm3, %ymm3
+	vpsrlq	$9, %ymm11, %ymm15
+	vpsllq	$55, %ymm11, %ymm11
+	vpsllq	$2, %ymm12, %ymm12
+	vpor	%ymm11, %ymm15, %ymm11
+	vpsrlq	$25, %ymm9, %ymm15
+	vpor	%ymm12, %ymm5, %ymm12
+	vpsllq	$39, %ymm9, %ymm9
+	vpor	%ymm9, %ymm15, %ymm15
+	vpandn	%ymm15, %ymm11, %ymm9
+	vpxor	%ymm3, %ymm9, %ymm9
+	vmovdqu	%ymm9, 640(%rcx)
+	vpsrlq	$23, %ymm14, %ymm9
+	vpsllq	$41, %ymm14, %ymm14
+	vpor	%ymm14, %ymm9, %ymm9
+	vpandn	%ymm12, %ymm9, %ymm2
+	vpandn	%ymm9, %ymm15, %ymm14
+	vpxor	%ymm15, %ymm2, %ymm2
+	vpandn	%ymm3, %ymm12, %ymm15
+	vpandn	%ymm11, %ymm3, %ymm3
+	vpxor	%ymm9, %ymm15, %ymm15
+	vpxor	%ymm11, %ymm14, %ymm14
+	vpxor	%ymm12, %ymm3, %ymm3
+	vmovdqu	%ymm15, 736(%rcx)
+	incq	%r9
+	cmpq	$24, %r9
+	jb  	.L_keccakf1600_avx2x4_nat$2
+	vmovdqu	%ymm10, 224(%rcx)
+	vmovdqu	%ymm13, 256(%rcx)
+	vmovdqu	%ymm7, 352(%rcx)
+	vmovdqu	%ymm0, 384(%rcx)
+	vmovdqu	%ymm4, 480(%rcx)
+	vmovdqu	%ymm1, 576(%rcx)
+	vmovdqu	%ymm14, 672(%rcx)
+	vmovdqu	%ymm2, 704(%rcx)
+	vmovdqu	%ymm3, 768(%rcx)
+	ret
 .L_keccakf1600_avx2$1:
 	call	.L__keccakf1600_avx2$1
 .L_keccakf1600_avx2$2:
 	ret
 .L__keccakf1600_avx2$1:
-	leaq	glob_data + 384(%rip), %rsi
-	movq	$0, %r8
+	leaq	glob_data + 448(%rip), %rdx
+	movq	$0, %rsi
 .L__keccakf1600_avx2$2:
 	vpshufd	$78, %ymm6, %ymm8
 	vpxor	%ymm0, %ymm1, %ymm7
@@ -5709,32 +7417,32 @@ slh_dsa_shake128s_keygen:
 	vpblendd	$192, %ymm12, %ymm10, %ymm10
 	vpblendd	$3, %ymm8, %ymm7, %ymm7
 	vpxor	%ymm7, %ymm10, %ymm10
-	vpsllvq	glob_data + 192(%rip), %ymm6, %ymm7
-	vpsrlvq	glob_data + 0(%rip), %ymm6, %ymm6
+	vpsllvq	glob_data + 256(%rip), %ymm6, %ymm7
+	vpsrlvq	glob_data + 64(%rip), %ymm6, %ymm6
 	vpor	%ymm7, %ymm6, %ymm6
 	vpxor	%ymm10, %ymm0, %ymm0
-	vpsllvq	glob_data + 256(%rip), %ymm0, %ymm7
-	vpsrlvq	glob_data + 64(%rip), %ymm0, %ymm0
+	vpsllvq	glob_data + 320(%rip), %ymm0, %ymm7
+	vpsrlvq	glob_data + 128(%rip), %ymm0, %ymm0
 	vpor	%ymm7, %ymm0, %ymm0
 	vpxor	%ymm10, %ymm2, %ymm2
-	vpsllvq	glob_data + 288(%rip), %ymm2, %ymm7
-	vpsrlvq	glob_data + 96(%rip), %ymm2, %ymm2
+	vpsllvq	glob_data + 352(%rip), %ymm2, %ymm7
+	vpsrlvq	glob_data + 160(%rip), %ymm2, %ymm2
 	vpor	%ymm7, %ymm2, %ymm9
 	vpxor	%ymm10, %ymm1, %ymm1
-	vpsllvq	glob_data + 320(%rip), %ymm1, %ymm2
-	vpsrlvq	glob_data + 128(%rip), %ymm1, %ymm1
+	vpsllvq	glob_data + 384(%rip), %ymm1, %ymm2
+	vpsrlvq	glob_data + 192(%rip), %ymm1, %ymm1
 	vpor	%ymm2, %ymm1, %ymm1
 	vpxor	%ymm10, %ymm3, %ymm3
 	vpermq	$141, %ymm6, %ymm2
 	vpermq	$141, %ymm0, %ymm7
-	vpsllvq	glob_data + 352(%rip), %ymm3, %ymm0
-	vpsrlvq	glob_data + 160(%rip), %ymm3, %ymm8
+	vpsllvq	glob_data + 416(%rip), %ymm3, %ymm0
+	vpsrlvq	glob_data + 224(%rip), %ymm3, %ymm8
 	vpor	%ymm0, %ymm8, %ymm8
 	vpxor	%ymm10, %ymm4, %ymm11
 	vpermq	$27, %ymm9, %ymm4
 	vpermq	$114, %ymm1, %ymm9
-	vpsllvq	glob_data + 224(%rip), %ymm11, %ymm0
-	vpsrlvq	glob_data + 32(%rip), %ymm11, %ymm10
+	vpsllvq	glob_data + 288(%rip), %ymm11, %ymm0
+	vpsrlvq	glob_data + 96(%rip), %ymm11, %ymm10
 	vpor	%ymm0, %ymm10, %ymm10
 	vpsrldq	$8, %ymm8, %ymm0
 	vpandn	%ymm0, %ymm8, %ymm0
@@ -5789,10 +7497,10 @@ slh_dsa_shake128s_keygen:
 	vpxor	%ymm13, %ymm5, %ymm5
 	vpxor	%ymm8, %ymm11, %ymm4
 	vpxor	%ymm7, %ymm2, %ymm2
-	vpbroadcastq	(%rsi,%r8,8), %ymm7
+	vpbroadcastq	(%rdx,%rsi,8), %ymm7
 	vpxor	%ymm7, %ymm5, %ymm5
-	incq	%r8
-	cmpq	$24, %r8
+	incq	%rsi
+	cmpq	$24, %rsi
 	jb  	.L__keccakf1600_avx2$2
 	ret
 .L_keccakf1600_opt$1:
@@ -5871,7 +7579,7 @@ slh_dsa_shake128s_keygen:
 	xorq	%rdx, %r13
 	movq	%r13, 72(%rsp)
 	andnq	%rdx, %r11, %rdx
-	leaq	glob_data + 384(%rip), %rbp
+	leaq	glob_data + 448(%rip), %rbp
 	movq	%mm1, %r13
 	xorq	(%rbp,%r13,8), %rdx
 	xorq	%rcx, %rdx
@@ -6051,7 +7759,7 @@ slh_dsa_shake128s_keygen:
 	movq	%rsi, 16(%rax)
 	andnq	%rcx, %rbp, %rcx
 	movq	%mm1, %rsi
-	leaq	glob_data + 384(%rip), %r14
+	leaq	glob_data + 448(%rip), %r14
 	xorq	8(%r14,%rsi,8), %rcx
 	xorq	%rdx, %rcx
 	movq	%rcx, 80(%rsp)
@@ -6184,6 +7892,12 @@ slh_dsa_shake128s_keygen:
 	.data
 	.p2align	5
 glob_data:
+G$ROL8:
+	.byte	  7,   0,   1,   2,   3,   4,   5,   6,  15,   8,   9,  10,  11,  12,  13,  14
+	.byte	 23,  16,  17,  18,  19,  20,  21,  22,  31,  24,  25,  26,  27,  28,  29,  30
+G$ROL56:
+	.byte	  1,   2,   3,   4,   5,   6,   7,   0,   9,  10,  11,  12,  13,  14,  15,   8
+	.byte	 17,  18,  19,  20,  21,  22,  23,  16,  25,  26,  27,  28,  29,  30,  31,  24
 G$KECCAK_RHOTATES_RIGHT:
 	.byte	 61,   0,   0,   0,   0,   0,   0,   0,  46,   0,   0,   0,   0,   0,   0,   0
 	.byte	 28,   0,   0,   0,   0,   0,   0,   0,  23,   0,   0,   0,   0,   0,   0,   0

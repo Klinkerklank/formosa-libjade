@@ -1,0 +1,94 @@
+/*
+ * four tweakable hashes (F, PRF, H) at once on the four-way AVX2 Keccak:
+ *
+ *   out_l = SHAKE256(PK.seed || ADRS_l || M_l, 8n),  l = 0..3,
+ *
+ * where ADRS_l is ADRS with its words 6 and 7 (chain and hash address, or
+ * tree height and tree index) replaced by w67[2l] and w67[2l+1], and M_l is
+ * in[l*MLEN : MLEN]. The input is at most n + 32 + 2n <= 128 bytes, so each
+ * lane is a single block of the 136-byte rate: the padded block is written
+ * directly into the (zero) four-way state, and one permutation follows.
+ *
+ * Needs to be included in a namespace that defines MLEN, the byte length of M.
+ */
+
+fn thash_x4(
+    #[spill_to_mmx] reg ptr u8[4*SPX_N] out, // output: four n-byte hashes
+    reg ptr u8[4*MLEN] in,                   // four MLEN-byte messages, concatenated
+    reg ptr u8[SPX_N] pkseed,                // PK.seed
+    reg ptr u32[8] adrs,                     // ADRS (words 0..5 shared by the lanes)
+    reg ptr u32[8] w67                       // ADRS words 6 and 7 of every lane
+) -> reg ptr u8[4*SPX_N] // -> out
+{
+    // stack variables
+    stack u256[25] st; // four-way Keccak state: word k of lane l is st[:u64 4*k + l]
+
+    // register variables
+    reg u256 zero; // zero vector
+    reg u64 t;     // temporary variable for copying
+    reg u64 c;     // last-byte padding constant
+    reg u32 a b;   // temporary variables for byte-swapping ADRS words
+
+    inline int k l;
+
+    () = #spill(out);
+
+    zero = #set0_256();
+    for k=0 to 25 { st[k] = zero; }
+
+    // PK.seed, in every lane (u64 words 0 .. n/8-1)
+    for k=0 to SPX_N/8 {
+        t = pkseed[:u64 k];
+        for l=0 to 4 { st[:u64 4*k + l] = t; }
+    }
+
+    // ADRS words 0..5 (big-endian), in every lane (u64 words n/8 .. n/8+2)
+    for k=0 to 3 {
+        a = adrs[2*k];   a = #BSWAP_32(a);
+        b = adrs[2*k+1]; b = #BSWAP_32(b);
+        for l=0 to 4 {
+            st[:u32 2*(4*(SPX_N/8 + k) + l)]     = a;
+            st[:u32 2*(4*(SPX_N/8 + k) + l) + 1] = b;
+        }
+    }
+
+    // ADRS words 6 and 7, per lane (u64 word n/8+3)
+    for l=0 to 4 {
+        a = w67[2*l];   a = #BSWAP_32(a);
+        b = w67[2*l+1]; b = #BSWAP_32(b);
+        st[:u32 2*(4*(SPX_N/8 + 3) + l)]     = a;
+        st[:u32 2*(4*(SPX_N/8 + 3) + l) + 1] = b;
+    }
+
+    // M, per lane (u64 words n/8+4 ..)
+    for k=0 to MLEN/8 {
+        for l=0 to 4 {
+            t = in.[:u64 l*MLEN + 8*k];
+            st[:u64 4*(SPX_N/8 + 4 + k) + l] = t;
+        }
+    }
+
+    // SHAKE padding: 0x1F right after the input, 0x80 in the last byte of the block
+    c = 0x8000000000000000;
+    for l=0 to 4 {
+        t = st[:u64 4*((SPX_N + 32 + MLEN)/8) + l];
+        t ^= 0x1F;
+        st[:u64 4*((SPX_N + 32 + MLEN)/8) + l] = t;
+        t = st[:u64 4*(SHAKE256_RATE/8 - 1) + l];
+        t ^= c;
+        st[:u64 4*(SHAKE256_RATE/8 - 1) + l] = t;
+    }
+
+    st = _keccakf1600_avx2x4(st);
+
+    // squeeze the first n bytes of every lane
+    () = #unspill(out);
+    for l=0 to 4 {
+        for k=0 to SPX_N/8 {
+            t = st[:u64 4*k + l];
+            out.[:u64 l*SPX_N + 8*k] = t;
+        }
+    }
+
+    return out;
+}

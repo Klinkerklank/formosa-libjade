@@ -80,6 +80,15 @@ fn xmss_node(
     reg u64 pow;       // temporary variable for computing powers
     reg u32 exp;       // temporary variable for computing exponents
 
+    // four-way H variables
+    stack u32[8] w67;                    // tree height and tree index of every lane
+    stack u8[4*SPX_N] parents;           // the four parent nodes
+    reg ptr u8[8*SPX_N] children;        // pointer to subarray with the eight child nodes
+    reg u32 avail_nodes;                 // number of nodes left to compute on the current layer
+    reg u32 idx;                         // tree index of a lane
+
+    inline int j;
+
     node_addr = 0; // assigned in the loops below; initialised for the SCT checker
     layer = 0; // iterate over the layers
     while (layer <= z) {
@@ -130,16 +139,6 @@ fn xmss_node(
                 lnode = label;  // lnode = tree_label(2*node, layer-1)
                 lnode *= SPX_N; // lnode = tree_label(2*node, layer-1) * SPX_N
 
-                // compute the byte address of the right child, which by definition is adjoining the left child
-                rnode = lnode;  // rnode = tree_label(2*node,   layer-1) * SPX_N
-                rnode += SPX_N; // rnode = tree_label(2*node+1, layer-1) * SPX_N
-
-                // copy the children to buffers
-                // note: trying to pass the children to H as two reg ptr (to avoid the needless copying),
-                // gives the error that some reg ptr are not disjoint?
-                buf_l = __copy_nbytes(buf_l, flat_tree[lnode : SPX_N]);
-                buf_r = __copy_nbytes(buf_r, flat_tree[rnode : SPX_N]);
-
                 // set the correct values in ADRS for tree node hashing
                 adrs = __adrs_set_type_and_clear(adrs, SPX_ADRS_TYPE_TREE);
                 adrs = __adrs_set_tree_height(adrs, layer);
@@ -152,11 +151,54 @@ fn xmss_node(
                 node_addr = label;  // node_addr = tree_label(node, layer)
                 node_addr *= SPX_N; // node_addr = tree_label(node, layer) * SPX_N
 
-                // compute node value = H(PK.seed, ADRS, lnode || rnode)
-                () = #spill(adrs);
-                flat_tree[node_addr : SPX_N] = __H(flat_tree[node_addr : SPX_N], pkseed, adrs, buf_l, buf_r);
-                () = #unspill(adrs);
-                _ = #init_msf(); // the unspilled values are public after the fence
+                // compute how many nodes still need to be computed on this layer
+                avail_nodes  = rightmost;
+                avail_nodes -= node;
+
+                if (avail_nodes >= 4) {
+                    // four parents node, ..., node+3 at once: their eight
+                    // children are adjacent in flat_tree, as are the parents
+
+                    // tree height and tree index of every lane
+                    for j=0 to 4 {
+                        w67[2*j] = layer;
+                        idx = node;
+                        idx += j;
+                        w67[2*j+1] = idx;
+                    }
+
+                    () = #spill(adrs, node_addr);
+                    children = flat_tree[lnode : 8*SPX_N];
+                    parents = thash_x4_2n::thash_x4(parents, children, pkseed, adrs, w67);
+                    flat_tree[lnode : 8*SPX_N] = children;
+                    () = #unspill(adrs, node_addr);
+                    _ = #init_msf(); // the unspilled values are public after the fence
+
+                    for j=0 to 4 {
+                        flat_tree[node_addr + j*SPX_N : SPX_N] = __copy_nbytes(flat_tree[node_addr + j*SPX_N : SPX_N], parents[j*SPX_N : SPX_N]);
+                    }
+
+                    // the loop advances one node, so skip the other three here
+                    () = #unspill(node);
+                    node += 3;
+                    () = #spill(node);
+                } else {
+                    // compute the byte address of the right child, which by definition is adjoining the left child
+                    rnode = lnode;  // rnode = tree_label(2*node,   layer-1) * SPX_N
+                    rnode += SPX_N; // rnode = tree_label(2*node+1, layer-1) * SPX_N
+
+                    // copy the children to buffers
+                    // note: trying to pass the children to H as two reg ptr (to avoid the needless copying),
+                    // gives the error that some reg ptr are not disjoint?
+                    buf_l = __copy_nbytes(buf_l, flat_tree[lnode : SPX_N]);
+                    buf_r = __copy_nbytes(buf_r, flat_tree[rnode : SPX_N]);
+
+                    // compute node value = H(PK.seed, ADRS, lnode || rnode)
+                    () = #spill(adrs, node_addr);
+                    flat_tree[node_addr : SPX_N] = __H(flat_tree[node_addr : SPX_N], pkseed, adrs, buf_l, buf_r);
+                    () = #unspill(adrs, node_addr);
+                    _ = #init_msf(); // the unspilled values are public after the fence
+                }
             }
 
             () = #unspill(skseed, pkseed, i, layer, node, rightmost);
