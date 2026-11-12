@@ -137,7 +137,7 @@ jobs:
       - name: KAT
         run: >-
           $BENCHDEV make -C bench test
-          BACKENDS='jasmin mlkem-native mldsa-native pqcrystals pqcrystals-ref'
+          BACKENDS='jasmin mlkem-native mldsa-native pqcrystals pqcrystals-ref sphincsplus sphincsplus-ref'
 
       # REPS interleaved passes (bench/Makefile); bench.json carries every
       # pass with its spread and the run metadata.
