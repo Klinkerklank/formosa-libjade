@@ -56,8 +56,8 @@ SHA2-256s, SHA2-256f, SHAKE-128s, SHAKE-128f, SHAKE-192s, SHAKE-192f, SHAKE-256s
 SHAKE-256f (directories `sha2128s` to `shake256f`), is validated by
 [KAT](docs/assurance.md#kat) and [memcheck](docs/assurance.md#memcheck) and checked
 for [CT and SCT](docs/assurance.md#ct-and-sct), without proofs for now: its EasyCrypt
-specification ([SLHDSA.ec](proofs/slhdsa/spec/SLHDSA.ec)) is a placeholder, without a
-security theorem.
+specification ([FIPS205_External.ec](proofs/slhdsa/spec/FIPS205_External.ec)), from
+[slhdsa-spec](https://github.com/nirapod-labs/slhdsa-spec), has no security theorem yet.
 
 SHA-3 (FIPS 202) is available as building blocks under
 `src/fips202/<target>/common/`; the self-contained one-shot functions and incremental
