@@ -4,12 +4,14 @@
  *   out_l = SHAKE256(PK.seed || ADRS_l || M_l, 8n),  l = 0..3,
  *
  * where ADRS_l is ADRS with its words 6 and 7 (chain and hash address, or
- * tree height and tree index) replaced by w67[2l] and w67[2l+1], and M_l is
- * in[l*MLEN : MLEN]. The input is at most n + 32 + 2n <= 128 bytes, so each
+ * tree height and tree index) replaced by w67[2l] and w67[2l+1] (KP = 0), or
+ * with its words 5, 6 and 7 (key pair address too) replaced by w67[3l],
+ * w67[3l+1] and w67[3l+2] (KP = 1), and M_l is in[l*MLEN : MLEN]. The input is at most n + 32 + 2n <= 128 bytes, so each
  * lane is a single block of the 136-byte rate: the padded block is written
  * directly into the (zero) four-way state, and one permutation follows.
  *
- * Needs to be included in a namespace that defines MLEN, the byte length of M.
+ * Needs to be included in a namespace that defines MLEN, the byte length of M,
+ * and KP, whether the key pair address is per lane.
  */
 
 fn thash_x4(
@@ -17,7 +19,7 @@ fn thash_x4(
     reg ptr u8[4*MLEN] in,                   // four MLEN-byte messages, concatenated
     reg ptr u8[SPX_N] pkseed,                // PK.seed
     reg ptr u32[8] adrs,                     // ADRS (words 0..5 shared by the lanes)
-    reg ptr u32[8] w67                       // ADRS words 6 and 7 of every lane
+    reg ptr u32[4*(2+KP)] w67                // ADRS words 6 and 7 (KP = 1: 5, 6 and 7) of every lane
 ) -> reg ptr u8[4*SPX_N] // -> out
 {
     // stack variables
@@ -52,10 +54,18 @@ fn thash_x4(
         }
     }
 
+    // ADRS word 5 (KP = 1), per lane (the upper half of u64 word n/8+2)
+    if (KP == 1) {
+        for l=0 to 4 {
+            a = w67[3*l]; a = #BSWAP_32(a);
+            st[:u32 2*(4*(SPX_N/8 + 2) + l) + 1] = a;
+        }
+    }
+
     // ADRS words 6 and 7, per lane (u64 word n/8+3)
     for l=0 to 4 {
-        a = w67[2*l];   a = #BSWAP_32(a);
-        b = w67[2*l+1]; b = #BSWAP_32(b);
+        a = w67[(2+KP)*l + KP];   a = #BSWAP_32(a);
+        b = w67[(2+KP)*l + KP+1]; b = #BSWAP_32(b);
         st[:u32 2*(4*(SPX_N/8 + 3) + l)]     = a;
         st[:u32 2*(4*(SPX_N/8 + 3) + l) + 1] = b;
     }

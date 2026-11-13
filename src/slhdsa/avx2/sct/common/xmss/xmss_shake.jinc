@@ -85,6 +85,7 @@ fn xmss_node(
     stack u8[4*SPX_N] parents;           // the four parent nodes
     reg ptr u8[8*SPX_N] children;        // pointer to subarray with the eight child nodes
     reg u32 avail_nodes;                 // number of nodes left to compute on the current layer
+    reg ptr u8[4*SPX_N] leaves;          // pointer to subarray with four WOTS+ public keys
     reg u32 idx;                         // tree index of a lane
 
     inline int j;
@@ -121,8 +122,28 @@ fn xmss_node(
                 node_addr = (64u) node; // node index
                 node_addr *= SPX_N;     // byte address of node
 
-                // compute the WOTS+ public key
-                flat_tree[node_addr : SPX_N], adrs = __wots_pkgen(flat_tree[node_addr : SPX_N], skseed, pkseed, adrs);
+                // compute how many leaves still need to be computed
+                avail_nodes  = rightmost;
+                avail_nodes -= node;
+
+                // four leaves at a time when the subtree has at least four
+                // (then it has a multiple of four, adjacent in flat_tree)
+                if (avail_nodes >= 4) {
+                    leaves = flat_tree[node_addr : 4*SPX_N];
+                    () = #spill(node_addr, adrs);
+                    leaves = __wots_leaves_x4(leaves, skseed, pkseed, adrs, node);
+                    () = #unspill(node_addr, adrs);
+                    _ = #init_msf(); // the unspilled values are public after the fence
+                    flat_tree[node_addr : 4*SPX_N] = leaves;
+
+                    // the loop advances one leaf, so skip the other three here
+                    () = #unspill(node);
+                    node += 3;
+                    () = #spill(node);
+                } else {
+                    // compute the WOTS+ public key
+                    flat_tree[node_addr : SPX_N], adrs = __wots_pkgen(flat_tree[node_addr : SPX_N], skseed, pkseed, adrs);
+                }
             } else { // layer > 0
                 // internal node: the node value is the hash of its two children lnode and rnode
 

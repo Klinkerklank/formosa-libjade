@@ -577,6 +577,135 @@ fn __wots_sk_x4(
     return chains;
 }
 
+/*-------------------------------------------------------------+
+| ALGORITHM 6 FROM SLH-DSS (FIPS 205), FOUR KEYS AT ONCE       |
+| The WOTS+ public keys of the four XMSS leaves idx, ...,      |
+| idx+3: lane l is leaf idx+l, so the four lanes advance the   |
+| same chain of four keys in lockstep (every lane has w-1      |
+| steps to take, none is padding), and T_len compresses the    |
+| four public keys at once.                                    |
++-------------------------------------------------------------*/
+fn wots_leaves_x4(
+    #[spill_to_mmx] reg ptr u8[4*SPX_N] leaves, // output: the four leaves (WOTS+ public keys)
+    reg ptr u8[SPX_N] skseed,                   // SK.seed
+    reg ptr u8[SPX_N] pkseed,                   // PK.seed
+    reg ptr u32[8] adrs,                        // ADRS (layer and tree address of the XMSS tree)
+    reg u32 idx                                 // index of the first leaf
+) -> reg ptr u8[4*SPX_N] // -> leaves
+{
+    // stack variables
+    stack u8[4*SPX_LEN*SPX_N] pks; // the chain ends of every leaf, leaf after leaf
+    stack u8[4*SPX_N] cur;         // the current value of one chain of every leaf
+    stack u8[4*SPX_N] next;        // the next value of that chain
+    stack u8[4*SPX_N] seeds;       // SK.seed in every lane
+    stack u8[SPX_N] seed;          // PK.seed, on the stack (its address public in the loops)
+    stack u32[12] wh;              // key pair, chain and hash address of every lane
+    stack u32[4] kp;               // key pair address of every lane
+    stack u32[8] adrs_prf;         // ADRS of the secret key values (WOTS_PRF)
+    stack u32[8] adrs_hash;        // ADRS of the chains (WOTS_HASH)
+    stack u32[8] adrs_pk;          // ADRS of the public keys (WOTS_PK)
+
+    // register variables
+    reg u32 chain;  // chain address
+    reg u32 pos;    // hash address
+    reg u32 lw;     // a word of the lane state
+    reg u64 off;    // byte offset of the chain in a leaf
+    reg u64 x;      // temporary variable for copying
+
+    inline int l w;
+
+    () = #spill(leaves);
+
+    seed = __copy_nbytes(seed, pkseed);
+    for l=0 to 4 {
+        seeds[l*SPX_N : SPX_N] = __copy_nbytes(seeds[l*SPX_N : SPX_N], skseed);
+    }
+
+    // the three kinds of ADRS; key pair address idx+l in lane l
+    adrs_hash = __adrs_clone(adrs_hash, adrs);
+    adrs_hash = __adrs_set_type_and_clear(adrs_hash, SPX_ADRS_TYPE_WOTS_HASH);
+    adrs_prf = __adrs_clone(adrs_prf, adrs);
+    adrs_prf = __adrs_set_type_and_clear(adrs_prf, SPX_ADRS_TYPE_WOTS_PRF);
+    adrs_pk = __adrs_clone(adrs_pk, adrs);
+    adrs_pk = __adrs_set_type_and_clear(adrs_pk, SPX_ADRS_TYPE_WOTS_PK);
+    for l=0 to 4 {
+        lw = idx;
+        lw += l;
+        wh[3*l] = lw;
+        kp[l] = lw;
+    }
+
+    chain = 0;
+    while (chain < SPX_LEN) {
+        for l=0 to 4 {
+            wh[3*l+1] = chain;
+            wh[3*l+2] = 0;
+        }
+
+        // the secret key values of chain 'chain' of the four leaves
+        () = #spill(chain);
+        cur = thash_x4_n_kp::thash_x4(cur, seeds, seed, adrs_prf, wh);
+
+        // w-1 steps, alternating between cur and next (w-1 is odd)
+        pos = 0;
+        while (pos < SPX_W-2) {
+            for l=0 to 4 { wh[3*l+2] = pos; }
+            () = #spill(pos);
+            next = thash_x4_n_kp::thash_x4(next, cur, seed, adrs_hash, wh);
+            () = #unspill(pos);
+            _ = #init_msf(); // the unspilled values are public after the fence
+            pos += 1;
+            for l=0 to 4 { wh[3*l+2] = pos; }
+            () = #spill(pos);
+            cur = thash_x4_n_kp::thash_x4(cur, next, seed, adrs_hash, wh);
+            () = #unspill(pos);
+            _ = #init_msf(); // the unspilled values are public after the fence
+            pos += 1;
+        }
+        for l=0 to 4 { wh[3*l+2] = pos; }
+        next = thash_x4_n_kp::thash_x4(next, cur, seed, adrs_hash, wh);
+        () = #unspill(chain);
+        _ = #init_msf(); // the unspilled values are public after the fence
+
+        // the chain ends into the public key of every leaf
+        off = (64u) chain;
+        off *= SPX_N;
+        for l=0 to 4 {
+            for w=0 to SPX_N/8 {
+                x = next.[:u64 l*SPX_N + 8*w];
+                pks.[:u64 l*SPX_LEN*SPX_N + off + 8*w] = x;
+            }
+        }
+
+        chain += 1;
+    }
+
+    // compress the four public keys
+    () = #unspill(leaves);
+    _ = #init_msf(); // the unspilled values are public after the fence
+    leaves = T_len_x4(leaves, pks, seed, adrs_pk, kp);
+
+    return leaves;
+}
+
+inline // inline wrapper that splits parameter live-ranges, to aid the Jasmin compiler
+fn __wots_leaves_x4(
+    reg ptr u8[4*SPX_N] leaves,
+    reg ptr u8[SPX_N] skseed,
+    reg ptr u8[SPX_N] pkseed,
+    reg ptr u32[8] adrs,
+    reg u32 idx
+) -> reg ptr u8[4*SPX_N] // -> leaves
+{
+    leaves = leaves; skseed = skseed; pkseed = pkseed; adrs = adrs; idx = idx;
+
+    leaves = wots_leaves_x4(leaves, skseed, pkseed, adrs, idx);
+
+    leaves = leaves;
+
+    return leaves;
+}
+
 //////////////////////// MAIN FUNCTIONS ////////////////////////
 
 /*-------------------------------------------------------------+

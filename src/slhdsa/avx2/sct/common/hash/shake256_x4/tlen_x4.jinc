@@ -1,0 +1,127 @@
+/*
+ * T_len of four WOTS+ public keys at once on the four-way AVX2 Keccak:
+ *
+ *   out_l = SHAKE256(PK.seed || ADRS_l || M_l, 8n),  l = 0..3,
+ *
+ * where ADRS_l is ADRS (type WOTS_PK) with key pair address kp[l] and M_l is
+ * in[l*LEN*n : LEN*n], the LEN chain ends of the key. The input is
+ * n + 32 + LEN*n bytes, several blocks of the 136-byte rate: the first block
+ * holds PK.seed, ADRS and the first TL_FIRST bytes of M; then come the full
+ * blocks of M and the last (padded) block. n, 32 and LEN*n are multiples of
+ * 8, so every block is whole 64-bit words of every lane.
+ */
+
+param int TL_IN = SPX_LEN*SPX_N;                    // byte length of M
+param int TL_FIRST = SHAKE256_RATE - SPX_N - 32;     // bytes of M in the first block
+param int TL_FULL = (TL_IN - TL_FIRST) / SHAKE256_RATE; // full blocks after the first
+param int TL_LAST = (TL_IN - TL_FIRST) % SHAKE256_RATE; // bytes of M in the last block
+
+fn T_len_x4(
+    #[spill_to_mmx] reg ptr u8[4*SPX_N] out,       // output: four n-byte hashes
+    #[spill_to_mmx] reg ptr u8[4*SPX_LEN*SPX_N] in, // the LEN chain ends of every lane, lane after lane
+    reg ptr u8[SPX_N] pkseed,                      // PK.seed
+    reg ptr u32[8] adrs,                           // ADRS (type WOTS_PK, layer and tree address)
+    reg ptr u32[4] kp                              // key pair address of every lane
+) -> reg ptr u8[4*SPX_N] // -> out
+{
+    // stack variables
+    stack u256[25] st; // four-way Keccak state: word k of lane l is st[:u64 4*k + l]
+
+    // register variables
+    reg u256 zero; // zero vector
+    reg u64 t x;   // temporary variables
+    reg u64 c;     // last-byte padding constant
+    reg u64 off;   // byte offset in M
+    reg u64 blk;   // full blocks absorbed
+    reg u32 a b;   // temporary variables for byte-swapping ADRS words
+
+    inline int k l;
+
+    () = #spill(out);
+
+    zero = #set0_256();
+    for k=0 to 25 { st[k] = zero; }
+
+    // first block: PK.seed, ADRS (key pair address per lane), the first bytes of M
+    for k=0 to SPX_N/8 {
+        t = pkseed[:u64 k];
+        for l=0 to 4 { st[:u64 4*k + l] = t; }
+    }
+    for k=0 to 4 {
+        a = adrs[2*k];   a = #BSWAP_32(a);
+        b = adrs[2*k+1]; b = #BSWAP_32(b);
+        for l=0 to 4 {
+            st[:u32 2*(4*(SPX_N/8 + k) + l)]     = a;
+            st[:u32 2*(4*(SPX_N/8 + k) + l) + 1] = b;
+        }
+    }
+    for l=0 to 4 {
+        a = kp[l]; a = #BSWAP_32(a);
+        st[:u32 2*(4*(SPX_N/8 + 2) + l) + 1] = a; // ADRS word 5: key pair address
+    }
+    for k=0 to TL_FIRST/8 {
+        for l=0 to 4 {
+            t = in.[:u64 l*TL_IN + 8*k];
+            st[:u64 4*(SPX_N/8 + 4 + k) + l] = t;
+        }
+    }
+
+    () = #spill(in);
+    st = _keccakf1600_avx2x4(st);
+
+    // the full blocks of M
+    off = TL_FIRST;
+    blk = 0;
+    while (blk < TL_FULL) {
+        () = #unspill(in);
+        _ = #init_msf(); // the unspilled values are public after the fence
+        for k=0 to SHAKE256_RATE/8 {
+            for l=0 to 4 {
+                t = st[:u64 4*k + l];
+                x = in.[:u64 l*TL_IN + off + 8*k];
+                t ^= x;
+                st[:u64 4*k + l] = t;
+            }
+        }
+        () = #spill(off, blk);
+        st = _keccakf1600_avx2x4(st);
+        () = #unspill(off, blk);
+        _ = #init_msf(); // the unspilled values are public after the fence
+        off += SHAKE256_RATE;
+        blk += 1;
+    }
+
+    // the last block of M, with the SHAKE padding
+    () = #unspill(in);
+    _ = #init_msf(); // the unspilled values are public after the fence
+    for k=0 to TL_LAST/8 {
+        for l=0 to 4 {
+            t = st[:u64 4*k + l];
+            x = in.[:u64 l*TL_IN + TL_FIRST + TL_FULL*SHAKE256_RATE + 8*k];
+            t ^= x;
+            st[:u64 4*k + l] = t;
+        }
+    }
+    c = 0x8000000000000000;
+    for l=0 to 4 {
+        t = st[:u64 4*(TL_LAST/8) + l];
+        t ^= 0x1F;
+        st[:u64 4*(TL_LAST/8) + l] = t;
+        t = st[:u64 4*(SHAKE256_RATE/8 - 1) + l];
+        t ^= c;
+        st[:u64 4*(SHAKE256_RATE/8 - 1) + l] = t;
+    }
+    st = _keccakf1600_avx2x4(st);
+
+    // squeeze the first n bytes of every lane
+    () = #unspill(out);
+    _ = #init_msf(); // the unspilled values are public after the fence
+    for l=0 to 4 {
+        for k=0 to SPX_N/8 {
+            t = st[:u64 4*k + l];
+            out.[:u64 l*SPX_N + 8*k] = t;
+        }
+    }
+
+    return out;
+}

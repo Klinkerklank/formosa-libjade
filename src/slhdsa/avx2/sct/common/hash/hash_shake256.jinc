@@ -22,14 +22,26 @@ from Keccak require "avx2/common/keccakf1600x4.jinc"
 // four F or PRF at once (M is n bytes)
 namespace thash_x4_n {
     param int MLEN = SPX_N;
+    param int KP = 0;
+    require "shake256_x4/thash_x4.jinc"
+}
+
+// four F or PRF at once, each lane with its own key pair address (four WOTS+ keys)
+namespace thash_x4_n_kp {
+    param int MLEN = SPX_N;
+    param int KP = 1;
     require "shake256_x4/thash_x4.jinc"
 }
 
 // four H at once (M is 2n bytes)
 namespace thash_x4_2n {
     param int MLEN = 2*SPX_N;
+    param int KP = 0;
     require "shake256_x4/thash_x4.jinc"
 }
+
+// four T_len at once (four WOTS+ public keys, several blocks each)
+require "shake256_x4/tlen_x4.jinc"
 
 // for single bytes
 namespace A_1 {
