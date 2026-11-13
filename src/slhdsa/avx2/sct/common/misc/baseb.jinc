@@ -34,7 +34,7 @@ fn __base_b(
 		// align and trim the bits of input
         digit = (64u) total; // copy the buffer into digit
 		bits -= LG_B;        // there are 'bits' too many least-significant bits in the buffer at the moment
-    	_, _, _, _, _, digit = #SHR(digit, bits); // shift away the least-significant bits to align the input
+		_, _, _, _, _, digit = #SHR(digit, bits); // shift away the least-significant bits to align the input
 		digit &= (B-1); // mask away any bits from previous digits that were still to the left of the input
 
 		// write the digit value to the output array
