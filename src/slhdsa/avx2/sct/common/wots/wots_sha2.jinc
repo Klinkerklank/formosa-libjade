@@ -100,8 +100,10 @@ fn __chain_lengths(
 // over one 64-byte block holding PK.seed (the cached state) and one block for
 // ADRS^c || M (22 + n <= 55 bytes, so the padding fits in that block).
 // The chains of one WOTS+ instance are hashed eight at a time on the
-// eight-lane AVX2 SHA-256; the LEN chains are processed as WOTS_X8_LANES
-// lanes, the last batch padded with dummy lanes.
+// eight-lane AVX2 SHA-256. wots_chains_x8 (pkgen: all chains take the same
+// steps) and wots_sk_x8 run the LEN chains as WOTS_X8_LANES lanes, the last
+// batch padded with dummy lanes; wots_chains_refill_x8 (sign, pkFromSig:
+// chains of different lengths) keeps every lane busy with the next chain.
 
 param int WOTS_X8_LANES = ((SPX_LEN + 7) / 8) * 8; // LEN rounded up to a multiple of 8
 param int WOTS_X8_BATCHES = WOTS_X8_LANES / 8;      // number of eight-lane batches
@@ -272,6 +274,7 @@ fn F_x8(
 
 /*-------------------------------------------------------------+
 | ALGORITHM 5 FROM SLH-DSS (FIPS 205), ALL CHAINS AT ONCE      |
+| (batches: for chains that all take the same steps, pkgen)    |
 | Advances every chain j of a WOTS+ instance from position     |
 | start[j] to position stop[j], eight chains at a time.        |
 | The eight lanes of a batch step together from the smallest   |
@@ -427,6 +430,226 @@ fn __wots_chains_x8(
     chains = chains; start = start; stop = stop; adrs = adrs; h_cache = h_cache;
 
     chains = wots_chains_x8(chains, start, stop, adrs, h_cache);
+
+    chains = chains;
+
+    return chains;
+}
+
+/*-------------------------------------------------------------+
+| ALGORITHM 5 FROM SLH-DSS (FIPS 205), ALL CHAINS AT ONCE      |
+| (refilled lanes: for chains of different lengths, sign and   |
+| pkFromSig)                                                   |
+| Advances every chain j of a WOTS+ instance from position     |
+| start[j] to position stop[j] on eight lanes. Each lane holds |
+| one chain at its own position; when its chain reaches its    |
+| stop, the lane takes the next chain with steps to take, so   |
+| the lanes stay busy whatever the positions. The positions    |
+| are public (they follow from the message); the lanes are     |
+| updated without branches, and the chain indices loaded from  |
+| memory are protected with the misspeculation flag.           |
++-------------------------------------------------------------*/
+fn wots_chains_refill_x8(
+    reg ptr u8[WOTS_SIG] chains, // in/out: the LEN chain values
+    reg ptr u32[SPX_LEN] start,  // start position of every chain
+    reg ptr u32[SPX_LEN] stop,   // stop position of every chain
+    reg ptr u32[8] adrs,         // ADRS (type WOTS_HASH, key pair address set)
+    reg ptr u8[96] h_cache       // cached SHA2 state(s)
+) -> reg ptr u8[WOTS_SIG] // -> chains
+{
+    // stack variables
+    stack u8[(SPX_LEN+1)*SPX_N] work;                         // chain values, and the dummy chain SPX_LEN
+    stack u8[8*SPX_N] cur;                                    // the value of every lane
+    stack u8[8*SPX_N] next;                                   // the hashes of one step of the lanes
+    stack u8[8*22] adrscs;                                    // ADRS^c of every lane
+    stack u256[sha256_parallel::STATE_WORD_SIZE] state_cache; // vectorised cached state
+    stack u32[SPX_LEN+1] st;                                  // start position of every chain (dummy: 0)
+    stack u32[SPX_LEN+1] en;                                  // stop position of every chain (dummy: 0)
+    stack u32[SPX_LEN+1] queue;                               // the chains with steps to take, in order
+    stack u32[8] lpos;                                        // position of every lane
+    stack u32[8] lstop;                                       // stop position of every lane
+    stack u32[8] lchain;                                      // chain of every lane
+    stack u32 q_s;                                            // queue index of the next chain to take
+    stack u32 nq_s;                                           // number of chains in the queue
+
+    // register variables
+    #[msf] reg u64 ms;     // misspeculation flag
+    reg u32 p;             // position of a lane
+    reg u32 e;             // stop position of a lane
+    reg u32 c;             // chain of a lane
+    reg u32 nc;            // next chain of the queue
+    reg u32 s;             // start position of a chain
+    reg u32 q;             // queue index of the next chain to take
+    reg u32 nq;            // number of chains in the queue
+    reg u32 one;
+    reg u32 go;            // 1 when a lane takes the next chain
+    reg u32 avail;         // 1 when the queue has a chain left
+    reg u32 busy;          // 1 when a lane has a step to take
+    reg u32 act;           // number of lanes with a step to take
+    reg u32 swap;          // byte-swapped ADRS word
+    reg u64 off;           // byte offset of a chain in work
+    reg u64 idx;           // array index
+    reg u64 x y;           // temporary variables for copying
+
+    inline int i j w;
+
+    () = #spill(chains);
+    ms = #init_msf();
+
+    // the start and stop positions of the chains, and the queue of the
+    // chains with steps to take (a chain without steps keeps its value);
+    // the queue entries after the last chain are the dummy chain, as the
+    // lanes read the next entry of the queue even when it is empty
+    for i=0 to SPX_LEN+1 { queue[i] = SPX_LEN; }
+    nq = 0;
+    one = 1;
+    for i=0 to SPX_LEN {
+        s = start[i];
+        st[i] = s;
+        e = stop[i];
+        en[i] = e;
+        idx = (64u) nq;
+        queue[idx] = i;
+        busy = 0;
+        busy = one if (s < e);
+        nq += busy;
+        nq = #protect_32(nq, ms);
+    }
+    st[SPX_LEN] = 0;
+    en[SPX_LEN] = 0;
+    nq_s = nq;
+    q_s = 0;
+
+    // the chain values, and the dummy chain
+    () = #unspill(chains);
+    for i=0 to WOTS_SIG/8 {
+        x = chains.[:u64 8*i];
+        work.[:u64 8*i] = x;
+    }
+    for i=WOTS_SIG/8 to (SPX_LEN+1)*SPX_N/8 {
+        work.[:u64 8*i] = 0;
+    }
+
+    // the lanes start empty, on the dummy chain
+    for j=0 to 8 {
+        lpos[j] = 0;
+        lstop[j] = 0;
+        lchain[j] = SPX_LEN;
+        for w=0 to SPX_N/8 {
+            cur.[:u64 j*SPX_N + 8*w] = 0;
+            next.[:u64 j*SPX_N + 8*w] = 0;
+        }
+    }
+
+    state_cache = __sha256_x8_state_cache(state_cache, h_cache);
+    adrscs = __adrsc_x8(adrscs, adrs);
+
+    while {
+        // update every lane after a step (or, the first time, fill the lanes)
+        q = q_s;
+        nq = nq_s;
+        act = 0;
+        one = 1;
+        for j=0 to 8 {
+            p = lpos[j];
+            e = lstop[j];
+            c = lchain[j];
+            c = #protect_32(c, ms);
+
+            // a lane with a step to take takes its new value and advances
+            for w=0 to SPX_N/8 {
+                x = cur.[:u64 j*SPX_N + 8*w];
+                y = next.[:u64 j*SPX_N + 8*w];
+                x = y if (p < e);
+                cur.[:u64 j*SPX_N + 8*w] = x;
+            }
+            busy = 0;
+            busy = one if (p < e);
+            p += busy;
+
+            // write the value of the lane back to its chain
+            off = (64u) c;
+            off *= SPX_N;
+            for w=0 to SPX_N/8 {
+                x = cur.[:u64 j*SPX_N + 8*w];
+                work.[:u64 off + 8*w] = x;
+            }
+
+            // a lane at the stop of its chain takes the next chain of the queue
+            go = 0;
+            go = one if (p == e);
+            avail = 0;
+            avail = one if (q < nq);
+            go &= avail;
+            q = #protect_32(q, ms);
+            idx = (64u) q;
+            nc = queue[idx];
+            nc = #protect_32(nc, ms);
+            c = nc if (go != 0);
+            idx = (64u) nc;
+            s = st[idx];
+            p = s if (go != 0);
+            s = en[idx];
+            e = s if (go != 0);
+            off = (64u) nc;
+            off *= SPX_N;
+            for w=0 to SPX_N/8 {
+                x = cur.[:u64 j*SPX_N + 8*w];
+                y = work.[:u64 off + 8*w];
+                x = y if (go != 0);
+                cur.[:u64 j*SPX_N + 8*w] = x;
+            }
+            q += go;
+
+            lpos[j] = p;
+            lstop[j] = e;
+            lchain[j] = c;
+
+            busy = 0;
+            busy = one if (p < e);
+            act += busy;
+        }
+        q_s = q;
+        act = #protect_32(act, ms);
+    } (act != 0) {
+        // the chain and hash address of every lane
+        for j=0 to 8 {
+            swap = lchain[j];
+            swap = #BSWAP_32(swap);
+            adrscs.[:u32 22*j + 14] = swap; // ADRS^c bytes 14..17: chain address
+            swap = lpos[j];
+            swap = #BSWAP_32(swap);
+            adrscs.[:u32 22*j + 18] = swap; // ADRS^c bytes 18..21: hash address
+        }
+
+        // one step of every lane
+        next = F_x8(next, cur, adrscs, state_cache);
+        ms = #init_msf(); // a fresh misspeculation flag after the call
+    }
+
+    // write back the LEN chains
+    () = #unspill(chains);
+    _ = #init_msf(); // the unspilled pointer is public after the fence
+    for i=0 to WOTS_SIG/8 {
+        x = work.[:u64 8*i];
+        chains.[:u64 8*i] = x;
+    }
+
+    return chains;
+}
+
+inline // inline wrapper that splits parameter live-ranges, to aid the Jasmin compiler
+fn __wots_chains_refill_x8(
+    reg ptr u8[WOTS_SIG] chains,
+    reg ptr u32[SPX_LEN] start,
+    reg ptr u32[SPX_LEN] stop,
+    reg ptr u32[8] adrs,
+    reg ptr u8[96] h_cache
+) -> reg ptr u8[WOTS_SIG] // -> chains
+{
+    chains = chains; start = start; stop = stop; adrs = adrs; h_cache = h_cache;
+
+    chains = wots_chains_refill_x8(chains, start, stop, adrs, h_cache);
 
     chains = chains;
 
@@ -641,7 +864,7 @@ fn wots_sign(
 
     // compute all signature values, eight chains at a time
     () = #spill(adrs);
-    sig_wots = __wots_chains_x8(sig_wots, start, lengths, adrs, cache_single);
+    sig_wots = __wots_chains_refill_x8(sig_wots, start, lengths, adrs, cache_single);
     () = #unspill(adrs);
     _ = #init_msf(); // the unspilled values are public after the fence
 
@@ -706,7 +929,7 @@ fn wots_pkfromsig(
 
     // compute all public key values, eight chains at a time
     () = #spill(adrs, cache_single);
-    sigvals = __wots_chains_x8(sigvals, lengths, stop, adrs, cache_single);
+    sigvals = __wots_chains_refill_x8(sigvals, lengths, stop, adrs, cache_single);
     () = #unspill(adrs, cache_single);
     _ = #init_msf(); // the unspilled values are public after the fence
 
