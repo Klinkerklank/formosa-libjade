@@ -633,3 +633,72 @@ fn __H_digests(
 
     return nodes, schedule;
 }
+
+// H on SHA2_H_PARA_DEG lanes that each have their own ADRS^c (H_adrs takes the
+// consecutive tree indices of one layer): node_l = H(PK.seed, ADRS_l, children_2l || children_2l+1)
+fn H_lanes(
+    #[spill_to_mmx] reg ptr u8[SHA2_H_PARA_DEG * SPX_N] nodes,        // out: one node per lane
+    reg ptr u8[2 * SHA2_H_PARA_DEG * SPX_N] children,                 // the two children of every lane, interleaved
+    reg ptr u8[SHA2_H_PARA_DEG * 22] adrscs,                          // the ADRS^c of every lane
+    reg ptr u8[96] sha2_state_caches                                  // combined SHA256 and SHA512 state caches
+) -> reg ptr u8[SHA2_H_PARA_DEG * SPX_N] // -> nodes
+{
+    // stack variables
+    stack u256[SHA2_STATE_WORD_SIZE] state;       // vectorised state
+    stack u256[SHA2_ROUNDS_NUM] schedule;         // vectorised message schedule
+    stack u256[SHA2_STATE_WORD_SIZE] state_cache; // vectorised cached SHA512 state
+    stack u64 state_word;                         // temporary variable for copying purposes
+
+    // register variables
+    reg u256 state_vector; // temporary variable for copying purposes
+    reg u64 sch_idx;       // byte index of the current position in message schedule
+    reg u64 bits;          // number of bits processed
+
+    inline int i;
+
+    () = #spill(nodes);
+
+    // the cached SHA512 state, in every lane
+    for i=0 to SHA2_STATE_WORD_SIZE {
+        state_word = sha2_state_caches[:u64 4+i];
+        state_vector = #VPBROADCAST_4u64(state_word);
+        state_cache[i] = state_vector;
+    }
+
+    sch_idx = 0;
+    bits = SHA512_IN*8; // exactly one block of input was consumed to get the cached state
+    state, schedule, sch_idx, bits = sha512_parallel::init_cache(state, schedule, sch_idx, bits, state_cache);
+
+    // ADRS^c of every lane
+    () = #spill(children);
+    state, schedule, sch_idx, bits = sha512_parallel_adrsc::absorb_fixed(state, schedule, sch_idx, bits,
+        adrscs[0*22 : 22], adrscs[1*22 : 22], adrscs[2*22 : 22], adrscs[3*22 : 22]);
+    () = #unspill(children);
+    _ = #init_msf(); // the unspilled pointer is public after the fence
+
+    // the children of every lane
+    state, schedule, sch_idx, bits = __H_children(state, schedule, sch_idx, bits, children);
+
+    () = #unspill(nodes);
+    _ = #init_msf(); // the unspilled pointer is public after the fence
+    nodes, schedule = __H_digests(state, schedule, sch_idx, bits, nodes);
+
+    return nodes;
+}
+
+inline // inline wrapper that splits parameter live-ranges, to aid the Jasmin compiler
+fn __H_lanes(
+    reg ptr u8[SHA2_H_PARA_DEG * SPX_N] nodes,
+    reg ptr u8[2 * SHA2_H_PARA_DEG * SPX_N] children,
+    reg ptr u8[SHA2_H_PARA_DEG * 22] adrscs,
+    reg ptr u8[96] sha2_state_caches
+) -> reg ptr u8[SHA2_H_PARA_DEG * SPX_N] // -> nodes
+{
+    nodes = nodes; children = children; adrscs = adrscs; sha2_state_caches = sha2_state_caches;
+
+    nodes = H_lanes(nodes, children, adrscs, sha2_state_caches);
+
+    nodes = nodes;
+
+    return nodes;
+}

@@ -528,158 +528,192 @@ fn __fors_sign(
 /*-------------------------------------------------------------+
 | ALGORITHM 17 FROM SLH-DSS (FIPS 205)                         |
 | Computes a FORS public key from a FORS signature.            |
+| The k trees are independent, so they are computed            |
+| four at a time on the four-way Keccak: the leaves and the    |
+| authentication paths (one height at a time) with thash_x4.   |
+| Every lane has its own tree index; the order of a node and   |
+| its authentication node follows the (public) leaf index,     |
+| selected without branches.                                   |
 +-------------------------------------------------------------*/
+param int FORS_LANES = 4;                                                // trees per batch
+param int FORS_KPAD = ((SPX_K + FORS_LANES - 1) / FORS_LANES) * FORS_LANES; // k rounded up to whole batches
+
 fn fors_pkfromsig(
-    reg ptr u8[SPX_N] pk_fors,     // output: compressed FORS public key
-    reg ptr u8[FORS_SIG] sig_fors, // FORS signature
-    reg ptr u8[SPX_MD_LEN] md,     // message digest
-    reg ptr u8[SPX_N] pkseed,      // PK.seed
-    reg ptr u32[8] adrs            // ADRS
+    reg ptr u8[SPX_N] pk_fors,       // output: compressed FORS public key
+    reg ptr u8[FORS_SIG] sig_fors,   // FORS signature
+    reg ptr u8[SPX_MD_LEN] md,       // message digest
+    reg ptr u8[SPX_N] pkseed,        // PK.seed
+    reg ptr u32[8] adrs              // ADRS
 ) -> reg ptr u8[SPX_N], reg ptr u32[8] // -> pk_fors, adrs
 {
     () = #spill(pk_fors);
 
     // stack variables
-    stack u32[SPX_K] indices;
-    stack u32[8] forspkadrs;
-    stack u8[SPX_K*SPX_N] roots;
-    stack u8[SPX_N] node0;
-    stack u8[SPX_N] node1;
-    stack u8[SPX_N] buf0;
-    stack u8[SPX_N] buf1;
+    stack u32[SPX_K] indices;                                 // leaf index within every tree
+    stack u32[FORS_LANES] gidx;                               // leaf index (over the forest) of every lane
+    stack u8[FORS_KPAD*SPX_N] roots;                          // the roots, padded to whole batches
+    stack u8[4*SPX_N] leaves_in;                              // the secret key values of the lanes
+    stack u8[4*SPX_N] leaves;                                 // their hashes
+    stack u8[FORS_LANES*SPX_N] nodes;                         // the current node of every lane
+    stack u8[2*FORS_LANES*SPX_N] children;                    // the children of every lane
+    stack u32[8] w67;                                         // tree height and tree index of every lane
+    stack u8[SPX_N] seed;                                     // PK.seed, on the stack (its address public in the loop)
+    stack u32[8] adrs_s;                                      // ADRS, on the stack (its address public in the loop)
+    stack u32[8] forspkadrs;                                  // ADRS for compressing the roots
 
     // register variables
-    reg ptr u8[SPX_N] sk; // pointer to one FORS secret key
-    reg u32 j;
-    reg u32 check;
-    reg u32 height;
-    reg u32 kpa;
-    reg u64 i;
-    reg u64 offset;
-    reg u64 offset_roots;
-    reg u32 idx_auth;
-    reg u32 idx_leaf;
-    reg u32 idx_tree;
+    reg u64 batch;  // batch index
+    reg u64 t;      // tree of a lane
+    reg u64 kmax;   // the last tree
+    reg u64 off;    // byte offset in the signature
+    reg u32 j;      // height of the current nodes
+    reg u32 g;      // leaf index of a lane
+    reg u32 bit;    // whether the node of a lane is a right child
+    reg u8 js;      // j, as a shift count
+    reg u32 h;      // tree height of the parents
+    reg u32 kpa;    // ADRS key pair address
+    reg u64 x y;    // temporary variables for copying
+
+    inline int l w;
 
     // compute the base-t leaf indices
     indices = baseb_fors::__base_b(indices, md);
 
-    offset       = 0; // first node starts at byte offset 0 in sig_fors
-    offset_roots = 0; // first root will get placed at the start of offset_roots
-    i = 0; // iterator over the forest's trees
-    while (i < SPX_K) {
-        () = #spill(offset_roots);
+    seed = __copy_nbytes(seed, pkseed);
+    adrs_s = __adrs_clone(adrs_s, adrs); // type FORS_TREE and the key pair address of ADRS
 
-        // extract the secret key value from the leaf and copy it to node0
-        sk = sig_fors[offset : SPX_N];
-        node0 = __copy_nbytes(node0, sk);
+    () = #spill(sig_fors);
 
-        // set the height of the leaf to 0 in ADRS
-        height = 0;
-        adrs = __adrs_set_tree_height(adrs, height);
-
-        // the leftmost leaf in the i-th FORS tree is i*2^a,
-        // and the offset within the tree is indices[i], so the index
-        // of the i-th tree's secret key value leaf is i*(2^a) + indices[i]
-        idx_leaf = i;           // idx_leaf = 2^a
-        idx_leaf <<= SPX_A;     // idx_leaf = i*(2^a)
-        idx_leaf += indices[i]; // idx_leaf = i*(2^a) + indices[i]
-        _ = #init_msf(); // the FORS index, loaded from memory, is public after the fence
-        adrs = __adrs_set_tree_index(adrs, idx_leaf);
-
-        // compute the hash of the FORS secret key value
-        () = #spill(pkseed, adrs, sig_fors, i, offset);
-        node0 = __F(node0, pkseed, adrs);
-        () = #unspill(pkseed, adrs, sig_fors, i, offset);
+    batch = 0;
+    while (batch < FORS_KPAD/FORS_LANES) {
+        () = #unspill(sig_fors);
         _ = #init_msf(); // the unspilled values are public after the fence
 
-        offset += SPX_N; // one n-byte secret key value has been consumed
+        // the leaves: tree t = FORS_LANES*batch + l (the padding lanes repeat
+        // the last tree), leaf index t*2^a + indices[t], height 0
+        for l=0 to FORS_LANES {
+            t = batch;
+            t *= FORS_LANES;
+            t += l;
+            kmax = SPX_K - 1;
+            t = kmax if (t > kmax);
+            g = (32u) t;
+            g <<= SPX_A;
+            g += indices[t];
+            gidx[l] = g;
 
-        // compute the authentication path node's horizontal index
-        idx_auth = indices[i];
-        _ = #init_msf(); // the FORS index, loaded from memory, is public after the fence
-
-        // compute the authentication path nodes for the i-th tree in the forest
-        j = 0; // iterator over the authentication path nodes
-        while (j < SPX_A) {
-            // compute the parent node's height
-            height = j;  // height = j
-            height += 1; // height = j + 1
-            adrs = __adrs_set_tree_height(adrs, height);
-
-            // check whether the authentication path node is
-            // a left child (indices[i]/2^j is even) or a right child (indices[i]/2^j is odd)
-            check = idx_auth; // check = floor(indices[i] / 2^j)
-            check &= 1;       // check = floor(indices[i] / 2^j) mod 2
-
-            () = #spill(j, idx_auth);
-
-            if (check == 0) { // floor(indices[i] / 2^j) is even
-                // compute the parent node's horizontal index
-                idx_tree = __adrs_get_tree_index(adrs);
-                idx_tree >>= 1;
-
-                // set the parent node's horizontal index
-                adrs = __adrs_set_tree_index(adrs, idx_tree);
-
-                // buf = node0 || AUTH[i]
-                buf0 = __copy_nbytes(buf0, node0);
-                buf1 = __copy_nbytes(buf1, sig_fors[offset : SPX_N]);
-            } else { // floor(indices[i] / 2^j) is odd
-                // compute the parent node's horizontal index
-                idx_tree = __adrs_get_tree_index(adrs);
-                idx_tree -= 1;
-                idx_tree >>= 1;
-
-                // set the parent node's horizontal index
-                adrs = __adrs_set_tree_index(adrs, idx_tree);
-
-                // buf = AUTH[i] || node0
-                buf0 = __copy_nbytes(buf0, sig_fors[offset : SPX_N]);
-                buf1 = __copy_nbytes(buf1, node0);
+            off = t;
+            off *= (SPX_A + 1) * SPX_N;
+            for w=0 to SPX_N/8 {
+                x = sig_fors.[:u64 off + 8*w];
+                leaves_in.[:u64 l*SPX_N + 8*w] = x;
             }
 
-            // compute the parent node
-            () = #spill(pkseed, adrs, sig_fors, i, offset);
-            node1 = __H(node1, pkseed, adrs, buf0, buf1);
-            () = #unspill(pkseed, adrs, sig_fors, i, offset);
-            _ = #init_msf(); // the unspilled values are public after the fence
-
-            // save the parent node's value to become the next iteration's child node
-            node0 = __copy_nbytes(node0, node1);
-
-            () = #unspill(j, idx_auth);
-            _ = #init_msf(); // the unspilled values are public after the fence
-
-            // update the authentication path node's horizontal index for the next iteration
-            idx_auth >>= 1; // idx_auth = floor(indices[i] / 2^j)
-
-            offset += SPX_N; // one n-byte node has been processed
-            j += 1; // advance to the next node
+            w67[2*l] = 0;                    // tree height 0
+            w67[2*l+1] = g;                  // tree index
         }
 
-        () = #unspill(offset_roots);
+        () = #spill(batch);
+        leaves = thash_x4_n::thash_x4(leaves, leaves_in, seed, adrs_s, w67);
+        () = #unspill(batch);
         _ = #init_msf(); // the unspilled values are public after the fence
 
-        // copy the last-computed node (the root) to roots
-        roots[offset_roots : SPX_N] = __copy_nbytes(roots[offset_roots : SPX_N], node0);
+        for l=0 to FORS_LANES {
+            for w=0 to SPX_N/8 {
+                x = leaves.[:u64 l*SPX_N + 8*w];
+                nodes.[:u64 l*SPX_N + 8*w] = x;
+            }
+        }
 
-        offset_roots += SPX_N; // one n-byte root has been written
-        i += 1; // advance to the next tree
+        // the authentication paths, one height at a time
+        j = 0;
+        while (j < SPX_A) {
+            () = #unspill(sig_fors);
+            _ = #init_msf(); // the unspilled values are public after the fence
+
+            h = j;
+            h += 1;
+
+            for l=0 to FORS_LANES {
+                t = batch;
+                t *= FORS_LANES;
+                t += l;
+                kmax = SPX_K - 1;
+                t = kmax if (t > kmax);
+
+                // the authentication node at height j of tree t
+                off = t;
+                off *= (SPX_A + 1) * SPX_N;
+                off += SPX_N;
+                x = (64u) j;
+                x *= SPX_N;
+                off += x;
+
+                // bit j of the leaf index: 0 when the node is a left child
+                g = gidx[l];
+                js = (8u) j;
+                bit = g;
+                _, _, _, _, _, bit = #SHR_32(bit, js);
+                bit &= 1;
+
+                // children = node || auth (bit 0) or auth || node (bit 1)
+                for w=0 to SPX_N/8 {
+                    x = nodes.[:u64 l*SPX_N + 8*w];
+                    y = sig_fors.[:u64 off + 8*w];
+                    children.[:u64 (2*l)*SPX_N + 8*w] = x;
+                    children.[:u64 (2*l+1)*SPX_N + 8*w] = y;
+                }
+                for w=0 to SPX_N/8 {
+                    x = children.[:u64 (2*l)*SPX_N + 8*w];
+                    y = children.[:u64 (2*l+1)*SPX_N + 8*w];
+                    x = y if (bit != 0);
+                    y = nodes.[:u64 l*SPX_N + 8*w];
+                    children.[:u64 (2*l)*SPX_N + 8*w] = x;
+                    x = children.[:u64 (2*l+1)*SPX_N + 8*w];
+                    x = y if (bit != 0);
+                    children.[:u64 (2*l+1)*SPX_N + 8*w] = x;
+                }
+
+                // the parent: height j+1, tree index (leaf index) >> (j+1)
+                w67[2*l] = h;
+                _, _, _, _, _, g = #SHR_32(g, js);
+                g >>= 1;
+                w67[2*l+1] = g;
+            }
+
+            () = #spill(batch, j);
+            nodes = thash_x4_2n::thash_x4(nodes, children, seed, adrs_s, w67);
+            () = #unspill(batch, j);
+            _ = #init_msf(); // the unspilled values are public after the fence
+
+            j += 1;
+        }
+
+        // the roots of the batch (those of the padding lanes are never used)
+        off = batch;
+        off *= FORS_LANES*SPX_N;
+        for l=0 to FORS_LANES {
+            for w=0 to SPX_N/8 {
+                x = nodes.[:u64 l*SPX_N + 8*w];
+                roots.[:u64 off + l*SPX_N + 8*w] = x;
+            }
+        }
+
+        batch += 1;
     }
 
     // set the correct ADRS values for FORS public key generation
-    forspkadrs = __adrs_clone(forspkadrs, adrs);
+    forspkadrs = __adrs_clone(forspkadrs, adrs_s);
     forspkadrs = __adrs_set_type_and_clear(forspkadrs, SPX_ADRS_TYPE_FORS_ROOTS);
 
     // get the key pair address from ADRS, and set it in forspkadrs
-    kpa = __adrs_get_key_pair_addr(adrs);
+    kpa = __adrs_get_key_pair_addr(adrs_s);
     forspkadrs = __adrs_set_key_pair_addr(forspkadrs, kpa);
 
     () = #unspill(pk_fors);
     _ = #init_msf(); // the unspilled values are public after the fence
 
-    pk_fors = __T_k(pk_fors, pkseed, forspkadrs, roots);
+    pk_fors = __T_k(pk_fors, seed, forspkadrs, roots[0 : SPX_K*SPX_N]);
 
     return pk_fors, adrs;
 }
