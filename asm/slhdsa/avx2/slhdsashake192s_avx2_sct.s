@@ -498,16 +498,16 @@ slh_dsa_shake192s_keygen:
 	movq	%rdx, 8(%r11)
 	movq	16(%r8), %rdx
 	movq	%rdx, 16(%r11)
-	movq	%rsi, %rdx
+	movq	%rsi, %r10
 	leaq	48(%rsi), %r11
 	leaq	32(%rsp), %r9
 	movq	$0, (%r9)
 	movq	$0, 8(%r9)
 	movq	$0, 16(%r9)
 	movq	$0, 24(%r9)
-	movl	$6, %r10d
+	movl	$6, %eax
 	leaq	32(%rsp), %r9
-	movl	%r10d, (%r9)
+	movl	%eax, (%r9)
 	movl	$0, %r9d
 	movl	$9, %ecx
 	leaq	72(%rsi), %rax
@@ -1802,18 +1802,18 @@ slh_dsa_shake192s_keygen:
 	movq	786568(%rsp), %r11
 	movq	786560(%rsp), %rsi
 	movl	786688(%rsp), %r8d
-	movl	786684(%rsp), %r10d
-	movl	786680(%rsp), %eax
-	movq	786552(%rsp), %rcx
+	movl	786684(%rsp), %eax
+	movl	786680(%rsp), %ecx
+	movq	786552(%rsp), %rdx
 	lfence
-	movq	$0, %rdx
+	movq	$0, %rdi
 	movq	%r11, 786552(%rsp)
 	movq	%rsi, 786560(%rsp)
 	movl	%r8d, 786680(%rsp)
-	movl	%r10d, 786684(%rsp)
-	movl	%eax, 786688(%rsp)
-	movq	%rcx, 786568(%rsp)
-	leaq	64(%rsp,%rcx), %rdi
+	movl	%eax, 786684(%rsp)
+	movl	%ecx, 786688(%rsp)
+	movq	%rdx, 786568(%rsp)
+	leaq	64(%rsp,%rdx), %rdi
 	leaq	-40(%rsp), %rsp
 	call	.LF$1
 .Lfors_node$11:
@@ -2445,6 +2445,7 @@ slh_dsa_shake192s_keygen:
 	movq	%r9, 32(%rsp)
 	leaq	(%rcx,%r9), %rax
 	movq	%rcx, 40(%rsp)
+	movq	%rdx, %r10
 	movl	%edi, %r9d
 	movl	%r8d, %ecx
 	leaq	-24856(%rsp), %rsp
@@ -2489,57 +2490,57 @@ slh_dsa_shake192s_keygen:
 .Lxmss_node$1:
 	movq	%rax, 24680(%rsp)
 	movq	$0, %rax
-	movl	$0, %r10d
+	movl	$0, %edi
 	jmp 	.Lxmss_node$2
 .Lxmss_node$3:
 	movl	%ecx, 24816(%rsp)
-	subl	%r10d, %ecx
-	movq	$1, %rdi
-	shlq	%cl, %rdi
-	movl	%edi, %r8d
+	subl	%edi, %ecx
+	movq	$1, %rdx
+	shlq	%cl, %rdx
+	movl	%edx, %r8d
 	imull	%r9d, %r8d
-	addl	%r8d, %edi
+	addl	%r8d, %edx
 	jmp 	.Lxmss_node$4
 .Lxmss_node$5:
-	movq	%rdx, 24688(%rsp)
+	movq	%r10, 24688(%rsp)
 	movq	%r11, 24696(%rsp)
 	movl	%r9d, 24820(%rsp)
-	movl	%r10d, 24824(%rsp)
+	movl	%edi, 24824(%rsp)
 	movl	%r8d, 24828(%rsp)
-	movl	%edi, 24832(%rsp)
-	cmpl	$0, %r10d
+	movl	%edx, 24832(%rsp)
+	cmpl	$0, %edi
 	je  	.Lxmss_node$6
 	movl	%r8d, %eax
 	imull	$2, %eax, %eax
-	movl	%r10d, %edx
-	decl	%edx
+	movl	%edi, %r9d
+	decl	%r9d
 	movl	$10, %ecx
+	movq	$1, %r10
+	shlq	%cl, %r10
+	subl	%r9d, %ecx
 	movq	$1, %r9
 	shlq	%cl, %r9
-	subl	%edx, %ecx
-	movq	$1, %rdx
-	shlq	%cl, %rdx
-	subq	%rdx, %r9
+	subq	%r9, %r10
 	movl	%eax, %eax
-	addq	%rax, %r9
-	imulq	$24, %r9, %rax
+	addq	%rax, %r10
+	imulq	$24, %r10, %rax
 	movq	$0, 16(%rsi)
 	movq	$0, 24(%rsi)
 	movl	$2, 16(%rsi)
-	movl	%r10d, 24(%rsi)
+	movl	%edi, 24(%rsi)
 	movl	%r8d, 28(%rsi)
 	movl	$10, %ecx
-	movq	$1, %rdx
-	shlq	%cl, %rdx
-	subl	%r10d, %ecx
 	movq	$1, %r9
 	shlq	%cl, %r9
-	subq	%r9, %rdx
+	subl	%edi, %ecx
+	movq	$1, %r10
+	shlq	%cl, %r10
+	subq	%r10, %r9
 	movl	%r8d, %ecx
-	addq	%rcx, %rdx
-	imulq	$24, %rdx, %rcx
-	subl	%r8d, %edi
-	cmpl	$4, %edi
+	addq	%rcx, %r9
+	imulq	$24, %r9, %rcx
+	subl	%r8d, %edx
+	cmpl	$4, %edx
 	jnb 	.Lxmss_node$12
 	movq	%rax, %rdx
 	addq	$24, %rdx
@@ -2577,18 +2578,18 @@ slh_dsa_shake192s_keygen:
 	movq	$0, %rcx
 	jmp 	.Lxmss_node$7
 .Lxmss_node$12:
-	movl	%r10d, 32(%rsp)
+	movl	%edi, 32(%rsp)
 	movl	%r8d, %edx
 	movl	%edx, 36(%rsp)
-	movl	%r10d, 40(%rsp)
+	movl	%edi, 40(%rsp)
 	movl	%r8d, %edx
 	incl	%edx
 	movl	%edx, 44(%rsp)
-	movl	%r10d, 48(%rsp)
+	movl	%edi, 48(%rsp)
 	movl	%r8d, %edx
 	addl	$2, %edx
 	movl	%edx, 52(%rsp)
-	movl	%r10d, 56(%rsp)
+	movl	%edi, 56(%rsp)
 	addl	$3, %r8d
 	movl	%r8d, 60(%rsp)
 	movq	%rsi, 24712(%rsp)
@@ -2636,9 +2637,9 @@ slh_dsa_shake192s_keygen:
 	movq	%rdx, 8(%rdi)
 	movq	16(%rcx), %rdx
 	movq	%rdx, 16(%rdi)
-	movl	24828(%rsp), %r8d
-	addl	$3, %r8d
-	movl	%r8d, 24828(%rsp)
+	movl	24828(%rsp), %ecx
+	addl	$3, %ecx
+	movl	%ecx, 24828(%rsp)
 .Lxmss_node$13:
 	jmp 	.Lxmss_node$7
 .Lxmss_node$6:
@@ -2648,8 +2649,8 @@ slh_dsa_shake192s_keygen:
 	movl	%r8d, 20(%rsi)
 	movl	%r8d, %eax
 	imulq	$24, %rax, %rax
-	subl	%r8d, %edi
-	cmpl	$4, %edi
+	subl	%r8d, %edx
+	cmpl	$4, %edx
 	jnb 	.Lxmss_node$8
 	leaq	64(%rsp,%rax), %rdi
 	leaq	-1304(%rsp), %rsp
@@ -2669,29 +2670,29 @@ slh_dsa_shake192s_keygen:
 	movq	24712(%rsp), %rsi
 	lfence
 	movq	$0, %rcx
-	movl	24828(%rsp), %r8d
-	addl	$3, %r8d
-	movl	%r8d, 24828(%rsp)
+	movl	24828(%rsp), %ecx
+	addl	$3, %ecx
+	movl	%ecx, 24828(%rsp)
 .Lxmss_node$9:
 .Lxmss_node$7:
-	movq	24688(%rsp), %rdx
+	movq	24688(%rsp), %r10
 	movq	24696(%rsp), %r11
 	movl	24820(%rsp), %r9d
-	movl	24824(%rsp), %r10d
+	movl	24824(%rsp), %edi
 	movl	24828(%rsp), %r8d
-	movl	24832(%rsp), %edi
+	movl	24832(%rsp), %edx
 	lfence
 	movq	$0, %rcx
 	incl	%r8d
 .Lxmss_node$4:
-	cmpl	%edi, %r8d
+	cmpl	%edx, %r8d
 	jb  	.Lxmss_node$5
 	movl	24816(%rsp), %ecx
 	lfence
-	movq	$0, %rdi
-	incl	%r10d
+	movq	$0, %rdx
+	incl	%edi
 .Lxmss_node$2:
-	cmpl	%ecx, %r10d
+	cmpl	%ecx, %edi
 	jbe 	.Lxmss_node$3
 	movq	24680(%rsp), %rcx
 	lfence
@@ -6076,7 +6077,7 @@ slh_dsa_shake192s_keygen:
 	movq	%rsi, 1256(%rsp)
 	leaq	1280(%rsp), %rsi
 	leaq	32(%rsp), %rcx
-	movq	%rax, %r8
+	movq	%rax, %rdi
 	leaq	-40(%rsp), %rsp
 	call	.LT_len$1
 .Lwots_pkfromsig$2:
@@ -6940,7 +6941,8 @@ slh_dsa_shake192s_keygen:
 	movq	%r11, 16(%rsp)
 	leaq	24(%rsp), %rcx
 	movq	%rax, %rdi
-	movq	%rcx, %rsi
+	movq	%rdx, %r10
+	movq	%rcx, %rdx
 	leaq	-1496(%rsp), %rsp
 	call	.Lwots_sk_x4$1
 .Lwots_sign$3:
@@ -7017,14 +7019,14 @@ slh_dsa_shake192s_keygen:
 .Lwots_pkgen$1:
 	movq	%rdi, 1256(%rsp)
 	leaq	1280(%rsp), %rcx
-	movq	(%rsi), %r8
-	movq	%r8, (%rcx)
-	movq	8(%rsi), %r8
-	movq	%r8, 8(%rcx)
-	movq	16(%rsi), %r8
-	movq	%r8, 16(%rcx)
-	movq	24(%rsi), %r8
-	movq	%r8, 24(%rcx)
+	movq	(%rsi), %rdx
+	movq	%rdx, (%rcx)
+	movq	8(%rsi), %rdx
+	movq	%rdx, 8(%rcx)
+	movq	16(%rsi), %rdx
+	movq	%rdx, 16(%rcx)
+	movq	24(%rsi), %rdx
+	movq	%rdx, 24(%rcx)
 	leaq	1280(%rsp), %r9
 	movq	$0, 16(%r9)
 	movq	$0, 24(%r9)
@@ -7035,7 +7037,7 @@ slh_dsa_shake192s_keygen:
 	movq	%rsi, 1264(%rsp)
 	movq	%r11, 1272(%rsp)
 	leaq	32(%rsp), %rcx
-	leaq	1280(%rsp), %rsi
+	leaq	1280(%rsp), %rdx
 	movq	%rcx, %rdi
 	leaq	-1496(%rsp), %rsp
 	call	.Lwots_sk_x4$1
@@ -7063,14 +7065,12 @@ slh_dsa_shake192s_keygen:
 	movl	20(%rsi), %ecx
 	leaq	1280(%rsp), %r9
 	movl	%ecx, 20(%r9)
-	movq	1256(%rsp), %rcx
+	movq	1256(%rsp), %rdi
 	lfence
-	movq	$0, %rdx
+	movq	$0, %rcx
 	movq	%rsi, 1256(%rsp)
 	leaq	1280(%rsp), %rsi
-	leaq	32(%rsp), %rdi
-	movq	%rcx, %r8
-	movq	%rdi, %rcx
+	leaq	32(%rsp), %rcx
 	leaq	-40(%rsp), %rsp
 	call	.LT_len$1
 .Lwots_pkgen$2:
@@ -7083,39 +7083,39 @@ slh_dsa_shake192s_keygen:
 .Lwots_leaves_x4$1:
 	movq	%rcx, %mm0
 	leaq	144(%rsp), %rax
-	movq	(%r11), %r10
-	movq	%r10, (%rax)
-	movq	8(%r11), %r10
-	movq	%r10, 8(%rax)
-	movq	16(%r11), %r10
-	movq	%r10, 16(%rax)
+	movq	(%r11), %rdx
+	movq	%rdx, (%rax)
+	movq	8(%r11), %rdx
+	movq	%rdx, 8(%rax)
+	movq	16(%r11), %rdx
+	movq	%rdx, 16(%rax)
 	leaq	200(%rsp), %rax
-	movq	(%rdx), %r10
-	movq	%r10, (%rax)
-	movq	8(%rdx), %r10
-	movq	%r10, 8(%rax)
-	movq	16(%rdx), %r10
-	movq	%r10, 16(%rax)
+	movq	(%r10), %rdx
+	movq	%rdx, (%rax)
+	movq	8(%r10), %rdx
+	movq	%rdx, 8(%rax)
+	movq	16(%r10), %rdx
+	movq	%rdx, 16(%rax)
 	leaq	224(%rsp), %rax
-	movq	(%rdx), %r10
-	movq	%r10, (%rax)
-	movq	8(%rdx), %r10
-	movq	%r10, 8(%rax)
-	movq	16(%rdx), %r10
-	movq	%r10, 16(%rax)
+	movq	(%r10), %rdx
+	movq	%rdx, (%rax)
+	movq	8(%r10), %rdx
+	movq	%rdx, 8(%rax)
+	movq	16(%r10), %rdx
+	movq	%rdx, 16(%rax)
 	leaq	248(%rsp), %rax
-	movq	(%rdx), %r10
-	movq	%r10, (%rax)
-	movq	8(%rdx), %r10
-	movq	%r10, 8(%rax)
-	movq	16(%rdx), %r10
-	movq	%r10, 16(%rax)
+	movq	(%r10), %rdx
+	movq	%rdx, (%rax)
+	movq	8(%r10), %rdx
+	movq	%rdx, 8(%rax)
+	movq	16(%r10), %rdx
+	movq	%rdx, 16(%rax)
 	leaq	272(%rsp), %rax
-	movq	(%rdx), %r10
-	movq	%r10, (%rax)
-	movq	8(%rdx), %r10
-	movq	%r10, 8(%rax)
-	movq	16(%rdx), %rdx
+	movq	(%r10), %rdx
+	movq	%rdx, (%rax)
+	movq	8(%r10), %rdx
+	movq	%rdx, 8(%rax)
+	movq	16(%r10), %rdx
 	movq	%rdx, 16(%rax)
 	leaq	32(%rsp), %rax
 	movq	(%rsi), %rdx
@@ -7294,48 +7294,48 @@ slh_dsa_shake192s_keygen:
 .Lwots_sk_x4$1:
 	movq	%rdi, 96(%rsp)
 	leaq	120(%rsp), %rcx
-	movq	(%r11), %r8
-	movq	%r8, (%rcx)
-	movq	8(%r11), %r8
-	movq	%r8, 8(%rcx)
-	movq	16(%r11), %r8
-	movq	%r8, 16(%rcx)
+	movq	(%r11), %rsi
+	movq	%rsi, (%rcx)
+	movq	8(%r11), %rsi
+	movq	%rsi, 8(%rcx)
+	movq	16(%r11), %rsi
+	movq	%rsi, 16(%rcx)
 	leaq	32(%rsp), %rcx
-	movq	(%rsi), %r8
-	movq	%r8, (%rcx)
-	movq	8(%rsi), %r8
-	movq	%r8, 8(%rcx)
-	movq	16(%rsi), %r8
-	movq	%r8, 16(%rcx)
-	movq	24(%rsi), %rsi
-	movq	%rsi, 24(%rcx)
+	movq	(%rdx), %rsi
+	movq	%rsi, (%rcx)
+	movq	8(%rdx), %rsi
+	movq	%rsi, 8(%rcx)
+	movq	16(%rdx), %rsi
+	movq	%rsi, 16(%rcx)
+	movq	24(%rdx), %rdx
+	movq	%rdx, 24(%rcx)
 	leaq	144(%rsp), %rcx
-	movq	(%rdx), %rsi
-	movq	%rsi, (%rcx)
-	movq	8(%rdx), %rsi
-	movq	%rsi, 8(%rcx)
-	movq	16(%rdx), %rsi
-	movq	%rsi, 16(%rcx)
+	movq	(%r10), %rdx
+	movq	%rdx, (%rcx)
+	movq	8(%r10), %rdx
+	movq	%rdx, 8(%rcx)
+	movq	16(%r10), %rdx
+	movq	%rdx, 16(%rcx)
 	leaq	168(%rsp), %rcx
-	movq	(%rdx), %rsi
-	movq	%rsi, (%rcx)
-	movq	8(%rdx), %rsi
-	movq	%rsi, 8(%rcx)
-	movq	16(%rdx), %rsi
-	movq	%rsi, 16(%rcx)
+	movq	(%r10), %rdx
+	movq	%rdx, (%rcx)
+	movq	8(%r10), %rdx
+	movq	%rdx, 8(%rcx)
+	movq	16(%r10), %rdx
+	movq	%rdx, 16(%rcx)
 	leaq	192(%rsp), %rcx
-	movq	(%rdx), %rsi
-	movq	%rsi, (%rcx)
-	movq	8(%rdx), %rsi
-	movq	%rsi, 8(%rcx)
-	movq	16(%rdx), %rsi
-	movq	%rsi, 16(%rcx)
+	movq	(%r10), %rdx
+	movq	%rdx, (%rcx)
+	movq	8(%r10), %rdx
+	movq	%rdx, 8(%rcx)
+	movq	16(%r10), %rdx
+	movq	%rdx, 16(%rcx)
 	leaq	216(%rsp), %rcx
-	movq	(%rdx), %rsi
-	movq	%rsi, (%rcx)
-	movq	8(%rdx), %rsi
-	movq	%rsi, 8(%rcx)
-	movq	16(%rdx), %rdx
+	movq	(%r10), %rdx
+	movq	%rdx, (%rcx)
+	movq	8(%r10), %rdx
+	movq	%rdx, 8(%rcx)
+	movq	16(%r10), %rdx
 	movq	%rdx, 16(%rcx)
 	movq	$0, %rsi
 	jmp 	.Lwots_sk_x4$2
@@ -10111,8 +10111,8 @@ slh_dsa_shake192s_keygen:
 	vpxor	%ymm7, %ymm4, %ymm4
 	movq	40(%rax,%rcx), %rdx
 	vmovq	%rdx, %xmm8
-	movq	48(%rax,%rcx), %rcx
-	vmovq	%rcx, %xmm7
+	movq	48(%rax,%rcx), %rdx
+	vmovq	%rdx, %xmm7
 	movq	$0, %rcx
 	movq	$31, %rax
 	shlq	$0, %rax
@@ -10191,7 +10191,7 @@ slh_dsa_shake192s_keygen:
 	vmovdqu	%xmm4, 8(%rax,%rcx)
 	ret
 .LT_len$1:
-	movq	%r8, %mm0
+	movq	%rdi, %mm0
 	vpxor	%ymm5, %ymm5, %ymm5
 	vpxor	%ymm4, %ymm4, %ymm4
 	vpxor	%ymm0, %ymm0, %ymm0
@@ -10365,8 +10365,8 @@ slh_dsa_shake192s_keygen:
 	vpxor	%ymm7, %ymm4, %ymm4
 	movq	40(%rcx,%rsi), %rdx
 	vmovq	%rdx, %xmm8
-	movq	48(%rcx,%rsi), %rcx
-	vmovq	%rcx, %xmm7
+	movq	48(%rcx,%rsi), %rdx
+	vmovq	%rdx, %xmm7
 	movq	$0, %rcx
 	movq	$31, %rdx
 	shlq	$0, %rdx
@@ -10565,11 +10565,11 @@ slh_dsa_shake192s_keygen:
 	vmovq	%rdx, %xmm6
 	vmovdqu	8(%rcx,%rax), %xmm9
 	vmovdqu	%xmm9, %xmm11
-	movq	$0, %rcx
+	movq	$0, %rdx
 	movq	$31, %rax
 	shlq	$0, %rax
-	orq 	%rax, %rcx
-	vmovq	%rcx, %xmm9
+	orq 	%rax, %rdx
+	vmovq	%rdx, %xmm9
 	movq	$0, %rcx
 	vpinsrq	$1, %rcx, %xmm9, %xmm9
 	vinserti128	$1, %xmm9, %ymm11, %ymm13
@@ -10689,8 +10689,8 @@ slh_dsa_shake192s_keygen:
 	vpxor	%ymm2, %ymm4, %ymm4
 	movq	16(%rcx,%rax), %rdx
 	vmovq	%rdx, %xmm2
-	movq	24(%rcx,%rax), %rcx
-	vmovq	%rcx, %xmm6
+	movq	24(%rcx,%rax), %rdx
+	vmovq	%rdx, %xmm6
 	movq	$0, %rcx
 	vpinsrq	$1, %rcx, %xmm6, %xmm6
 	vmovdqu	%xmm6, %xmm6
@@ -10845,13 +10845,13 @@ slh_dsa_shake192s_keygen:
 	leaq	16(%rsp), %rcx
 	movq	$0, %rax
 	vpxor	%ymm2, %ymm2, %ymm2
-	vmovdqu	(%rcx,%rax), %xmm6
-	vinserti128	$1, %xmm6, %ymm2, %ymm2
+	vmovdqu	(%rcx,%rax), %xmm9
+	vinserti128	$1, %xmm9, %ymm2, %ymm2
 	vpxor	%ymm2, %ymm4, %ymm4
 	movq	16(%rcx,%rax), %rdx
 	vmovq	%rdx, %xmm2
-	movq	24(%rcx,%rax), %rcx
-	vmovq	%rcx, %xmm6
+	movq	24(%rcx,%rax), %rdx
+	vmovq	%rdx, %xmm6
 	movq	$0, %rcx
 	vpinsrq	$1, %rcx, %xmm6, %xmm6
 	vmovdqu	%xmm6, %xmm6

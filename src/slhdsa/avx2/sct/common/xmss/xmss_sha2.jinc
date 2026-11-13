@@ -104,11 +104,18 @@ fn xmss_node(
     // parallelised SHA-2 register and stack variables
     stack u256[SHA2_STATE_WORD_SIZE] state;       // state
     stack u256[SHA2_ROUNDS_NUM] schedule;         // message schedule
+    stack u256[SHA2_STATE_WORD_SIZE] h_cache;     // vectorised cached state of H
     reg ptr u8[2*SHA2_H_PARA_DEG*SPX_N] children; // pointer to subarray with the child nodes
     reg ptr u8[SHA2_H_PARA_DEG*SPX_N] nodes;      // pointer to subarray with the computed nodes
     reg u64 sch_idx;     // schedule index
     reg u64 bits;        // number of bits consumed
     reg u32 avail_nodes; // temporary variable for computing whether there are enough nodes on the current layer to parallel hash
+
+    // the cached state of H in every lane, once for all the parallel H calls
+    // (statically absent when the tree is too small for them, as below)
+    if (2*SHA2_H_PARA_DEG <= XMSS_TREE_SIZE) {
+        h_cache = __H_state_cache(h_cache, sha2_state_caches);
+    }
 
     node_addr = 0; // assigned in the loops below; initialised for the SCT checker
     layer = 0; // iterate over the layers
@@ -216,7 +223,7 @@ fn xmss_node(
 
                     // init the SHA-2 instances from the cached state
                     sch_idx = 0; bits = 0;
-                    state, schedule, sch_idx, bits = __H_adrs(state, schedule, sch_idx, bits, sha2_state_caches, adrs, node);
+                    state, schedule, sch_idx, bits = __H_adrs(state, schedule, sch_idx, bits, h_cache, adrs, node);
 
                     // absorb all children
                     () = #unspill(lnode);

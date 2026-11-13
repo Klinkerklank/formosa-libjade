@@ -1423,6 +1423,7 @@ slh_dsa_shake128f_keygen:
 	call	.LT_k$1
 .Lfors_pkfromsig$2:
 	leaq	40(%rsp), %rsp
+	movq	%rcx, %rax
 	ret
 .Lfors_sign$1:
 	leaq	64(%rsp), %rdi
@@ -7468,44 +7469,44 @@ slh_dsa_shake128f_keygen:
 	vpxor	%ymm8, %ymm8, %ymm8
 	vinserti128	$0, %xmm7, %ymm8, %ymm8
 	vpxor	%ymm8, %ymm0, %ymm0
-	movq	%mm0, %rax
-	movq	$0, %rdx
+	movq	%mm0, %rcx
+	movq	$0, %rax
 	movq	$0, %rdi
 	jmp 	.LT_k$3
 .LT_k$4:
 	call	.L_keccakf1600_avx2$1
 .LT_k$5:
 	vmovdqu	%xmm5, %xmm7
-	movq	%xmm7, (%rax,%rdx)
-	vmovdqu	%ymm4, 8(%rax,%rdx)
+	movq	%xmm7, (%rcx,%rax)
+	vmovdqu	%ymm4, 8(%rcx,%rax)
 	vextracti128	$1, %ymm6, %xmm7
 	vmovdqu	%xmm6, %xmm9
-	movq	%xmm7, %rcx
-	movq	%rcx, 40(%rax,%rdx)
+	movq	%xmm7, %rdx
+	movq	%rdx, 40(%rcx,%rax)
 	vpunpckhqdq	%xmm7, %xmm7, %xmm7
 	vpblendd	$240, %ymm2, %ymm0, %ymm10
 	vpblendd	$240, %ymm0, %ymm2, %ymm12
 	vpblendd	$240, %ymm3, %ymm1, %ymm13
 	vpblendd	$240, %ymm1, %ymm3, %ymm8
 	vpblendd	$195, %ymm8, %ymm10, %ymm11
-	vmovdqu	%ymm11, 48(%rax,%rdx)
-	movq	%xmm9, %rcx
-	movq	%rcx, 80(%rax,%rdx)
+	vmovdqu	%ymm11, 48(%rcx,%rax)
+	movq	%xmm9, %rdx
+	movq	%rdx, 80(%rcx,%rax)
 	vpblendd	$195, %ymm12, %ymm8, %ymm9
-	vmovdqu	%ymm9, 88(%rax,%rdx)
-	movq	%xmm7, %rcx
-	movq	%rcx, 120(%rax,%rdx)
+	vmovdqu	%ymm9, 88(%rcx,%rax)
+	movq	%xmm7, %rdx
+	movq	%rdx, 120(%rcx,%rax)
 	vpblendd	$195, %ymm10, %ymm13, %ymm7
-	movq	%xmm7, 128(%rax,%rdx)
-	addq	$136, %rdx
+	movq	%xmm7, 128(%rcx,%rax)
+	addq	$136, %rax
 	incq	%rdi
 .LT_k$3:
 	cmpq	$0, %rdi
 	jb  	.LT_k$4
 	call	.L_keccakf1600_avx2$1
 .LT_k$2:
-	movq	%xmm5, (%rax,%rdx)
-	movq	%xmm4, 8(%rax,%rdx)
+	movq	%xmm5, (%rcx,%rax)
+	movq	%xmm4, 8(%rcx,%rax)
 	ret
 .LT_len$1:
 	movq	%rdx, %mm0
@@ -8207,9 +8208,9 @@ slh_dsa_shake128f_keygen:
 	movb	$0, 64(%rsp)
 	movb	%cl, 65(%rsp)
 	movq	$34, %r9
-	movq	$0, %rcx
+	movq	$0, %rdx
 	movq	232(%rsp), %r10
-	movq	240(%rsp), %rdx
+	movq	240(%rsp), %rcx
 	lfence
 	movq	$0, %rax
 	jmp 	.LPRF_msg$11
@@ -8217,26 +8218,26 @@ slh_dsa_shake128f_keygen:
 	cmpq	$136, %r9
 	jb  	.LPRF_msg$13
 	movq	%r10, 240(%rsp)
-	movq	%rcx, 232(%rsp)
-	movq	%rdx, 264(%rsp)
+	movq	%rdx, 232(%rsp)
+	movq	%rcx, 264(%rsp)
 	leaq	32(%rsp), %rax
 	leaq	-200(%rsp), %rsp
 	call	.L_keccakf1600_opt$1
 .LPRF_msg$14:
 	leaq	200(%rsp), %rsp
 	movq	240(%rsp), %r10
-	movq	232(%rsp), %rcx
-	movq	264(%rsp), %rdx
+	movq	232(%rsp), %rdx
+	movq	264(%rsp), %rcx
 	lfence
 	movq	$0, %rax
 	movq	$0, %r9
 .LPRF_msg$13:
-	movb	(%r10,%rcx), %r8b
-	incq	%rcx
+	movb	(%r10,%rdx), %r8b
+	incq	%rdx
 	xorb	%r8b, 32(%rsp,%r9)
 	incq	%r9
 .LPRF_msg$11:
-	cmpq	%rdx, %rcx
+	cmpq	%rcx, %rdx
 	jb  	.LPRF_msg$12
 	movq	$0, %rdx
 	movq	248(%rsp), %r10
@@ -8321,9 +8322,9 @@ slh_dsa_shake128f_keygen:
 	movb	$0, 80(%rsp)
 	movb	%cl, 81(%rsp)
 	movq	$50, %rsi
-	movq	$0, %rcx
+	movq	$0, %rdx
 	movq	232(%rsp), %r10
-	movq	240(%rsp), %rdx
+	movq	240(%rsp), %rcx
 	lfence
 	movq	$0, %rax
 	jmp 	.LH_msg$11
@@ -8331,26 +8332,26 @@ slh_dsa_shake128f_keygen:
 	cmpq	$136, %rsi
 	jb  	.LH_msg$13
 	movq	%r10, 240(%rsp)
-	movq	%rcx, 232(%rsp)
-	movq	%rdx, 264(%rsp)
+	movq	%rdx, 232(%rsp)
+	movq	%rcx, 264(%rsp)
 	leaq	32(%rsp), %rax
 	leaq	-200(%rsp), %rsp
 	call	.L_keccakf1600_opt$1
 .LH_msg$14:
 	leaq	200(%rsp), %rsp
 	movq	240(%rsp), %r10
-	movq	232(%rsp), %rcx
-	movq	264(%rsp), %rdx
+	movq	232(%rsp), %rdx
+	movq	264(%rsp), %rcx
 	lfence
 	movq	$0, %rax
 	movq	$0, %rsi
 .LH_msg$13:
-	movb	(%r10,%rcx), %r8b
-	incq	%rcx
+	movb	(%r10,%rdx), %r8b
+	incq	%rdx
 	xorb	%r8b, 32(%rsp,%rsi)
 	incq	%rsi
 .LH_msg$11:
-	cmpq	%rdx, %rcx
+	cmpq	%rcx, %rdx
 	jb  	.LH_msg$12
 	movq	$0, %rdx
 	movq	248(%rsp), %r10

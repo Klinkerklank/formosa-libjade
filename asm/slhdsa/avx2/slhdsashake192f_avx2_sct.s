@@ -10450,9 +10450,9 @@ slh_dsa_shake192f_keygen:
 	vpbroadcastq	(%r8,%rdx), %ymm2
 	vpxor	%ymm2, %ymm5, %ymm5
 	vmovdqu	8(%r8,%rdx), %xmm2
-	vmovdqu	%xmm2, %xmm2
-	vpxor	%xmm9, %xmm9, %xmm9
-	vinserti128	$1, %xmm9, %ymm2, %ymm2
+	vmovdqu	%xmm2, %xmm13
+	vpxor	%xmm2, %xmm2, %xmm2
+	vinserti128	$1, %xmm2, %ymm13, %ymm2
 	vpxor	%ymm2, %ymm4, %ymm4
 	leaq	16(%rsp), %rcx
 	movl	(%r9), %edx
@@ -10481,19 +10481,19 @@ slh_dsa_shake192f_keygen:
 	movl	%edx, 28(%rcx)
 	leaq	16(%rsp), %rcx
 	movq	$0, %rdx
-	vpxor	%ymm2, %ymm2, %ymm2
-	vmovdqu	(%rcx,%rdx), %xmm9
-	vinserti128	$1, %xmm9, %ymm2, %ymm2
+	vpxor	%ymm13, %ymm13, %ymm13
+	vmovdqu	(%rcx,%rdx), %xmm2
+	vinserti128	$1, %xmm2, %ymm13, %ymm2
 	vpxor	%ymm2, %ymm4, %ymm4
 	movq	16(%rcx,%rdx), %rsi
 	vmovq	%rsi, %xmm2
 	movq	24(%rcx,%rdx), %rcx
-	vmovq	%rcx, %xmm6
+	vmovq	%rcx, %xmm13
 	movq	$0, %rcx
-	vpinsrq	$1, %rcx, %xmm6, %xmm6
-	vmovdqu	%xmm6, %xmm6
+	vpinsrq	$1, %rcx, %xmm13, %xmm6
+	vmovdqu	%xmm6, %xmm13
 	vpxor	%xmm9, %xmm9, %xmm9
-	vinserti128	$1, %xmm9, %ymm6, %ymm14
+	vinserti128	$1, %xmm9, %ymm13, %ymm14
 	movq	$0, %rcx
 	vmovq	%rcx, %xmm6
 	vpxor	%ymm13, %ymm13, %ymm13
@@ -10519,13 +10519,13 @@ slh_dsa_shake192f_keygen:
 	vinserti128	$1, %xmm2, %ymm6, %ymm6
 	vpxor	%ymm6, %ymm0, %ymm6
 	movq	$0, %rdx
-	movq	$0, %rcx
-	vmovq	%rcx, %xmm2
+	movq	$0, %rsi
+	vmovq	%rsi, %xmm2
 	vmovdqu	(%rax,%rdx), %xmm0
 	vpslldq	$8, %xmm0, %xmm0
-	vmovdqu	%xmm0, %xmm0
+	vmovdqu	%xmm0, %xmm13
 	vmovdqu	8(%rax,%rdx), %xmm9
-	vinserti128	$1, %xmm9, %ymm0, %ymm14
+	vinserti128	$1, %xmm9, %ymm13, %ymm14
 	movq	24(%rax,%rdx), %rcx
 	vmovq	%rcx, %xmm10
 	vmovdqu	32(%rax,%rdx), %ymm13
@@ -10566,8 +10566,8 @@ slh_dsa_shake192f_keygen:
 	vpxor	%ymm7, %ymm5, %ymm5
 	vmovdqu	8(%rax,%rdx), %ymm7
 	vpxor	%ymm7, %ymm4, %ymm4
-	movq	40(%rax,%rdx), %rcx
-	vmovq	%rcx, %xmm9
+	movq	40(%rax,%rdx), %rsi
+	vmovq	%rsi, %xmm9
 	vmovdqu	48(%rax,%rdx), %ymm14
 	movq	80(%rax,%rdx), %rcx
 	vmovq	%rcx, %xmm10
@@ -10611,12 +10611,12 @@ slh_dsa_shake192f_keygen:
 	vmovdqu	8(%rax,%rdx), %xmm7
 	vmovdqu	%xmm7, %xmm7
 	movq	24(%rax,%rdx), %rcx
-	vmovq	%rcx, %xmm8
+	vmovq	%rcx, %xmm13
 	movq	$0, %rcx
 	movq	$31, %rax
 	shlq	$0, %rax
 	orq 	%rax, %rcx
-	vpinsrq	$1, %rcx, %xmm8, %xmm8
+	vpinsrq	$1, %rcx, %xmm13, %xmm8
 	vinserti128	$1, %xmm8, %ymm7, %ymm7
 	vpxor	%ymm7, %ymm4, %ymm4
 	movq	$1, %rcx
@@ -10637,8 +10637,8 @@ slh_dsa_shake192f_keygen:
 	vmovdqu	%ymm4, 8(%rcx,%rax)
 	vextracti128	$1, %ymm6, %xmm8
 	vmovdqu	%xmm6, %xmm7
-	movq	%xmm8, %rsi
-	movq	%rsi, 40(%rcx,%rax)
+	movq	%xmm8, %rdx
+	movq	%rdx, 40(%rcx,%rax)
 	vpunpckhqdq	%xmm8, %xmm8, %xmm8
 	vpblendd	$240, %ymm2, %ymm0, %ymm10
 	vpblendd	$240, %ymm0, %ymm2, %ymm12
@@ -10646,12 +10646,12 @@ slh_dsa_shake192f_keygen:
 	vpblendd	$240, %ymm1, %ymm3, %ymm9
 	vpblendd	$195, %ymm9, %ymm10, %ymm11
 	vmovdqu	%ymm11, 48(%rcx,%rax)
-	movq	%xmm7, %rsi
-	movq	%rsi, 80(%rcx,%rax)
+	movq	%xmm7, %rdx
+	movq	%rdx, 80(%rcx,%rax)
 	vpblendd	$195, %ymm12, %ymm9, %ymm7
 	vmovdqu	%ymm7, 88(%rcx,%rax)
-	movq	%xmm8, %rsi
-	movq	%rsi, 120(%rcx,%rax)
+	movq	%xmm8, %rdx
+	movq	%rdx, 120(%rcx,%rax)
 	vpblendd	$195, %ymm10, %ymm13, %ymm7
 	movq	%xmm7, 128(%rcx,%rax)
 	addq	$136, %rax
@@ -10677,9 +10677,9 @@ slh_dsa_shake192f_keygen:
 	vpbroadcastq	(%r8,%rdx), %ymm2
 	vpxor	%ymm2, %ymm5, %ymm5
 	vmovdqu	8(%r8,%rdx), %xmm2
-	vmovdqu	%xmm2, %xmm2
-	vpxor	%xmm9, %xmm9, %xmm9
-	vinserti128	$1, %xmm9, %ymm2, %ymm2
+	vmovdqu	%xmm2, %xmm11
+	vpxor	%xmm2, %xmm2, %xmm2
+	vinserti128	$1, %xmm2, %ymm11, %ymm2
 	vpxor	%ymm2, %ymm4, %ymm4
 	leaq	16(%rsp), %rdx
 	movl	(%r9), %esi
@@ -10708,19 +10708,19 @@ slh_dsa_shake192f_keygen:
 	movl	%esi, 28(%rdx)
 	leaq	16(%rsp), %rdx
 	movq	$0, %rsi
-	vpxor	%ymm2, %ymm2, %ymm2
-	vmovdqu	(%rdx,%rsi), %xmm9
-	vinserti128	$1, %xmm9, %ymm2, %ymm2
+	vpxor	%ymm11, %ymm11, %ymm11
+	vmovdqu	(%rdx,%rsi), %xmm2
+	vinserti128	$1, %xmm2, %ymm11, %ymm2
 	vpxor	%ymm2, %ymm4, %ymm4
 	movq	16(%rdx,%rsi), %rdi
 	vmovq	%rdi, %xmm2
 	movq	24(%rdx,%rsi), %rdx
-	vmovq	%rdx, %xmm6
+	vmovq	%rdx, %xmm11
 	movq	$0, %rdx
-	vpinsrq	$1, %rdx, %xmm6, %xmm6
-	vmovdqu	%xmm6, %xmm6
+	vpinsrq	$1, %rdx, %xmm11, %xmm6
+	vmovdqu	%xmm6, %xmm11
 	vpxor	%xmm9, %xmm9, %xmm9
-	vinserti128	$1, %xmm9, %ymm6, %ymm14
+	vinserti128	$1, %xmm9, %ymm11, %ymm14
 	movq	$0, %rdx
 	vmovq	%rdx, %xmm6
 	vpxor	%ymm13, %ymm13, %ymm13
@@ -10746,8 +10746,8 @@ slh_dsa_shake192f_keygen:
 	vinserti128	$1, %xmm2, %ymm6, %ymm6
 	vpxor	%ymm6, %ymm0, %ymm6
 	movq	$0, %rdx
-	movq	$0, %rdi
-	vmovq	%rdi, %xmm2
+	movq	$0, %rsi
+	vmovq	%rsi, %xmm2
 	vmovdqu	(%rcx,%rdx), %xmm0
 	vpslldq	$8, %xmm0, %xmm0
 	vmovdqu	%xmm0, %xmm0
@@ -10931,9 +10931,9 @@ slh_dsa_shake192f_keygen:
 	vpbroadcastq	(%r8,%rdx), %ymm2
 	vpxor	%ymm2, %ymm5, %ymm5
 	vmovdqu	8(%r8,%rdx), %xmm2
-	vmovdqu	%xmm2, %xmm2
-	vpxor	%xmm9, %xmm9, %xmm9
-	vinserti128	$1, %xmm9, %ymm2, %ymm2
+	vmovdqu	%xmm2, %xmm11
+	vpxor	%xmm2, %xmm2, %xmm2
+	vinserti128	$1, %xmm2, %ymm11, %ymm2
 	vpxor	%ymm2, %ymm4, %ymm4
 	leaq	16(%rsp), %rdx
 	movl	(%r9), %esi
@@ -10962,19 +10962,19 @@ slh_dsa_shake192f_keygen:
 	movl	%esi, 28(%rdx)
 	leaq	16(%rsp), %rdx
 	movq	$0, %rsi
-	vpxor	%ymm2, %ymm2, %ymm2
-	vmovdqu	(%rdx,%rsi), %xmm9
-	vinserti128	$1, %xmm9, %ymm2, %ymm2
+	vpxor	%ymm11, %ymm11, %ymm11
+	vmovdqu	(%rdx,%rsi), %xmm2
+	vinserti128	$1, %xmm2, %ymm11, %ymm2
 	vpxor	%ymm2, %ymm4, %ymm4
 	movq	16(%rdx,%rsi), %rdi
 	vmovq	%rdi, %xmm2
 	movq	24(%rdx,%rsi), %rdx
-	vmovq	%rdx, %xmm6
-	movq	$0, %rdx
-	vpinsrq	$1, %rdx, %xmm6, %xmm6
-	vmovdqu	%xmm6, %xmm6
+	vmovq	%rdx, %xmm11
+	movq	$0, %rsi
+	vpinsrq	$1, %rsi, %xmm11, %xmm6
+	vmovdqu	%xmm6, %xmm11
 	vpxor	%xmm9, %xmm9, %xmm9
-	vinserti128	$1, %xmm9, %ymm6, %ymm14
+	vinserti128	$1, %xmm9, %ymm11, %ymm14
 	movq	$0, %rdx
 	vmovq	%rdx, %xmm6
 	vpxor	%ymm13, %ymm13, %ymm13
@@ -11004,9 +11004,9 @@ slh_dsa_shake192f_keygen:
 	vmovq	%rsi, %xmm2
 	vmovdqu	(%rax,%rdx), %xmm6
 	vpslldq	$8, %xmm6, %xmm6
-	vmovdqu	%xmm6, %xmm6
+	vmovdqu	%xmm6, %xmm11
 	vmovdqu	8(%rax,%rdx), %xmm9
-	vinserti128	$1, %xmm9, %ymm6, %ymm14
+	vinserti128	$1, %xmm9, %ymm11, %ymm14
 	movq	$0, %rdx
 	vmovq	%rdx, %xmm6
 	vpxor	%ymm13, %ymm13, %ymm13
@@ -11034,7 +11034,7 @@ slh_dsa_shake192f_keygen:
 	movq	$0, %rax
 	movq	$0, %rsi
 	vmovq	%rsi, %xmm2
-	vpxor	%ymm14, %ymm14, %ymm14
+	vpxor	%ymm13, %ymm13, %ymm13
 	movq	(%rcx,%rax), %rdx
 	vmovq	%rdx, %xmm6
 	vmovdqu	8(%rcx,%rax), %xmm9
@@ -11046,16 +11046,16 @@ slh_dsa_shake192f_keygen:
 	vmovq	%rcx, %xmm9
 	movq	$0, %rcx
 	vpinsrq	$1, %rcx, %xmm9, %xmm9
-	vinserti128	$1, %xmm9, %ymm11, %ymm13
+	vinserti128	$1, %xmm9, %ymm11, %ymm14
 	movq	$0, %rcx
 	vpinsrq	$1, %rcx, %xmm2, %xmm9
 	vpxor	%ymm2, %ymm2, %ymm2
 	movq	$0, %rcx
 	vpinsrq	$1, %rcx, %xmm6, %xmm6
 	vpxor	%ymm10, %ymm10, %ymm10
-	vpblendd	$195, %ymm2, %ymm14, %ymm11
-	vpblendd	$195, %ymm13, %ymm10, %ymm12
-	vpblendd	$195, %ymm14, %ymm13, %ymm13
+	vpblendd	$195, %ymm2, %ymm13, %ymm11
+	vpblendd	$195, %ymm14, %ymm10, %ymm12
+	vpblendd	$195, %ymm13, %ymm14, %ymm13
 	vpblendd	$240, %ymm12, %ymm11, %ymm14
 	vpblendd	$240, %ymm11, %ymm12, %ymm11
 	vpblendd	$195, %ymm10, %ymm2, %ymm10
@@ -11086,8 +11086,8 @@ slh_dsa_shake192f_keygen:
 	vmovdqu	%ymm4, 8(%rcx,%rax)
 	vextracti128	$1, %ymm6, %xmm8
 	vmovdqu	%xmm6, %xmm7
-	movq	%xmm8, %rsi
-	movq	%rsi, 40(%rcx,%rax)
+	movq	%xmm8, %rdx
+	movq	%rdx, 40(%rcx,%rax)
 	vpunpckhqdq	%xmm8, %xmm8, %xmm8
 	vpblendd	$240, %ymm2, %ymm0, %ymm10
 	vpblendd	$240, %ymm0, %ymm2, %ymm12
@@ -11095,12 +11095,12 @@ slh_dsa_shake192f_keygen:
 	vpblendd	$240, %ymm1, %ymm3, %ymm9
 	vpblendd	$195, %ymm9, %ymm10, %ymm11
 	vmovdqu	%ymm11, 48(%rcx,%rax)
-	movq	%xmm7, %rsi
-	movq	%rsi, 80(%rcx,%rax)
+	movq	%xmm7, %rdx
+	movq	%rdx, 80(%rcx,%rax)
 	vpblendd	$195, %ymm12, %ymm9, %ymm7
 	vmovdqu	%ymm7, 88(%rcx,%rax)
-	movq	%xmm8, %rsi
-	movq	%rsi, 120(%rcx,%rax)
+	movq	%xmm8, %rdx
+	movq	%rdx, 120(%rcx,%rax)
 	vpblendd	$195, %ymm10, %ymm13, %ymm7
 	movq	%xmm7, 128(%rcx,%rax)
 	addq	$136, %rax
@@ -11126,9 +11126,9 @@ slh_dsa_shake192f_keygen:
 	vpbroadcastq	(%r8,%rax), %ymm2
 	vpxor	%ymm2, %ymm5, %ymm5
 	vmovdqu	8(%r8,%rax), %xmm2
-	vmovdqu	%xmm2, %xmm2
-	vpxor	%xmm9, %xmm9, %xmm9
-	vinserti128	$1, %xmm9, %ymm2, %ymm2
+	vmovdqu	%xmm2, %xmm9
+	vpxor	%xmm2, %xmm2, %xmm2
+	vinserti128	$1, %xmm2, %ymm9, %ymm2
 	vpxor	%ymm2, %ymm4, %ymm4
 	leaq	16(%rsp), %rcx
 	movl	(%r9), %edx
@@ -11157,19 +11157,19 @@ slh_dsa_shake192f_keygen:
 	movl	%edx, 28(%rcx)
 	leaq	16(%rsp), %rcx
 	movq	$0, %rax
-	vpxor	%ymm2, %ymm2, %ymm2
-	vmovdqu	(%rcx,%rax), %xmm9
-	vinserti128	$1, %xmm9, %ymm2, %ymm2
+	vpxor	%ymm9, %ymm9, %ymm9
+	vmovdqu	(%rcx,%rax), %xmm2
+	vinserti128	$1, %xmm2, %ymm9, %ymm2
 	vpxor	%ymm2, %ymm4, %ymm4
 	movq	16(%rcx,%rax), %rsi
 	vmovq	%rsi, %xmm2
 	movq	24(%rcx,%rax), %rcx
-	vmovq	%rcx, %xmm6
+	vmovq	%rcx, %xmm9
 	movq	$0, %rcx
-	vpinsrq	$1, %rcx, %xmm6, %xmm6
-	vmovdqu	%xmm6, %xmm6
-	vpxor	%xmm9, %xmm9, %xmm9
-	vinserti128	$1, %xmm9, %ymm6, %ymm14
+	vpinsrq	$1, %rcx, %xmm9, %xmm6
+	vmovdqu	%xmm6, %xmm9
+	vpxor	%xmm6, %xmm6, %xmm6
+	vinserti128	$1, %xmm6, %ymm9, %ymm14
 	movq	$0, %rcx
 	vmovq	%rcx, %xmm6
 	vpxor	%ymm13, %ymm13, %ymm13
@@ -11195,13 +11195,13 @@ slh_dsa_shake192f_keygen:
 	vinserti128	$1, %xmm2, %ymm6, %ymm6
 	vpxor	%ymm6, %ymm0, %ymm0
 	movq	$0, %rax
-	movq	$0, %rcx
-	vmovq	%rcx, %xmm2
+	movq	$0, %rsi
+	vmovq	%rsi, %xmm2
 	vmovdqu	(%rdi,%rax), %xmm6
 	vpslldq	$8, %xmm6, %xmm6
-	vmovdqu	%xmm6, %xmm6
-	vmovdqu	8(%rdi,%rax), %xmm9
-	vinserti128	$1, %xmm9, %ymm6, %ymm14
+	vmovdqu	%xmm6, %xmm9
+	vmovdqu	8(%rdi,%rax), %xmm6
+	vinserti128	$1, %xmm6, %ymm9, %ymm14
 	movq	$0, %rcx
 	movq	$31, %rax
 	shlq	$0, %rax
@@ -11247,8 +11247,8 @@ slh_dsa_shake192f_keygen:
 	vmovdqu	%ymm4, 8(%rcx,%rax)
 	vextracti128	$1, %ymm6, %xmm8
 	vmovdqu	%xmm6, %xmm7
-	movq	%xmm8, %rsi
-	movq	%rsi, 40(%rcx,%rax)
+	movq	%xmm8, %rdx
+	movq	%rdx, 40(%rcx,%rax)
 	vpunpckhqdq	%xmm8, %xmm8, %xmm8
 	vpblendd	$240, %ymm2, %ymm0, %ymm10
 	vpblendd	$240, %ymm0, %ymm2, %ymm12
@@ -11256,8 +11256,8 @@ slh_dsa_shake192f_keygen:
 	vpblendd	$240, %ymm1, %ymm3, %ymm9
 	vpblendd	$195, %ymm9, %ymm10, %ymm11
 	vmovdqu	%ymm11, 48(%rcx,%rax)
-	movq	%xmm7, %rsi
-	movq	%rsi, 80(%rcx,%rax)
+	movq	%xmm7, %rdx
+	movq	%rdx, 80(%rcx,%rax)
 	vpblendd	$195, %ymm12, %ymm9, %ymm7
 	vmovdqu	%ymm7, 88(%rcx,%rax)
 	movq	%xmm8, %rsi
@@ -11287,9 +11287,9 @@ slh_dsa_shake192f_keygen:
 	vpbroadcastq	(%r8,%rdx), %ymm2
 	vpxor	%ymm2, %ymm5, %ymm5
 	vmovdqu	8(%r8,%rdx), %xmm2
-	vmovdqu	%xmm2, %xmm2
-	vpxor	%xmm9, %xmm9, %xmm9
-	vinserti128	$1, %xmm9, %ymm2, %ymm2
+	vmovdqu	%xmm2, %xmm9
+	vpxor	%xmm2, %xmm2, %xmm2
+	vinserti128	$1, %xmm2, %ymm9, %ymm2
 	vpxor	%ymm2, %ymm4, %ymm4
 	leaq	16(%rsp), %rcx
 	movl	(%rax), %edx
@@ -11318,19 +11318,19 @@ slh_dsa_shake192f_keygen:
 	movl	%edx, 28(%rcx)
 	leaq	16(%rsp), %rcx
 	movq	$0, %rax
-	vpxor	%ymm2, %ymm2, %ymm2
-	vmovdqu	(%rcx,%rax), %xmm9
-	vinserti128	$1, %xmm9, %ymm2, %ymm2
+	vpxor	%ymm9, %ymm9, %ymm9
+	vmovdqu	(%rcx,%rax), %xmm2
+	vinserti128	$1, %xmm2, %ymm9, %ymm2
 	vpxor	%ymm2, %ymm4, %ymm4
 	movq	16(%rcx,%rax), %rsi
 	vmovq	%rsi, %xmm2
 	movq	24(%rcx,%rax), %rcx
-	vmovq	%rcx, %xmm6
+	vmovq	%rcx, %xmm9
 	movq	$0, %rcx
-	vpinsrq	$1, %rcx, %xmm6, %xmm6
-	vmovdqu	%xmm6, %xmm6
-	vpxor	%xmm9, %xmm9, %xmm9
-	vinserti128	$1, %xmm9, %ymm6, %ymm14
+	vpinsrq	$1, %rcx, %xmm9, %xmm6
+	vmovdqu	%xmm6, %xmm9
+	vpxor	%xmm6, %xmm6, %xmm6
+	vinserti128	$1, %xmm6, %ymm9, %ymm14
 	movq	$0, %rcx
 	vmovq	%rcx, %xmm6
 	vpxor	%ymm13, %ymm13, %ymm13
@@ -11356,13 +11356,13 @@ slh_dsa_shake192f_keygen:
 	vinserti128	$1, %xmm2, %ymm6, %ymm6
 	vpxor	%ymm6, %ymm0, %ymm0
 	movq	$0, %rax
-	movq	$0, %rcx
-	vmovq	%rcx, %xmm2
+	movq	$0, %rsi
+	vmovq	%rsi, %xmm2
 	vmovdqu	(%rbx,%rax), %xmm6
 	vpslldq	$8, %xmm6, %xmm6
-	vmovdqu	%xmm6, %xmm6
-	vmovdqu	8(%rbx,%rax), %xmm9
-	vinserti128	$1, %xmm9, %ymm6, %ymm14
+	vmovdqu	%xmm6, %xmm9
+	vmovdqu	8(%rbx,%rax), %xmm6
+	vinserti128	$1, %xmm6, %ymm9, %ymm14
 	movq	$0, %rcx
 	movq	$31, %rax
 	shlq	$0, %rax
@@ -11408,8 +11408,8 @@ slh_dsa_shake192f_keygen:
 	vmovdqu	%ymm4, 8(%rcx,%rax)
 	vextracti128	$1, %ymm6, %xmm8
 	vmovdqu	%xmm6, %xmm7
-	movq	%xmm8, %rsi
-	movq	%rsi, 40(%rcx,%rax)
+	movq	%xmm8, %rdx
+	movq	%rdx, 40(%rcx,%rax)
 	vpunpckhqdq	%xmm8, %xmm8, %xmm8
 	vpblendd	$240, %ymm2, %ymm0, %ymm10
 	vpblendd	$240, %ymm0, %ymm2, %ymm12
@@ -11417,12 +11417,12 @@ slh_dsa_shake192f_keygen:
 	vpblendd	$240, %ymm1, %ymm3, %ymm9
 	vpblendd	$195, %ymm9, %ymm10, %ymm11
 	vmovdqu	%ymm11, 48(%rcx,%rax)
-	movq	%xmm7, %rsi
-	movq	%rsi, 80(%rcx,%rax)
+	movq	%xmm7, %rdx
+	movq	%rdx, 80(%rcx,%rax)
 	vpblendd	$195, %ymm12, %ymm9, %ymm7
 	vmovdqu	%ymm7, 88(%rcx,%rax)
-	movq	%xmm8, %rsi
-	movq	%rsi, 120(%rcx,%rax)
+	movq	%xmm8, %rdx
+	movq	%rdx, 120(%rcx,%rax)
 	vpblendd	$195, %ymm10, %ymm13, %ymm7
 	movq	%xmm7, 128(%rcx,%rax)
 	addq	$136, %rax

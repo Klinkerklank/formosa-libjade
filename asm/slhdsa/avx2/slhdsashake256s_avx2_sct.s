@@ -508,11 +508,12 @@ slh_dsa_shake256s_keygen:
 	leaq	32(%rsp), %r10
 	movl	%eax, (%r10)
 	movl	$0, %r9d
-	movl	$8, %ecx
+	movl	$8, %edx
 	leaq	96(%rsi), %rax
 	movq	%rsi, 64(%rsp)
 	movq	%rdi, 72(%rsp)
 	leaq	32(%rsp), %r10
+	movl	%edx, %ecx
 	leaq	-16664(%rsp), %rsp
 	call	.Lxmss_node$1
 .Lslh_keygen_internal_$2:
@@ -2044,19 +2045,19 @@ slh_dsa_shake256s_keygen:
 	leaq	40(%rsp), %rsp
 	movq	1048704(%rsp), %r11
 	movq	1048696(%rsp), %r10
-	movl	1048856(%rsp), %r9d
+	movl	1048856(%rsp), %esi
 	movl	1048852(%rsp), %eax
-	movl	1048848(%rsp), %esi
-	movq	1048688(%rsp), %rcx
+	movl	1048848(%rsp), %ecx
+	movq	1048688(%rsp), %rdx
 	lfence
-	movq	$0, %rdx
+	movq	$0, %rdi
 	movq	%r11, 1048688(%rsp)
 	movq	%r10, 1048696(%rsp)
-	movl	%r9d, 1048848(%rsp)
+	movl	%esi, 1048848(%rsp)
 	movl	%eax, 1048852(%rsp)
-	movl	%esi, 1048856(%rsp)
-	movq	%rcx, 1048704(%rsp)
-	leaq	64(%rsp,%rcx), %rdi
+	movl	%ecx, 1048856(%rsp)
+	movq	%rdx, 1048704(%rsp)
+	leaq	64(%rsp,%rdx), %rdi
 	leaq	-40(%rsp), %rsp
 	call	.LF$1
 .Lfors_node$11:
@@ -2778,29 +2779,29 @@ slh_dsa_shake256s_keygen:
 .Lxmss_node$1:
 	movq	%rax, 16480(%rsp)
 	movq	$0, %rax
-	movl	$0, %edi
+	movl	$0, %edx
 	jmp 	.Lxmss_node$2
 .Lxmss_node$3:
 	movl	%ecx, 16648(%rsp)
-	subl	%edi, %ecx
-	movq	$1, %rdx
-	shlq	%cl, %rdx
-	movl	%edx, %esi
+	subl	%edx, %ecx
+	movq	$1, %rdi
+	shlq	%cl, %rdi
+	movl	%edi, %esi
 	imull	%r9d, %esi
-	addl	%esi, %edx
+	addl	%esi, %edi
 	jmp 	.Lxmss_node$4
 .Lxmss_node$5:
 	movq	%r8, 16488(%rsp)
 	movq	%r11, 16496(%rsp)
 	movl	%r9d, 16652(%rsp)
-	movl	%edi, 16656(%rsp)
+	movl	%edx, 16656(%rsp)
 	movl	%esi, 16660(%rsp)
-	movl	%edx, 16664(%rsp)
-	cmpl	$0, %edi
+	movl	%edi, 16664(%rsp)
+	cmpl	$0, %edx
 	je  	.Lxmss_node$6
 	movl	%esi, %eax
 	imull	$2, %eax, %eax
-	movl	%edi, %r8d
+	movl	%edx, %r8d
 	decl	%r8d
 	movl	$9, %ecx
 	movq	$1, %r9
@@ -2815,20 +2816,20 @@ slh_dsa_shake256s_keygen:
 	movq	$0, 16(%r10)
 	movq	$0, 24(%r10)
 	movl	$2, 16(%r10)
-	movl	%edi, 24(%r10)
+	movl	%edx, 24(%r10)
 	movl	%esi, 28(%r10)
 	movl	$9, %ecx
 	movq	$1, %r8
 	shlq	%cl, %r8
-	subl	%edi, %ecx
+	subl	%edx, %ecx
 	movq	$1, %r9
 	shlq	%cl, %r9
 	subq	%r9, %r8
 	movl	%esi, %ecx
 	addq	%rcx, %r8
 	imulq	$32, %r8, %rcx
-	subl	%esi, %edx
-	cmpl	$4, %edx
+	subl	%esi, %edi
+	cmpl	$4, %edi
 	jnb 	.Lxmss_node$12
 	movq	%rax, %rdx
 	addq	$32, %rdx
@@ -2870,18 +2871,18 @@ slh_dsa_shake256s_keygen:
 	movq	$0, %rcx
 	jmp 	.Lxmss_node$7
 .Lxmss_node$12:
-	movl	%edi, 32(%rsp)
-	movl	%esi, %edx
-	movl	%edx, 36(%rsp)
-	movl	%edi, 40(%rsp)
-	movl	%esi, %edx
-	incl	%edx
-	movl	%edx, 44(%rsp)
-	movl	%edi, 48(%rsp)
-	movl	%esi, %edx
-	addl	$2, %edx
-	movl	%edx, 52(%rsp)
-	movl	%edi, 56(%rsp)
+	movl	%edx, 32(%rsp)
+	movl	%esi, %edi
+	movl	%edi, 36(%rsp)
+	movl	%edx, 40(%rsp)
+	movl	%esi, %edi
+	incl	%edi
+	movl	%edi, 44(%rsp)
+	movl	%edx, 48(%rsp)
+	movl	%esi, %edi
+	addl	$2, %edi
+	movl	%edi, 52(%rsp)
+	movl	%edx, 56(%rsp)
 	addl	$3, %esi
 	movl	%esi, 60(%rsp)
 	movq	%r10, 16512(%rsp)
@@ -2937,9 +2938,9 @@ slh_dsa_shake256s_keygen:
 	movq	%rdx, 16(%rdi)
 	movq	24(%rcx), %rdx
 	movq	%rdx, 24(%rdi)
-	movl	16660(%rsp), %esi
-	addl	$3, %esi
-	movl	%esi, 16660(%rsp)
+	movl	16660(%rsp), %ecx
+	addl	$3, %ecx
+	movl	%ecx, 16660(%rsp)
 .Lxmss_node$13:
 	jmp 	.Lxmss_node$7
 .Lxmss_node$6:
@@ -2949,8 +2950,8 @@ slh_dsa_shake256s_keygen:
 	movl	%esi, 20(%r10)
 	movl	%esi, %eax
 	imulq	$32, %rax, %rax
-	subl	%esi, %edx
-	cmpl	$4, %edx
+	subl	%esi, %edi
+	cmpl	$4, %edi
 	jnb 	.Lxmss_node$8
 	leaq	64(%rsp,%rax), %rdi
 	leaq	-2232(%rsp), %rsp
@@ -2971,29 +2972,29 @@ slh_dsa_shake256s_keygen:
 	movq	16512(%rsp), %r10
 	lfence
 	movq	$0, %rcx
-	movl	16660(%rsp), %esi
-	addl	$3, %esi
-	movl	%esi, 16660(%rsp)
+	movl	16660(%rsp), %ecx
+	addl	$3, %ecx
+	movl	%ecx, 16660(%rsp)
 .Lxmss_node$9:
 .Lxmss_node$7:
 	movq	16488(%rsp), %r8
 	movq	16496(%rsp), %r11
 	movl	16652(%rsp), %r9d
-	movl	16656(%rsp), %edi
+	movl	16656(%rsp), %edx
 	movl	16660(%rsp), %esi
-	movl	16664(%rsp), %edx
+	movl	16664(%rsp), %edi
 	lfence
 	movq	$0, %rcx
 	incl	%esi
 .Lxmss_node$4:
-	cmpl	%edx, %esi
+	cmpl	%edi, %esi
 	jb  	.Lxmss_node$5
 	movl	16648(%rsp), %ecx
 	lfence
-	movq	$0, %rdx
-	incl	%edi
+	movq	$0, %rsi
+	incl	%edx
 .Lxmss_node$2:
-	cmpl	%ecx, %edi
+	cmpl	%ecx, %edx
 	jbe 	.Lxmss_node$3
 	movq	16480(%rsp), %rcx
 	lfence
@@ -14512,8 +14513,8 @@ slh_dsa_shake256s_keygen:
 	movq	%xmm1, (%rcx,%rdx)
 	vmovdqu	%xmm0, %xmm7
 	vmovdqu	%xmm7, 8(%rcx,%rdx)
-	vextracti128	$1, %ymm0, %xmm0
-	movq	%xmm0, 24(%rcx,%rdx)
+	vextracti128	$1, %ymm0, %xmm7
+	movq	%xmm7, 24(%rcx,%rdx)
 	ret
 .LH$1:
 	movq	%rdi, %mm0
@@ -15039,8 +15040,8 @@ slh_dsa_shake256s_keygen:
 	vpblendd	$240, %ymm4, %ymm5, %ymm9
 	vpblendd	$195, %ymm9, %ymm10, %ymm11
 	vmovdqu	%ymm11, 48(%rax,%rcx)
-	movq	%xmm8, %rdx
-	movq	%rdx, 80(%rax,%rcx)
+	movq	%xmm8, %rsi
+	movq	%rsi, 80(%rax,%rcx)
 	vpblendd	$195, %ymm12, %ymm9, %ymm8
 	vmovdqu	%ymm8, 88(%rax,%rcx)
 	movq	%xmm7, %rdx

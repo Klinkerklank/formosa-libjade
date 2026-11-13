@@ -119,18 +119,16 @@ fn __fors_skgen(
 // PRF(PK.seed, SK.seed, skADRS) and their hashes F(PK.seed, ADRS, sk)
 // (F_x8 and the ADRS^c helpers are in ../wots/wots_sha2.jinc)
 fn fors_leaves_x8(
-    #[spill_to_mmx] reg ptr u8[8*SPX_N] leaves, // output: eight leaf values
-    reg ptr u8[SPX_N] skseed,                   // SK.seed
-    reg ptr u32[8] adrs,                        // ADRS (type FORS_TREE, key pair address set)
-    reg u32 idx,                                // horizontal index of the first leaf
-    reg ptr u8[96] sha2_state_caches            // combined SHA256 and SHA512 state caches
+    #[spill_to_mmx] reg ptr u8[8*SPX_N] leaves,                // output: eight leaf values
+    reg ptr u8[8*SPX_N] seeds,                                 // SK.seed in every lane
+    reg ptr u32[8] adrs,                                       // ADRS (type FORS_TREE, key pair address set)
+    reg u32 idx,                                               // horizontal index of the first leaf
+    reg ptr u256[sha256_parallel::STATE_WORD_SIZE] state_cache // vectorised cached SHA-256 state
 ) -> reg ptr u8[8*SPX_N] // -> leaves
 {
     // stack variables
-    stack u8[8*SPX_N] seeds;                                  // SK.seed in every lane
     stack u8[8*SPX_N] sks;                                    // the eight secret key values
     stack u8[8*22] adrscs;                                    // ADRS^c of every lane
-    stack u256[sha256_parallel::STATE_WORD_SIZE] state_cache; // vectorised cached state
     stack u32[8] skadrs;                                      // skADRS
     stack u32[8] leafadrs;                                    // ADRS of the leaves (height 0)
 
@@ -138,15 +136,7 @@ fn fors_leaves_x8(
     reg u32 kpa;    // ADRS key pair address
     reg u32 height; // tree height 0
 
-    inline int j;
-
     () = #spill(leaves);
-
-    for j=0 to 8 {
-        seeds[j*SPX_N : SPX_N] = __copy_nbytes(seeds[j*SPX_N : SPX_N], skseed);
-    }
-
-    state_cache = __sha256_x8_state_cache(state_cache, sha2_state_caches);
 
     // skADRS: type FORS_PRF, the key pair address of ADRS, tree index idx + j in lane j
     skadrs = __adrs_clone(skadrs, adrs);
@@ -161,9 +151,9 @@ fn fors_leaves_x8(
 
     adrscs = __adrsc_x8(adrscs, skadrs);
     adrscs = __adrsc_x8_set_tree_index(adrscs, idx);
-    () = #spill(idx);
+    () = #spill(idx, state_cache);
     sks = F_x8(sks, seeds, adrscs, state_cache);
-    () = #unspill(idx);
+    () = #unspill(idx, state_cache);
     _ = #init_msf(); // the unspilled values are public after the fence
 
     adrscs = __adrsc_x8(adrscs, leafadrs);
@@ -178,15 +168,15 @@ fn fors_leaves_x8(
 inline // inline wrapper that splits parameter live-ranges, to aid the Jasmin compiler
 fn __fors_leaves_x8(
     reg ptr u8[8*SPX_N] leaves,
-    reg ptr u8[SPX_N] skseed,
+    reg ptr u8[8*SPX_N] seeds,
     reg ptr u32[8] adrs,
     reg u32 idx,
-    reg ptr u8[96] sha2_state_caches
+    reg ptr u256[sha256_parallel::STATE_WORD_SIZE] state_cache
 ) -> reg ptr u8[8*SPX_N] // -> leaves
 {
-    leaves = leaves; skseed = skseed; adrs = adrs; idx = idx; sha2_state_caches = sha2_state_caches;
+    leaves = leaves; seeds = seeds; adrs = adrs; idx = idx; state_cache = state_cache;
 
-    leaves = fors_leaves_x8(leaves, skseed, adrs, idx, sha2_state_caches);
+    leaves = fors_leaves_x8(leaves, seeds, adrs, idx, state_cache);
 
     leaves = leaves;
 
@@ -236,11 +226,26 @@ fn fors_node(
     // parallelised SHA-2 register and stack variables
     stack u256[SHA2_STATE_WORD_SIZE] state;       // state
     stack u256[SHA2_ROUNDS_NUM] schedule;         // message schedule
+    stack u256[SHA2_STATE_WORD_SIZE] h_cache;     // vectorised cached state of H
+    stack u256[sha256_parallel::STATE_WORD_SIZE] f_cache; // vectorised cached state of F (SHA-256)
+    stack u8[8*SPX_N] seeds;                      // SK.seed in every lane
     reg ptr u8[2*SHA2_H_PARA_DEG*SPX_N] children; // pointer to subarray with the child nodes
     reg ptr u8[SHA2_H_PARA_DEG*SPX_N] nodes;      // pointer to subarray with the computed nodes
     reg u64 sch_idx;     // schedule index
     reg u64 bits;        // number of bits consumed
     reg u32 avail_nodes; // temporary variable for computing whether there are enough nodes on the current layer to parallel hash
+
+    inline int j;
+
+    // the cached states of F and H, and SK.seed, in every lane: once for all
+    // the parallel calls (only subtrees of at least eight leaves make them)
+    if (z >= 3) {
+        h_cache = __H_state_cache(h_cache, sha2_state_caches);
+        f_cache = __sha256_x8_state_cache(f_cache, sha2_state_caches);
+        for j=0 to 8 {
+            seeds[j*SPX_N : SPX_N] = __copy_nbytes(seeds[j*SPX_N : SPX_N], skseed);
+        }
+    }
 
     node_addr = 0; // assigned in the loops below; initialised for the SCT checker
     layer = 0; // iterate over the layers
@@ -287,7 +292,7 @@ fn fors_node(
                 if (avail_nodes >= 8) {
                     () = #spill(adrs, i, node, node_addr, sha2_state_caches);
                     leaves = flat_tree[node_addr : 8*SPX_N];
-                    leaves = __fors_leaves_x8(leaves, skseed, adrs, node, sha2_state_caches);
+                    leaves = __fors_leaves_x8(leaves, seeds, adrs, node, f_cache);
                     flat_tree[node_addr : 8*SPX_N] = leaves;
                     () = #unspill(adrs, i, node, node_addr, sha2_state_caches);
                     _ = #init_msf(); // the unspilled values are public after the fence
@@ -354,7 +359,7 @@ fn fors_node(
 
                     // init the SHA-2 instances from the cached state
                     sch_idx = 0; bits = 0;
-                    state, schedule, sch_idx, bits = __H_adrs(state, schedule, sch_idx, bits, sha2_state_caches, adrs, node);
+                    state, schedule, sch_idx, bits = __H_adrs(state, schedule, sch_idx, bits, h_cache, adrs, node);
 
                     // absorb all children
                     () = #unspill(lnode);

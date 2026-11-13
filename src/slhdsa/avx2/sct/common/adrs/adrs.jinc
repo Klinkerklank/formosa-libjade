@@ -159,16 +159,25 @@ fn __adrs_compress(
     reg ptr u32[8] adrs
 ) -> reg ptr u8[22]
 {
-    inline int i;
+    reg u32 w;
 
-    stack u8[32] adrs_b;
-    adrs_b = __adrs_to_bytes(adrs_b, adrs);
-
-    // ADRS^c = ADRS[3] ∥ ADRS[8 ∶ 16] ∥ ADRS[19] ∥ ADRS[20 ∶ 32]
-    out[0] = adrs_b[3];
-    for i=0 to 8 { out[i+1] = adrs_b[i+8]; }
-    out[9] = adrs_b[19];
-    for i=0 to 12 { out[i+10] = adrs_b[i+20]; }
+    // ADRS^c = ADRS[3] ∥ ADRS[8 ∶ 16] ∥ ADRS[19] ∥ ADRS[20 ∶ 32], where (ADRS
+    // being big-endian) byte 4k+3 is the low byte of word k, and bytes
+    // 4k .. 4k+3 are word k byte-swapped
+    w = adrs[0];                          // layer address: byte 3
+    out[0] = (8u) w;
+    w = adrs[2]; w = #BSWAP_32(w);        // tree address: bytes 8 .. 15
+    out.[:u32 1] = w;
+    w = adrs[3]; w = #BSWAP_32(w);
+    out.[:u32 5] = w;
+    w = adrs[4];                          // type: byte 19
+    out[9] = (8u) w;
+    w = adrs[5]; w = #BSWAP_32(w);        // bytes 20 .. 31
+    out.[:u32 10] = w;
+    w = adrs[6]; w = #BSWAP_32(w);
+    out.[:u32 14] = w;
+    w = adrs[7]; w = #BSWAP_32(w);
+    out.[:u32 18] = w;
 
     return out;
 }

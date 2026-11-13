@@ -139,14 +139,22 @@ fn __adrsc_x8(
     reg ptr u32[8] adrs      // ADRS
 ) -> reg ptr u8[8*22] // -> adrscs
 {
-    reg u8 byte;
+    reg u64 t0 t1; // ADRS^c bytes 0 .. 15
+    reg u32 t2;    // ADRS^c bytes 16 .. 19
+    reg u16 t3;    // ADRS^c bytes 20 .. 21
 
-    inline int i j;
+    inline int j;
 
     adrscs[0 : 22] = __adrs_compress(adrscs[0 : 22], adrs);
-    for i=0 to 22 {
-        byte = adrscs[i];
-        for j=1 to 8 { adrscs[22*j + i] = byte; }
+    t0 = adrscs.[:u64 0];
+    t1 = adrscs.[:u64 8];
+    t2 = adrscs.[:u32 16];
+    t3 = adrscs.[:u16 20];
+    for j=1 to 8 {
+        adrscs.[:u64 22*j]      = t0;
+        adrscs.[:u64 22*j + 8]  = t1;
+        adrscs.[:u32 22*j + 16] = t2;
+        adrscs.[:u16 22*j + 20] = t3;
     }
 
     return adrscs;
