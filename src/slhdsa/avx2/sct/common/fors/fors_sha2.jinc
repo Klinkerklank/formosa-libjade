@@ -1,7 +1,7 @@
-/* 
+/*
  * FORS algorithms, using SHA-2 as a hash function
  * (which needs to be separate from SHAKE as we only use a cached state for SHA-2)
- * 
+ *
  * author: Dennis op 't Roodt 2026-09-17 (d.n.e.o.t.roodt@tue.nl)
  */
 
@@ -346,7 +346,7 @@ fn fors_node(
                 // compute how many nodes still need to be computed on this layer
                 avail_nodes  = rightmost;
                 avail_nodes -= node;
-                
+
                 // parallelise SHA-2 node computations if possible
                 if (avail_nodes >= SHA2_H_PARA_DEG) {
 
@@ -369,10 +369,10 @@ fn fors_node(
                     nodes = flat_tree[node_addr : SHA2_H_PARA_DEG*SPX_N];
                     nodes, schedule = __H_digests(state, schedule, sch_idx, bits, nodes);
                     flat_tree[node_addr : SHA2_H_PARA_DEG*SPX_N] = nodes;
-                    
+
                     () = #unspill(adrs, i, sha2_state_caches);
                     _ = #init_msf(); // the unspilled values are public after the fence
-                
+
                     // advance to the next uncomputed node in the layer
                     () = #unspill(node);
                     _ = #init_msf(); // the unspilled values are public after the fence

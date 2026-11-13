@@ -1,9 +1,9 @@
-/* 
+/*
  * ADRS and ADRS^C functions
- * 
+ *
  * author: Dennis op 't Roodt 2026-09-17 (d.n.e.o.t.roodt@tue.nl)
  */
- 
+
  // translate u32[8] adrs to u8[32] bytestring
 inline
 fn __adrs_to_bytes(

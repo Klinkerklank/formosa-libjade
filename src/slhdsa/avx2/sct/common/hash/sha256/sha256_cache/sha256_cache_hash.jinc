@@ -1,5 +1,5 @@
 // OBS: This function does not have the INLEN parameter defined
-// It needs to be instantiated w/ namespaces 
+// It needs to be instantiated w/ namespaces
 fn sha256_cached(#[spill_to_mmx] reg ptr u8[32] out, #[spill_to_mmx] reg ptr u8[INLEN] in, reg ptr u8[96] Hc) -> reg ptr u8[32]
 {
     reg u64 bits nblocks inlen offset;

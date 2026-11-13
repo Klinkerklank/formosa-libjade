@@ -1,7 +1,7 @@
-/* 
+/*
  * XMSS algorithms, using SHA-2 as a hash function
  * (which needs to be separate from SHAKE as we only use a cached state for SHA-2)
- * 
+ *
  * author: Dennis op 't Roodt 2026-09-17 (d.n.e.o.t.roodt@tue.nl)
  */
 
@@ -95,7 +95,7 @@ fn xmss_node(
     reg u64 sch_idx;     // schedule index
     reg u64 bits;        // number of bits consumed
     reg u32 avail_nodes; // temporary variable for computing whether there are enough nodes on the current layer to parallel hash
-             
+
     node_addr = 0; // assigned in the loops below; initialised for the SCT checker
     layer = 0; // iterate over the layers
     while (layer <= z) {
@@ -143,7 +143,7 @@ fn xmss_node(
                 node += 1;
             } else { // layer > 0
                 // internal node: the node value is the hash of its two children lnode and rnode
-                
+
                 // compute the horizontal index and height of the left child
                 lnode_i  = node;  // lnode_i = node
                 lnode_i *= 2;     // lnode_i = 2*node
@@ -197,10 +197,10 @@ fn xmss_node(
                     nodes = flat_tree[node_addr : SHA2_H_PARA_DEG*SPX_N];
                     nodes, schedule = __H_digests(state, schedule, sch_idx, bits, nodes);
                     flat_tree[node_addr : SHA2_H_PARA_DEG*SPX_N] = nodes;
-                    
+
                     () = #unspill(adrs);
                     _ = #init_msf(); // the unspilled values are public after the fence
-                
+
                     // advance to the next uncomputed node in the layer
                     () = #unspill(node);
                     _ = #init_msf(); // the unspilled values are public after the fence
@@ -223,7 +223,7 @@ fn xmss_node(
                     flat_tree[node_addr : SPX_N] = __H(flat_tree[node_addr : SPX_N], adrs, buf_l, buf_r, sha2_state_caches);
                     () = #unspill(adrs);
                     _ = #init_msf(); // the unspilled values are public after the fence
-                
+
                     () = #unspill(node);
                     _ = #init_msf(); // the unspilled values are public after the fence
                     // advance to the next uncomputed node in the layer

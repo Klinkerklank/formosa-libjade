@@ -1,9 +1,9 @@
-/* 
+/*
  * functions that together absorb eight independent inputs into
  * the state, where the inputs are of a given fixed byte length
  * INPUT_LENGTH (which is why this file needs to be included in
  * a namespace that defines that length)
- * 
+ *
  * author: Dennis op 't Roodt 2026-09-15 (d.n.e.o.t.roodt@tue.nl)
  */
 
@@ -164,13 +164,13 @@ fn absorb_fixed(
             schedule.[:u256 idx_offset] = vector; // overwrite the vector in the schedule
             idx_word += 1; // one word has been filled and stored
         }
-        
+
         // fill the rest of the schedule with entire words of input
         while (idx_word < sha256_parallel::MSG_BLOCK_WORD_SIZE) {
 
             // gather one word from each input, and insert the word into the packed vector
             vector = pack_word(vector, in_byte_idx, in0, in1, in2, in3, in4, in5, in6, in7);
-            
+
             idx_offset = idx_word; idx_offset <<= 5; // compute the byte address where the u256 word starts
             schedule.[:u256 idx_offset] = vector;    // store the assembled vector in the schedule
 
@@ -196,7 +196,7 @@ fn absorb_fixed(
 
                 // gather one word from each input, and insert the word into the packed vector
                 vector = pack_word(vector, in_byte_idx, in0, in1, in2, in3, in4, in5, in6, in7);
-                
+
                 schedule[i] = vector; // store the assembled vector in the schedule
 
                 in_byte_idx += sha256_parallel::BYTES_PER_WORD; // one word of input has been gathered
@@ -206,7 +206,7 @@ fn absorb_fixed(
 
             () = #unspill(in_byte_nr);
             _ = #init_msf(); // the unspilled values are public after the fence
-            
+
             in_byte_nr -= sha256_parallel::MSG_BLOCK_BYTE_SIZE; // one entire block of input has been consumed
         }
 
@@ -260,7 +260,7 @@ fn absorb_fixed(
 
                 // gather one word from each input, and insert the word into the packed vector
                 vector = pack_word(vector, in_byte_idx, in0, in1, in2, in3, in4, in5, in6, in7);
-                
+
                 idx_offset = idx_word; idx_offset <<= 5; // compute the byte address where the u256 word starts
                 schedule.[:u256 idx_offset] = vector;    // store the assembled vector in the schedule
 

@@ -18,7 +18,7 @@ fn compress(
 
   // W is written to one byte at a time, but is read from in 64-bit words,
   // so we need to account for the Endianness
-  
+
   for t=0 to 16 {
     swap = W[t];
     swap = #BSWAP_64(swap);
@@ -229,7 +229,7 @@ fn finish(
     // run the compression function
     Hp, W = compress(Hp, W);
     idx_W = 0;
-    
+
     // set more zero padding, leaving space for the length encoding
     while (idx_W < 128-16) {
       W[:u8 idx_W] = 0x00;
@@ -248,7 +248,7 @@ fn finish(
     bits >>= 8;
     idx_W -= 1;
   }
-  
+
   // run the compression function
   Hp, W = compress(Hp, W);
 
@@ -281,14 +281,14 @@ fn sha512_absorb(
 
   H = __SHA512_initH_ref();
   Hp = H;
-  
+
   () = #spill(ctx_ptr, ctx_len, msg_ptr, msg_len); // make space in the registers
-  
+
   idx_W = 0;
 
   // absorb the fixed-sized prefix
   Hp, W, idx_W = absorb_fixed(Hp, W, idx_W, prefix);
-  
+
   // add a zero-padding byte (preceding the context length)
   W[:u8 idx_W] = 0x00;
   idx_W += 1;
@@ -298,7 +298,7 @@ fn sha512_absorb(
     Hp, W = compress(Hp, W);
     idx_W = 0;
   }
-  
+
   () = #unspill(ctx_len);
   _ = #init_msf(); // the unspilled values are public after the fence
 
@@ -317,7 +317,7 @@ fn sha512_absorb(
 
   // absorb the variable-sized context
   Hp, W, idx_W = absorb_pointer(Hp, W, idx_W, ctx_ptr, ctx_len);
-  
+
   () = #unspill(msg_ptr, msg_len);
   _ = #init_msf(); // the unspilled values are public after the fence
 

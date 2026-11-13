@@ -17,7 +17,7 @@ fn _blocks_0_ref_array(
 
   Kp = SHA256_K;
   () = #spill(Kp);
-  
+
   Hp = _H;
   H = Hp;
 
@@ -55,13 +55,13 @@ fn _blocks_0_ref_array(
   }
 
   _H = H;
-  
+
   return _H, offset;
 }
 
 // OBS: This function does not have the INLEN parameter defined
 // It needs to be instantiated w/ namespaces
-inline 
+inline
 fn __lastblocks_ref_array(reg ptr u8[INLEN] in, reg u64 inlen offset bits) -> stack u32[32], reg u64
 {
   stack u32[32] sblocks;
@@ -78,14 +78,14 @@ fn __lastblocks_ref_array(reg ptr u8[INLEN] in, reg u64 inlen offset bits) -> st
 
   // copy in to sblocks
   while(i < inlen)
-  { 
+  {
     index = offset; index += i;
     v = in[index]; // v = (u8)[in + i];
     sblocks[:u8 i] = v;
     i += 1;
   }
 
-  // set first byte after input to 0x80 
+  // set first byte after input to 0x80
   sblocks[:u8 i] = 0x80;
 
   // check if one or two blocks are needed
@@ -99,12 +99,12 @@ fn __lastblocks_ref_array(reg ptr u8[INLEN] in, reg u64 inlen offset bits) -> st
     bits >>= 8;
     i -= 1;
   }
-  
+
   return sblocks, nblocks;
 }
 
 // OBS: This function does not have the INLEN parameter defined
-// It needs to be instantiated w/ namespaces 
+// It needs to be instantiated w/ namespaces
 fn sha256(reg ptr u8[32] out, reg ptr u8[INLEN] in) -> reg ptr u8[32]
 {
   reg u64 bits nblocks inlen offset;
@@ -121,7 +121,7 @@ fn sha256(reg ptr u8[32] out, reg ptr u8[INLEN] in) -> reg ptr u8[32]
   () = #spill(bits);
 
   H = __initH_ref();
-  
+
   () = #spill(in);
   Hp = H;
 

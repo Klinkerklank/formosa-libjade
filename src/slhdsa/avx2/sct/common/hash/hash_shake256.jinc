@@ -97,7 +97,7 @@ fn H_msg(
     () = #spill(out); // only needed at the end of the function
 
     () = #spill(ctx_ptr, ctx_len, msg_ptr, msg_len);
-    
+
     // register variables
     reg u256 copied_32_bytes;
     reg u128 copied_16_bytes;
@@ -113,7 +113,7 @@ fn H_msg(
 
     // initialise the SHAKE256 state
     state = __state_init(state);
-    
+
     if (SPX_N == 16) {
         // absorb R, PK.seed, and PK.root
         copied_16_bytes = r[:u128 0];
@@ -172,7 +172,7 @@ fn H_msg(
         state[:u8 state_offset] ^= byte;
         state_offset += 1;
     }
-    
+
     // absorb message string
     msg_offset = 0;
     () = #unspill(msg_ptr, msg_len);
@@ -209,7 +209,7 @@ fn H_msg(
         byte = state[:u8 i];
         out[i] = byte;
     }
-    
+
     return out;
 }
 
@@ -250,7 +250,7 @@ fn PRF_msg(
     () = #spill(out); // only needed at the end of the function
 
     () = #spill(ctx_ptr, ctx_len, msg_ptr, msg_len);
-    
+
     // register variables
     reg u256 copied_32_bytes;
     reg u128 copied_16_bytes;
@@ -320,7 +320,7 @@ fn PRF_msg(
         state[:u8 state_offset] ^= byte;
         state_offset += 1;
     }
-    
+
     // absorb message string
     msg_offset = 0;
     () = #unspill(msg_ptr, msg_len);
@@ -362,7 +362,7 @@ fn PRF_msg(
         copied_32_bytes = state.[:u256 0];
         out.[:u256 0] = copied_32_bytes;
     }
-    
+
     return out;
 }
 
@@ -397,7 +397,7 @@ fn PRF(
 ) -> reg ptr u8[SPX_N] // -> out
 {
     () = #spill(out); // only needed at the end of the function
-    
+
     // register variables
     reg u256[7] st; // SHAKE256 state stack variable
 
@@ -406,7 +406,7 @@ fn PRF(
 
     // SHAKE256 state initialisation
     st = __state_init_avx2();
-    
+
     // absorb all inputs
     st, _ =  A_N::__absorb_avx2(st, 0,        pkseed,     UNFINISHED, R136); // absorb PK.seed
     adrs_bytes = __adrs_to_bytes(adrs_bytes, adrs);
@@ -416,7 +416,7 @@ fn PRF(
     // squeeze to get the output
     () = #unspill(out);
     _, out = A_N::__squeeze_avx2(st, out, R136);
-    
+
     return out;
 }
 
@@ -447,7 +447,7 @@ fn F(
 ) -> reg ptr u8[SPX_N] // -> out
 {
     () = #spill(out); // only needed at the end of the function
-    
+
     // register variables
     reg u256[7] st; // SHAKE256 state stack variable
 
@@ -456,7 +456,7 @@ fn F(
 
     // SHAKE256 state initialisation
     st = __state_init_avx2();
-    
+
     // absorb all inputs
     st, _ =  A_N::__absorb_avx2(st, 0,        pkseed,     UNFINISHED, R136); // absorb PK.seed
     adrs_bytes = __adrs_to_bytes(adrs_bytes, adrs);
@@ -466,7 +466,7 @@ fn F(
     // squeeze to get the output
     () = #unspill(out);
     _, out = A_N::__squeeze_avx2(st, out, R136);
-    
+
     return out;
 }
 
@@ -498,7 +498,7 @@ fn H(
 ) -> reg ptr u8[SPX_N] // -> out
 {
     () = #spill(out); // only needed at the end of the function
-    
+
     // register variables
     reg u256[7] st; // SHAKE256 state stack variable
 
@@ -507,7 +507,7 @@ fn H(
 
     // SHAKE256 state initialisation
     st = __state_init_avx2();
-    
+
     // absorb all inputs
     st, _ =  A_N::__absorb_avx2(st, 0,          pkseed,     UNFINISHED, R136); // absorb PK.seed
     adrs_bytes = __adrs_to_bytes(adrs_bytes, adrs);
@@ -518,7 +518,7 @@ fn H(
     // squeeze to get the output
     () = #unspill(out);
     _, out = A_N::__squeeze_avx2(st, out, R136);
-    
+
     return out;
 }
 
@@ -551,7 +551,7 @@ fn T_len(
 ) -> reg ptr u8[SPX_N] // -> out
 {
     () = #spill(out); // only needed at the end of the function
-    
+
     // register variables
     reg u256[7] st; // SHAKE256 state stack variable
 
@@ -560,7 +560,7 @@ fn T_len(
 
     // SHAKE256 state initialisation
     st = __state_init_avx2();
-    
+
     // absorb all inputs
     st, _ =    A_N::__absorb_avx2(st, 0,        pkseed,     UNFINISHED, R136); // absorb PK.seed
     adrs_bytes = __adrs_to_bytes(adrs_bytes, adrs);
@@ -570,7 +570,7 @@ fn T_len(
     // squeeze to get the output
     () = #unspill(out);
     _, out = A_N::__squeeze_avx2(st, out, R136);
-    
+
     return out;
 }
 
@@ -602,7 +602,7 @@ fn T_k(
 ) -> reg ptr u8[SPX_N] // -> out
 {
     () = #spill(out); // only needed at the end of the function
-    
+
     // register variables
     reg u256[7] st; // SHAKE256 state stack variable
 
@@ -611,7 +611,7 @@ fn T_k(
 
     // SHAKE256 state initialisation
     st = __state_init_avx2();
-    
+
     // absorb all inputs
     st, _ =  A_N::__absorb_avx2(st, 0,        pkseed,     UNFINISHED, R136); // absorb PK.seed
     adrs_bytes = __adrs_to_bytes(adrs_bytes, adrs);
@@ -621,7 +621,7 @@ fn T_k(
     // squeeze to get the output
     () = #unspill(out);
     _, out = A_N::__squeeze_avx2(st, out, R136);
-    
+
     return out;
 }
 

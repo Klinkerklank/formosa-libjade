@@ -1,6 +1,6 @@
-/* 
+/*
  * SHA512 hash function instantiations
- * 
+ *
  * author: Dennis op 't Roodt 2026-09-17 (d.n.e.o.t.roodt@tue.nl)
  */
 
@@ -28,10 +28,10 @@ fn H_msg(
     stack u8[3*SPX_N] buf; // buffer for the inner hash call
     stack u8[2*SPX_N + SHA512_OUT + 4] seed; // buffer for the seed concatenated with a 4-byte counter
     stack u8[((SPX_M + SHA512_OUT - 1) / SHA512_OUT) * SHA512_OUT] concat; // concatenated hash outputs
-    
+
     inline int i;
     inline int hash_nr;
-    
+
     () = #spill(pkseed, pkroot); // resolves 'conflicting variables r and pkseed and pkroot'
 
     // copy R into both buffers
@@ -55,18 +55,18 @@ fn H_msg(
     // set the first three of the four bytes of the counter to 0
     // (for all approved parameter sets, we will never need > 255 hash output concatenations)
     for i=0 to 3 { seed[2*SPX_N + SHA512_OUT + i] = 0; }
-    
+
     // need ceil(SPX_M / SHA512_OUT) hashes of SHA512_OUT bytes each, to surpass at least SPX_M bytes
     for hash_nr=0 to (SPX_M + SHA512_OUT - 1) / SHA512_OUT {
         // set the last byte of 'seed' to the hash iteration counter
         seed[2*SPX_N + SHA512_OUT + 3] = (8u) hash_nr;
-        
+
         // compute sha512(seed), where seed includes the counter
         concat[hash_nr*SHA512_OUT : SHA512_OUT] = sha512_mgf1_seed::sha512(concat[hash_nr*SHA512_OUT : SHA512_OUT], seed);
     }
-    
+
     () = #unspill(out);
-    
+
     // truncate the concatenated hash outputs to the correct length by copying only the first SPX_M bytes
     for i=0 to SPX_M { out[i] = concat[i]; }
     return out;
@@ -116,9 +116,9 @@ fn PRF_msg(
     stack u8[SHA512_IN + SPX_N] ibuf;      // buffer for inner hash call
     stack u8[SHA512_IN + SHA512_OUT] obuf; // buffer for outer hash call
     stack u8[SHA512_OUT] hmac;
-    
+
     inline int i;
-    
+
     () = #spill(optrand); // resolves 'conflicting variables skprf and optrand'
 
     // set key = SK.prf || 00..0
@@ -506,7 +506,7 @@ fn H_adrs(
 
     // absorb ADRS^C into the parallelised state
     state, schedule, sch_idx, bits = sha512_parallel_adrsc::absorb_fixed(state, schedule, sch_idx, bits, adrsc0, adrsc1, adrsc2, adrsc3);
-    
+
     return state, schedule, sch_idx, bits;
 }
 
@@ -555,7 +555,7 @@ fn H_children(
     () = #spill(children); // make space in the registers
     state, schedule, sch_idx, bits = sha512_parallel_n::absorb_fixed(state, schedule, sch_idx, bits, lnode0, lnode1, lnode2, lnode3);
     () = #unspill(children);
-    
+
     // get the pointers to all of the right children
     rnode0 = children[(1+0*2) * SPX_N : SPX_N];
     rnode1 = children[(1+1*2) * SPX_N : SPX_N];
@@ -564,7 +564,7 @@ fn H_children(
 
     // consume all right children into the parallelised state
     state, schedule, sch_idx, bits = sha512_parallel_n::absorb_fixed(state, schedule, sch_idx, bits, rnode0, rnode1, rnode2, rnode3);
-    
+
     return state, schedule, sch_idx, bits;
 }
 
@@ -604,13 +604,13 @@ fn H_digests(
     () = #spill(nodes); // free up space in the registers
     schedule, node0, node1, node2, node3 = sha512_parallel::finalise(state, schedule, sch_idx, bits, node0, node1, node2, node3);
     () = #unspill(nodes);
-    
+
     // write (and truncate) the nodes to the output array
     nodes[0*SPX_N : SPX_N] = __copy_nbytes(nodes[0*SPX_N : SPX_N], node0[0 : SPX_N]);
     nodes[1*SPX_N : SPX_N] = __copy_nbytes(nodes[1*SPX_N : SPX_N], node1[0 : SPX_N]);
     nodes[2*SPX_N : SPX_N] = __copy_nbytes(nodes[2*SPX_N : SPX_N], node2[0 : SPX_N]);
     nodes[3*SPX_N : SPX_N] = __copy_nbytes(nodes[3*SPX_N : SPX_N], node3[0 : SPX_N]);
-    
+
     return nodes, schedule;
 }
 

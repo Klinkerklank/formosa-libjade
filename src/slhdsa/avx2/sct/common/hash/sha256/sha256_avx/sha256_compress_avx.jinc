@@ -92,7 +92,7 @@ namespace sha256_avx {
 
     t[3] = #VPSRL_2u64(t[3], sigma1_0);
     tmp  = t[0] ^ t[1];
-    x[0] = #VPADD_4u32(x[0], tmp);  
+    x[0] = #VPADD_4u32(x[0], tmp);
 
     t[2] = t[2] ^ t[3];
     t[3] = #VPSRL_2u64(t[3], sigma1_1 - sigma1_0);

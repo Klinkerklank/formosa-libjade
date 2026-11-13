@@ -223,7 +223,7 @@ fn _blocks_1_ref(reg ptr u32[8] _H, reg ptr u32[32] sblocks, reg u64 nblocks) ->
       W1[:u64 t] = sblocks.[:u64 8*t];
     }
     s_sblocks = sblocks;
-    
+
     H = sha256_avx::sha256_compress_avx(H, W1);
 
     sblocks = s_sblocks;
@@ -232,7 +232,7 @@ fn _blocks_1_ref(reg ptr u32[8] _H, reg ptr u32[32] sblocks, reg u64 nblocks) ->
       W2[:u64 t] = sblocks.[:u64 8*t];
     }
     s_sblocks = sblocks;
-    
+
     H = sha256_avx2::sha256_compress_avx2(H, W2);
 
     sblocks = s_sblocks;
@@ -250,9 +250,9 @@ inline fn __store_ref_array(
   inline int i;
   reg u32 v;
 
-  for i=0 to 8 { 
+  for i=0 to 8 {
     v = H[i];
-    v = #BSWAP_32(v); 
+    v = #BSWAP_32(v);
     out.[:u32 4*i] = v;
   }
   return out;

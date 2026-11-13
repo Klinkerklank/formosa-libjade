@@ -10,7 +10,7 @@ fn sha256_initH_cache(reg ptr u8[96] Hc, reg ptr u8[SPX_N] pkseed) -> reg ptr u8
     for i=0 to SPX_N { block[i] = pkseed[i]; }
 
     H = __initH_ref();
-    
+
     Hp = H;
     Hp, _ = _blocks_0_ref_array(Hp, block);
 

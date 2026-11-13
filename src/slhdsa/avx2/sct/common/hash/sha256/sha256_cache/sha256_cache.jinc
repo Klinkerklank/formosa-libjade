@@ -1,7 +1,7 @@
 namespace sha256_firstblock {
     param int INLEN = SHA256_IN;
     require "../sha256_array/sha256_array.jinc"
-    
+
     namespace sha256_parallel {
         param int INPUT_LENGTH = SHA256_IN;
         require "../sha256_parallel/sha256_parallel.jinc"

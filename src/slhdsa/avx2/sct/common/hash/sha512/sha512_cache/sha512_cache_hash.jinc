@@ -1,5 +1,5 @@
 // OBS: This function does not have the INLEN parameter defined
-// It needs to be instantiated w/ namespaces 
+// It needs to be instantiated w/ namespaces
 fn sha512_cached(#[spill_to_mmx] reg ptr u8[64] out, #[spill_to_mmx] reg ptr u8[INLEN] in, reg ptr u8[96] Hc) -> reg ptr u8[64]
 {
     reg u64 bits nblocks inlen offset;
@@ -18,7 +18,7 @@ fn sha512_cached(#[spill_to_mmx] reg ptr u8[64] out, #[spill_to_mmx] reg ptr u8[
     for i=0 to 8 {
         Hp[i] = Hc[:u64 4 + i];
     }
-    
+
     () = #spill(in);
     Hp, offset = _SHA512_blocks_0_ref_array(Hp, in);
 
