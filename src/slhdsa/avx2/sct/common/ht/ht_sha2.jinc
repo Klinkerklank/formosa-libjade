@@ -86,17 +86,15 @@ fn ht_sign(
     // compute the lowest-layer XMSS signature on the FORS public key
     sig_xmss = sig_ht[0 : XMSS_SIG]; // get the pointer to the subarray so the full array can be spilled
     () = #spill(sig_ht, skseed, pk_fors, idx_leaf, sha2_state_caches);
-    sig_xmss, adrs = __xmss_sign(sig_xmss, pk_fors, skseed, idx_leaf, adrs, sha2_state_caches);
+    sig_xmss, root, adrs = __xmss_sign(sig_xmss, root, pk_fors, skseed, idx_leaf, adrs, sha2_state_caches);
     () = #declassify(sig_xmss); // part of the signature, public
+    () = #declassify(root); // xmss_pkFromSig of the (public) signature, public
     () = #unspill(sig_ht, skseed, pk_fors, idx_leaf, sha2_state_caches);
     _ = #init_msf(); // the unspilled values are public after the fence
     sig_ht[0 : XMSS_SIG] = sig_xmss; // redesignate the pointer so the region of the full array is not partial
 
-    // compute the lowest-layer XMSS tree root based on the first XMSS signature
-    () = #spill(skseed, sig_ht, sha2_state_caches);
-    root, adrs = __xmss_pkfromsig(root, idx_leaf, sig_xmss, pk_fors, adrs, sha2_state_caches);
-    () = #unspill(skseed, sig_ht, sha2_state_caches);
-    _ = #init_msf(); // the unspilled values are public after the fence
+    // (xmss_sign also returns the root of the lowest-layer XMSS tree, so
+    // Algorithm 12 does not need xmss_pkFromSig to compute it)
 
     // iteratively compute the XMSS signatures that sign the root of the previous XMSS tree
     offset = XMSS_SIG; // next signature will get placed immediately adjoining the previous one
@@ -119,20 +117,15 @@ fn ht_sign(
         // compute the XMSS signature on the previous XMSS tree's root
         sig_xmss = sig_ht[offset : XMSS_SIG]; // get the pointer to the subarray so the full array can be spilled
         () = #spill(sig_ht, j, offset, idx_leaf, sha2_state_caches);
-        sig_xmss, adrs = __xmss_sign(sig_xmss, root_prev, skseed, idx_leaf, adrs, sha2_state_caches);
+        sig_xmss, root, adrs = __xmss_sign(sig_xmss, root, root_prev, skseed, idx_leaf, adrs, sha2_state_caches);
         () = #declassify(sig_xmss); // part of the signature, public
+        () = #declassify(root); // xmss_pkFromSig of the (public) signature, public
         () = #unspill(sig_ht, j, offset, idx_leaf, sha2_state_caches);
         _ = #init_msf(); // the unspilled values are public after the fence
         sig_ht[offset : XMSS_SIG] = sig_xmss; // redesignate the pointer so the region of the full array is not partial
 
-        // compute the current XMSS tree's root, unless it's the topmost layer
-        // in which case the root will be PK.root (which is not part of the signature)
-        if (j < SPX_D-1) {
-            () = #spill(sig_ht, j, offset, sha2_state_caches);
-            root, adrs = __xmss_pkfromsig(root, idx_leaf, sig_xmss, root_prev, adrs, sha2_state_caches);
-            () = #unspill(sig_ht, j, offset, sha2_state_caches);
-            _ = #init_msf(); // the unspilled values are public after the fence
-        }
+        // (xmss_sign also returned the root of the current XMSS tree, the
+        // message of the next layer; in the topmost layer it is PK.root)
 
         () = #unspill(skseed);
         _ = #init_msf(); // the unspilled values are public after the fence

@@ -702,3 +702,86 @@ fn __H_lanes(
 
     return nodes;
 }
+
+// T_len of eight WOTS+ public keys at once (eight leaves of an XMSS tree):
+// out_l = Trunc_n(SHA-512(PK.seed || toByte(0, 128-n) || ADRS^c_l || in_l)),
+// with in_l = in[l*LEN*n : LEN*n], the LEN chain ends of leaf l
+// (the four-lane SHA-512 runs twice: lanes 0..3, then lanes 4..7)
+fn T_len_x8(
+    #[spill_to_mmx] reg ptr u8[8*SPX_N] out,   // output: one n-byte value per lane
+    #[spill_to_mmx] reg ptr u8[8*SPX_LEN*SPX_N] in, // the LEN chain ends of every lane, lane after lane
+    reg ptr u8[8*22] adrscs,                   // the ADRS^c of every lane (type WOTS_PK)
+    reg ptr u8[96] sha2_state_caches           // combined SHA256 and SHA512 state caches
+) -> reg ptr u8[8*SPX_N] // -> out
+{
+    // stack variables
+    stack u256[sha512_parallel::STATE_WORD_SIZE] state;       // vectorised state
+    stack u256[sha512_parallel::ROUNDS_NUM] schedule;         // vectorised message schedule
+    stack u256[sha512_parallel::STATE_WORD_SIZE] state_cache; // vectorised cached SHA-512 state
+    stack u64 state_word;                                     // temporary variable for copying purposes
+    stack u8[SHA512_OUT] d0 d1 d2 d3;                         // full digests
+
+    // register variables
+    reg u256 state_vector; // temporary variable for copying purposes
+    reg u64 sch_idx;       // byte index of the current position in message schedule
+    reg u64 bits;          // number of bits processed
+
+    inline int i h;
+
+    () = #spill(out, in);
+
+    // the cached SHA-512 state, in every lane
+    for i=0 to sha512_parallel::STATE_WORD_SIZE {
+        state_word = sha2_state_caches[:u64 4+i];
+        state_vector = #VPBROADCAST_4u64(state_word);
+        state_cache[i] = state_vector;
+    }
+
+    for h=0 to 2 {
+        sch_idx = 0;
+        bits = SHA512_IN*8; // exactly one block of input was consumed to get the cached state
+        state, schedule, sch_idx, bits = sha512_parallel::init_cache(state, schedule, sch_idx, bits, state_cache);
+
+        // ADRS^c of lanes 4h..4h+3
+        state, schedule, sch_idx, bits = sha512_parallel_adrsc::absorb_fixed(state, schedule, sch_idx, bits,
+            adrscs[(4*h+0)*22 : 22], adrscs[(4*h+1)*22 : 22], adrscs[(4*h+2)*22 : 22], adrscs[(4*h+3)*22 : 22]);
+
+        // the chain ends of lanes 4h..4h+3
+        () = #unspill(in);
+        _ = #init_msf(); // the unspilled pointer is public after the fence
+        state, schedule, sch_idx, bits = sha512_parallel_tlen::absorb_fixed(state, schedule, sch_idx, bits,
+            in[(4*h+0)*SPX_LEN*SPX_N : SPX_LEN*SPX_N], in[(4*h+1)*SPX_LEN*SPX_N : SPX_LEN*SPX_N],
+            in[(4*h+2)*SPX_LEN*SPX_N : SPX_LEN*SPX_N], in[(4*h+3)*SPX_LEN*SPX_N : SPX_LEN*SPX_N]);
+
+        schedule, d0, d1, d2, d3 = sha512_parallel::finalise(state, schedule, sch_idx, bits, d0, d1, d2, d3);
+
+        () = #unspill(out);
+        _ = #init_msf(); // the unspilled pointer is public after the fence
+
+        // truncate to n bytes
+        out[(4*h+0)*SPX_N : SPX_N] = __copy_nbytes(out[(4*h+0)*SPX_N : SPX_N], d0[0 : SPX_N]);
+        out[(4*h+1)*SPX_N : SPX_N] = __copy_nbytes(out[(4*h+1)*SPX_N : SPX_N], d1[0 : SPX_N]);
+        out[(4*h+2)*SPX_N : SPX_N] = __copy_nbytes(out[(4*h+2)*SPX_N : SPX_N], d2[0 : SPX_N]);
+        out[(4*h+3)*SPX_N : SPX_N] = __copy_nbytes(out[(4*h+3)*SPX_N : SPX_N], d3[0 : SPX_N]);
+        () = #spill(out);
+    }
+
+    return out;
+}
+
+inline // inline wrapper that splits parameter live-ranges, to aid the Jasmin compiler
+fn __T_len_x8(
+    reg ptr u8[8*SPX_N] out,
+    reg ptr u8[8*SPX_LEN*SPX_N] in,
+    reg ptr u8[8*22] adrscs,
+    reg ptr u8[96] sha2_state_caches
+) -> reg ptr u8[8*SPX_N] // -> out
+{
+    out = out; in = in; adrscs = adrscs; sha2_state_caches = sha2_state_caches;
+
+    out = T_len_x8(out, in, adrscs, sha2_state_caches);
+
+    out = out;
+
+    return out;
+}

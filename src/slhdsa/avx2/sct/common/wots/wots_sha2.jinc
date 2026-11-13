@@ -196,6 +196,47 @@ fn __adrsc_x8_set_hash_addr(
     return adrscs;
 }
 
+// set the key pair addresses of the eight lanes to first, ..., first + 7
+inline
+fn __adrsc_x8_set_keypair_addr(
+    reg ptr u8[8*22] adrscs, // eight ADRS^c
+    reg u32 first            // key pair address of lane 0
+) -> reg ptr u8[8*22] // -> adrscs
+{
+    reg u32 swap;
+
+    inline int j;
+
+    for j=0 to 8 {
+        swap = first;
+        swap += j;
+        swap = #BSWAP_32(swap);
+        adrscs.[:u32 22*j + 10] = swap; // ADRS^c bytes 10..13: key pair address
+    }
+
+    return adrscs;
+}
+
+// set the same chain address in all eight lanes
+inline
+fn __adrsc_x8_set_same_chain_addr(
+    reg ptr u8[8*22] adrscs, // eight ADRS^c
+    reg u32 chain            // chain address
+) -> reg ptr u8[8*22] // -> adrscs
+{
+    reg u32 swap;
+
+    inline int j;
+
+    swap = chain;
+    swap = #BSWAP_32(swap);
+    for j=0 to 8 {
+        adrscs.[:u32 22*j + 14] = swap; // ADRS^c bytes 14..17: chain address
+    }
+
+    return adrscs;
+}
+
 // set the tree indices of the eight lanes to first, ..., first + 7
 inline
 fn __adrsc_x8_set_tree_index(
@@ -729,6 +770,130 @@ fn __wots_sk_x8(
     chains = chains;
 
     return chains;
+}
+
+/*-------------------------------------------------------------+
+| ALGORITHM 6 FROM SLH-DSS (FIPS 205), EIGHT KEYS AT ONCE      |
+| The WOTS+ public keys of the eight XMSS leaves idx, ...,     |
+| idx+7: lane l is leaf idx+l, so the eight lanes advance the  |
+| same chain of eight keys in lockstep (every lane has w-1     |
+| steps to take, none is padding), and T_len compresses the    |
+| eight public keys at once.                                   |
++-------------------------------------------------------------*/
+fn wots_leaves_x8(
+    #[spill_to_mmx] reg ptr u8[8*SPX_N] leaves, // output: the eight leaves (WOTS+ public keys)
+    reg ptr u8[SPX_N] skseed,                   // SK.seed
+    reg ptr u32[8] adrs,                        // ADRS (layer and tree address of the XMSS tree)
+    reg u32 idx,                                // index of the first leaf
+    reg ptr u8[96] h_cache                      // cached SHA2 state(s)
+) -> reg ptr u8[8*SPX_N] // -> leaves
+{
+    // stack variables
+    stack u8[8*SPX_LEN*SPX_N] pks;                            // the chain ends of every leaf, leaf after leaf
+    stack u8[8*SPX_N] cur;                                    // the current value of one chain of every leaf
+    stack u8[8*SPX_N] next;                                   // the next value of that chain
+    stack u8[8*SPX_N] seeds;                                  // SK.seed in every lane
+    stack u8[8*22] adrscs_prf;                                // ADRS^c of the secret key values (WOTS_PRF)
+    stack u8[8*22] adrscs_hash;                               // ADRS^c of the chains (WOTS_HASH)
+    stack u8[8*22] adrscs_pk;                                 // ADRS^c of the public keys (WOTS_PK)
+    stack u256[sha256_parallel::STATE_WORD_SIZE] state_cache; // vectorised cached SHA-256 state
+    stack u32[8] tmp_adrs;                                    // ADRS with another type
+
+    // register variables
+    reg u32 chain;  // chain address
+    reg u32 pos;    // hash address
+    reg u64 off;    // byte offset of the chain in a leaf
+    reg u64 x;      // temporary variable for copying
+
+    inline int l w;
+
+    () = #spill(leaves, h_cache);
+
+    for l=0 to 8 {
+        seeds[l*SPX_N : SPX_N] = __copy_nbytes(seeds[l*SPX_N : SPX_N], skseed);
+    }
+
+    // the three kinds of ADRS^c, each with key pair address idx+l in lane l
+    tmp_adrs = __adrs_clone(tmp_adrs, adrs);
+    tmp_adrs = __adrs_set_type_and_clear(tmp_adrs, SPX_ADRS_TYPE_WOTS_HASH);
+    adrscs_hash = __adrsc_x8(adrscs_hash, tmp_adrs);
+    adrscs_hash = __adrsc_x8_set_keypair_addr(adrscs_hash, idx);
+    tmp_adrs = __adrs_set_type_and_clear(tmp_adrs, SPX_ADRS_TYPE_WOTS_PRF);
+    adrscs_prf = __adrsc_x8(adrscs_prf, tmp_adrs);
+    adrscs_prf = __adrsc_x8_set_keypair_addr(adrscs_prf, idx);
+    tmp_adrs = __adrs_set_type_and_clear(tmp_adrs, SPX_ADRS_TYPE_WOTS_PK);
+    adrscs_pk = __adrsc_x8(adrscs_pk, tmp_adrs);
+    adrscs_pk = __adrsc_x8_set_keypair_addr(adrscs_pk, idx);
+
+    state_cache = __sha256_x8_state_cache(state_cache, h_cache);
+
+    chain = 0;
+    while (chain < SPX_LEN) {
+        adrscs_prf = __adrsc_x8_set_same_chain_addr(adrscs_prf, chain);
+        adrscs_hash = __adrsc_x8_set_same_chain_addr(adrscs_hash, chain);
+
+        // the secret key values of chain 'chain' of the eight leaves
+        () = #spill(chain);
+        cur = F_x8(cur, seeds, adrscs_prf, state_cache);
+
+        // w-1 steps, alternating between cur and next (w-1 is odd)
+        pos = 0;
+        while (pos < SPX_W-2) {
+            adrscs_hash = __adrsc_x8_set_hash_addr(adrscs_hash, pos);
+            () = #spill(pos);
+            next = F_x8(next, cur, adrscs_hash, state_cache);
+            () = #unspill(pos);
+            _ = #init_msf(); // the unspilled values are public after the fence
+            pos += 1;
+            adrscs_hash = __adrsc_x8_set_hash_addr(adrscs_hash, pos);
+            () = #spill(pos);
+            cur = F_x8(cur, next, adrscs_hash, state_cache);
+            () = #unspill(pos);
+            _ = #init_msf(); // the unspilled values are public after the fence
+            pos += 1;
+        }
+        adrscs_hash = __adrsc_x8_set_hash_addr(adrscs_hash, pos);
+        next = F_x8(next, cur, adrscs_hash, state_cache);
+        () = #unspill(chain);
+        _ = #init_msf(); // the unspilled values are public after the fence
+
+        // the chain ends into the public key of every leaf
+        off = (64u) chain;
+        off *= SPX_N;
+        for l=0 to 8 {
+            for w=0 to SPX_N/8 {
+                x = next.[:u64 l*SPX_N + 8*w];
+                pks.[:u64 l*SPX_LEN*SPX_N + off + 8*w] = x;
+            }
+        }
+
+        chain += 1;
+    }
+
+    // compress the eight public keys
+    () = #unspill(leaves, h_cache);
+    _ = #init_msf(); // the unspilled values are public after the fence
+    leaves = __T_len_x8(leaves, pks, adrscs_pk, h_cache);
+
+    return leaves;
+}
+
+inline // inline wrapper that splits parameter live-ranges, to aid the Jasmin compiler
+fn __wots_leaves_x8(
+    reg ptr u8[8*SPX_N] leaves,
+    reg ptr u8[SPX_N] skseed,
+    reg ptr u32[8] adrs,
+    reg u32 idx,
+    reg ptr u8[96] h_cache
+) -> reg ptr u8[8*SPX_N] // -> leaves
+{
+    leaves = leaves; skseed = skseed; adrs = adrs; idx = idx; h_cache = h_cache;
+
+    leaves = wots_leaves_x8(leaves, skseed, adrs, idx, h_cache);
+
+    leaves = leaves;
+
+    return leaves;
 }
 
 //////////////////////// MAIN FUNCTIONS ////////////////////////

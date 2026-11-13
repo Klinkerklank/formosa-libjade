@@ -62,3 +62,9 @@ namespace sha512_parallel_n {
     param int INPUT_LENGTH = SPX_N;
     require "sha512_parallel/sha512_parallel_absorb_fixed.jinc"
 }
+
+// the LEN n-byte chain ends of one WOTS+ public key (T_len of many leaves at once)
+namespace sha512_parallel_tlen {
+    param int INPUT_LENGTH = SPX_LEN*SPX_N;
+    require "sha512_parallel/sha512_parallel_absorb_fixed.jinc"
+}

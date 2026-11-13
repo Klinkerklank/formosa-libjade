@@ -52,26 +52,39 @@ fn __tree_label(
 | ALGORITHM 9 FROM SLH-DSS (FIPS 205)                          |
 | Computes the root of a Merkle subtree of WOTS+ public keys.  |
 | (iterative instead of recursive)                             |
+| Also writes the authentication path of leaf idx, read from   |
+| the computed nodes (meaningful when the subtree is the whole |
+| tree: i = 0, z = h'), for xmss_sign.                         |
 +-------------------------------------------------------------*/
 fn xmss_node(
-    reg ptr u8[SPX_N] root,          // output: root of the subtree rooted at i,z
+    reg ptr u8[(SPX_H_PRIME+1) * SPX_N] path_root, // output: the authentication path of leaf idx, then the root (i, z)
     reg ptr u8[SPX_N] skseed,        // SK.seed
     reg u32 i,                       // target node index (horizontal)
     reg u32 z,                       // target node height
+    reg u32 idx,                     // leaf whose authentication path to write
     reg ptr u32[8] adrs,             // ADRS
     reg ptr u8[96] sha2_state_caches // combined SHA256 and SHA512 state caches
-) -> reg ptr u8[SPX_N], reg ptr u32[8] // -> root, adrs
+) -> reg ptr u8[(SPX_H_PRIME+1) * SPX_N], reg ptr u32[8] // -> path_root, adrs
 {
-    () = #spill(root);
-
-    // stack variables
-    stack u8[SPX_N] buf_l; // buffer holding the node value of the left child
-    stack u8[SPX_N] buf_r; // buffer holding the node value of the right child
+    () = #spill(path_root, idx, i, z);
 
     // stack buffer with enough place to fit the entire (flattened) XMSS tree
     // note that for efficiency only those nodes are computed that are needed
     // to find the target node, so not necessarily the entire buffer is filled
     stack u8[XMSS_TREE_SIZE * SPX_N] flat_tree;
+
+    // register variables (authentication path)
+    reg u32 auth_t;   // (idx >> j): horizontal index of the path's node at height j
+    reg u32 auth_k;   // horizontal index of its sibling
+    reg u32 auth_j;   // height
+    reg u64 auth_off; // byte offset in nodes
+    reg u64 auth_x;   // temporary variable for copying
+    inline int auth_w;
+
+    // stack variables
+    stack u8[SPX_N] buf_l; // buffer holding the node value of the left child
+    stack u8[SPX_N] buf_r; // buffer holding the node value of the right child
+
 
     // register variables
     reg u32 layer;     // iterator over the layers
@@ -86,6 +99,7 @@ fn xmss_node(
     reg u64 pow;       // temporary variable for computing powers
     reg u32 exp;       // temporary variable for computing exponents
     reg ptr u8[SPX_N] wots_pk; // pointer to subarray with a WOTS+ public key
+    reg ptr u8[8*SPX_N] leaves; // pointer to subarray with eight WOTS+ public keys
 
     // parallelised SHA-2 register and stack variables
     stack u256[SHA2_STATE_WORD_SIZE] state;       // state
@@ -129,18 +143,38 @@ fn xmss_node(
                 node_addr  = (64u) node; // node index
                 node_addr *= SPX_N;      // byte address of node
 
-                // compute the WOTS+ public key
-                wots_pk = flat_tree[node_addr : SPX_N]; // get the pointer to the subarray so the full array can be spilled
-                () = #spill(node_addr);
-                wots_pk, adrs = __wots_pkgen(wots_pk, skseed, adrs, sha2_state_caches);
-                () = #unspill(node_addr);
-                _ = #init_msf(); // the unspilled values are public after the fence
-                flat_tree[node_addr : SPX_N] = wots_pk; // redesignate the pointer so the region of the full array is not partial
+                // compute how many leaves still need to be computed
+                avail_nodes  = rightmost;
+                avail_nodes -= node;
 
-                () = #unspill(node);
-                _ = #init_msf(); // the unspilled values are public after the fence
-                // advance to the next uncomputed node in the layer
-                node += 1;
+                // eight leaves at a time when the subtree has at least eight
+                // (then it has a multiple of eight, adjacent in flat_tree)
+                if (avail_nodes >= 8) {
+                    leaves = flat_tree[node_addr : 8*SPX_N];
+                    () = #spill(node_addr, adrs);
+                    leaves = __wots_leaves_x8(leaves, skseed, adrs, node, sha2_state_caches);
+                    () = #unspill(node_addr, adrs);
+                    _ = #init_msf(); // the unspilled values are public after the fence
+                    flat_tree[node_addr : 8*SPX_N] = leaves;
+
+                    () = #unspill(node);
+                    _ = #init_msf(); // the unspilled values are public after the fence
+                    // advance to the next uncomputed node in the layer
+                    node += 8;
+                } else {
+                    // compute the WOTS+ public key
+                    wots_pk = flat_tree[node_addr : SPX_N]; // get the pointer to the subarray so the full array can be spilled
+                    () = #spill(node_addr);
+                    wots_pk, adrs = __wots_pkgen(wots_pk, skseed, adrs, sha2_state_caches);
+                    () = #unspill(node_addr);
+                    _ = #init_msf(); // the unspilled values are public after the fence
+                    flat_tree[node_addr : SPX_N] = wots_pk; // redesignate the pointer so the region of the full array is not partial
+
+                    () = #unspill(node);
+                    _ = #init_msf(); // the unspilled values are public after the fence
+                    // advance to the next uncomputed node in the layer
+                    node += 1;
+                }
             } else { // layer > 0
                 // internal node: the node value is the hash of its two children lnode and rnode
 
@@ -242,35 +276,58 @@ fn xmss_node(
         layer += 1;
     }
 
-    () = #unspill(root);
+
+    () = #unspill(path_root, idx);
     _ = #init_msf(); // the unspilled values are public after the fence
 
-    // write the target node value to the output,
-    // and the target node was the last node written to flat_tree,
-    // so node_addr is still the correct byte address
-    root = __copy_nbytes(root, flat_tree[node_addr : SPX_N]);
-    return root, adrs;
+    // the authentication path of leaf idx: the sibling (idx >> j) xor 1 at height j
+    auth_t = idx;
+    auth_off = 0;
+    auth_j = 0;
+    while (auth_j < SPX_H_PRIME) {
+        auth_k = auth_t;
+        auth_k ^= 1;
+        label = __tree_label(auth_k, auth_j);
+        label *= SPX_N;
+        for auth_w=0 to SPX_N/8 {
+            auth_x = flat_tree.[:u64 label + 8*auth_w];
+            path_root.[:u64 auth_off + 8*auth_w] = auth_x;
+        }
+        auth_off += SPX_N;
+        auth_t >>= 1;
+        auth_j += 1;
+    }
+
+    // the root of the subtree
+    () = #unspill(i, z);
+    _ = #init_msf(); // the unspilled values are public after the fence
+    label = __tree_label(i, z);
+    label *= SPX_N;
+    path_root[SPX_H_PRIME*SPX_N : SPX_N] = __copy_nbytes(path_root[SPX_H_PRIME*SPX_N : SPX_N], flat_tree[label : SPX_N]);
+
+    return path_root, adrs;
 }
 
 inline // inline wrapper that splits parameter live-ranges, to aid the Jasmin compiler
 fn __xmss_node(
-    reg ptr u8[SPX_N] root,          // output: root of the subtree rooted at i,z
+    reg ptr u8[(SPX_H_PRIME+1) * SPX_N] nodes, // output: the authentication path of leaf idx, then the root (i, z)
     reg ptr u8[SPX_N] skseed,        // SK.seed
     reg u32 i,                       // target node index (horizontal)
     reg u32 z,                       // target node height
+    reg u32 idx,                     // leaf whose authentication path to write
     reg ptr u32[8] adrs,             // ADRS
     reg ptr u8[96] sha2_state_caches // combined SHA256 and SHA512 state caches
-) -> reg ptr u8[SPX_N], reg ptr u32[8] // -> root, adrs
+) -> reg ptr u8[(SPX_H_PRIME+1) * SPX_N], reg ptr u32[8] // -> nodes, adrs
 {
     // split live-range of the parameters into two segments
-    root = root; skseed = skseed; i = i; z = z; adrs = adrs; sha2_state_caches = sha2_state_caches;
+    nodes = nodes; skseed = skseed; i = i; z = z; idx = idx; adrs = adrs; sha2_state_caches = sha2_state_caches;
 
-    root, adrs = xmss_node(root, skseed, i, z, adrs, sha2_state_caches);
+    nodes, adrs = xmss_node(nodes, skseed, i, z, idx, adrs, sha2_state_caches);
 
     // split live-range of the output parameters into two segments
-    root = root; adrs = adrs;
+    nodes = nodes; adrs = adrs;
 
-    return root, adrs;
+    return nodes, adrs;
 }
 
 /*-------------------------------------------------------------+
@@ -279,54 +336,52 @@ fn __xmss_node(
 +-------------------------------------------------------------*/
 fn xmss_sign(
     reg ptr u8[XMSS_SIG] sig_xmss,   // output: XMSS signature
+    reg ptr u8[SPX_N] root,          // output: root of the XMSS tree
     reg ptr u8[SPX_N] m,             // message to sign (XMSS public key or FORS public key)
     reg ptr u8[SPX_N] skseed,        // SK.seed
     reg u32 idx,                     // WOTS+ leaf index to sign with
     reg ptr u32[8] adrs,             // ADRS
     reg ptr u8[96] sha2_state_caches // combined SHA256 and SHA512 state caches
-) -> reg ptr u8[XMSS_SIG], reg ptr u32[8] // -> sig_xmss, adrs
+) -> reg ptr u8[XMSS_SIG], reg ptr u8[SPX_N], reg ptr u32[8] // -> sig_xmss, root, adrs
 {
-    () = #spill(m);
+    () = #spill(m, root);
+
+    // stack variables
+    stack u8[(SPX_H_PRIME+1) * SPX_N] nodes; // the authentication path, then the root
 
     // register variables
-    reg ptr u8[SPX_N] auth_node;   // pointer to the sibling node along the authentication path
     reg ptr u8[WOTS_SIG] sig_wots; // pointer to the WOTS+ part of the XMSS signature
-    reg u32 j;      // iterator over the authentication path nodes
-    reg u32 k;      // horizontal index of the sibling node along the authentication path
-    reg u64 offset; // byte offset of the authentication path nodes in the XMSS signature
+    reg u32 zero;   // horizontal index of the root
+    reg u32 height; // height of the root
+    reg u64 x;      // temporary variable for copying
 
-    // we compute the authentication path AUTH first,
-    // but in the XMSS signature AUTH gets placed after the WOTS+ signature,
-    // so start placing the AUTH nodes at offset WOTS_SIG
-    offset = WOTS_SIG;
+    inline int w;
 
-    // compute the sibling node's horizontal index
-    k = idx; // k = idx
-    k ^= 1;  // k = idx XOR 1
+    // compute the entire XMSS tree once (its leaves in parallel batches), and
+    // take the authentication path and the root from it, instead of computing
+    // the subtree of every authentication node (Algorithm 10) and the root
+    // from the signature (Algorithm 11): the result is the same
+    () = #spill(sig_xmss, skseed, idx, sha2_state_caches);
+    zero = 0;
+    height = SPX_H_PRIME;
+    nodes, adrs = __xmss_node(nodes, skseed, zero, height, idx, adrs, sha2_state_caches);
+    () = #unspill(sig_xmss, idx);
+    _ = #init_msf(); // the unspilled values are public after the fence
 
-    // compute and store the authentication path AUTH
-    j = 0; // iterator over the authentication path nodes
-    while (j < SPX_H_PRIME) {
-        () = #spill(skseed, idx, j, k, offset); // free up space in the registers
-
-        // compute the sibling node
-        auth_node = sig_xmss[offset : SPX_N]; // get the pointer to the subarray so the full array can be spilled
-        () = #spill(sig_xmss, sha2_state_caches);
-        auth_node, adrs = __xmss_node(auth_node, skseed, k, j, adrs, sha2_state_caches);
-        () = #unspill(sig_xmss, sha2_state_caches);
-        _ = #init_msf(); // the unspilled values are public after the fence
-        sig_xmss[offset : SPX_N] = auth_node; // redesignate the pointer so the region of the full array is not partial
-
-        () = #unspill(skseed, idx, j, k, offset);
-        _ = #init_msf(); // the unspilled values are public after the fence
-
-        // update the sibling node's horizontal index for the next iteration
-        k >>= 1; // k = floor(idx / 2^j)
-        k ^= 1;  // k = floor(idx / 2^j) xor 1
-
-        offset += SPX_N; // one n-byte node has been written
-        j += 1; // advance to the next AUTH node
+    // the authentication path
+    for w=0 to SPX_H_PRIME*SPX_N/8 {
+        x = nodes.[:u64 8*w];
+        sig_xmss.[:u64 WOTS_SIG + 8*w] = x;
     }
+
+    // the root of the tree
+    () = #unspill(root);
+    _ = #init_msf(); // the unspilled values are public after the fence
+    root = __copy_nbytes(root, nodes[SPX_H_PRIME*SPX_N : SPX_N]);
+    () = #spill(root);
+
+    () = #unspill(skseed, sha2_state_caches);
+    _ = #init_msf(); // the unspilled values are public after the fence
 
     () = #unspill(m);
     _ = #init_msf(); // the unspilled values are public after the fence
@@ -343,28 +398,32 @@ fn xmss_sign(
     _ = #init_msf(); // the unspilled values are public after the fence
     sig_xmss[0 : WOTS_SIG] = sig_wots; // redesignate the pointer so the region of the full array is not partial
 
-    return sig_xmss, adrs;
+    () = #unspill(root);
+    _ = #init_msf(); // the unspilled values are public after the fence
+
+    return sig_xmss, root, adrs;
 }
 
 inline // inline wrapper that splits parameter live-ranges, to aid the Jasmin compiler
 fn __xmss_sign(
     reg ptr u8[XMSS_SIG] sig_xmss,   // output: XMSS signature
+    reg ptr u8[SPX_N] root,          // output: root of the XMSS tree
     reg ptr u8[SPX_N] m,             // message to sign (XMSS public key or FORS public key)
     reg ptr u8[SPX_N] skseed,        // SK.seed
     reg u32 idx,                     // WOTS+ leaf index to sign with
     reg ptr u32[8] adrs,             // ADRS
     reg ptr u8[96] sha2_state_caches // combined SHA256 and SHA512 state caches
-) -> reg ptr u8[XMSS_SIG], reg ptr u32[8] // -> sig_xmss, adrs
+) -> reg ptr u8[XMSS_SIG], reg ptr u8[SPX_N], reg ptr u32[8] // -> sig_xmss, root, adrs
 {
     // split live-range of the parameters into two segments
-    sig_xmss = sig_xmss; m = m; skseed = skseed; idx = idx; adrs = adrs; sha2_state_caches = sha2_state_caches;
+    sig_xmss = sig_xmss; root = root; m = m; skseed = skseed; idx = idx; adrs = adrs; sha2_state_caches = sha2_state_caches;
 
-    sig_xmss, adrs = xmss_sign(sig_xmss, m, skseed, idx, adrs, sha2_state_caches);
+    sig_xmss, root, adrs = xmss_sign(sig_xmss, root, m, skseed, idx, adrs, sha2_state_caches);
 
     // split live-range of the output parameters into two segments
-    sig_xmss = sig_xmss; adrs = adrs;
+    sig_xmss = sig_xmss; root = root; adrs = adrs;
 
-    return sig_xmss, adrs;
+    return sig_xmss, root, adrs;
 }
 
 /*-------------------------------------------------------------+

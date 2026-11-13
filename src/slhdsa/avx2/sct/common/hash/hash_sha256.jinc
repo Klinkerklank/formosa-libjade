@@ -711,3 +711,90 @@ fn __H_lanes(
 
     return nodes;
 }
+
+// T_len of eight WOTS+ public keys at once (eight leaves of an XMSS tree):
+// out_l = Trunc_n(SHA-256(PK.seed || toByte(0, 64-n) || ADRS^c_l || in_l)),
+// with in_l = in[l*LEN*n : LEN*n], the LEN chain ends of leaf l
+fn T_len_x8(
+    #[spill_to_mmx] reg ptr u8[8*SPX_N] out,   // output: one n-byte value per lane
+    #[spill_to_mmx] reg ptr u8[8*SPX_LEN*SPX_N] in, // the LEN chain ends of every lane, lane after lane
+    reg ptr u8[8*22] adrscs,                   // the ADRS^c of every lane (type WOTS_PK)
+    reg ptr u8[96] sha2_state_caches           // combined SHA256 and SHA512 state caches
+) -> reg ptr u8[8*SPX_N] // -> out
+{
+    // stack variables
+    stack u256[sha256_parallel::STATE_WORD_SIZE] state;       // vectorised state
+    stack u256[sha256_parallel::ROUNDS_NUM] schedule;         // vectorised message schedule
+    stack u256[sha256_parallel::STATE_WORD_SIZE] state_cache; // vectorised cached SHA-256 state
+    stack u32 state_word;                                     // temporary variable for copying purposes
+    stack u8[SHA256_OUT] d0 d1 d2 d3 d4 d5 d6 d7;            // full digests
+
+    // register variables
+    reg u256 state_vector; // temporary variable for copying purposes
+    reg u64 sch_idx;       // byte index of the current position in message schedule
+    reg u64 bits;          // number of bits processed
+
+    inline int i;
+
+    () = #spill(out);
+
+    // the cached SHA-256 state, in every lane
+    for i=0 to sha256_parallel::STATE_WORD_SIZE {
+        state_word = sha2_state_caches[:u32 i];
+        state_vector = #VPBROADCAST_8u32(state_word);
+        state_cache[i] = state_vector;
+    }
+
+    sch_idx = 0;
+    bits = SHA256_IN*8; // exactly one block of input was consumed to get the cached state
+    state, schedule, sch_idx, bits = sha256_parallel::init_cache(state, schedule, sch_idx, bits, state_cache);
+
+    // ADRS^c of every lane
+    () = #spill(in);
+    state, schedule, sch_idx, bits = sha256_parallel_adrsc::absorb_fixed(state, schedule, sch_idx, bits,
+        adrscs[0*22 : 22], adrscs[1*22 : 22], adrscs[2*22 : 22], adrscs[3*22 : 22],
+        adrscs[4*22 : 22], adrscs[5*22 : 22], adrscs[6*22 : 22], adrscs[7*22 : 22]);
+    () = #unspill(in);
+    _ = #init_msf(); // the unspilled pointer is public after the fence
+
+    // the chain ends of every lane
+    state, schedule, sch_idx, bits = sha256_parallel_tlen::absorb_fixed(state, schedule, sch_idx, bits,
+        in[0*SPX_LEN*SPX_N : SPX_LEN*SPX_N], in[1*SPX_LEN*SPX_N : SPX_LEN*SPX_N],
+        in[2*SPX_LEN*SPX_N : SPX_LEN*SPX_N], in[3*SPX_LEN*SPX_N : SPX_LEN*SPX_N],
+        in[4*SPX_LEN*SPX_N : SPX_LEN*SPX_N], in[5*SPX_LEN*SPX_N : SPX_LEN*SPX_N],
+        in[6*SPX_LEN*SPX_N : SPX_LEN*SPX_N], in[7*SPX_LEN*SPX_N : SPX_LEN*SPX_N]);
+
+    schedule, d0, d1, d2, d3, d4, d5, d6, d7 = sha256_parallel::finalise(state, schedule, sch_idx, bits, d0, d1, d2, d3, d4, d5, d6, d7);
+
+    () = #unspill(out);
+    _ = #init_msf(); // the unspilled pointer is public after the fence
+
+    // truncate to n bytes
+    out[0*SPX_N : SPX_N] = __copy_nbytes(out[0*SPX_N : SPX_N], d0[0 : SPX_N]);
+    out[1*SPX_N : SPX_N] = __copy_nbytes(out[1*SPX_N : SPX_N], d1[0 : SPX_N]);
+    out[2*SPX_N : SPX_N] = __copy_nbytes(out[2*SPX_N : SPX_N], d2[0 : SPX_N]);
+    out[3*SPX_N : SPX_N] = __copy_nbytes(out[3*SPX_N : SPX_N], d3[0 : SPX_N]);
+    out[4*SPX_N : SPX_N] = __copy_nbytes(out[4*SPX_N : SPX_N], d4[0 : SPX_N]);
+    out[5*SPX_N : SPX_N] = __copy_nbytes(out[5*SPX_N : SPX_N], d5[0 : SPX_N]);
+    out[6*SPX_N : SPX_N] = __copy_nbytes(out[6*SPX_N : SPX_N], d6[0 : SPX_N]);
+    out[7*SPX_N : SPX_N] = __copy_nbytes(out[7*SPX_N : SPX_N], d7[0 : SPX_N]);
+
+    return out;
+}
+
+inline // inline wrapper that splits parameter live-ranges, to aid the Jasmin compiler
+fn __T_len_x8(
+    reg ptr u8[8*SPX_N] out,
+    reg ptr u8[8*SPX_LEN*SPX_N] in,
+    reg ptr u8[8*22] adrscs,
+    reg ptr u8[96] sha2_state_caches
+) -> reg ptr u8[8*SPX_N] // -> out
+{
+    out = out; in = in; adrscs = adrscs; sha2_state_caches = sha2_state_caches;
+
+    out = T_len_x8(out, in, adrscs, sha2_state_caches);
+
+    out = out;
+
+    return out;
+}

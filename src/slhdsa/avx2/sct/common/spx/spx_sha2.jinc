@@ -107,9 +107,11 @@ fn slh_keygen_internal_(
     // stack variables
     stack u32[8] adrs;              // ADRS data structure
     stack u8[96] sha2_state_caches; // combined SHA256 and SHA512 state caches
+    stack u8[(SPX_H_PRIME+1)*SPX_N] nodes; // xmss_node's output (only the root is used)
 
     // register variables
     reg ptr u8[SPX_N] skseed pkseed pkroot; // pointers to the individual parts of sk
+    reg u32 idx;   // leaf of the authentication path xmss_node writes (unused)
     reg u32 layer; // layer value to set in ADRS
     reg u32 i;     // horizontal index of the XMSS tree root
     reg u32 z;     // height of the XMSS tree root
@@ -144,11 +146,13 @@ fn slh_keygen_internal_(
     i = 0;
     z = SPX_H_PRIME;
 
-    pkroot = sk[3*SPX_N : SPX_N]; // get the pointer to the subarray so the full array can be spilled
     () = #spill(sk, pk);
-    pkroot, adrs = __xmss_node(pkroot, skseed, i, z, adrs, sha2_state_caches);
+    idx = 0; // no authentication path is needed
+    nodes, adrs = __xmss_node(nodes, skseed, i, z, idx, adrs, sha2_state_caches);
     () = #unspill(sk, pk);
     _ = #init_msf(); // the unspilled values are public after the fence
+    pkroot = sk[3*SPX_N : SPX_N];
+    pkroot = __copy_nbytes(pkroot, nodes[SPX_H_PRIME*SPX_N : SPX_N]);
     sk[3*SPX_N : SPX_N] = pkroot; // redesignate the pointer so the region of the full array is not partial
 
     pk[SPX_N : SPX_N] = __copy_nbytes(pk[SPX_N : SPX_N], pkroot[0 : SPX_N]); // copy PK.root to PK
