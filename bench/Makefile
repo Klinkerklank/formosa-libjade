@@ -65,11 +65,11 @@ SPXR_SHA2_SIG  := $(SPX_SHA2_SETS:%=$(BUILD)/sphincsplus-ref_slhdsa%.so)
 SPXR_SHAKE_SIG := $(SPX_SHAKE_SETS:%=$(BUILD)/sphincsplus-ref_slhdsa%.so)
 
 # the libraries of each backend (BACKENDS names them)
-LIBS_jasmin          := $(JASMIN_KEM) $(JASMIN_SIG) $(JASMIN_SLHDSA)
-LIBS_mlkem-native    := $(MLKN_KEM)
-LIBS_mldsa-native    := $(MLDN_SIG)
-LIBS_pqcrystals      := $(PQC_KEM) $(PQC_SIG)
-LIBS_pqcrystals-ref  := $(PQCR_KEM) $(PQCR_SIG)
+LIBS_jasmin         := $(JASMIN_KEM) $(JASMIN_SIG) $(JASMIN_SLHDSA)
+LIBS_mlkem-native   := $(MLKN_KEM)
+LIBS_mldsa-native   := $(MLDN_SIG)
+LIBS_pqcrystals     := $(PQC_KEM) $(PQC_SIG)
+LIBS_pqcrystals-ref := $(PQCR_KEM) $(PQCR_SIG)
 LIBS_sphincsplus     := $(SPX_SHA2_SIG) $(SPX_SHAKE_SIG)
 LIBS_sphincsplus-ref := $(SPXR_SHA2_SIG) $(SPXR_SHAKE_SIG)
 
@@ -242,9 +242,6 @@ SCHEME_BASE = $(shell echo $(SCHEME) | tr -d '-' | tr 'A-Z' 'a-z')
 ALL_SCHEMES ?= ML-KEM-512 ML-KEM-768 ML-KEM-1024 ML-DSA-44 ML-DSA-65 ML-DSA-87 \
                SLH-DSA-sha2128s SLH-DSA-sha2128f SLH-DSA-sha2192s SLH-DSA-sha2192f SLH-DSA-sha2256s SLH-DSA-sha2256f \
                SLH-DSA-shake128s SLH-DSA-shake128f SLH-DSA-shake192s SLH-DSA-shake192f SLH-DSA-shake256s SLH-DSA-shake256f
-# the iterations of bench.c when BENCH_ITERS is not set (the slow SLH-DSA has
-# its own default)
-ITERS_DEFAULT := 10000, SLH-DSA 20 (s sets) or 200 (f sets)
 
 REPORT  ?= bench.md
 # machine-readable report (aggregated results + run metadata) next to REPORT
@@ -298,7 +295,7 @@ compare: libs
 
 # cycle benchmark for one scheme: one process per built backend library
 bench: libs $(BUILD)/bench
-	@echo "$(SCHEME) (median cycles over $${BENCH_ITERS:-$(ITERS_DEFAULT)} iters$(if $(PIN), on cpu $(CPU))):"
+	@echo "$(SCHEME) (median cycles over $${BENCH_ITERS:-10000} iters$(if $(PIN), on cpu $(CPU))):"
 	@for so in $(BUILD)/*_$(SCHEME_BASE).so; do $(PIN)$(BUILD)/bench $(SCHEME) $$so; done
 
 # machine-readable (CSV) benchmark over every scheme x its built backends,
@@ -332,7 +329,7 @@ report: libs $(BUILD)/bench
 	        --version "pq-crystals/kyber=$(call gitver,$(KREF)/..)" \
 	        --version "pq-crystals/dilithium=$(call gitver,$(DREF)/..)" \
 	        --version "sphincsplus=$(call gitver,$(SPX))" \
-	        --meta "reps=$(REPS)" --meta "iters=$${BENCH_ITERS:-$(ITERS_DEFAULT)}" \
+	        --meta "reps=$(REPS)" --meta "iters=$${BENCH_ITERS:-10000}" \
 	        $(addprefix --meta ,$(META)) \
 	        --json $(REPORT_JSON) -o $(REPORT) $(BUILD)/bench.csv
 	@echo "wrote $(REPORT) $(REPORT_JSON)"
