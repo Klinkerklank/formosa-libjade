@@ -599,7 +599,7 @@ fn wots_leaves_x4(
     stack u8[4*SPX_N] next;        // the next value of that chain
     stack u8[4*SPX_N] seeds;       // SK.seed in every lane
     stack u8[SPX_N] seed;          // PK.seed, on the stack (its address public in the loops)
-    stack u32[12] wh;              // key pair, chain and hash address of every lane
+    stack u32[12] wh;              // chain and hash address of every lane, then the key pair addresses
     stack u32[4] kp;               // key pair address of every lane
     stack u32[8] adrs_prf;         // ADRS of the secret key values (WOTS_PRF)
     stack u32[8] adrs_hash;        // ADRS of the chains (WOTS_HASH)
@@ -631,15 +631,15 @@ fn wots_leaves_x4(
     for l=0 to 4 {
         lw = idx;
         lw += l;
-        wh[3*l] = lw;
+        wh[8+l] = lw;
         kp[l] = lw;
     }
 
     chain = 0;
     while (chain < SPX_LEN) {
         for l=0 to 4 {
-            wh[3*l+1] = chain;
-            wh[3*l+2] = 0;
+            wh[2*l] = chain;
+            wh[2*l+1] = 0;
         }
 
         // the secret key values of chain 'chain' of the four leaves
@@ -649,20 +649,20 @@ fn wots_leaves_x4(
         // w-1 steps, alternating between cur and next (w-1 is odd)
         pos = 0;
         while (pos < SPX_W-2) {
-            for l=0 to 4 { wh[3*l+2] = pos; }
+            for l=0 to 4 { wh[2*l+1] = pos; }
             () = #spill(pos);
             next = thash_x4_n_kp::thash_x4(next, cur, seed, adrs_hash, wh);
             () = #unspill(pos);
             _ = #init_msf(); // the unspilled values are public after the fence
             pos += 1;
-            for l=0 to 4 { wh[3*l+2] = pos; }
+            for l=0 to 4 { wh[2*l+1] = pos; }
             () = #spill(pos);
             cur = thash_x4_n_kp::thash_x4(cur, next, seed, adrs_hash, wh);
             () = #unspill(pos);
             _ = #init_msf(); // the unspilled values are public after the fence
             pos += 1;
         }
-        for l=0 to 4 { wh[3*l+2] = pos; }
+        for l=0 to 4 { wh[2*l+1] = pos; }
         next = thash_x4_n_kp::thash_x4(next, cur, seed, adrs_hash, wh);
         () = #unspill(chain);
         _ = #init_msf(); // the unspilled values are public after the fence

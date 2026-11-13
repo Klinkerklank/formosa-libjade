@@ -4,15 +4,34 @@
  *   out_l = SHAKE256(PK.seed || ADRS_l || M_l, 8n),  l = 0..3,
  *
  * where ADRS_l is ADRS with its words 6 and 7 (chain and hash address, or
- * tree height and tree index) replaced by w67[2l] and w67[2l+1] (KP = 0), or
- * with its words 5, 6 and 7 (key pair address too) replaced by w67[3l],
- * w67[3l+1] and w67[3l+2] (KP = 1), and M_l is in[l*MLEN : MLEN]. The input is at most n + 32 + 2n <= 128 bytes, so each
- * lane is a single block of the 136-byte rate: the padded block is written
- * directly into the (zero) four-way state, and one permutation follows.
+ * tree height and tree index) replaced by w67[2l] and w67[2l+1], and (KP = 1)
+ * its word 5 (key pair address) by w67[8+l], and M_l is in[l*MLEN : MLEN].
+ * The input is at most n + 32 + 2n <= 128 bytes, so each lane is a single
+ * block of the 136-byte rate: the padded block is built directly as the
+ * four-way state, one 256-bit word (the same u64 word of the four lanes) at a
+ * time, and one permutation follows.
  *
  * Needs to be included in a namespace that defines MLEN, the byte length of M,
  * and KP, whether the key pair address is per lane.
  */
+
+// byte-swaps every 32-bit word: ADRS words are big-endian in the hash input
+u256 THASH_X4_BSWAP32 = (8u32)[
+    0x0c0d0e0f, 0x08090a0b, 0x04050607, 0x00010203,
+    0x0c0d0e0f, 0x08090a0b, 0x04050607, 0x00010203];
+
+// from four 32-bit words k0..k3 in both 128-bit halves: byte-swapped k_l in
+// the upper half of 64-bit word l (the lower halves are blended away)
+u256 THASH_X4_KP = (8u32)[
+    0x0c0d0e0f, 0x80808080, 0x08090a0b, 0x80808080,
+    0x04050607, 0x80808080, 0x00010203, 0x80808080];
+
+// SHAKE padding: 0x1F right after the input, 0x80 in the last byte of the block
+u256 THASH_X4_PAD_1F = (4u64)[0x1F, 0x1F, 0x1F, 0x1F];
+u256 THASH_X4_PAD_80 = (4u64)[0x8000000000000000, 0x8000000000000000, 0x8000000000000000, 0x8000000000000000];
+u256 THASH_X4_PAD_9F = (4u64)[0x800000000000001F, 0x800000000000001F, 0x800000000000001F, 0x800000000000001F];
+
+param int THASH_X4_PADW = (SPX_N + 32 + MLEN) / 8; // u64 word of the 0x1F padding byte
 
 fn thash_x4(
     #[spill_to_mmx] reg ptr u8[4*SPX_N] out, // output: four n-byte hashes
@@ -26,67 +45,71 @@ fn thash_x4(
     stack u256[25] st; // four-way Keccak state: word k of lane l is st[:u64 4*k + l]
 
     // register variables
-    reg u256 zero; // zero vector
-    reg u64 t;     // temporary variable for copying
-    reg u64 c;     // last-byte padding constant
-    reg u32 a b;   // temporary variables for byte-swapping ADRS words
+    reg u256 v;     // a state word (the same u64 word of the four lanes)
+    reg u256 a;     // ADRS, as bytes
+    reg u256 kpv;   // key pair addresses (KP = 1)
+    reg u128 lo hi; // lanes 0, 1 and lanes 2, 3 of an input word
+    reg u64 t;      // temporary variable for copying
 
     inline int k l;
 
     () = #spill(out);
 
-    zero = #set0_256();
-    for k=0 to 25 { st[k] = zero; }
-
     // PK.seed, in every lane (u64 words 0 .. n/8-1)
     for k=0 to SPX_N/8 {
-        t = pkseed[:u64 k];
-        for l=0 to 4 { st[:u64 4*k + l] = t; }
+        v = #VPBROADCAST_4u64(pkseed.[:u64 8*k]);
+        st[k] = v;
     }
 
-    // ADRS words 0..5 (big-endian), in every lane (u64 words n/8 .. n/8+2)
-    for k=0 to 3 {
-        a = adrs[2*k];   a = #BSWAP_32(a);
-        b = adrs[2*k+1]; b = #BSWAP_32(b);
-        for l=0 to 4 {
-            st[:u32 2*(4*(SPX_N/8 + k) + l)]     = a;
-            st[:u32 2*(4*(SPX_N/8 + k) + l) + 1] = b;
-        }
-    }
-
-    // ADRS word 5 (KP = 1), per lane (the upper half of u64 word n/8+2)
+    // ADRS words 0..5 (big-endian), in every lane (u64 words n/8 .. n/8+2);
+    // with KP = 1 the upper half of word n/8+2 (ADRS word 5) per lane
+    a = adrs.[:u256 0];
+    a = #VPSHUFB_256(a, THASH_X4_BSWAP32);
+    v = #VPERMQ(a, (4u2)[0,0,0,0]);
+    st[SPX_N/8] = v;
+    v = #VPERMQ(a, (4u2)[1,1,1,1]);
+    st[SPX_N/8 + 1] = v;
+    v = #VPERMQ(a, (4u2)[2,2,2,2]);
     if (KP == 1) {
-        for l=0 to 4 {
-            a = w67[3*l]; a = #BSWAP_32(a);
-            st[:u32 2*(4*(SPX_N/8 + 2) + l) + 1] = a;
-        }
+        kpv = #VPBROADCAST_2u128(w67.[:u128 32]);
+        kpv = #VPSHUFB_256(kpv, THASH_X4_KP);
+        v = #VPBLEND_8u32(v, kpv, 0xAA);
     }
+    st[SPX_N/8 + 2] = v;
 
     // ADRS words 6 and 7, per lane (u64 word n/8+3)
-    for l=0 to 4 {
-        a = w67[(2+KP)*l + KP];   a = #BSWAP_32(a);
-        b = w67[(2+KP)*l + KP+1]; b = #BSWAP_32(b);
-        st[:u32 2*(4*(SPX_N/8 + 3) + l)]     = a;
-        st[:u32 2*(4*(SPX_N/8 + 3) + l) + 1] = b;
-    }
+    v = w67.[:u256 0];
+    v = #VPSHUFB_256(v, THASH_X4_BSWAP32);
+    st[SPX_N/8 + 3] = v;
 
-    // M, per lane (u64 words n/8+4 ..)
+    // M, per lane (u64 words n/8+4 ..), transposed into the state words
     for k=0 to MLEN/8 {
-        for l=0 to 4 {
-            t = in.[:u64 l*MLEN + 8*k];
-            st[:u64 4*(SPX_N/8 + 4 + k) + l] = t;
-        }
+        t = in.[:u64 0*MLEN + 8*k];
+        lo = #VMOV_64(t);
+        t = in.[:u64 1*MLEN + 8*k];
+        lo = #VPINSR_2u64(lo, t, 1);
+        t = in.[:u64 2*MLEN + 8*k];
+        hi = #VMOV_64(t);
+        t = in.[:u64 3*MLEN + 8*k];
+        hi = #VPINSR_2u64(hi, t, 1);
+        v = (256u) lo;
+        v = #VINSERTI128(v, hi, 1);
+        st[SPX_N/8 + 4 + k] = v;
     }
 
-    // SHAKE padding: 0x1F right after the input, 0x80 in the last byte of the block
-    c = 0x8000000000000000;
-    for l=0 to 4 {
-        t = st[:u64 4*((SPX_N + 32 + MLEN)/8) + l];
-        t ^= 0x1F;
-        st[:u64 4*((SPX_N + 32 + MLEN)/8) + l] = t;
-        t = st[:u64 4*(SHAKE256_RATE/8 - 1) + l];
-        t ^= c;
-        st[:u64 4*(SHAKE256_RATE/8 - 1) + l] = t;
+    // the padding, and zero in the rest of the block and in the capacity
+    if (THASH_X4_PADW == SHAKE256_RATE/8 - 1) {
+        v = THASH_X4_PAD_9F;
+        st[THASH_X4_PADW] = v;
+    } else {
+        v = THASH_X4_PAD_1F;
+        st[THASH_X4_PADW] = v;
+        v = THASH_X4_PAD_80;
+        st[SHAKE256_RATE/8 - 1] = v;
+    }
+    v = #set0_256();
+    for k=THASH_X4_PADW+1 to 25 {
+        if (k != SHAKE256_RATE/8 - 1) { st[k] = v; }
     }
 
     st = _keccakf1600_avx2x4(st);
