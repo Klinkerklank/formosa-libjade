@@ -102,28 +102,20 @@ param int WOTS_X4_BATCHES = WOTS_X4_LANES / 4;      // number of four-lane batch
 /*-------------------------------------------------------------+
 | ALGORITHM 5 FROM SLH-DSS (FIPS 205), ALL CHAINS AT ONCE      |
 | (batches: for chains that all take the same steps, pkgen)    |
-| Advances every chain j of a WOTS+ instance from position     |
-| start[j] to position stop[j], four chains at a time.         |
-| The four lanes of a batch step together from the smallest    |
-| start to the largest stop of the batch; a lane only takes    |
-| the new value while start[j] <= pos < stop[j]. The positions |
-| are public (they follow from the message), the selection is  |
-| branch-free.                                                 |
+| Advances every chain of a WOTS+ instance from position 0 to  |
+| position w-1, four chains at a time, hashed in place. The    |
+| chains are padded to whole batches with dummy lanes, whose   |
+| values are hashed too but not written back.                  |
 +-------------------------------------------------------------*/
 fn wots_chains_x4(
-    reg ptr u8[WOTS_SIG] chains, // in/out: the LEN chain values
-    reg ptr u32[SPX_LEN] start,  // start position of every chain
-    reg ptr u32[SPX_LEN] stop,   // stop position of every chain
+    reg ptr u8[WOTS_SIG] chains, // in/out: the LEN chain values (from position 0 to position w-1)
     reg ptr u8[SPX_N] pkseed,    // PK.seed
     reg ptr u32[8] adrs          // ADRS (type WOTS_HASH, key pair address set)
 ) -> reg ptr u8[WOTS_SIG] // -> chains
 {
     // stack variables
     stack u8[WOTS_X4_LANES*SPX_N] work; // chain values, padded to whole batches
-    stack u8[4*SPX_N] next;             // the hashes of one step of a batch
     stack u32[8] w67;                   // chain and hash address of every lane
-    stack u32[WOTS_X4_LANES] st;        // start positions (dummy lanes: 0)
-    stack u32[WOTS_X4_LANES] len;       // number of steps (dummy lanes: 0)
     stack u8[SPX_N] seed;               // PK.seed, on the stack (its address public in the loop)
     stack u32[8] adrs_s;                // ADRS, on the stack (its address public in the loop)
 
@@ -131,41 +123,13 @@ fn wots_chains_x4(
     reg ptr u8[4*SPX_N] lanes; // pointer to the chain values of the current batch
     reg u64 batch;             // batch index
     reg u64 boff;              // byte offset of the batch in work
-    reg u64 lane;              // lane index in st, len
     reg u32 pos;               // current position in the chains
-    reg u32 hi;                // largest stop position of the batch
-    reg u32 s;                 // start position of a lane
-    reg u32 l;                 // number of steps of a lane
-    reg u32 e;                 // stop position of a lane
-    reg u32 d;                 // steps of a lane already taken at pos
-    reg u32 big;               // larger than every position
-    reg u32 zero;
     reg u32 cha;               // chain address
-    reg u64 x y;               // temporary variables for copying
+    reg u64 x;                 // temporary variable for copying
 
     inline int i j;
 
-    () = #spill(chains);
-
-    seed = __copy_nbytes(seed, pkseed);
-    adrs_s = __adrs_clone(adrs_s, adrs);
-
-    // per-lane start positions and step counts
-    zero = 0;
-    for i=0 to SPX_LEN {
-        s = start[i];
-        st[i] = s;
-        l = stop[i];
-        l -= s;
-        len[i] = l;
-    }
-    for i=SPX_LEN to WOTS_X4_LANES {
-        st[i] = zero;
-        len[i] = zero;
-    }
-
     // the chain values, padded with (unused) dummy lanes
-    () = #unspill(chains);
     for i=0 to WOTS_SIG/8 {
         x = chains.[:u64 8*i];
         work.[:u64 8*i] = x;
@@ -173,6 +137,10 @@ fn wots_chains_x4(
     for i=WOTS_SIG/8 to WOTS_X4_LANES*SPX_N/8 {
         work.[:u64 8*i] = 0;
     }
+    () = #spill(chains);
+
+    seed = __copy_nbytes(seed, pkseed);
+    adrs_s = __adrs_clone(adrs_s, adrs);
 
     batch = 0;
     while (batch < WOTS_X4_BATCHES) {
@@ -184,58 +152,23 @@ fn wots_chains_x4(
             cha += 1;
         }
 
-        // pos = smallest start, hi = largest stop, over the lanes with steps to take
-        pos = SPX_W;
-        hi = 0;
-        zero = 0;
-        lane = batch;
-        lane <<= 2;
-        for j=0 to 4 {
-            s = st[lane + j];
-            l = len[lane + j];
-            e = s;
-            e += l;
-            big = SPX_W;
-            s = big if (l == 0);  // a lane without steps neither lowers pos ...
-            e = zero if (l == 0); // ... nor raises hi
-            pos = s if (s < pos);
-            hi = e if (hi < e);
-        }
-        _ = #init_msf(); // the positions follow from public values; public after the fence
-
         boff = batch;
         boff *= 4*SPX_N;
 
-        while (pos < hi) {
+        pos = 0;
+        while (pos < SPX_W-1) {
             // hash address pos in every lane
             for j=0 to 4 { w67[2*j+1] = pos; }
 
-            () = #spill(batch, boff, pos, hi);
+            () = #spill(batch, boff, pos);
 
-            // hash one step of all four lanes
+            // one step of all four lanes, in place
             lanes = work[boff : 4*SPX_N];
-            next = thash_x4_n::thash_x4(next, lanes, seed, adrs_s, w67);
+            lanes = thash_x4_n::thash_x4_io(lanes, seed, adrs_s, w67);
             work[boff : 4*SPX_N] = lanes;
 
-            () = #unspill(batch, boff, pos, hi);
+            () = #unspill(batch, boff, pos);
             _ = #init_msf(); // the unspilled values are public after the fence
-
-            // keep the new value of the lanes with start <= pos < start + len,
-            // i.e. (pos - start) < len, unsigned
-            lane = batch;
-            lane <<= 2;
-            for j=0 to 4 {
-                d = pos;
-                s = st[lane + j];
-                d -= s;
-                l = len[lane + j];
-                for i=0 to SPX_N/8 {
-                    x = work.[:u64 boff + j*SPX_N + 8*i];
-                    y = next.[:u64 j*SPX_N + 8*i];
-                    x = y if (d < l);
-                    work.[:u64 boff + j*SPX_N + 8*i] = x;
-                }
-            }
 
             pos += 1;
         }
@@ -257,15 +190,13 @@ fn wots_chains_x4(
 inline // inline wrapper that splits parameter live-ranges, to aid the Jasmin compiler
 fn __wots_chains_x4(
     reg ptr u8[WOTS_SIG] chains,
-    reg ptr u32[SPX_LEN] start,
-    reg ptr u32[SPX_LEN] stop,
     reg ptr u8[SPX_N] pkseed,
     reg ptr u32[8] adrs
 ) -> reg ptr u8[WOTS_SIG] // -> chains
 {
-    chains = chains; start = start; stop = stop; pkseed = pkseed; adrs = adrs;
+    chains = chains; pkseed = pkseed; adrs = adrs;
 
-    chains = wots_chains_x4(chains, start, stop, pkseed, adrs);
+    chains = wots_chains_x4(chains, pkseed, adrs);
 
     chains = chains;
 
@@ -283,7 +214,8 @@ fn __wots_chains_x4(
 | the lanes stay busy whatever the positions. The positions    |
 | are public (they follow from the message); the lanes are     |
 | updated without branches, and the chain indices loaded from  |
-| memory are protected with the misspeculation flag.           |
+| memory are protected with the misspeculation flag. The lanes |
+| are hashed in place; idle lanes sit on the dummy chain.      |
 +-------------------------------------------------------------*/
 fn wots_chains_refill_x4(
     reg ptr u8[WOTS_SIG] chains, // in/out: the LEN chain values
@@ -295,8 +227,7 @@ fn wots_chains_refill_x4(
 {
     // stack variables
     stack u8[(SPX_LEN+1)*SPX_N] work;                         // chain values, and the dummy chain SPX_LEN
-    stack u8[4*SPX_N] cur;                                    // the value of every lane
-    stack u8[4*SPX_N] next;                                   // the hashes of one step of the lanes
+    stack u8[4*SPX_N] cur;                                    // the value of every lane (hashed in place)
     stack u32[8] w67;                                         // chain and hash address of every lane
     stack u8[SPX_N] seed;                                     // PK.seed, on the stack (its address public in the loop)
     stack u32[8] adrs_s;                                      // ADRS, on the stack (its address public in the loop)
@@ -320,6 +251,7 @@ fn wots_chains_refill_x4(
     reg u32 nq;            // number of chains in the queue
     reg u32 one;
     reg u32 go;            // 1 when a lane takes the next chain
+    reg u32 fin;           // 1 when a lane is at the stop of its chain
     reg u32 avail;         // 1 when the queue has a chain left
     reg u32 busy;          // 1 when a lane has a step to take
     reg u32 act;           // number of lanes with a step to take
@@ -335,8 +267,8 @@ fn wots_chains_refill_x4(
 
     // the start and stop positions of the chains, and the queue of the
     // chains with steps to take (a chain without steps keeps its value);
-    // the queue entries after the last chain are the dummy chain, as the
-    // lanes read the next entry of the queue even when it is empty
+    // the queue entries after the last chain are the dummy chain: a lane at
+    // the stop of its chain when the queue is empty takes the dummy chain
     for i=0 to SPX_LEN+1 { queue[i] = SPX_LEN; }
     nq = 0;
     one = 1;
@@ -352,6 +284,8 @@ fn wots_chains_refill_x4(
         nq += busy;
         nq = #protect_32(nq, ms);
     }
+    idx = (64u) nq;
+    queue[idx] = SPX_LEN; // (the loop wrote chain SPX_LEN-1 there if it has no steps)
     st[SPX_LEN] = 0;
     en[SPX_LEN] = 0;
     nq_s = nq;
@@ -374,7 +308,6 @@ fn wots_chains_refill_x4(
         lchain[j] = SPX_LEN;
         for w=0 to SPX_N/8 {
             cur.[:u64 j*SPX_N + 8*w] = 0;
-            next.[:u64 j*SPX_N + 8*w] = 0;
         }
     }
 
@@ -393,13 +326,8 @@ fn wots_chains_refill_x4(
             c = lchain[j];
             c = #protect_32(c, ms);
 
-            // a lane with a step to take takes its new value and advances
-            for w=0 to SPX_N/8 {
-                x = cur.[:u64 j*SPX_N + 8*w];
-                y = next.[:u64 j*SPX_N + 8*w];
-                x = y if (p < e);
-                cur.[:u64 j*SPX_N + 8*w] = x;
-            }
+            // a lane with a step to take (its new value is in cur) advances;
+            // the other lanes are on the dummy chain, their value unused
             busy = 0;
             busy = one if (p < e);
             p += busy;
@@ -412,28 +340,30 @@ fn wots_chains_refill_x4(
                 work.[:u64 off + 8*w] = x;
             }
 
-            // a lane at the stop of its chain takes the next chain of the queue
-            go = 0;
-            go = one if (p == e);
+            // a lane at the stop of its chain takes the next chain of the queue,
+            // or the dummy chain when the queue is empty
+            fin = 0;
+            fin = one if (p == e);
             avail = 0;
             avail = one if (q < nq);
+            go = fin;
             go &= avail;
             q = #protect_32(q, ms);
             idx = (64u) q;
             nc = queue[idx];
             nc = #protect_32(nc, ms);
-            c = nc if (go != 0);
+            c = nc if (fin != 0);
             idx = (64u) nc;
             s = st[idx];
-            p = s if (go != 0);
+            p = s if (fin != 0);
             s = en[idx];
-            e = s if (go != 0);
+            e = s if (fin != 0);
             off = (64u) nc;
             off *= SPX_N;
             for w=0 to SPX_N/8 {
                 x = cur.[:u64 j*SPX_N + 8*w];
                 y = work.[:u64 off + 8*w];
-                x = y if (go != 0);
+                x = y if (fin != 0);
                 cur.[:u64 j*SPX_N + 8*w] = x;
             }
             q += go;
@@ -457,8 +387,8 @@ fn wots_chains_refill_x4(
             w67[2*j+1] = lw;
         }
 
-        // one step of every lane
-        next = thash_x4_n::thash_x4(next, cur, seed, adrs_s, w67);
+        // one step of every lane, in place
+        cur = thash_x4_n::thash_x4_io(cur, seed, adrs_s, w67);
         ms = #init_msf(); // a fresh misspeculation flag after the call
     }
 
@@ -724,14 +654,9 @@ fn wots_pkgen(
     // stack variables
     stack u32[8] adrs_key;     // ADRS clone for computing the WOTS+ secret and public key values
     stack u8[WOTS_SIG] chains; // all chain values concatenated
-    stack u32[SPX_LEN] start;  // start position of every chain
-    stack u32[SPX_LEN] stop;   // stop position of every chain
 
     // register variables
     reg u32 kpa; // ADRS key pair address
-    reg u32 pos; // temporary variable for setting the positions
-
-    inline int j;
 
     // clone ADRS (adrs_key here is what the SLH-DSS calls skADRS),
     // and set the correct type for computing WOTS+ secret keys
@@ -748,13 +673,10 @@ fn wots_pkgen(
     () = #unspill(adrs, pkseed);
     _ = #init_msf(); // the unspilled values are public after the fence
 
-    // hash every chain from the secret key value (position 0) to the public key value (position w-1)
-    pos = 0;       for j=0 to SPX_LEN { start[j] = pos; }
-    pos = SPX_W-1; for j=0 to SPX_LEN { stop[j]  = pos; }
-
-    // compute all public key values, four chains at a time
+    // hash every chain from the secret key value (position 0) to the public key value (position w-1),
+    // four chains at a time
     () = #spill(adrs, pkseed);
-    chains = __wots_chains_x4(chains, start, stop, pkseed, adrs);
+    chains = __wots_chains_x4(chains, pkseed, adrs);
     () = #unspill(adrs, pkseed);
     _ = #init_msf(); // the unspilled values are public after the fence
 

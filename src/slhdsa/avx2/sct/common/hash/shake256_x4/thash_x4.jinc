@@ -33,7 +33,10 @@ u256 THASH_X4_PAD_9F = (4u64)[0x800000000000001F, 0x800000000000001F, 0x80000000
 
 param int THASH_X4_PADW = (SPX_N + 32 + MLEN) / 8; // u64 word of the 0x1F padding byte
 
-fn thash_x4(
+// (inline, so that thash_x4_io can pass the same array as out and in: the
+// whole input is in the state before the output is written)
+inline
+fn __thash_x4(
     #[spill_to_mmx] reg ptr u8[4*SPX_N] out, // output: four n-byte hashes
     reg ptr u8[4*MLEN] in,                   // four MLEN-byte messages, concatenated
     reg ptr u8[SPX_N] pkseed,                // PK.seed
@@ -124,4 +127,28 @@ fn thash_x4(
     }
 
     return out;
+}
+
+fn thash_x4(
+    reg ptr u8[4*SPX_N] out,  // output: four n-byte hashes
+    reg ptr u8[4*MLEN] in,    // four MLEN-byte messages, concatenated
+    reg ptr u8[SPX_N] pkseed, // PK.seed
+    reg ptr u32[8] adrs,      // ADRS (words 0..5 shared by the lanes)
+    reg ptr u32[4*(2+KP)] w67 // ADRS words 6 and 7 (KP = 1: and 5) of every lane
+) -> reg ptr u8[4*SPX_N] // -> out
+{
+    out = __thash_x4(out, in, pkseed, adrs, w67);
+    return out;
+}
+
+// thash_x4 in place, for MLEN = n: io_l = thash(io_l), l = 0..3
+fn thash_x4_io(
+    reg ptr u8[4*MLEN] io,    // in/out: four n-byte values
+    reg ptr u8[SPX_N] pkseed, // PK.seed
+    reg ptr u32[8] adrs,      // ADRS (words 0..5 shared by the lanes)
+    reg ptr u32[4*(2+KP)] w67 // ADRS words 6 and 7 (KP = 1: and 5) of every lane
+) -> reg ptr u8[4*MLEN] // -> io
+{
+    io[0 : 4*SPX_N] = __thash_x4(io[0 : 4*SPX_N], io, pkseed, adrs, w67);
+    return io;
 }
