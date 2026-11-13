@@ -1,5 +1,6 @@
-/* jasmin SIG adapter: maps the Jasmin-exported ML-DSA symbols onto the common
- * ABI. JASMIN_SIG_NS is the namespace, e.g. -DJASMIN_SIG_NS=ml_dsa_65
+/* jasmin SIG adapter: maps the Jasmin-exported ML-DSA and SLH-DSA symbols onto
+ * the common ABI. JASMIN_SIG_NS is the namespace, e.g. -DJASMIN_SIG_NS=ml_dsa_65
+ * or -DJASMIN_SIG_NS=slh_dsa_sha2128f
  * Linked against the corresponding Jasmin .s. */
 #include "common_abi.h"
 

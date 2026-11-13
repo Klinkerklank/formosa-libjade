@@ -25,7 +25,7 @@ int kem_dec(uint8_t *shared_secret, const uint8_t *ciphertext,
 int kem_check_pk(const uint8_t *public_key);
 int kem_check_sk(const uint8_t *secret_key);
 
-/* ---- SIG (ML-DSA) -- deterministic API ----
+/* ---- SIG (ML-DSA, SLH-DSA) -- deterministic API ----
  * context and message are plain pointer + length. (The jasmin backend's entry
  * points want the message/context as reg-u64 addresses; that conversion lives
  * in the jasmin adapter, not in this shared ABI.) */
